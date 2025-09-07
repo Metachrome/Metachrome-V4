@@ -40,24 +40,27 @@ export { trades };
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log(`📈 Trading API: ${req.method} ${req.url}`);
-    
+
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Content-Type', 'application/json');
 
     if (req.method === 'OPTIONS') {
       return res.status(200).end();
     }
 
     const url = req.url || '';
-    
+
     // Handle different trading endpoints
     if (url.includes('/spot')) {
       return handleSpotTrading(req, res);
     } else if (url.includes('/options')) {
       return handleOptionsTrading(req, res);
+    } else if (url.includes('/complete')) {
+      return handleTradeCompletion(req, res);
     } else if (req.method === 'GET') {
       // Get user trades
       return handleGetTrades(req, res);
@@ -202,9 +205,15 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
       if (userBalance.balance < tradeAmount) {
         return res.status(400).json({
           success: false,
-          message: "Insufficient balance"
+          message: `Insufficient balance. Required: ${tradeAmount} USDT, Available: ${userBalance.balance} USDT`
         });
       }
+
+      // Deduct amount from balance immediately (before trade creation)
+      const newBalance = userBalance.balance - tradeAmount;
+      userBalances.set(finalUserId, { balance: newBalance, currency: 'USDT' });
+
+      console.log(`💰 Balance deducted: ${tradeAmount} USDT, New balance: ${newBalance} USDT`);
 
       // Get current market price (mock for now)
       const currentPrice = 117000 + (Math.random() * 2000);
@@ -230,15 +239,11 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
       // Store trade
       trades.set(trade.id, trade);
 
-      // Deduct amount from balance immediately
-      userBalance.balance -= tradeAmount;
-      userBalances.set(finalUserId, userBalance);
-
       console.log('✅ Options trade created:', {
         tradeId: trade.id,
         userId: finalUserId,
         amount: tradeAmount,
-        newBalance: userBalance.balance
+        newBalance: newBalance
       });
 
       // Try to save to database
@@ -290,6 +295,69 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({
         success: false,
         message: "Failed to create options trade",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  return res.status(405).json({ message: "Method not allowed" });
+}
+
+async function handleTradeCompletion(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'POST') {
+    try {
+      const { tradeId, userId, won, amount, payout } = req.body || {};
+
+      console.log('🏁 Trade completion request:', { tradeId, userId, won, amount, payout });
+
+      if (!tradeId || !userId || won === undefined || !amount) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: tradeId, userId, won, amount"
+        });
+      }
+
+      // Get current balance
+      const currentBalance = userBalances.get(userId) || { balance: 0, currency: 'USDT' };
+      const tradeAmount = parseFloat(amount);
+      let balanceChange = 0;
+
+      if (won) {
+        // Calculate profit based on payout or default percentage
+        const profitAmount = payout ? parseFloat(payout) : tradeAmount * 0.8; // 80% profit default
+        balanceChange = profitAmount;
+        currentBalance.balance += profitAmount;
+        console.log(`💰 Trade WON: +${profitAmount} USDT`);
+      } else {
+        // Trade lost - amount was already deducted when trade was placed
+        console.log(`💸 Trade LOST: -${tradeAmount} USDT (already deducted)`);
+      }
+
+      // Update balance
+      userBalances.set(userId, currentBalance);
+
+      console.log('✅ Trade completion processed:', {
+        tradeId,
+        userId,
+        won,
+        balanceChange,
+        newBalance: currentBalance.balance
+      });
+
+      return res.json({
+        success: true,
+        tradeId,
+        won,
+        balanceChange,
+        newBalance: currentBalance.balance,
+        message: `Trade ${won ? 'won' : 'lost'} - balance updated`
+      });
+
+    } catch (error) {
+      console.error('❌ Trade completion error:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Trade completion failed",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
