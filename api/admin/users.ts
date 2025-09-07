@@ -155,7 +155,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }));
             
             console.log('👥 Users from database - Count:', safeUsers.length);
-            return res.json(safeUsers);
+            return res.json({
+              success: true,
+              users: safeUsers,
+              total: safeUsers.length,
+              source: 'database'
+            });
           }
         }
       } catch (dbError) {
@@ -165,7 +170,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Fallback to mock data
       const mockUsers = getMockUsers();
       console.log('👥 Using mock users - Count:', mockUsers.length);
-      return res.json(mockUsers);
+      return res.json({
+        success: true,
+        users: mockUsers,
+        total: mockUsers.length,
+        source: 'mock'
+      });
     }
 
     if (req.method === 'POST') {

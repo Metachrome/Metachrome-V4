@@ -1,8 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 
-// Temporarily disable supabase import to fix deployment
-// import { supabaseAdmin } from '../../../lib/supabase';
-const supabaseAdmin = null;
+// Initialize Supabase client directly
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
 
 // Mock users data
 const mockUsers = {
@@ -49,6 +59,17 @@ const mockUsers = {
     trading_mode: 'normal',
     created_at: '2025-01-01T09:00:00Z',
     last_login: '2025-09-07T13:15:00Z'
+  },
+  'superadmin-001': {
+    id: 'superadmin-001',
+    username: 'superadmin',
+    email: 'superadmin@metachrome.io',
+    balance: 1000000,
+    status: 'active',
+    role: 'super_admin',
+    trading_mode: 'normal',
+    created_at: '2023-11-01T00:00:00Z',
+    last_login: '2025-09-07T19:38:08Z'
   }
 };
 

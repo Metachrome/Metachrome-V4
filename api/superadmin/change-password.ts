@@ -1,8 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 
-// Temporarily disable supabase import to fix deployment
-// import { supabaseAdmin } from '../../lib/supabase';
-const supabaseAdmin = null;
+// Initialize Supabase client directly
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -39,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('🔐 Changing password for user:', userId);
 
       // Try to update in database
-      let updatedUser = null;
+      let updatedUser: any = null;
       try {
         if (supabaseAdmin) {
           // In production, you should hash the password
