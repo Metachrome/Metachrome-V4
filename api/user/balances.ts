@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase';
 
 // Mock user balances - synchronized with trading API
 const userBalances = new Map([

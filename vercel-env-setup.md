@@ -1,10 +1,10 @@
 # 🔧 Vercel Environment Variables Setup
 
-## 🚨 Current Issue
-The admin dashboard is failing because environment variables are not set in Vercel production.
+## 🚨 Current Issue - UPDATED
+All API endpoints are returning 500 errors with "FUNCTION_INVOCATION_FAILED".
 
-**Error**: `ENOTFOUND db.pybsyzbxyliufkgywtpf.supabase.co`
-**Cause**: DATABASE_URL environment variable not set in Vercel
+**Root Cause**: Missing Supabase environment variables in Vercel deployment
+**Status**: Import paths fixed, now need to add environment variables
 
 ## 📋 Required Environment Variables
 

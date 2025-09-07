@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase';
 
 // Import shared user balances from balances API
 let userBalances: Map<string, { balance: number; currency: string }>;

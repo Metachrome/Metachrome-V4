@@ -383,8 +383,11 @@ export default function OptionsPage() {
 
   const handleTrade = async (direction: 'up' | 'down') => {
     try {
-      if (selectedAmount < 100) {
-        alert('Minimum trade amount is 100 USDT');
+      const durationSeconds = parseInt(selectedDuration.replace('s', '')) || 30;
+      const minAmount = durationSeconds === 30 ? 100 : 1000;
+
+      if (selectedAmount < minAmount) {
+        alert(`Minimum trade amount is ${minAmount} USDT for ${selectedDuration} duration`);
         return;
       }
 
@@ -398,7 +401,7 @@ export default function OptionsPage() {
         return;
       }
 
-      const durationSeconds = parseInt(selectedDuration.replace('s', '')) || 30;
+      // Duration already calculated above
 
       if (!safeCurrentPrice || safeCurrentPrice <= 0) {
         alert('Price data not available. Please wait a moment and try again.');
@@ -714,7 +717,15 @@ export default function OptionsPage() {
               ].map((option) => (
                 <button
                   key={option.duration}
-                  onClick={() => setSelectedDuration(option.duration)}
+                  onClick={() => {
+                    setSelectedDuration(option.duration);
+                    // Update minimum amount based on duration
+                    const durationSeconds = parseInt(option.duration.replace('s', ''));
+                    const minAmount = durationSeconds === 30 ? 100 : 1000;
+                    if (selectedAmount < minAmount) {
+                      setSelectedAmount(minAmount);
+                    }
+                  }}
                   className={`p-2 rounded text-center border transition-colors ${
                     selectedDuration === option.duration
                       ? 'bg-blue-600 border-blue-500 text-white'
@@ -731,7 +742,7 @@ export default function OptionsPage() {
             {/* Amount Selection */}
             <div className="mb-4">
               <div className="text-gray-400 text-sm mb-2">
-                Minimum buy: 100 USDT | Selected: {selectedAmount} USDT
+                Minimum buy: {parseInt(selectedDuration.replace('s', '')) === 30 ? '100' : '1000'} USDT | Selected: {selectedAmount} USDT
               </div>
               <div className="grid grid-cols-8 gap-2 mb-2">
                 {[10, 20, 50, 100, 200, 500, 1000, 2000].map((amount) => (
@@ -754,11 +765,14 @@ export default function OptionsPage() {
               <div className="mt-2">
                 <input
                   type="number"
-                  min="100"
+                  min={parseInt(selectedDuration.replace('s', '')) === 30 ? "100" : "1000"}
                   value={selectedAmount}
-                  onChange={(e) => setSelectedAmount(Math.max(100, parseInt(e.target.value) || 100))}
+                  onChange={(e) => {
+                    const minAmount = parseInt(selectedDuration.replace('s', '')) === 30 ? 100 : 1000;
+                    setSelectedAmount(Math.max(minAmount, parseInt(e.target.value) || minAmount));
+                  }}
                   className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  placeholder="Custom amount (min 100 USDT)"
+                  placeholder={`Custom amount (min ${parseInt(selectedDuration.replace('s', '')) === 30 ? '100' : '1000'} USDT)`}
                   disabled={isTrading}
                 />
               </div>

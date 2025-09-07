@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase';
 
 // Generate dynamic mock transactions data for demo
 function generateMockTransactions() {
