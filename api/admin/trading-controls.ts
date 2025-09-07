@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../../lib/supabase';
+
+// Temporarily disable supabase import to fix deployment
+// import { supabaseAdmin } from '../../lib/supabase';
+const supabaseAdmin = null;
 
 // Mock user trading modes for demo - synchronized across modules
 const userTradingModes = new Map([
@@ -249,5 +252,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-// Export the trading modes map so other modules can access it
-export { userTradingModes };
+

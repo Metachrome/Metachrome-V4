@@ -1,5 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../../lib/supabase';
+
+// Temporarily disable supabase import to fix deployment
+// import { supabaseAdmin } from '../../lib/supabase';
+const supabaseAdmin = null;
+
 import { userBalances } from '../balances';
 import { userTradingModes } from './trading-controls';
 
