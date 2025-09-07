@@ -1,8 +1,27 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
-// Import shared user balances to keep data synchronized
-import { userBalances } from '../balances';
+// Initialize Supabase client directly
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
+
+// Mock user balances - synchronized with trading API
+const userBalances = new Map([
+  ['user-1', { balance: 10000, currency: 'USDT' }],
+  ['demo-user-1', { balance: 10000, currency: 'USDT' }],
+  ['demo-user-2', { balance: 25000, currency: 'USDT' }],
+  ['demo-user-3', { balance: 5000, currency: 'USDT' }],
+  ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
+]);
 
 // Mock users data for demo - synchronized with balance data
 function getMockUsers() {
@@ -100,7 +119,12 @@ function getMockUsers() {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log(`👥 Admin Users API: ${req.method} ${req.url}`);
-    
+    console.log('🔧 Environment check:', {
+      supabaseUrl: supabaseUrl ? 'configured' : 'missing',
+      serviceKey: supabaseServiceKey ? 'configured' : 'missing',
+      supabaseAdmin: supabaseAdmin ? 'initialized' : 'null'
+    });
+
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

@@ -18,7 +18,12 @@ const MOCK_STATS = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log(`📊 Admin Stats API: ${req.method} ${req.url}`);
-    
+    console.log('🔧 Environment check:', {
+      supabaseUrl: process.env.SUPABASE_URL ? 'configured' : 'missing',
+      serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'configured' : 'missing',
+      supabaseAdmin: supabaseAdmin ? 'initialized' : 'null'
+    });
+
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
