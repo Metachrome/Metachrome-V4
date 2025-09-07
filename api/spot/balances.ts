@@ -1,20 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../../lib/supabase';
 
-// Import shared user balances
-let userBalances: Map<string, { balance: number; currency: string }>;
-
-// Initialize shared balance storage
-try {
-  const balancesModule = require('../../api/balances');
-  userBalances = balancesModule.userBalances;
-} catch {
-  userBalances = new Map([
-    ['user-1', { balance: 10000, currency: 'USDT' }],
-    ['demo-user-1', { balance: 10000, currency: 'USDT' }],
-    ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
-  ]);
-}
+// Simplified user balances - no external imports
+const userBalances = new Map([
+  ['user-1', { balance: 10000, currency: 'USDT' }],
+  ['demo-user-1', { balance: 10000, currency: 'USDT' }],
+  ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
+]);
 
 // Mock asset balances for spot trading
 const assetBalances = new Map([
