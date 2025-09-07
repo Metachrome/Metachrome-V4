@@ -1,54 +1,86 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../lib/supabase';
 
+// Import shared trades from trading API
+let sharedTrades: Map<string, any>;
+
+try {
+  const tradesModule = require('../trades');
+  sharedTrades = tradesModule.trades || new Map();
+} catch {
+  sharedTrades = new Map();
+}
+
 // Generate dynamic mock trades data for demo
 function generateMockTrades() {
   const now = new Date();
   const trades = [];
+  const users = ['demo-user-1', 'demo-user-2', 'demo-user-3', 'demo-user-4'];
+  const usernames = ['john_trader', 'sarah_crypto', 'mike_hodler', 'emma_trader'];
 
-  // Add some completed trades
-  for (let i = 1; i <= 8; i++) {
+  // First, add any real trades from the trading system
+  if (sharedTrades && sharedTrades.size > 0) {
+    sharedTrades.forEach((trade, tradeId) => {
+      const userIndex = users.indexOf(trade.userId);
+      const username = userIndex >= 0 ? usernames[userIndex] : 'Unknown User';
+
+      trades.push({
+        ...trade,
+        username,
+        users: { username }
+      });
+    });
+  }
+
+  // Add some completed mock trades if we don't have enough real ones
+  const existingTradesCount = trades.length;
+  const targetCompletedTrades = Math.max(8, existingTradesCount);
+
+  for (let i = existingTradesCount + 1; i <= targetCompletedTrades; i++) {
     const createdTime = new Date(now.getTime() - (i * 5 * 60 * 1000)); // 5 minutes apart
     const duration = Math.random() > 0.5 ? 30 : 60;
     const amount = Math.floor(Math.random() * 1000) + 100;
     const direction = Math.random() > 0.5 ? 'up' : 'down';
     const result = Math.random() > 0.3 ? 'win' : 'lose';
+    const entryPrice = 117000 + (Math.random() * 2000);
+    const exitPrice = entryPrice * (result === 'win' ? 1.01 : 0.99);
     const profit = result === 'win' ? amount * (duration === 30 ? 0.1 : 0.15) : -amount;
 
     trades.push({
-      id: `trade-${i}`,
-      user_id: `demo-user-${(i % 3) + 1}`,
-      username: ['john_trader', 'sarah_crypto', 'mike_hodler'][i % 3],
+      id: `mock-trade-${i}`,
+      user_id: users[i % users.length],
+      username: usernames[i % users.length],
       symbol: 'BTCUSDT',
       amount,
       direction,
       duration,
-      entry_price: 117000 + (Math.random() * 2000),
-      exit_price: 117000 + (Math.random() * 2000),
+      entry_price: entryPrice,
+      exit_price: exitPrice,
       result,
       profit,
       status: 'completed',
       created_at: createdTime.toISOString(),
       expires_at: new Date(createdTime.getTime() + duration * 1000).toISOString(),
       updated_at: new Date(createdTime.getTime() + duration * 1000).toISOString(),
-      users: { username: ['john_trader', 'sarah_crypto', 'mike_hodler'][i % 3] }
+      users: { username: usernames[i % users.length] }
     });
   }
 
-  // Add some active trades
-  for (let i = 9; i <= 12; i++) {
+  // Add some active mock trades
+  for (let i = 1; i <= 3; i++) {
     const createdTime = new Date(now.getTime() - (Math.random() * 30 * 1000)); // Within last 30 seconds
     const duration = Math.random() > 0.5 ? 30 : 60;
-    const amount = Math.floor(Math.random() * 1000) + 100;
+    const amount = Math.floor(Math.random() * 500) + 100;
     const direction = Math.random() > 0.5 ? 'up' : 'down';
     const expiresAt = new Date(createdTime.getTime() + duration * 1000);
+    const timeLeft = Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000));
 
     // Only add if not expired
-    if (expiresAt > now) {
+    if (timeLeft > 0) {
       trades.push({
-        id: `trade-${i}`,
-        user_id: `demo-user-${(i % 3) + 1}`,
-        username: ['john_trader', 'sarah_crypto', 'mike_hodler'][i % 3],
+        id: `mock-active-${i}`,
+        user_id: users[i % users.length],
+        username: usernames[i % users.length],
         symbol: 'BTCUSDT',
         amount,
         direction,
@@ -58,10 +90,11 @@ function generateMockTrades() {
         result: 'pending',
         profit: 0,
         status: 'active',
+        time_left: timeLeft,
         created_at: createdTime.toISOString(),
         expires_at: expiresAt.toISOString(),
         updated_at: createdTime.toISOString(),
-        users: { username: ['john_trader', 'sarah_crypto', 'mike_hodler'][i % 3] }
+        users: { username: usernames[i % users.length] }
       });
     }
   }

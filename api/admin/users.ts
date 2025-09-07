@@ -1,79 +1,101 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../lib/supabase';
 
-// Mock users data for demo
-const MOCK_USERS = [
-  {
-    id: 'demo-user-1',
-    username: 'john_trader',
-    email: 'john@example.com',
-    role: 'user',
-    status: 'active',
-    trading_mode: 'normal',
-    balance: 10000,
-    isActive: true,
-    wallet_address: '0x742d35Cc6479C5f95912c4E8BC2C1234567890AB',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-20T14:45:00Z',
-    last_login: '2024-01-20T14:45:00Z'
-  },
-  {
-    id: 'demo-user-2',
-    username: 'sarah_crypto',
-    email: 'sarah@example.com',
-    role: 'user',
-    status: 'active',
-    trading_mode: 'win',
-    balance: 25000,
-    isActive: true,
-    wallet_address: '0x123456789ABCDEF123456789ABCDEF1234567890',
-    created_at: '2024-01-10T08:15:00Z',
-    updated_at: '2024-01-20T12:30:00Z',
-    last_login: '2024-01-20T12:30:00Z'
-  },
-  {
-    id: 'demo-user-3',
-    username: 'mike_hodler',
-    email: 'mike@example.com',
-    role: 'user',
-    status: 'active',
-    trading_mode: 'lose',
-    balance: 5000,
-    isActive: true,
-    wallet_address: '0xABCDEF1234567890ABCDEF1234567890ABCDEF12',
-    created_at: '2024-01-05T16:20:00Z',
-    updated_at: '2024-01-19T09:15:00Z',
-    last_login: '2024-01-19T09:15:00Z'
-  },
-  {
-    id: 'demo-user-4',
-    username: 'emma_trader',
-    email: 'emma@example.com',
-    role: 'user',
-    status: 'suspended',
-    trading_mode: 'normal',
-    balance: 1500,
-    isActive: false,
-    wallet_address: '0x9876543210987654321098765432109876543210',
-    created_at: '2024-01-01T12:00:00Z',
-    updated_at: '2024-01-18T15:45:00Z',
-    last_login: '2024-01-15T11:20:00Z'
-  },
-  {
-    id: 'demo-admin-1',
-    username: 'admin_user',
-    email: 'admin@metachrome.io',
-    role: 'admin',
-    status: 'active',
-    trading_mode: 'normal',
-    balance: 100000,
-    isActive: true,
-    wallet_address: '0xADMIN123456789ABCDEF123456789ABCDEF123456',
-    created_at: '2023-12-01T00:00:00Z',
-    updated_at: '2024-01-20T16:00:00Z',
-    last_login: '2024-01-20T16:00:00Z'
-  }
-];
+// Import shared user balances to keep data synchronized
+import { userBalances } from '../balances';
+
+// Mock users data for demo - synchronized with balance data
+function getMockUsers() {
+  const now = new Date();
+  const users = [
+    {
+      id: 'demo-user-1',
+      username: 'john_trader',
+      email: 'john@example.com',
+      role: 'user',
+      status: 'active',
+      trading_mode: 'normal',
+      balance: userBalances.get('demo-user-1')?.balance || 10000,
+      isActive: true,
+      wallet_address: '0x742d35Cc6479C5f95912c4E8BC2C1234567890AB',
+      created_at: '2024-01-15T10:30:00Z',
+      updated_at: now.toISOString(),
+      last_login: '2024-01-20T14:45:00Z'
+    },
+    {
+      id: 'demo-user-2',
+      username: 'sarah_crypto',
+      email: 'sarah@example.com',
+      role: 'user',
+      status: 'active',
+      trading_mode: 'win',
+      balance: userBalances.get('demo-user-2')?.balance || 25000,
+      isActive: true,
+      wallet_address: '0x123456789ABCDEF123456789ABCDEF1234567890',
+      created_at: '2024-01-10T08:15:00Z',
+      updated_at: now.toISOString(),
+      last_login: '2024-01-20T12:30:00Z'
+    },
+    {
+      id: 'demo-user-3',
+      username: 'mike_hodler',
+      email: 'mike@example.com',
+      role: 'user',
+      status: 'active',
+      trading_mode: 'lose',
+      balance: userBalances.get('demo-user-3')?.balance || 5000,
+      isActive: true,
+      wallet_address: '0xABCDEF1234567890ABCDEF1234567890ABCDEF12',
+      created_at: '2024-01-05T16:20:00Z',
+      updated_at: now.toISOString(),
+      last_login: '2024-01-19T09:15:00Z'
+    },
+    {
+      id: 'demo-user-4',
+      username: 'emma_trader',
+      email: 'emma@example.com',
+      role: 'user',
+      status: 'suspended',
+      trading_mode: 'normal',
+      balance: userBalances.get('demo-user-4')?.balance || 1500,
+      isActive: false,
+      wallet_address: '0x9876543210987654321098765432109876543210',
+      created_at: '2024-01-01T12:00:00Z',
+      updated_at: now.toISOString(),
+      last_login: '2024-01-15T11:20:00Z'
+    },
+    {
+      id: 'demo-admin-1',
+      username: 'admin_user',
+      email: 'admin@metachrome.io',
+      role: 'admin',
+      status: 'active',
+      trading_mode: 'normal',
+      balance: userBalances.get('demo-admin-1')?.balance || 100000,
+      isActive: true,
+      wallet_address: '0xADMIN123456789ABCDEF123456789ABCDEF123456',
+      created_at: '2023-12-01T00:00:00Z',
+      updated_at: now.toISOString(),
+      last_login: '2024-01-20T16:00:00Z'
+    },
+    {
+      id: 'superadmin-001',
+      username: 'superadmin',
+      email: 'superadmin@metachrome.io',
+      role: 'super_admin',
+      status: 'active',
+      trading_mode: 'normal',
+      balance: userBalances.get('superadmin-001')?.balance || 1000000,
+      isActive: true,
+      wallet_address: '0xSUPERADMIN123456789ABCDEF123456789ABCDEF',
+      created_at: '2023-11-01T00:00:00Z',
+      updated_at: now.toISOString(),
+      last_login: now.toISOString()
+    }
+  ];
+
+  return users;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -116,8 +138,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Fallback to mock data
-      console.log('👥 Using mock users - Count:', MOCK_USERS.length);
-      return res.json(MOCK_USERS);
+      const mockUsers = getMockUsers();
+      console.log('👥 Using mock users - Count:', mockUsers.length);
+      return res.json(mockUsers);
     }
 
     if (req.method === 'POST') {

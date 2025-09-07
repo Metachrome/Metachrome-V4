@@ -1,13 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabaseAdmin } from '../lib/supabase';
 
-// Mock user trading modes for demo
+// Mock user trading modes for demo - synchronized across modules
 const userTradingModes = new Map([
   ['demo-user-1', 'normal'],
   ['demo-user-2', 'win'],
   ['demo-user-3', 'lose'],
   ['demo-user-4', 'normal']
 ]);
+
+// Export for use in other modules
+export { userTradingModes };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -151,6 +154,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         controlType,
         notes
       });
+
+      // Broadcast control change for real-time sync
+      try {
+        console.log('📡 Broadcasting trading control update:', {
+          type: 'trading_control_update',
+          data: {
+            userId,
+            controlType,
+            adminId: 'superadmin-001',
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (broadcastError) {
+        console.log('⚠️ Control broadcast failed:', broadcastError);
+      }
 
       return res.json({
         success: true,

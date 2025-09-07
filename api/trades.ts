@@ -21,6 +21,9 @@ try {
 // Mock trades storage
 const trades = new Map();
 
+// Export trades for use in other modules
+export { trades };
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log(`📈 Trading API: ${req.method} ${req.url}`);
@@ -128,9 +131,11 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
 
       // Accept either 'side' or 'direction' for compatibility
       const tradeDirection = side || direction;
+      const finalUserId = userId || 'demo-user-1';
 
-      console.log('📈 Options trade request:', { symbol, side, direction, tradeDirection, amount, duration, userId });
+      console.log('📈 Options trade request:', { symbol, side, direction, tradeDirection, amount, duration, userId: finalUserId });
 
+      // Validate required fields
       if (!symbol || !tradeDirection || !amount || !duration) {
         return res.status(400).json({
           success: false,
@@ -173,9 +178,14 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      // Check user balance
-      const userBalance = userBalances.get(userId || 'demo-user-1') || { balance: 0, currency: 'USDT' };
+      // Get or initialize user balance
+      let userBalance = userBalances.get(finalUserId);
+      if (!userBalance) {
+        userBalance = { balance: 10000, currency: 'USDT' }; // Default balance for new users
+        userBalances.set(finalUserId, userBalance);
+      }
 
+      // Check balance
       if (userBalance.balance < tradeAmount) {
         return res.status(400).json({
           success: false,
@@ -189,7 +199,7 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
       // Create options trade
       const trade = {
         id: `options-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        userId: userId || 'demo-user-1',
+        userId: finalUserId,
         symbol,
         direction: tradeDirection,
         side: tradeDirection === 'up' ? 'call' : 'put',
@@ -204,17 +214,56 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
         expires_at: new Date(Date.now() + tradeDuration * 1000).toISOString()
       };
 
+      // Store trade
       trades.set(trade.id, trade);
 
       // Deduct amount from balance immediately
       userBalance.balance -= tradeAmount;
-      userBalances.set(userId || 'demo-user-1', userBalance);
+      userBalances.set(finalUserId, userBalance);
 
-      console.log('✅ Options trade created:', trade);
+      console.log('✅ Options trade created:', {
+        tradeId: trade.id,
+        userId: finalUserId,
+        amount: tradeAmount,
+        newBalance: userBalance.balance
+      });
+
+      // Try to save to database
+      try {
+        if (supabaseAdmin) {
+          await supabaseAdmin
+            .from('trades')
+            .insert({
+              id: trade.id,
+              user_id: finalUserId,
+              symbol: trade.symbol,
+              amount: trade.amount,
+              direction: trade.direction,
+              duration: trade.duration,
+              entry_price: trade.entry_price,
+              status: 'active',
+              created_at: trade.created_at,
+              expires_at: trade.expires_at
+            });
+
+          // Update user balance in database
+          await supabaseAdmin
+            .from('users')
+            .update({
+              balance: userBalance.balance,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', finalUserId);
+
+          console.log('✅ Trade and balance saved to database');
+        }
+      } catch (dbError) {
+        console.log('⚠️ Database save failed, continuing with in-memory state:', dbError);
+      }
 
       // Simulate trade completion after duration
       setTimeout(async () => {
-        await completeOptionsTrade(trade.id, userId || 'demo-user-1');
+        await completeOptionsTrade(trade.id, finalUserId);
       }, Math.min(tradeDuration * 1000, 30000)); // Max 30 seconds for demo
 
       return res.json({
@@ -296,18 +345,21 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
     const tradeAmount = trade.amount;
     const profitPercentage = trade.duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for 60s
     const profit = isWin ? tradeAmount * profitPercentage : 0;
+    const exitPrice = trade.entry_price * (isWin ? 1.01 : 0.99);
 
     // Update trade status
     trade.status = 'completed';
-    trade.target_price = null;
+    trade.exit_price = exitPrice;
+    trade.result = isWin ? 'win' : 'lose';
     trade.profit_loss = isWin ? `+${profit.toFixed(2)}` : `-${tradeAmount.toFixed(2)}`;
 
-    // Update user balance if won
+    // Update user balance
+    const currentBalance = userBalances.get(userId) || { balance: 0, currency: 'USDT' };
     if (isWin) {
-      const currentBalance = userBalances.get(userId) || { balance: 0, currency: 'USDT' };
       currentBalance.balance += tradeAmount + profit; // Return original amount + profit
-      userBalances.set(userId, currentBalance);
     }
+    // If lose, amount was already deducted when trade was created
+    userBalances.set(userId, currentBalance);
 
     trades.set(tradeId, trade);
 
@@ -316,42 +368,53 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
       isWin,
       tradingMode,
       profit: trade.profit_loss,
-      newBalance: userBalances.get(userId)?.balance
+      newBalance: currentBalance.balance
     });
+
+    // Broadcast balance update for real-time sync
+    try {
+      console.log('📡 Broadcasting trade completion and balance update:', {
+        type: 'trade_completed',
+        data: {
+          tradeId: trade.id,
+          userId,
+          result: isWin ? 'win' : 'lose',
+          profit: isWin ? profit : -tradeAmount,
+          newBalance: currentBalance.balance
+        }
+      });
+    } catch (broadcastError) {
+      console.log('⚠️ Trade completion broadcast failed:', broadcastError);
+    }
 
     // Try to update database if available
     try {
       if (supabaseAdmin) {
+        // Update trade record
         await supabaseAdmin
           .from('trades')
-          .upsert({
-            id: trade.id,
-            user_id: userId,
-            symbol: trade.symbol,
-            amount: trade.amount,
-            direction: trade.direction,
-            duration: trade.duration,
-            entry_price: trade.entry_price,
-            exit_price: trade.entry_price * (isWin ? 1.01 : 0.99),
+          .update({
+            status: 'completed',
+            exit_price: exitPrice,
             result: isWin ? 'win' : 'lose',
             profit: isWin ? profit : -tradeAmount,
-            created_at: trade.created_at,
-            expires_at: trade.expires_at,
             updated_at: new Date().toISOString()
-          });
+          })
+          .eq('id', trade.id);
 
         // Update user balance in database
-        const currentBalance = userBalances.get(userId)?.balance || 0;
         await supabaseAdmin
           .from('users')
           .update({
-            balance: currentBalance,
+            balance: currentBalance.balance,
             updated_at: new Date().toISOString()
           })
           .eq('id', userId);
+
+        console.log('✅ Trade and balance updated in database');
       }
     } catch (dbError) {
-      console.log('⚠️ Database update failed, continuing with in-memory state');
+      console.log('⚠️ Database update failed, continuing with in-memory state:', dbError);
     }
 
   } catch (error) {

@@ -5,8 +5,14 @@ import { supabaseAdmin } from './lib/supabase';
 const userBalances = new Map([
   ['user-1', { balance: 10000, currency: 'USDT' }],
   ['demo-user-1', { balance: 10000, currency: 'USDT' }],
+  ['demo-user-2', { balance: 25000, currency: 'USDT' }],
+  ['demo-user-3', { balance: 5000, currency: 'USDT' }],
+  ['demo-user-4', { balance: 1500, currency: 'USDT' }],
   ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
 ]);
+
+// Export userBalances for use in other modules
+export { userBalances };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -140,6 +146,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amount: changeAmount,
         newBalance: currentBalance.balance
       });
+
+      // Broadcast balance update for real-time sync (if WebSocket is available)
+      try {
+        // This would be handled by the WebSocket server in a full implementation
+        // For now, we'll just log the broadcast intent
+        console.log('📡 Broadcasting balance update:', {
+          type: 'balance_update',
+          data: {
+            userId,
+            symbol: 'USDT',
+            newBalance: currentBalance.balance,
+            action,
+            amount: changeAmount
+          }
+        });
+      } catch (broadcastError) {
+        console.log('⚠️ Balance broadcast failed:', broadcastError);
+      }
 
       return res.json({
         success: true,
