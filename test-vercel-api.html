@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Vercel API</title>
+</head>
+<body>
+    <h1>Testing Vercel API Endpoints</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testEndpoints() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test admin users endpoint
+                console.log('Testing /api/admin/users...');
+                const usersResponse = await fetch('https://metachrome-nuel1xu95-temanly-ids-projects.vercel.app/api/admin/users', {
+                    credentials: 'include'
+                });
+                console.log('Users response status:', usersResponse.status);
+                const usersData = await usersResponse.text();
+                console.log('Users response:', usersData);
+                
+                results.innerHTML += `<h3>Users Endpoint (/api/admin/users)</h3>`;
+                results.innerHTML += `<p>Status: ${usersResponse.status}</p>`;
+                results.innerHTML += `<pre>${usersData}</pre>`;
+                
+                // Test admin controls endpoint
+                console.log('Testing /api/admin/controls...');
+                const controlsResponse = await fetch('https://metachrome-nuel1xu95-temanly-ids-projects.vercel.app/api/admin/controls', {
+                    credentials: 'include'
+                });
+                console.log('Controls response status:', controlsResponse.status);
+                const controlsData = await controlsResponse.text();
+                console.log('Controls response:', controlsData);
+                
+                results.innerHTML += `<h3>Controls Endpoint (/api/admin/controls)</h3>`;
+                results.innerHTML += `<p>Status: ${controlsResponse.status}</p>`;
+                results.innerHTML += `<pre>${controlsData}</pre>`;
+                
+            } catch (error) {
+                console.error('Error testing endpoints:', error);
+                results.innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run tests when page loads
+        testEndpoints();
+    </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+From 7fb390f4777c072037bb355dd6781b314f9f9745 Mon Sep 17 00:00:00 2001
+From: Amdsnk <temanlywebsite@outlook.com>
+Date: Sun, 7 Sep 2025 12:56:48 +0700
+Subject: [PATCH] Fix Vercel SPA routing and TypeScript error - Critical
+ deployment fix
+
+---
+ api/admin.ts |  2 +-
+ vercel.json  | 29 +++++++++++------------------
+ 2 files changed, 12 insertions(+), 19 deletions(-)
+
+diff --git a/api/admin.ts b/api/admin.ts
+index dc470b3..f05a552 100644
+--- a/api/admin.ts
++++ b/api/admin.ts
+@@ -111,7 +111,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
+         console.log('🔍 API ADMIN.TS IS BEING USED FOR BALANCES!');
+ 
+         // Transform the data to match frontend expectations
+-        const balances = balancesRaw.map(balance => ({
++        const balances = balancesRaw.map((balance: any) => ({
+           id: balance.id,
+           userId: balance.userId,
+           symbol: balance.symbol,
+diff --git a/vercel.json b/vercel.json
+index 567b038..6c3d38f 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -2,29 +2,22 @@
+   "version": 2,
+   "name": "metachrome-v2",
+   "buildCommand": "npx vite build",
+-  "outputDirectory": "dist",
++  "outputDirectory": "dist/public",
+   "framework": "vite",
+   "installCommand": "npm install",
+-  "routes": [
+-    {
+-      "src": "/api/(.*)",
+-      "dest": "/api/$1"
+-    },
+-    {
+-      "src": "/assets/(.*)",
+-      "dest": "/assets/$1"
+-    },
+-    {
+-      "src": "/asset/(.*)",
+-      "dest": "/asset/$1"
+-    },
++  "functions": {
++    "api/**/*.ts": {
++      "runtime": "@vercel/node"
++    }
++  },
++  "rewrites": [
+     {
+-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webm))",
+-      "dest": "/$1"
++      "source": "/api/(.*)",
++      "destination": "/api/$1"
+     },
+     {
+-      "src": "/(.*)",
+-      "dest": "/index.html"
++      "source": "/(.*)",
++      "destination": "/index.html"
+     }
+   ]
+ }
+-- 
+2.50.1.windows.1
+

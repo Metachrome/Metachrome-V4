@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Admin API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Debug Admin API Endpoints</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testEndpoint(name, url, options = {}) {
+            const results = document.getElementById('results');
+            const section = document.createElement('div');
+            section.className = 'test-section';
+            
+            try {
+                console.log(`Testing ${name}...`);
+                const response = await fetch(url, {
+                    credentials: 'include',
+                    ...options
+                });
+                
+                const responseText = await response.text();
+                let responseData;
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch {
+                    responseData = responseText;
+                }
+                
+                section.className += response.ok ? ' success' : ' error';
+                section.innerHTML = `
+                    <h3>${name}</h3>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p><strong>Response:</strong></p>
+                    <pre>${JSON.stringify(responseData, null, 2)}</pre>
+                `;
+                
+                console.log(`${name} - Status: ${response.status}`, responseData);
+                
+            } catch (error) {
+                section.className += ' error';
+                section.innerHTML = `
+                    <h3>${name}</h3>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+                console.error(`${name} failed:`, error);
+            }
+            
+            results.appendChild(section);
+        }
+        
+        async function runTests() {
+            const baseUrl = 'https://metachrome.vercel.app';
+            
+            // Test basic API health
+            await testEndpoint('API Health Check', `${baseUrl}/api/test`);
+            
+            // Test admin login first
+            await testEndpoint('Admin Login', `${baseUrl}/api/auth/admin/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            });
+            
+            // Test admin endpoints
+            await testEndpoint('Admin Users', `${baseUrl}/api/admin/users`);
+            await testEndpoint('Admin Controls', `${baseUrl}/api/admin/controls`);
+            await testEndpoint('Admin Balances', `${baseUrl}/api/admin/balances`);
+            await testEndpoint('Admin Trades', `${baseUrl}/api/admin/trades`);
+            
+            // Test with explicit auth header
+            await testEndpoint('Admin Users (with auth)', `${baseUrl}/api/admin/users`, {
+                headers: { 'Authorization': 'Bearer demo-admin-jwt-token' }
+            });
+        }
+        
+        // Run tests when page loads
+        runTests();
+    </script>
+</body>
+</html>

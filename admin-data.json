@@ -1,0 +1,74 @@
+{
+  "users": [
+    {
+      "id": "superadmin-1",
+      "username": "superadmin",
+      "email": "superadmin@metachrome.io",
+      "balance": 100000,
+      "role": "superadmin",
+      "status": "active",
+      "trading_mode": "normal",
+      "created_at": "2025-09-04T23:39:50.876Z",
+      "updated_at": "2025-09-04T23:44:58.095Z",
+      "wallet_history": [],
+      "wallet_address": "123455",
+      "wallet_updated_at": "2025-09-05T08:07:53.570Z"
+    },
+    {
+      "id": "admin-1",
+      "username": "admin",
+      "email": "admin@metachrome.io",
+      "balance": 51000,
+      "role": "admin",
+      "status": "active",
+      "trading_mode": "normal",
+      "created_at": "2025-09-04T23:39:50.882Z",
+      "password": "HopeAmdHope87^(",
+      "password_changed_at": "2025-09-05T07:50:29.747Z",
+      "wallet_address": "123456789",
+      "wallet_updated_at": "2025-09-05T07:50:37.652Z"
+    },
+    {
+      "id": "user-1",
+      "username": "trader1",
+      "email": "trader1@metachrome.io",
+      "balance": 10000,
+      "role": "user",
+      "status": "active",
+      "trading_mode": "normal",
+      "created_at": "2025-09-04T23:39:50.882Z",
+      "updated_at": "2025-09-05T00:18:54.377Z"
+    },
+    {
+      "id": "user-2",
+      "username": "trader2",
+      "email": "trader2@metachrome.io",
+      "balance": 5000,
+      "role": "user",
+      "status": "active",
+      "trading_mode": "normal",
+      "created_at": "2025-09-04T23:39:50.882Z"
+    },
+    {
+      "id": "user-3",
+      "username": "trader3",
+      "email": "trader3@metachrome.io",
+      "balance": 15000,
+      "role": "user",
+      "status": "active",
+      "trading_mode": "normal",
+      "created_at": "2025-09-04T23:39:50.882Z"
+    },
+    {
+      "id": "user-1757029482421",
+      "username": "Amdnsk",
+      "email": "angela.soenoko@gmail.com",
+      "balance": 10000,
+      "role": "user",
+      "status": "active",
+      "trading_mode": "normal",
+      "created_at": "2025-09-04T23:44:42.421Z"
+    }
+  ],
+  "lastUpdated": "2025-09-05T08:07:53.570Z"
+}

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperAdmin Endpoints Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #1a4a1a;
+            border: 1px solid #4a8a4a;
+        }
+        .error {
+            background-color: #4a1a1a;
+            border: 1px solid #8a4a4a;
+        }
+        .info {
+            background-color: #1a1a4a;
+            border: 1px solid #4a4a8a;
+        }
+        button {
+            background-color: #4a4a8a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #6a6aaa;
+        }
+        input, select {
+            background-color: #3a3a3a;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 SuperAdmin Endpoints Test</h1>
+    <p>Test all superadmin functionality to ensure everything is working properly.</p>
+
+    <div class="test-section">
+        <h2>🔧 Connection Tests</h2>
+        <button onclick="testConnection()">Test API Connection</button>
+        <button onclick="testDatabase()">Test Database Connection</button>
+        <div id="connection-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 System Status</h2>
+        <button onclick="testSystemStats()">Test System Stats</button>
+        <div id="system-stats-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>👥 User Management</h2>
+        <button onclick="testGetUsers()">Get All Users</button>
+        <div id="users-result"></div>
+        
+        <h3>Create New User</h3>
+        <div class="form-group">
+            <label>Username:</label>
+            <input type="text" id="new-username" value="testuser" />
+        </div>
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" id="new-email" value="testuser@example.com" />
+        </div>
+        <div class="form-group">
+            <label>Password:</label>
+            <input type="password" id="new-password" value="password123" />
+        </div>
+        <div class="form-group">
+            <label>Balance:</label>
+            <input type="number" id="new-balance" value="10000" />
+        </div>
+        <div class="form-group">
+            <label>Trading Mode:</label>
+            <select id="new-trading-mode">
+                <option value="normal">Normal</option>
+                <option value="win">Win</option>
+                <option value="lose">Lose</option>
+            </select>
+        </div>
+        <button onclick="testCreateUser()">Create User</button>
+        <div id="create-user-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>💰 Balance Management</h2>
+        <div class="form-group">
+            <label>User ID:</label>
+            <input type="text" id="balance-user-id" placeholder="Enter user ID" />
+        </div>
+        <div class="form-group">
+            <label>Amount:</label>
+            <input type="number" id="balance-amount" value="1000" />
+        </div>
+        <div class="form-group">
+            <label>Action:</label>
+            <select id="balance-action">
+                <option value="add">Add</option>
+                <option value="subtract">Subtract</option>
+                <option value="set">Set</option>
+            </select>
+        </div>
+        <button onclick="testUpdateBalance()">Update Balance</button>
+        <div id="balance-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Trading Controls</h2>
+        <div class="form-group">
+            <label>User ID:</label>
+            <input type="text" id="trading-user-id" placeholder="Enter user ID" />
+        </div>
+        <div class="form-group">
+            <label>Trading Mode:</label>
+            <select id="trading-mode">
+                <option value="normal">Normal</option>
+                <option value="win">Win</option>
+                <option value="lose">Lose</option>
+            </select>
+        </div>
+        <button onclick="testTradingControl()">Set Trading Mode</button>
+        <div id="trading-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔑 Password Management</h2>
+        <div class="form-group">
+            <label>User ID:</label>
+            <input type="text" id="password-user-id" placeholder="Enter user ID" />
+        </div>
+        <div class="form-group">
+            <label>New Password:</label>
+            <input type="password" id="new-user-password" value="newpassword123" />
+        </div>
+        <button onclick="testChangePassword()">Change Password</button>
+        <div id="password-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🏦 Wallet Management</h2>
+        <div class="form-group">
+            <label>User ID:</label>
+            <input type="text" id="wallet-user-id" placeholder="Enter user ID" />
+        </div>
+        <div class="form-group">
+            <label>Wallet Address:</label>
+            <input type="text" id="wallet-address" value="0x1234567890abcdef1234567890abcdef12345678" />
+        </div>
+        <button onclick="testUpdateWallet()">Update Wallet</button>
+        <div id="wallet-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📈 Trading Data</h2>
+        <button onclick="testGetTrades()">Get All Trades</button>
+        <div id="trades-result"></div>
+        
+        <button onclick="testGetTransactions()">Get All Transactions</button>
+        <div id="transactions-result"></div>
+    </div>
+
+    <script>
+        const baseUrl = window.location.origin;
+
+        function displayResult(elementId, result, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${isError ? 'error' : 'success'}">
+                <strong>${isError ? '❌ Error:' : '✅ Success:'}</strong><br>
+                <pre>${JSON.stringify(result, null, 2)}</pre>
+            </div>`;
+        }
+
+        function displayInfo(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result info">
+                <strong>ℹ️ Info:</strong><br>
+                ${message}
+            </div>`;
+        }
+
+        async function testConnection() {
+            try {
+                displayInfo('connection-result', 'Testing API connection...');
+                const response = await fetch(`${baseUrl}/api/superadmin/test-connection`);
+                const result = await response.json();
+                displayResult('connection-result', result, !response.ok);
+            } catch (error) {
+                displayResult('connection-result', { error: error.message }, true);
+            }
+        }
+
+        async function testDatabase() {
+            try {
+                displayInfo('connection-result', 'Testing database connection...');
+                const response = await fetch(`${baseUrl}/api/superadmin/test-database`);
+                const result = await response.json();
+                displayResult('connection-result', result, !response.ok);
+            } catch (error) {
+                displayResult('connection-result', { error: error.message }, true);
+            }
+        }
+
+        async function testSystemStats() {
+            try {
+                displayInfo('system-stats-result', 'Testing system stats...');
+                const response = await fetch(`${baseUrl}/api/superadmin/system-stats`);
+                const result = await response.json();
+                displayResult('system-stats-result', result, !response.ok);
+            } catch (error) {
+                displayResult('system-stats-result', { error: error.message }, true);
+            }
+        }
+
+        async function testGetUsers() {
+            try {
+                displayInfo('users-result', 'Getting all users...');
+                const response = await fetch(`${baseUrl}/api/admin/users`);
+                const result = await response.json();
+                displayResult('users-result', result, !response.ok);
+            } catch (error) {
+                displayResult('users-result', { error: error.message }, true);
+            }
+        }
+
+        async function testCreateUser() {
+            try {
+                const userData = {
+                    username: document.getElementById('new-username').value,
+                    email: document.getElementById('new-email').value,
+                    password: document.getElementById('new-password').value,
+                    balance: parseFloat(document.getElementById('new-balance').value),
+                    trading_mode: document.getElementById('new-trading-mode').value,
+                    role: 'user'
+                };
+
+                displayInfo('create-user-result', 'Creating user...');
+                const response = await fetch(`${baseUrl}/api/admin/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                const result = await response.json();
+                displayResult('create-user-result', result, !response.ok);
+            } catch (error) {
+                displayResult('create-user-result', { error: error.message }, true);
+            }
+        }
+
+        async function testUpdateBalance() {
+            try {
+                const userId = document.getElementById('balance-user-id').value;
+                const amount = document.getElementById('balance-amount').value;
+                const action = document.getElementById('balance-action').value;
+
+                if (!userId) {
+                    displayResult('balance-result', { error: 'Please enter a user ID' }, true);
+                    return;
+                }
+
+                displayInfo('balance-result', 'Updating balance...');
+                const response = await fetch(`${baseUrl}/api/admin/balances/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ balance: parseFloat(amount), action })
+                });
+                const result = await response.json();
+                displayResult('balance-result', result, !response.ok);
+            } catch (error) {
+                displayResult('balance-result', { error: error.message }, true);
+            }
+        }
+
+        async function testTradingControl() {
+            try {
+                const userId = document.getElementById('trading-user-id').value;
+                const controlType = document.getElementById('trading-mode').value;
+
+                if (!userId) {
+                    displayResult('trading-result', { error: 'Please enter a user ID' }, true);
+                    return;
+                }
+
+                displayInfo('trading-result', 'Setting trading mode...');
+                const response = await fetch(`${baseUrl}/api/admin/trading-controls`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, controlType })
+                });
+                const result = await response.json();
+                displayResult('trading-result', result, !response.ok);
+            } catch (error) {
+                displayResult('trading-result', { error: error.message }, true);
+            }
+        }
+
+        async function testChangePassword() {
+            try {
+                const userId = document.getElementById('password-user-id').value;
+                const newPassword = document.getElementById('new-user-password').value;
+
+                if (!userId) {
+                    displayResult('password-result', { error: 'Please enter a user ID' }, true);
+                    return;
+                }
+
+                displayInfo('password-result', 'Changing password...');
+                const response = await fetch(`${baseUrl}/api/superadmin/change-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, newPassword })
+                });
+                const result = await response.json();
+                displayResult('password-result', result, !response.ok);
+            } catch (error) {
+                displayResult('password-result', { error: error.message }, true);
+            }
+        }
+
+        async function testUpdateWallet() {
+            try {
+                const userId = document.getElementById('wallet-user-id').value;
+                const walletAddress = document.getElementById('wallet-address').value;
+
+                if (!userId) {
+                    displayResult('wallet-result', { error: 'Please enter a user ID' }, true);
+                    return;
+                }
+
+                displayInfo('wallet-result', 'Updating wallet...');
+                const response = await fetch(`${baseUrl}/api/superadmin/update-wallet`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, walletAddress })
+                });
+                const result = await response.json();
+                displayResult('wallet-result', result, !response.ok);
+            } catch (error) {
+                displayResult('wallet-result', { error: error.message }, true);
+            }
+        }
+
+        async function testGetTrades() {
+            try {
+                displayInfo('trades-result', 'Getting all trades...');
+                const response = await fetch(`${baseUrl}/api/admin/trades`);
+                const result = await response.json();
+                displayResult('trades-result', result, !response.ok);
+            } catch (error) {
+                displayResult('trades-result', { error: error.message }, true);
+            }
+        }
+
+        async function testGetTransactions() {
+            try {
+                displayInfo('transactions-result', 'Getting all transactions...');
+                const response = await fetch(`${baseUrl}/api/admin/transactions`);
+                const result = await response.json();
+                displayResult('transactions-result', result, !response.ok);
+            } catch (error) {
+                displayResult('transactions-result', { error: error.message }, true);
+            }
+        }
+
+        // Auto-test connection on page load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

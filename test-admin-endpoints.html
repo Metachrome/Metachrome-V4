@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Admin Endpoints - Vercel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .endpoint { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 5px; background: #2a2a2a; }
+        .success { border-color: #4CAF50; background: #1e3a1e; }
+        .error { border-color: #f44336; background: #3a1e1e; }
+        .loading { border-color: #ff9800; background: #3a2e1e; }
+        pre { background: #000; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #5855eb; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: #2a2a2a; padding: 15px; border-radius: 8px; border: 1px solid #444; }
+        .stat-number { font-size: 2em; font-weight: bold; color: #6366f1; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Admin Endpoints Test - Vercel Deployment</h1>
+    <p>Testing the admin API endpoints on Vercel deployment</p>
+    
+    <button onclick="testAllEndpoints()">🚀 Test All Endpoints</button>
+    <button onclick="clearResults()">🧹 Clear Results</button>
+    
+    <div class="stats" id="stats" style="display: none;">
+        <div class="stat-card">
+            <div>Total Users</div>
+            <div class="stat-number" id="totalUsers">-</div>
+        </div>
+        <div class="stat-card">
+            <div>Active Controls</div>
+            <div class="stat-number" id="activeControls">-</div>
+        </div>
+        <div class="stat-card">
+            <div>Total Trades</div>
+            <div class="stat-number" id="totalTrades">-</div>
+        </div>
+        <div class="stat-card">
+            <div>Total Volume</div>
+            <div class="stat-number" id="totalVolume">$-</div>
+        </div>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        const baseUrl = 'https://metachrome.vercel.app';
+        
+        async function testEndpoint(name, url) {
+            const resultsDiv = document.getElementById('results');
+            const endpointDiv = document.createElement('div');
+            endpointDiv.className = 'endpoint loading';
+            endpointDiv.innerHTML = `
+                <h3>${name}</h3>
+                <p><strong>URL:</strong> ${url}</p>
+                <p>⏳ Testing...</p>
+            `;
+            resultsDiv.appendChild(endpointDiv);
+            
+            try {
+                console.log(`Testing ${name}...`);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.text();
+                let jsonData;
+                try {
+                    jsonData = JSON.parse(data);
+                } catch (e) {
+                    jsonData = { rawResponse: data };
+                }
+                
+                if (response.ok) {
+                    endpointDiv.className = 'endpoint success';
+                    endpointDiv.innerHTML = `
+                        <h3>✅ ${name}</h3>
+                        <p><strong>URL:</strong> ${url}</p>
+                        <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>Response:</strong></p>
+                        <pre>${JSON.stringify(jsonData, null, 2)}</pre>
+                    `;
+                    return jsonData;
+                } else {
+                    throw new Error(`${response.status}: ${data}`);
+                }
+                
+            } catch (error) {
+                endpointDiv.className = 'endpoint error';
+                endpointDiv.innerHTML = `
+                    <h3>❌ ${name}</h3>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+                console.error(`${name} failed:`, error);
+                return null;
+            }
+        }
+        
+        async function testAllEndpoints() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+            
+            // Test all admin endpoints
+            const users = await testEndpoint('Admin Users', `${baseUrl}/api/admin/users`);
+            const controls = await testEndpoint('Admin Controls', `${baseUrl}/api/admin/controls`);
+            const trades = await testEndpoint('Admin Trades', `${baseUrl}/api/admin/trades`);
+            const balances = await testEndpoint('Admin Balances', `${baseUrl}/api/admin/balances`);
+            
+            // Update stats if we got data
+            if (users || controls || trades) {
+                updateStats(users, controls, trades);
+            }
+        }
+        
+        function updateStats(users, controls, trades) {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.style.display = 'grid';
+            
+            document.getElementById('totalUsers').textContent = users ? (users.length || 0) : 0;
+            document.getElementById('activeControls').textContent = controls ? (controls.length || 0) : 0;
+            document.getElementById('totalTrades').textContent = trades ? (trades.length || 0) : 0;
+            
+            let totalVolume = 0;
+            if (trades && Array.isArray(trades)) {
+                totalVolume = trades.reduce((sum, trade) => sum + (parseFloat(trade.amount) || 0), 0);
+            }
+            document.getElementById('totalVolume').textContent = `$${totalVolume.toLocaleString()}`;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            setTimeout(testAllEndpoints, 1000);
+        };
+    </script>
+</body>
+</html>

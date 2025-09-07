@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METACHROME API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5855eb;
+        }
+        .result {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #444;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #10b981;
+            background: #064e3b;
+        }
+        .error {
+            border-color: #ef4444;
+            background: #7f1d1d;
+        }
+        input, select {
+            background: #374151;
+            color: white;
+            border: 1px solid #6b7280;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 METACHROME API Test Dashboard</h1>
+    
+    <div class="test-section">
+        <h2>🔍 Connection Test</h2>
+        <button onclick="testConnection()">Test API Connection</button>
+        <button onclick="testAdminAPI()">Test Admin API</button>
+        <button onclick="testSuperAdminAPI()">Test SuperAdmin API</button>
+        <div id="connectionResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>👥 User Management</h2>
+        <button onclick="testGetUsers()">Get Users</button>
+        <button onclick="testCreateUser()">Create Test User</button>
+        <div id="userResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔑 SuperAdmin Functions</h2>
+        <div>
+            <label>User ID:</label>
+            <input type="text" id="userId" value="trader1" placeholder="Enter user ID">
+        </div>
+        <div>
+            <label>Amount:</label>
+            <input type="number" id="amount" value="1000" placeholder="Enter amount">
+        </div>
+        <div>
+            <label>New Password:</label>
+            <input type="text" id="newPassword" value="newpass123" placeholder="Enter new password">
+        </div>
+        <div>
+            <label>Wallet Address:</label>
+            <input type="text" id="walletAddress" value="0x123456789abcdef" placeholder="Enter wallet address">
+        </div>
+        <button onclick="testDeposit()">Test Deposit</button>
+        <button onclick="testChangePassword()">Test Change Password</button>
+        <button onclick="testUpdateWallet()">Test Update Wallet</button>
+        <div id="superadminResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Trading Controls</h2>
+        <div>
+            <label>Trading Mode:</label>
+            <select id="tradingMode">
+                <option value="normal">Normal</option>
+                <option value="win">Win</option>
+                <option value="lose">Lose</option>
+            </select>
+        </div>
+        <button onclick="testTradingControl()">Test Trading Control</button>
+        <div id="tradingResult" class="result"></div>
+    </div>
+
+    <script>
+        const baseUrl = window.location.origin;
+
+        async function makeRequest(url, options = {}) {
+            try {
+                console.log('Making request to:', url, options);
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    data = { rawResponse: text };
+                }
+                
+                return {
+                    ok: response.ok,
+                    status: response.status,
+                    data
+                };
+            } catch (error) {
+                return {
+                    ok: false,
+                    status: 0,
+                    data: { error: error.message }
+                };
+            }
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(result, null, 2);
+            element.className = `result ${result.ok ? 'success' : 'error'}`;
+        }
+
+        async function testConnection() {
+            const result = await makeRequest(`${baseUrl}/api/admin/test`);
+            displayResult('connectionResult', result);
+        }
+
+        async function testAdminAPI() {
+            const result = await makeRequest(`${baseUrl}/api/admin/test`);
+            displayResult('connectionResult', result);
+        }
+
+        async function testSuperAdminAPI() {
+            const result = await makeRequest(`${baseUrl}/api/superadmin/health-check`);
+            displayResult('connectionResult', result);
+        }
+
+        async function testGetUsers() {
+            const result = await makeRequest(`${baseUrl}/api/admin/users`);
+            displayResult('userResult', result);
+        }
+
+        async function testCreateUser() {
+            const userData = {
+                username: `testuser_${Date.now()}`,
+                email: `test_${Date.now()}@example.com`,
+                password: 'testpass123',
+                balance: 10000,
+                role: 'user',
+                trading_mode: 'normal'
+            };
+            
+            const result = await makeRequest(`${baseUrl}/api/admin/users`, {
+                method: 'POST',
+                body: JSON.stringify(userData)
+            });
+            displayResult('userResult', result);
+        }
+
+        async function testDeposit() {
+            const userId = document.getElementById('userId').value;
+            const amount = document.getElementById('amount').value;
+            
+            const result = await makeRequest(`${baseUrl}/api/superadmin/deposit`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId,
+                    amount,
+                    note: 'Test deposit from API test page'
+                })
+            });
+            displayResult('superadminResult', result);
+        }
+
+        async function testChangePassword() {
+            const userId = document.getElementById('userId').value;
+            const newPassword = document.getElementById('newPassword').value;
+            
+            const result = await makeRequest(`${baseUrl}/api/superadmin/change-password`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId,
+                    newPassword
+                })
+            });
+            displayResult('superadminResult', result);
+        }
+
+        async function testUpdateWallet() {
+            const userId = document.getElementById('userId').value;
+            const walletAddress = document.getElementById('walletAddress').value;
+            
+            const result = await makeRequest(`${baseUrl}/api/superadmin/update-wallet`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId,
+                    walletAddress
+                })
+            });
+            displayResult('superadminResult', result);
+        }
+
+        async function testTradingControl() {
+            const userId = document.getElementById('userId').value;
+            const tradingMode = document.getElementById('tradingMode').value;
+            
+            const result = await makeRequest(`${baseUrl}/api/admin/trading-controls`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId,
+                    controlType: tradingMode
+                })
+            });
+            displayResult('tradingResult', result);
+        }
+
+        // Auto-test connection on page load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

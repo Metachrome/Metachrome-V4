@@ -1,0 +1,36 @@
+<svg width="200" height="300" viewBox="0 0 200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="phoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1F2937;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Phone body -->
+  <rect x="30" y="20" width="140" height="260" rx="25" fill="url(#phoneGrad)"/>
+  <rect x="35" y="25" width="130" height="250" rx="20" fill="#000" opacity="0.8"/>
+  
+  <!-- Screen -->
+  <rect x="40" y="50" width="120" height="200" rx="15" fill="url(#screenGrad)" opacity="0.9"/>
+  
+  <!-- App interface elements -->
+  <rect x="50" y="70" width="100" height="30" rx="5" fill="#FFF" opacity="0.2"/>
+  <text x="100" y="88" text-anchor="middle" fill="#FFF" font-size="12" font-family="Arial">METACHROME</text>
+  
+  <!-- Trading interface mockup -->
+  <rect x="50" y="110" width="100" height="60" rx="8" fill="#FFF" opacity="0.1"/>
+  <circle cx="70" cy="130" r="8" fill="#06B6D4" opacity="0.8"/>
+  <rect x="85" y="125" width="50" height="4" rx="2" fill="#FFF" opacity="0.6"/>
+  <rect x="85" y="135" width="30" height="3" rx="1" fill="#FFF" opacity="0.4"/>
+  
+  <!-- Chart representation -->
+  <path d="M55 190 L70 180 L85 185 L100 175 L115 170 L130 165" stroke="#EC4899" stroke-width="2" fill="none" opacity="0.8"/>
+  
+  <!-- Home indicator -->
+  <rect x="85" y="265" width="30" height="4" rx="2" fill="#FFF" opacity="0.6"/>
+</svg>
