@@ -21,7 +21,7 @@ const orders = new Map();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    console.log(`📈 Spot Orders API: ${req.method} ${req.url}`);
+    console.log(`📈 Spot Orders API: ${req.method} ${req.url} - Updated`);
     
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
