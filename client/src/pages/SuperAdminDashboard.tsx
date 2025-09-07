@@ -930,7 +930,7 @@ export default function SuperAdminDashboard() {
                           <TableRow key={trade.id} className="border-gray-700 hover:bg-gray-700/50">
                             <TableCell>
                               <div className="text-white font-mono text-sm">
-                                {trade.id.slice(0, 8)}...
+                                {trade.id ? trade.id.slice(0, 8) : 'N/A'}...
                               </div>
                             </TableCell>
                             <TableCell className="text-white">

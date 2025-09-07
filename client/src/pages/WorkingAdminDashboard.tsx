@@ -687,7 +687,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-green-100 text-sm">Active Trades</p>
                       <p className="text-3xl font-bold text-white">
-                        {trades.filter(t => t.result === 'pending').length}
+                        {Array.isArray(trades) ? trades.filter(t => t.result === 'pending').length : 0}
                       </p>
                     </div>
                     <Activity className="w-8 h-8 text-green-200" />
@@ -779,7 +779,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-gray-400 text-sm">Active Users</p>
                       <p className="text-2xl font-bold text-white">
-                        {users.filter(u => u.status === 'active').length}
+                        {Array.isArray(users) ? users.filter(u => u.status === 'active').length : 0}
                       </p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-500" />
@@ -807,7 +807,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-gray-400 text-sm">Controlled Users</p>
                       <p className="text-2xl font-bold text-white">
-                        {users.filter(u => u.trading_mode !== 'normal').length}
+                        {Array.isArray(users) ? users.filter(u => u.trading_mode !== 'normal').length : 0}
                       </p>
                     </div>
                     <Target className="w-8 h-8 text-orange-500" />
@@ -902,7 +902,7 @@ export default function WorkingAdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user) => (
+                      {Array.isArray(users) ? users.map((user) => (
                         <TableRow key={user.id} className="border-gray-700 hover:bg-gray-700/50">
                           <TableCell>
                             <div className="flex items-center space-x-3">
@@ -913,7 +913,7 @@ export default function WorkingAdminDashboard() {
                               </div>
                               <div>
                                 <div className="text-white font-medium">{user.username}</div>
-                                <div className="text-gray-400 text-sm">ID: {user.id.slice(0, 8)}...</div>
+                                <div className="text-gray-400 text-sm">ID: {user.id ? user.id.slice(0, 8) : 'N/A'}...</div>
                               </div>
                             </div>
                           </TableCell>
@@ -1017,7 +1017,7 @@ export default function WorkingAdminDashboard() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )) : []}
                     </TableBody>
                   </Table>
                 </div>
@@ -1035,7 +1035,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-green-100 text-sm">Active Trades</p>
                       <p className="text-3xl font-bold text-white">
-                        {trades.filter(t => t.result === 'pending').length}
+                        {Array.isArray(trades) ? trades.filter(t => t.result === 'pending').length : 0}
                       </p>
                     </div>
                     <PlayCircle className="w-8 h-8 text-green-200" />
@@ -1049,7 +1049,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-blue-100 text-sm">Win Rate</p>
                       <p className="text-3xl font-bold text-white">
-                        {trades.length > 0 ?
+                        {Array.isArray(trades) && trades.length > 0 ?
                           ((trades.filter(t => t.result === 'win').length / trades.filter(t => t.result !== 'pending').length) * 100).toFixed(1) : 0}%
                       </p>
                     </div>
@@ -1124,14 +1124,14 @@ export default function WorkingAdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {trades.slice(0, 10).map((trade) => {
+                      {Array.isArray(trades) ? trades.slice(0, 10).map((trade) => {
                         const secondsLeft = getTimeRemaining(trade.expires_at);
 
                         return (
                           <TableRow key={trade.id} className="border-gray-700 hover:bg-gray-700/50">
                             <TableCell>
                               <div className="text-white font-mono text-sm">
-                                {trade.id.slice(0, 8)}...
+                                {trade.id ? trade.id.slice(0, 8) : 'N/A'}...
                               </div>
                             </TableCell>
                             <TableCell className="text-white">
@@ -1199,7 +1199,7 @@ export default function WorkingAdminDashboard() {
                             </TableCell>
                           </TableRow>
                         );
-                      })}
+                      }) : []}
                     </TableBody>
                   </Table>
                 </div>
@@ -1230,11 +1230,11 @@ export default function WorkingAdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {transactions.map((transaction) => (
+                      {Array.isArray(transactions) ? transactions.map((transaction) => (
                         <TableRow key={transaction.id} className="border-gray-700 hover:bg-gray-700/50">
                           <TableCell>
                             <div className="text-white font-mono text-sm">
-                              {transaction.id.slice(0, 8)}...
+                              {transaction.id ? transaction.id.slice(0, 8) : 'N/A'}...
                             </div>
                           </TableCell>
                           <TableCell className="text-white">
@@ -1257,7 +1257,7 @@ export default function WorkingAdminDashboard() {
                             {new Date(transaction.created_at).toLocaleDateString()}
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )) : []}
                     </TableBody>
                   </Table>
                 </div>
@@ -1775,11 +1775,11 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <h4 className="text-white font-medium mb-3">Previous Wallet Addresses</h4>
                       <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {walletHistory.map((wallet, index) => (
+                        {Array.isArray(walletHistory) ? walletHistory.map((wallet, index) => (
                           <div key={index} className="bg-gray-700 p-3 rounded flex items-center justify-between">
                             <div className="flex-1">
                               <div className="font-mono text-sm text-gray-300">
-                                {wallet.address.slice(0, 10)}...{wallet.address.slice(-8)}
+                                {wallet.address ? `${wallet.address.slice(0, 10)}...${wallet.address.slice(-8)}` : 'N/A'}
                               </div>
                               <div className="text-xs text-gray-500">
                                 Changed: {new Date(wallet.changed_at).toLocaleDateString()}
@@ -1806,7 +1806,7 @@ export default function WorkingAdminDashboard() {
                               </Button>
                             </div>
                           </div>
-                        ))}
+                        )) : []}
                       </div>
                     </div>
                   )}
