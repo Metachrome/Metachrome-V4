@@ -7,7 +7,7 @@ import { Badge } from "../components/ui/badge";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
 import { TrendingUp, TrendingDown, Search, BarChart3 } from "lucide-react";
-import type { MarketData } from "@shared/schema";
+import type { MarketData } from "../../../shared/schema";
 
 interface TradePageProps {
   type?: "spot" | "options";

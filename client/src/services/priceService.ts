@@ -1,5 +1,5 @@
 import { apiRequest } from "../lib/queryClient";
-import type { MarketData, InsertMarketData } from "@shared/schema";
+import type { MarketData, InsertMarketData } from "../../../shared/schema";
 
 export class PriceService {
   private static instance: PriceService;

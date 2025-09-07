@@ -8,7 +8,7 @@ import { playTradeSound } from "../utils/sounds";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
-import type { MarketData } from '@shared/schema';
+import type { MarketData } from '../../../shared/schema';
 
 interface ActiveTrade {
   id: string;

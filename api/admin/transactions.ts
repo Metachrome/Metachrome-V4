@@ -88,51 +88,6 @@ function getTransactionDescription(type: string, amount: number): string {
 
 // Generate mock transactions
 const MOCK_TRANSACTIONS = generateMockTransactions();
-  {
-    id: 'txn-5',
-    user_id: 'demo-user-2',
-    username: 'sarah_crypto',
-    type: 'trade_win',
-    amount: 75,
-    status: 'completed',
-    description: 'Options trade win - BTCUSDT down',
-    created_at: '2024-01-20T14:26:00Z',
-    updated_at: '2024-01-20T14:26:00Z'
-  },
-  {
-    id: 'txn-6',
-    user_id: 'demo-user-4',
-    username: 'emma_trader',
-    type: 'withdrawal',
-    amount: -500,
-    status: 'pending',
-    description: 'Withdrawal request',
-    created_at: '2024-01-18T15:45:00Z',
-    updated_at: '2024-01-18T15:45:00Z'
-  },
-  {
-    id: 'txn-7',
-    user_id: 'demo-user-2',
-    username: 'sarah_crypto',
-    type: 'trade_win',
-    amount: 150,
-    status: 'completed',
-    description: 'Options trade win - BTCUSDT up',
-    created_at: '2024-01-20T14:16:00Z',
-    updated_at: '2024-01-20T14:16:00Z'
-  },
-  {
-    id: 'txn-8',
-    user_id: 'demo-user-1',
-    username: 'john_trader',
-    type: 'bonus',
-    amount: 100,
-    status: 'completed',
-    description: 'Welcome bonus',
-    created_at: '2024-01-15T10:35:00Z',
-    updated_at: '2024-01-15T10:35:00Z'
-  }
-];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -143,6 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Content-Type', 'application/json');
 
     if (req.method === 'OPTIONS') {
       return res.status(200).end();

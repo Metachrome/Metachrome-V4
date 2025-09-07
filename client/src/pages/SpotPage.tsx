@@ -6,7 +6,7 @@ import TradingViewWidget from "../components/TradingViewWidget";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useToast } from "../hooks/use-toast";
-import type { MarketData } from "@shared/schema";
+import type { MarketData } from "../../../shared/schema";
 
 interface SpotOrder {
   id: string;
@@ -104,6 +104,13 @@ export default function SpotPage() {
   const { data: marketData } = useQuery<MarketData[]>({
     queryKey: ['/api/market-data'],
     refetchInterval: 5000,
+    queryFn: async () => {
+      const response = await fetch('/api/market-data');
+      if (!response.ok) {
+        throw new Error('Failed to fetch market data');
+      }
+      return response.json();
+    },
   });
 
   // Get current BTC price from real market data
