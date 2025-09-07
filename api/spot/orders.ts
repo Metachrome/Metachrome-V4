@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabaseAdmin } from '../lib/supabase';
+import { supabaseAdmin } from '../../lib/supabase';
 
 // Import shared user balances
 let userBalances: Map<string, { balance: number; currency: string }>;
 
 // Initialize shared balance storage
 try {
-  const balancesModule = require('../balances');
+  const balancesModule = require('../../api/balances');
   userBalances = balancesModule.userBalances;
 } catch {
   userBalances = new Map([
