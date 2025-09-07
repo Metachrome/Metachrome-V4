@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 
 // Create HTTP server
 const server = createServer(app);
@@ -52,7 +52,29 @@ wss.on('connection', (ws) => {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Allow localhost and 127.0.0.1 on any port for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel domains
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Default deny
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -242,54 +264,137 @@ let users = [
     wallet_address: null,
     created_at: new Date().toISOString(),
     last_login: new Date(Date.now() - 7200000).toISOString()
+  },
+  {
+    id: 'demo-user-1',
+    username: 'john_trader',
+    email: 'john@example.com',
+    balance: 25000,
+    role: 'user',
+    status: 'active',
+    trading_mode: 'normal',
+    wallet_address: '0x742d35Cc6479C5f95912c4E8BC2C1234567890AB',
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    last_login: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    id: 'demo-user-2',
+    username: 'sarah_crypto',
+    email: 'sarah@example.com',
+    balance: 18500,
+    role: 'user',
+    status: 'active',
+    trading_mode: 'win',
+    wallet_address: '0x123456789ABCDEF123456789ABCDEF1234567890',
+    created_at: new Date(Date.now() - 172800000).toISOString(),
+    last_login: new Date(Date.now() - 1800000).toISOString()
+  },
+  {
+    id: 'demo-user-3',
+    username: 'mike_hodler',
+    email: 'mike@example.com',
+    balance: 8200,
+    role: 'user',
+    status: 'active',
+    trading_mode: 'lose',
+    wallet_address: '0xABCDEF1234567890ABCDEF1234567890ABCDEF12',
+    created_at: new Date(Date.now() - 259200000).toISOString(),
+    last_login: new Date(Date.now() - 7200000).toISOString()
+  },
+  {
+    id: 'demo-user-4',
+    username: 'emma_trader',
+    email: 'emma@example.com',
+    balance: 3500,
+    role: 'user',
+    status: 'suspended',
+    trading_mode: 'normal',
+    wallet_address: '0x9876543210987654321098765432109876543210',
+    created_at: new Date(Date.now() - 345600000).toISOString(),
+    last_login: new Date(Date.now() - 86400000).toISOString()
   }
 ];
 
 let trades = [
   {
     id: 'trade-1',
-    user_id: 'user-1',
-    symbol: 'BTC/USD',
+    user_id: 'demo-user-1',
+    symbol: 'BTCUSDT',
     amount: 1000,
     direction: 'up',
     duration: 30,
-    entry_price: 45000,
+    entry_price: 117500,
     exit_price: null,
     result: 'pending',
     profit: null,
+    status: 'active',
     created_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + 25000).toISOString(),
-    users: { username: 'trader1' }
+    users: { username: 'john_trader' }
   },
   {
     id: 'trade-2',
-    user_id: 'user-2',
-    symbol: 'ETH/USD',
-    amount: 500,
+    user_id: 'demo-user-2',
+    symbol: 'BTCUSDT',
+    amount: 1500,
     direction: 'down',
     duration: 60,
-    entry_price: 3200,
-    exit_price: 3180,
+    entry_price: 117800,
+    exit_price: 117650,
     result: 'win',
-    profit: 75,
+    profit: 225,
+    status: 'completed',
     created_at: new Date(Date.now() - 120000).toISOString(),
     expires_at: new Date(Date.now() - 60000).toISOString(),
-    users: { username: 'trader2' }
+    users: { username: 'sarah_crypto' }
   },
   {
     id: 'trade-3',
-    user_id: 'user-3',
-    symbol: 'BTC/USD',
+    user_id: 'demo-user-3',
+    symbol: 'BTCUSDT',
+    amount: 500,
+    direction: 'up',
+    duration: 30,
+    entry_price: 117600,
+    exit_price: 117550,
+    result: 'lose',
+    profit: -500,
+    status: 'completed',
+    created_at: new Date(Date.now() - 300000).toISOString(),
+    expires_at: new Date(Date.now() - 270000).toISOString(),
+    users: { username: 'mike_hodler' }
+  },
+  {
+    id: 'trade-4',
+    user_id: 'demo-user-1',
+    symbol: 'BTCUSDT',
+    amount: 750,
+    direction: 'down',
+    duration: 60,
+    entry_price: 117900,
+    exit_price: 117750,
+    result: 'win',
+    profit: 112.5,
+    status: 'completed',
+    created_at: new Date(Date.now() - 600000).toISOString(),
+    expires_at: new Date(Date.now() - 540000).toISOString(),
+    users: { username: 'john_trader' }
+  },
+  {
+    id: 'trade-5',
+    user_id: 'demo-user-2',
+    symbol: 'BTCUSDT',
     amount: 2000,
     direction: 'up',
     duration: 30,
-    entry_price: 44800,
-    exit_price: 44750,
-    result: 'lose',
-    profit: -2000,
-    created_at: new Date(Date.now() - 300000).toISOString(),
-    expires_at: new Date(Date.now() - 270000).toISOString(),
-    users: { username: 'trader3' }
+    entry_price: 117400,
+    exit_price: null,
+    result: 'pending',
+    profit: null,
+    status: 'active',
+    created_at: new Date(Date.now() - 15000).toISOString(),
+    expires_at: new Date(Date.now() + 15000).toISOString(),
+    users: { username: 'sarah_crypto' }
   },
   {
     id: 'trade-4',
@@ -311,39 +416,87 @@ let trades = [
 let transactions = [
   {
     id: 'tx-1',
-    user_id: 'user-1',
+    user_id: 'demo-user-1',
+    username: 'john_trader',
     type: 'deposit',
-    amount: 10000,
+    amount: 25000,
+    symbol: 'USDT',
     status: 'completed',
-    created_at: new Date().toISOString(),
-    users: { username: 'trader1' }
+    description: 'Initial deposit',
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    users: { username: 'john_trader' }
   },
   {
     id: 'tx-2',
-    user_id: 'user-2',
-    type: 'withdrawal',
-    amount: 2000,
-    status: 'pending',
-    created_at: new Date().toISOString(),
-    users: { username: 'trader2' }
+    user_id: 'demo-user-2',
+    username: 'sarah_crypto',
+    type: 'trade_win',
+    amount: 225,
+    symbol: 'USDT',
+    status: 'completed',
+    description: 'Options trade win - BTCUSDT down',
+    created_at: new Date(Date.now() - 120000).toISOString(),
+    users: { username: 'sarah_crypto' }
   },
   {
     id: 'tx-3',
-    user_id: 'user-3',
-    type: 'deposit',
-    amount: 15000,
+    user_id: 'demo-user-3',
+    username: 'mike_hodler',
+    type: 'trade_loss',
+    amount: -500,
+    symbol: 'USDT',
     status: 'completed',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    users: { username: 'trader3' }
+    description: 'Options trade loss - BTCUSDT up',
+    created_at: new Date(Date.now() - 300000).toISOString(),
+    users: { username: 'mike_hodler' }
   },
   {
     id: 'tx-4',
-    user_id: 'user-1',
-    type: 'withdrawal',
-    amount: 500,
+    user_id: 'demo-user-1',
+    username: 'john_trader',
+    type: 'trade_win',
+    amount: 112.5,
+    symbol: 'USDT',
     status: 'completed',
+    description: 'Options trade win - BTCUSDT down',
+    created_at: new Date(Date.now() - 600000).toISOString(),
+    users: { username: 'john_trader' }
+  },
+  {
+    id: 'tx-5',
+    user_id: 'demo-user-2',
+    username: 'sarah_crypto',
+    type: 'deposit',
+    amount: 20000,
+    symbol: 'USDT',
+    status: 'completed',
+    description: 'Account funding',
+    created_at: new Date(Date.now() - 172800000).toISOString(),
+    users: { username: 'sarah_crypto' }
+  },
+  {
+    id: 'tx-6',
+    user_id: 'demo-user-4',
+    username: 'emma_trader',
+    type: 'withdrawal',
+    amount: 1000,
+    symbol: 'USDT',
+    status: 'pending',
+    description: 'Withdrawal request',
     created_at: new Date(Date.now() - 43200000).toISOString(),
-    users: { username: 'trader1' }
+    users: { username: 'emma_trader' }
+  },
+  {
+    id: 'tx-7',
+    user_id: 'demo-user-3',
+    username: 'mike_hodler',
+    type: 'admin_adjustment',
+    amount: 2000,
+    symbol: 'USDT',
+    status: 'completed',
+    description: 'Admin balance adjustment',
+    created_at: new Date(Date.now() - 259200000).toISOString(),
+    users: { username: 'mike_hodler' }
   }
 ];
 
@@ -547,13 +700,31 @@ app.put('/api/admin/users/:id', (req, res) => {
 app.post('/api/admin/trading-controls', (req, res) => {
   console.log('🎯 Updating trading control:', req.body);
   const { userId, controlType } = req.body;
-  
+
   const userIndex = users.findIndex(u => u.id === userId);
   if (userIndex !== -1) {
     users[userIndex].trading_mode = controlType;
     console.log(`✅ Updated ${users[userIndex].username} trading mode to ${controlType}`);
-    res.json({ 
-      success: true, 
+
+    // Broadcast trading control update to WebSocket clients
+    const controlUpdate = {
+      type: 'trading_control_update',
+      data: {
+        userId: users[userIndex].id,
+        username: users[userIndex].username,
+        controlType: controlType,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(controlUpdate));
+      }
+    });
+
+    res.json({
+      success: true,
       message: `Trading mode updated to ${controlType.toUpperCase()}`,
       user: users[userIndex]
     });
@@ -685,6 +856,83 @@ app.get('/api/superadmin/wallet-history/:userId', (req, res) => {
   res.json({ history: walletHistory });
 });
 
+// Manual trade control endpoint
+app.post('/api/admin/trades/:tradeId/control', (req, res) => {
+  console.log('🎮 Manual trade control:', req.params.tradeId, req.body);
+
+  const { tradeId } = req.params;
+  const { action } = req.body;
+
+  const tradeIndex = trades.findIndex(t => t.id === tradeId);
+  if (tradeIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'Trade not found'
+    });
+  }
+
+  const trade = trades[tradeIndex];
+  if (trade.status !== 'active') {
+    return res.status(400).json({
+      success: false,
+      message: 'Trade is not active'
+    });
+  }
+
+  const user = users.find(u => u.id === (trade.userId || trade.user_id));
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  // Force the trade outcome
+  const isWin = action === 'win';
+  const tradeAmount = parseFloat(trade.amount);
+  const profitPercentage = trade.duration === 30 ? 0.10 : 0.15;
+  const profit = isWin ? tradeAmount * profitPercentage : 0;
+
+  // Update trade
+  trade.status = 'completed';
+  trade.result = isWin ? 'win' : 'lose';
+  trade.exit_price = trade.entry_price * (isWin ? 1.01 : 0.99);
+  trade.profit = isWin ? profit : -tradeAmount;
+  trade.updated_at = new Date().toISOString();
+
+  // Update user balance if won
+  if (isWin) {
+    user.balance += tradeAmount + profit; // Return original amount + profit
+  }
+
+  console.log(`🎮 Trade ${tradeId} manually controlled: ${action.toUpperCase()}, User balance: ${user.balance}`);
+
+  // Broadcast updates
+  const balanceUpdate = {
+    type: 'balance_update',
+    data: {
+      userId: user.id,
+      symbol: 'USDT',
+      newBalance: user.balance,
+      username: user.username,
+      action: isWin ? 'trade_win' : 'trade_loss',
+      amount: isWin ? profit : tradeAmount
+    }
+  };
+
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(balanceUpdate));
+    }
+  });
+
+  res.json({
+    success: true,
+    trade,
+    message: `Trade ${action} executed successfully`
+  });
+});
+
 // ===== SUPER ADMIN ENDPOINTS =====
 
 // Deposit endpoint
@@ -706,6 +954,25 @@ app.post('/api/superadmin/deposit', (req, res) => {
   users[userIndex].balance += depositAmount;
 
   console.log(`✅ Deposited ${depositAmount} USDT to ${users[userIndex].username}. New balance: ${users[userIndex].balance}`);
+
+  // Broadcast balance update to WebSocket clients
+  const balanceUpdate = {
+    type: 'balance_update',
+    data: {
+      userId: users[userIndex].id,
+      symbol: 'USDT',
+      newBalance: users[userIndex].balance,
+      username: users[userIndex].username,
+      action: 'deposit',
+      amount: depositAmount
+    }
+  };
+
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(balanceUpdate));
+    }
+  });
 
   res.json({
     success: true,
@@ -738,6 +1005,25 @@ app.post('/api/superadmin/withdrawal', (req, res) => {
   users[userIndex].balance -= withdrawalAmount;
 
   console.log(`✅ Withdrew ${withdrawalAmount} USDT from ${users[userIndex].username}. New balance: ${users[userIndex].balance}`);
+
+  // Broadcast balance update to WebSocket clients
+  const balanceUpdate = {
+    type: 'balance_update',
+    data: {
+      userId: users[userIndex].id,
+      symbol: 'USDT',
+      newBalance: users[userIndex].balance,
+      username: users[userIndex].username,
+      action: 'withdrawal',
+      amount: withdrawalAmount
+    }
+  };
+
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(balanceUpdate));
+    }
+  });
 
   res.json({
     success: true,
@@ -839,7 +1125,7 @@ app.get('/api/user/balances', (req, res) => {
   console.log('💰 Getting user balances for spot trading');
 
   // Get the actual user balance (same logic as spot orders)
-  const actualUserId = 'user-1'; // Same as in spot orders
+  const actualUserId = req.query.userId || 'user-1'; // Allow userId from query
   const user = users.find(u => u.id === actualUserId);
   const actualBalance = user ? user.balance : 100000;
 
@@ -865,6 +1151,178 @@ app.get('/api/user/balances', (req, res) => {
   ];
 
   res.json(balances);
+});
+
+// Dynamic balance endpoint for any user
+app.get('/api/balances/:userId', (req, res) => {
+  console.log('💰 Getting balance for user:', req.params.userId);
+
+  const userId = req.params.userId;
+  const user = users.find(u => u.id === userId);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  console.log('💰 Returning balance for', user.username, ':', user.balance, 'USDT');
+
+  res.json({
+    success: true,
+    userId: userId,
+    balance: {
+      USDT: {
+        available: user.balance.toString(),
+        locked: '0',
+        symbol: 'USDT'
+      }
+    }
+  });
+});
+
+// Balance update endpoint for admin
+app.post('/api/balances/:userId', (req, res) => {
+  console.log('💰 Updating balance for user:', req.params.userId, req.body);
+
+  const userId = req.params.userId;
+  const { action, amount, symbol } = req.body;
+
+  const userIndex = users.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  const changeAmount = parseFloat(amount);
+  if (isNaN(changeAmount) || changeAmount <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid amount'
+    });
+  }
+
+  // Apply balance change
+  if (action === 'add') {
+    users[userIndex].balance += changeAmount;
+  } else if (action === 'subtract') {
+    users[userIndex].balance = Math.max(0, users[userIndex].balance - changeAmount);
+  } else if (action === 'set') {
+    users[userIndex].balance = Math.max(0, changeAmount);
+  } else {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid action. Use add, subtract, or set'
+    });
+  }
+
+  console.log(`✅ Balance ${action}: ${users[userIndex].username}, Amount: ${changeAmount}, New Balance: ${users[userIndex].balance}`);
+
+  // Broadcast balance update to WebSocket clients
+  const balanceUpdate = {
+    type: 'balance_update',
+    data: {
+      userId: users[userIndex].id,
+      symbol: symbol || 'USDT',
+      newBalance: users[userIndex].balance,
+      username: users[userIndex].username,
+      action: action,
+      amount: changeAmount
+    }
+  };
+
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(balanceUpdate));
+    }
+  });
+
+  res.json({
+    success: true,
+    userId: userId,
+    action: action,
+    amount: changeAmount,
+    newBalance: users[userIndex].balance,
+    balance: {
+      USDT: {
+        available: users[userIndex].balance.toString(),
+        locked: '0',
+        symbol: 'USDT'
+      }
+    }
+  });
+});
+
+// Admin balance update endpoint (PUT method for frontend compatibility)
+app.put('/api/admin/balances/:userId', (req, res) => {
+  console.log('💰 Admin updating balance for user:', req.params.userId, req.body);
+
+  const userId = req.params.userId;
+  const { balance, action, note } = req.body;
+
+  const userIndex = users.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  let changeAmount = 0;
+  let finalAction = action;
+
+  if (typeof balance === 'number') {
+    if (action === 'add') {
+      changeAmount = balance;
+      users[userIndex].balance += balance;
+    } else if (action === 'subtract') {
+      changeAmount = balance;
+      users[userIndex].balance = Math.max(0, users[userIndex].balance - balance);
+    } else {
+      // Default to setting the balance
+      changeAmount = balance - users[userIndex].balance;
+      users[userIndex].balance = Math.max(0, balance);
+      finalAction = 'set';
+    }
+  } else {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid balance amount'
+    });
+  }
+
+  console.log(`✅ Admin Balance ${finalAction}: ${users[userIndex].username}, Amount: ${changeAmount}, New Balance: ${users[userIndex].balance}`);
+
+  // Broadcast balance update to WebSocket clients
+  const balanceUpdate = {
+    type: 'balance_update',
+    data: {
+      userId: users[userIndex].id,
+      symbol: 'USDT',
+      newBalance: users[userIndex].balance,
+      username: users[userIndex].username,
+      action: finalAction,
+      amount: Math.abs(changeAmount)
+    }
+  };
+
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(balanceUpdate));
+    }
+  });
+
+  res.json({
+    success: true,
+    userId: userId,
+    action: finalAction,
+    amount: Math.abs(changeAmount),
+    newBalance: users[userIndex].balance,
+    user: { ...users[userIndex], password: undefined }
+  });
 });
 
 // ===== SPOT TRADING ENDPOINTS =====
@@ -909,8 +1367,8 @@ app.post('/api/spot/orders', (req, res) => {
   }
 
   // Check minimum amount (same as options trading)
-  if (totalNum < 10) {
-    return res.status(400).json({ message: "Minimum order amount is $10" });
+  if (totalNum < 100) {
+    return res.status(400).json({ message: "Minimum order amount is $100" });
   }
 
   // For buy orders, check if user has enough USDT balance
@@ -998,8 +1456,112 @@ app.delete('/api/spot/orders/:id', (req, res) => {
   res.json({ message: "Order cancelled successfully" });
 });
 
+// Get active trades for user
+app.get('/api/trades/active', (req, res) => {
+  console.log('📊 Getting active trades for user');
+
+  const userId = req.query.userId || 'user-1'; // Default to user-1 if not specified
+
+  // Filter active trades for the user
+  const activeTrades = trades.filter(trade =>
+    (trade.userId === userId || trade.user_id === userId) &&
+    trade.status === 'active'
+  );
+
+  console.log(`📊 Found ${activeTrades.length} active trades for user ${userId}`);
+
+  res.json(activeTrades);
+});
+
+// Complete trade endpoint (for manual completion)
+app.post('/api/trades/complete', (req, res) => {
+  console.log('🏁 Completing trade manually:', req.body);
+
+  const { tradeId, userId, won, amount, payout } = req.body;
+
+  const tradeIndex = trades.findIndex(t => t.id === tradeId);
+  if (tradeIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'Trade not found'
+    });
+  }
+
+  const trade = trades[tradeIndex];
+  const user = users.find(u => u.id === userId);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  // Update trade status
+  trade.status = 'completed';
+  trade.result = won ? 'win' : 'lose';
+  trade.exit_price = trade.entry_price * (won ? 1.01 : 0.99);
+  trade.profit = won ? (payout || amount * 0.1) : -amount;
+  trade.updated_at = new Date().toISOString();
+
+  // Update user balance if won
+  if (won) {
+    user.balance += (payout || amount * 0.1);
+  }
+
+  console.log(`🏁 Trade ${tradeId} completed: ${won ? 'WIN' : 'LOSE'}, User balance: ${user.balance}`);
+
+  // Broadcast balance update
+  const balanceUpdate = {
+    type: 'balance_update',
+    data: {
+      userId: user.id,
+      symbol: 'USDT',
+      newBalance: user.balance,
+      username: user.username,
+      action: won ? 'trade_win' : 'trade_loss',
+      amount: won ? (payout || amount * 0.1) : amount
+    }
+  };
+
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(balanceUpdate));
+    }
+  });
+
+  res.json({
+    success: true,
+    trade,
+    user: { ...user, password: undefined }
+  });
+});
+
 // ===== OPTIONS TRADING ENDPOINTS =====
+
+// General trades endpoint (for frontend compatibility)
+app.post('/api/trades', (req, res) => {
+  console.log('📈 General trades endpoint called:', req.body);
+
+  // Check if it's an options trade
+  if (req.body.type === 'options') {
+    // Forward to options trading logic
+    return handleOptionsTrading(req, res);
+  }
+
+  // Handle other trade types here if needed
+  res.status(400).json({
+    success: false,
+    message: 'Unsupported trade type. Use type: "options" for binary options trading.'
+  });
+});
+
 app.post('/api/trades/options', (req, res) => {
+  return handleOptionsTrading(req, res);
+});
+
+// Options trading handler function
+function handleOptionsTrading(req, res) {
   console.log('🎯 Creating options trade:', req.body);
   const { userId, symbol, direction, amount, duration } = req.body;
 
@@ -1013,8 +1575,8 @@ app.post('/api/trades/options', (req, res) => {
 
   // Validate minimum amounts based on duration
   const minAmounts = {
-    30: 10,  // 30s requires min 10 USDT
-    60: 10   // 60s requires min 10 USDT
+    30: 100,  // 30s requires min 100 USDT
+    60: 1000  // 60s requires min 1000 USDT
   };
 
   const minAmount = minAmounts[duration];
@@ -1081,19 +1643,39 @@ app.post('/api/trades/options', (req, res) => {
   // Add to trades
   trades.push(trade);
 
+  // Broadcast balance update immediately after trade creation
+  const balanceUpdate = {
+    type: 'balance_update',
+    data: {
+      userId: user.id,
+      symbol: 'USDT',
+      newBalance: user.balance,
+      username: user.username,
+      action: 'trade_created',
+      amount: tradeAmount
+    }
+  };
+
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(balanceUpdate));
+    }
+  });
+
   // Schedule trade execution
   setTimeout(() => {
     executeOptionsTrade(trade.id);
   }, duration * 1000);
 
   console.log(`✅ Options trade created: ${trade.id} - ${direction.toUpperCase()} ${amount} USDT on ${symbol} for ${duration}s`);
+  console.log(`💰 User ${user.username} balance after trade: ${user.balance} USDT`);
 
   res.json({
     success: true,
     trade,
     message: 'Trade created successfully'
   });
-});
+}
 
 // Function to execute options trade
 function executeOptionsTrade(tradeId) {

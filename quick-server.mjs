@@ -159,7 +159,7 @@ let adminControls = [
 let systemSettings = {
   tradingEnabled: true,
   maintenanceMode: false,
-  minTradeAmount: 10,
+  minTradeAmount: 100,
   maxTradeAmount: 10000,
   defaultWinRate: 70,
   defaultNormalRate: 20,

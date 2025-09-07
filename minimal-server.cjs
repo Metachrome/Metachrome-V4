@@ -544,10 +544,10 @@ app.post('/api/trades/options', (req, res) => {
   const tradeAmount = parseFloat(amount);
 
   // Check minimum amount
-  if (tradeAmount < 10) {
+  if (tradeAmount < 100) {
     return res.status(400).json({
       success: false,
-      message: "Minimum trade amount is 10 USDT"
+      message: "Minimum trade amount is 100 USDT"
     });
   }
 

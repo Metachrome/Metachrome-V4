@@ -383,8 +383,8 @@ export default function OptionsPage() {
 
   const handleTrade = async (direction: 'up' | 'down') => {
     try {
-      if (selectedAmount < 10) {
-        alert('Minimum trade amount is 10 USDT');
+      if (selectedAmount < 100) {
+        alert('Minimum trade amount is 100 USDT');
         return;
       }
 
@@ -731,7 +731,7 @@ export default function OptionsPage() {
             {/* Amount Selection */}
             <div className="mb-4">
               <div className="text-gray-400 text-sm mb-2">
-                Minimum buy: 10 USDT | Selected: {selectedAmount} USDT
+                Minimum buy: 100 USDT | Selected: {selectedAmount} USDT
               </div>
               <div className="grid grid-cols-8 gap-2 mb-2">
                 {[10, 20, 50, 100, 200, 500, 1000, 2000].map((amount) => (
@@ -817,7 +817,7 @@ export default function OptionsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => handleTrade('up')}
-                  disabled={activeTrades.length >= 3 || selectedAmount < 10 || balance < selectedAmount}
+                  disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 rounded font-medium text-lg transition-colors relative"
                 >
                   <div>Buy Up</div>
@@ -828,7 +828,7 @@ export default function OptionsPage() {
                 </button>
                 <button
                   onClick={() => handleTrade('down')}
-                  disabled={activeTrades.length >= 3 || selectedAmount < 10 || balance < selectedAmount}
+                  disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 rounded font-medium text-lg transition-colors relative"
                 >
                   <div>Buy Down</div>

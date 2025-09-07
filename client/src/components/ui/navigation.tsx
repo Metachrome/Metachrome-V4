@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Menu, X, User, LogOut, Settings, UserCircle, ChevronDown } from "lucide-react";
@@ -12,6 +12,7 @@ export function Navigation() {
   const [location, setLocation] = useLocation();
   const [isTradeOpen, setIsTradeOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const { user, isAuthenticated, logout } = useAuth();
 
   const navItems = [
@@ -29,6 +30,15 @@ export function Navigation() {
     { path: "/wallet", label: "Wallet" },
     { path: "/support", label: "Support" }
   ];
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+    };
+  }, [hoverTimeout]);
 
   return (
     <header className="bg-[#34344E] border-b border-gray-700/30">
@@ -54,8 +64,19 @@ export function Navigation() {
                 {item.hasDropdown ? (
                   <div
                     className="relative"
-                    onMouseEnter={() => setIsTradeOpen(true)}
-                    onMouseLeave={() => setIsTradeOpen(false)}
+                    onMouseEnter={() => {
+                      if (hoverTimeout) {
+                        clearTimeout(hoverTimeout);
+                        setHoverTimeout(null);
+                      }
+                      setIsTradeOpen(true);
+                    }}
+                    onMouseLeave={() => {
+                      const timeout = setTimeout(() => {
+                        setIsTradeOpen(false);
+                      }, 300); // 300ms delay before closing
+                      setHoverTimeout(timeout);
+                    }}
                   >
                     <button className={`text-gray-300 hover:text-white px-3 py-2 text-sm font-medium flex items-center ${
                       location.startsWith('/trade') ? 'text-white' : ''

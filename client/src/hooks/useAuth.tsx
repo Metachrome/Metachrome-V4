@@ -146,7 +146,7 @@ export function useAuth() {
           isProd: import.meta.env.PROD,
           hostname: window.location.hostname,
           endpoint,
-          apiBaseUrl: isLocal ? 'http://127.0.0.1:3001' : 'Vercel API'
+          apiBaseUrl: isLocal ? 'http://127.0.0.1:3003' : 'Vercel API'
         });
         
         const response = await apiRequest("POST", endpoint, credentials);
