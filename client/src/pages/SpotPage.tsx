@@ -25,6 +25,15 @@ export default function SpotPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 SpotPage mounted');
+    console.log('🔍 User:', user);
+    return () => {
+      console.log('🔍 SpotPage unmounted');
+    };
+  }, [user]);
+
   // UI State
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("open"); // "open" or "history"
@@ -77,23 +86,29 @@ export default function SpotPage() {
   });
 
   // Get available balances with fallback for demo
-  const usdtBalance = balances?.find((b: any) => b.currency === 'USDT')?.balance || 10000;
-  const btcBalance = balances?.find((b: any) => b.currency === 'BTC')?.balance || 0.5;
+  const usdtBalance = balances?.USDT ? parseFloat(balances.USDT.available) : 10000;
+  const btcBalance = balances?.BTC ? parseFloat(balances.BTC.available) : 0.5;
 
   // Fetch Binance price data
   const fetchBinancePrice = async () => {
     try {
       const response = await fetch('/api/market-data');
       const data = await response.json();
-      const btcData = data.find((item: any) => item.symbol === selectedSymbol);
-      if (btcData) {
-        setRealTimePrice(btcData.price);
-        setPriceChange(btcData.priceChange24h);
-        setCurrentPrice(parseFloat(btcData.price));
 
-        // Update form prices if not manually set
-        if (!buyPrice) setBuyPrice(btcData.price);
-        if (!sellPrice) setSellPrice(btcData.price);
+      // Ensure data is an array before calling find
+      if (Array.isArray(data)) {
+        const btcData = data.find((item: any) => item.symbol === selectedSymbol);
+        if (btcData) {
+          setRealTimePrice(btcData.price);
+          setPriceChange(btcData.priceChange24h);
+          setCurrentPrice(parseFloat(btcData.price));
+
+          // Update form prices if not manually set
+          if (!buyPrice) setBuyPrice(btcData.price);
+          if (!sellPrice) setSellPrice(btcData.price);
+        }
+      } else {
+        console.warn('Market data is not an array:', data);
       }
     } catch (error) {
       console.error('Error fetching Binance price:', error);
@@ -364,9 +379,11 @@ export default function SpotPage() {
     return { sellOrders, buyOrders };
   };
 
-  return (
-    <div className="min-h-screen bg-gray-900">
-      <Navigation />
+  // Add error boundary protection
+  try {
+    return (
+      <div className="min-h-screen bg-gray-900">
+        <Navigation />
       <div className="bg-[#10121E] flex min-h-screen">
         {/* Left and Center Content */}
         <div className="flex-1">
@@ -1058,4 +1075,16 @@ export default function SpotPage() {
       <Footer />
     </div>
   );
+  } catch (error) {
+    console.error('🚨 SpotPage render error:', error);
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <h1 className="text-2xl font-bold mb-4">Error Loading Spot Trading</h1>
+          <p className="text-gray-400 mb-4">There was an error loading the spot trading page.</p>
+          <p className="text-sm text-gray-500">Check the console for more details.</p>
+        </div>
+      </div>
+    );
+  }
 }
