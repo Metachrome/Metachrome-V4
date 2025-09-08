@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3000;
 
 // Create HTTP server
 const server = createServer(app);
@@ -64,6 +64,16 @@ app.use(cors({
 
     // Allow Vercel domains
     if (origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Allow Railway domains
+    if (origin.includes('railway.app')) {
+      return callback(null, true);
+    }
+
+    // Allow Render domains
+    if (origin.includes('onrender.com')) {
       return callback(null, true);
     }
 
@@ -499,6 +509,26 @@ let transactions = [
     users: { username: 'mike_hodler' }
   }
 ];
+
+// ===== HEALTH CHECK ENDPOINT =====
+app.get('/api/health', (req, res) => {
+  console.log('🏥 Health check requested');
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '2.0.0'
+  });
+});
+
+app.get('/', (req, res) => {
+  console.log('🏠 Root endpoint accessed');
+  res.json({
+    message: 'METACHROME V2 API Server',
+    status: 'running',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // ===== MARKET DATA ENDPOINTS =====
 app.get('/api/market-data', (req, res) => {
