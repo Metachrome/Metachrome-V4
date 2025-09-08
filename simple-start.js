@@ -792,12 +792,12 @@ app.get('/api/auth', (req, res) => {
   console.log('🔍 Auth token:', authToken);
 
   // If admin token, return admin user data
-  if (authToken === 'mock-admin-token') {
+  if (authToken === 'mock-admin-token' || authToken?.startsWith('mock-jwt-token')) {
     // Check localStorage or session for admin user data
     // For now, return superadmin data as default admin
     const adminUser = users.find(u => u.id === 'superadmin-1');
     if (adminUser) {
-      console.log('✅ Returning admin user data:', adminUser.username);
+      console.log('✅ Returning admin user data:', adminUser.username, 'ID:', adminUser.id);
       res.json({
         id: adminUser.id,
         username: adminUser.username,
@@ -1582,13 +1582,25 @@ app.get('/api/balances', (req, res) => {
 
 app.get('/api/user/balances', (req, res) => {
   console.log('💰 Getting user balances for spot trading');
+  console.log('💰 Request query:', req.query);
+  console.log('💰 Request headers:', req.headers.authorization);
 
   // Get the actual user balance (same logic as spot orders)
-  const actualUserId = req.query.userId || 'user-1'; // Allow userId from query
+  let actualUserId = req.query.userId || 'user-1'; // Allow userId from query
+
+  // Check if this is an admin request by checking the auth token
+  const authToken = req.headers.authorization?.replace('Bearer ', '') || req.headers['x-auth-token'];
+  if (authToken === 'mock-admin-token' || authToken?.startsWith('mock-jwt-token')) {
+    // For admin tokens, default to superadmin user
+    actualUserId = actualUserId === 'user-1' ? 'superadmin-1' : actualUserId;
+    console.log('💰 Admin token detected, using superadmin user:', actualUserId);
+  }
+
   const user = users.find(u => u.id === actualUserId);
   const actualBalance = user ? user.balance : 100000;
 
   console.log('💰 REAL-TIME BALANCE SYNC - Returning balance for', actualUserId, ':', actualBalance, 'USDT');
+  console.log('💰 Found user:', user ? user.username : 'NOT FOUND');
 
   // Format for Options page (array format)
   const balances = [
