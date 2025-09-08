@@ -1556,14 +1556,18 @@ app.get('/api/user/balances', (req, res) => {
   const user = users.find(u => u.id === actualUserId);
   const actualBalance = user ? user.balance : 100000;
 
-  console.log('💰 Returning actual user balance for', actualUserId, ':', actualBalance, 'USDT');
+  console.log('💰 REAL-TIME BALANCE SYNC - Returning balance for', actualUserId, ':', actualBalance, 'USDT');
 
+  // Format for Options page (array format)
   const balances = [
     {
       id: 'balance-1',
       userId: actualUserId,
       currency: 'USDT',
       balance: actualBalance,
+      available: actualBalance,
+      locked: 0,
+      symbol: 'USDT',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     },
@@ -1572,12 +1576,39 @@ app.get('/api/user/balances', (req, res) => {
       userId: actualUserId,
       currency: 'BTC',
       balance: 0.5,
+      available: 0.5,
+      locked: 0,
+      symbol: 'BTC',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
   ];
 
-  res.json(balances);
+  // Format for Spot page (object format)
+  const spotFormat = {
+    USDT: {
+      available: actualBalance.toString(),
+      locked: '0',
+      symbol: 'USDT'
+    },
+    BTC: {
+      available: '0.5',
+      locked: '0',
+      symbol: 'BTC'
+    }
+  };
+
+  // Return combined format for maximum compatibility
+  const response = {
+    ...spotFormat,
+    balances: balances,
+    // Add array indices for direct access
+    0: balances[0],
+    1: balances[1]
+  };
+
+  console.log('💰 BALANCE RESPONSE:', JSON.stringify(response, null, 2));
+  res.json(response);
 });
 
 // Dynamic balance endpoint for any user

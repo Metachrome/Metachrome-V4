@@ -24,6 +24,7 @@ export default function SpotPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { lastMessage, subscribe, connected } = useWebSocket();
 
   // Debug logging
   useEffect(() => {
@@ -59,10 +60,11 @@ export default function SpotPage() {
   const [buyTurnover, setBuyTurnover] = useState<string>('');
   const [sellTurnover, setSellTurnover] = useState<string>('');
 
-  // Fetch user balances
+  // Fetch user balances with real-time refetch
   const { data: balances } = useQuery({
     queryKey: ['/api/user/balances'],
     enabled: !!user,
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time sync
     queryFn: async () => {
       const response = await fetch('/api/user/balances');
       if (!response.ok) {
@@ -196,6 +198,33 @@ export default function SpotPage() {
       });
     },
   });
+
+  // Handle WebSocket balance updates for real-time sync
+  useEffect(() => {
+    if (lastMessage?.type === 'balance_update' && lastMessage.data?.userId === user?.id) {
+      console.log('💰 Real-time balance update received in Spot page:', lastMessage.data);
+
+      // Invalidate and refetch balance data to ensure UI sync
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+
+      // Show notification for balance changes
+      if (lastMessage.data.changeType === 'spot_buy' || lastMessage.data.changeType === 'spot_sell') {
+        toast({
+          title: "Balance Updated",
+          description: `${lastMessage.data.changeType === 'spot_buy' ? 'Buy' : 'Sell'} order completed. New balance: ${lastMessage.data.newBalance} USDT`,
+        });
+      }
+    }
+  }, [lastMessage, user?.id, queryClient, toast]);
+
+  // Subscribe to WebSocket updates
+  useEffect(() => {
+    if (connected && user?.id) {
+      console.log('🔌 Subscribing to balance updates for user:', user.id);
+      // Subscribe to user-specific balance updates
+      // This will be handled by the WebSocket connection automatically
+    }
+  }, [connected, user?.id]);
 
   // Helper functions
   const calculateBuyTotal = () => {

@@ -136,11 +136,11 @@ export default function OptionsPage() {
     refetchInterval: 5000,
   });
 
-  // Fetch user balance
+  // Fetch user balance with real-time sync
   const { data: userBalances } = useQuery({
     queryKey: ['/api/user/balances'],
     enabled: !!user,
-    refetchInterval: 10000,
+    refetchInterval: 5000, // Faster refetch for real-time balance sync
   });
 
   // Get current USDT balance - handle both 'available' and 'balance' properties
@@ -255,6 +255,21 @@ export default function OptionsPage() {
       }
     }
   }, [lastMessage]);
+
+  // Handle WebSocket balance updates for real-time sync
+  useEffect(() => {
+    if (lastMessage?.type === 'balance_update' && lastMessage.data?.userId === user?.id) {
+      console.log('💰 Real-time balance update received:', lastMessage.data);
+
+      // Invalidate and refetch balance data to ensure UI sync
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+
+      // Show notification for balance changes
+      if (lastMessage.data.changeType !== 'trade_start') {
+        console.log(`💰 Balance updated: ${lastMessage.data.newBalance} USDT (${lastMessage.data.change > 0 ? '+' : ''}${lastMessage.data.change})`);
+      }
+    }
+  }, [lastMessage, user?.id, queryClient]);
 
   // Helper function to complete a trade and update balance
   const completeTrade = async (trade: ActiveTrade, won: boolean, finalPrice: number) => {
