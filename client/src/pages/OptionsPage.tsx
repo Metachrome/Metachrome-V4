@@ -8,6 +8,7 @@ import { playTradeSound } from "../utils/sounds";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { apiRequest } from '../lib/queryClient';
 import type { MarketData } from '../../../shared/schema';
 
 interface ActiveTrade {
@@ -138,14 +139,30 @@ export default function OptionsPage() {
 
   // Fetch user balance with real-time sync
   const { data: userBalances } = useQuery({
-    queryKey: ['/api/user/balances'],
+    queryKey: ['/api/user/balances', user?.id],
     enabled: !!user,
     refetchInterval: 5000, // Faster refetch for real-time balance sync
+    queryFn: async () => {
+      const url = user?.id ? `/api/user/balances?userId=${user.id}` : '/api/user/balances';
+      console.log('🔍 OPTIONS: Fetching balance from:', url, 'for user:', user?.id);
+      const response = await apiRequest('GET', url);
+      const data = await response.json();
+      console.log('🔍 OPTIONS: Balance API response:', data);
+      return data;
+    },
   });
 
   // Get current USDT balance - handle both 'available' and 'balance' properties
   const balanceData = Array.isArray(userBalances) ? userBalances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT') : null;
-  const balance = Number(balanceData?.balance || balanceData?.available || 50000); // Default to superadmin balance
+  const balance = Number(balanceData?.balance || balanceData?.available || userBalances?.USDT?.available || 0);
+
+  // Debug logging for balance sync
+  console.log('🔍 OPTIONS PAGE BALANCE DEBUG:', {
+    user: user?.id,
+    userBalances,
+    balanceData,
+    finalBalance: balance
+  });
 
   // Get current BTC price from real market data
   const btcMarketData = marketData?.find(item => item.symbol === 'BTCUSDT');

@@ -6,6 +6,7 @@ import TradingViewWidget from "../components/TradingViewWidget";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useToast } from "../hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
 import type { MarketData } from "../../../shared/schema";
 
 interface SpotOrder {
@@ -62,15 +63,16 @@ export default function SpotPage() {
 
   // Fetch user balances with real-time refetch
   const { data: balances } = useQuery({
-    queryKey: ['/api/user/balances'],
+    queryKey: ['/api/user/balances', user?.id],
     enabled: !!user,
     refetchInterval: 5000, // Refetch every 5 seconds for real-time sync
     queryFn: async () => {
-      const response = await fetch('/api/user/balances');
-      if (!response.ok) {
-        throw new Error('Failed to fetch balances');
-      }
-      return response.json();
+      const url = user?.id ? `/api/user/balances?userId=${user.id}` : '/api/user/balances';
+      console.log('🔍 SPOT: Fetching balance from:', url, 'for user:', user?.id);
+      const response = await apiRequest('GET', url);
+      const data = await response.json();
+      console.log('🔍 SPOT: Balance API response:', data);
+      return data;
     },
   });
 
@@ -87,9 +89,19 @@ export default function SpotPage() {
     },
   });
 
-  // Get available balances with fallback for demo
-  const usdtBalance = balances?.USDT ? parseFloat(balances.USDT.available) : 10000;
+  // Get available balances - use actual API data
+  const usdtBalance = balances?.USDT ? parseFloat(balances.USDT.available) :
+                     (Array.isArray(balances?.balances) ?
+                      Number(balances.balances.find((b: any) => b.currency === 'USDT')?.balance || 0) : 0);
   const btcBalance = balances?.BTC ? parseFloat(balances.BTC.available) : 0.5;
+
+  // Debug logging for balance sync
+  console.log('🔍 SPOT PAGE BALANCE DEBUG:', {
+    user: user?.id,
+    balances,
+    usdtBalance,
+    btcBalance
+  });
 
   // Fetch Binance price data
   const fetchBinancePrice = async () => {

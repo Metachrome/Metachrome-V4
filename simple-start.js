@@ -765,11 +765,17 @@ app.post('/api/admin/login', (req, res) => {
   if ((username === 'superadmin' && password === 'superadmin123') ||
       (username === 'admin' && password === 'admin123')) {
     const role = username === 'superadmin' ? 'super_admin' : 'admin';
-    console.log('✅ Admin login successful:', username, role);
+    const userId = username === 'superadmin' ? 'superadmin-1' : 'admin-1';
+    console.log('✅ Admin login successful:', username, role, 'ID:', userId);
     res.json({
       success: true,
       token: 'mock-admin-token',
-      user: { username, role }
+      user: {
+        id: userId,
+        username,
+        role,
+        balance: username === 'superadmin' ? 100000 : 50000
+      }
     });
   } else {
     console.log('❌ Admin login failed:', username);
@@ -777,13 +783,39 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// User authentication endpoint - returns default user for demo
+// User authentication endpoint - returns user based on token
 app.get('/api/auth', (req, res) => {
   console.log('👤 User auth request');
+
+  // Check for admin token in headers
+  const authToken = req.headers.authorization?.replace('Bearer ', '') || req.headers['x-auth-token'];
+  console.log('🔍 Auth token:', authToken);
+
+  // If admin token, return admin user data
+  if (authToken === 'mock-admin-token') {
+    // Check localStorage or session for admin user data
+    // For now, return superadmin data as default admin
+    const adminUser = users.find(u => u.id === 'superadmin-1');
+    if (adminUser) {
+      console.log('✅ Returning admin user data:', adminUser.username);
+      res.json({
+        id: adminUser.id,
+        username: adminUser.username,
+        email: adminUser.email,
+        balance: adminUser.balance,
+        role: adminUser.role,
+        status: adminUser.status,
+        trading_mode: adminUser.trading_mode,
+        wallet_address: adminUser.wallet_address
+      });
+      return;
+    }
+  }
 
   // Return the default user for demo purposes
   const defaultUser = users.find(u => u.id === 'user-1');
   if (defaultUser) {
+    console.log('✅ Returning default user data:', defaultUser.username);
     res.json({
       id: defaultUser.id,
       username: defaultUser.username,
