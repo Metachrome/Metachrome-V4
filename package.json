@@ -2,7 +2,8 @@
   "name": "rest-express",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "simple-start.js",
+  "type": "module",
 
   "scripts": {
     "build": "npx vite build",
