@@ -7,6 +7,7 @@
   "scripts": {
     "build": "npx vite build",
     "start": "node simple-start.js",
+    "start:production": "node simple-start.js",
     "dev": "node server/production.js",
     "prod": "npm run build && npm run start",
     "quick": "node simple-start.js",
