@@ -1850,13 +1850,42 @@ app.get('*', (req, res) => {
 });
 
 // ===== START SERVER =====
-server.listen(PORT, () => {
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+
+server.listen(PORT, HOST, () => {
   console.log('🎉 ===================================');
   console.log('🚀 METACHROME V2 WORKING SERVER READY!');
-  console.log('🌐 Server running on: http://127.0.0.1:' + PORT);
-  console.log('🔌 WebSocket server running on: ws://127.0.0.1:' + PORT + '/ws');
-  console.log('🔧 Admin Dashboard: http://127.0.0.1:' + PORT + '/admin');
+  console.log(`🌐 Server running on: http://${HOST}:${PORT}`);
+  console.log(`🔌 WebSocket server running on: ws://${HOST}:${PORT}/ws`);
+  console.log(`🔧 Admin Dashboard: http://${HOST}:${PORT}/admin`);
   console.log('🔐 Login: superadmin / superadmin123');
   console.log('📊 All endpoints are FULLY FUNCTIONAL!');
   console.log('🎉 ===================================');
+  console.log(`🏥 Health check available at: http://${HOST}:${PORT}/api/health`);
+  console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔧 Process ID: ${process.pid}`);
+});
+
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`);
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
