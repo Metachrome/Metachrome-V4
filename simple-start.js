@@ -37,6 +37,65 @@ wss.on('connection', (ws) => {
         ws.subscribedSymbols = data.symbols;
         console.log('📊 Client subscribed to:', data.symbols);
       }
+
+      // Handle balance monitoring requests
+      if (data.type === 'subscribe_balance_monitor') {
+        console.log('💰 Client subscribed to balance monitoring');
+        ws.isBalanceMonitor = true;
+
+        // Send current platform stats
+        const stats = {
+          totalUsers: users.length,
+          totalBalance: users.reduce((sum, u) => sum + u.balance, 0),
+          activeUsers: users.filter(u => u.status === 'active').length,
+          activeTrades: trades.filter(t => t.status === 'active').length
+        };
+
+        ws.send(JSON.stringify({
+          type: 'balance_monitor_init',
+          data: stats,
+          timestamp: new Date().toISOString()
+        }));
+      }
+
+      // Handle user-specific balance subscription
+      if (data.type === 'subscribe_user_balance' && data.userId) {
+        console.log(`💰 Client subscribed to balance updates for user: ${data.userId}`);
+        ws.subscribedUserId = data.userId;
+
+        const user = users.find(u => u.id === data.userId);
+        if (user) {
+          ws.send(JSON.stringify({
+            type: 'user_balance_init',
+            data: {
+              userId: user.id,
+              username: user.username,
+              balance: user.balance,
+              status: user.status,
+              tradingMode: user.trading_mode || 'normal'
+            },
+            timestamp: new Date().toISOString()
+          }));
+        }
+      }
+
+      // Handle admin dashboard subscription
+      if (data.type === 'subscribe_admin_dashboard') {
+        console.log('🔧 Client subscribed to admin dashboard updates');
+        ws.isAdminDashboard = true;
+
+        // Send initial admin data
+        ws.send(JSON.stringify({
+          type: 'admin_dashboard_init',
+          data: {
+            totalUsers: users.length,
+            totalBalance: users.reduce((sum, u) => sum + u.balance, 0),
+            activeTrades: trades.filter(t => t.status === 'active').length,
+            recentTransactions: transactions.slice(-10)
+          },
+          timestamp: new Date().toISOString()
+        }));
+      }
     } catch (error) {
       console.error('❌ WebSocket message error:', error);
     }
@@ -49,6 +108,20 @@ wss.on('connection', (ws) => {
   ws.on('error', (error) => {
     console.error('❌ WebSocket error:', error);
   });
+
+  // Send initial connection confirmation
+  ws.send(JSON.stringify({
+    type: 'connection_established',
+    message: 'Connected to METACHROME V2 WebSocket',
+    timestamp: new Date().toISOString(),
+    features: [
+      'real_time_balance_updates',
+      'trading_control_monitoring',
+      'transaction_notifications',
+      'admin_balance_monitoring',
+      'price_updates'
+    ]
+  }));
 });
 
 // Middleware
@@ -212,6 +285,136 @@ function startPriceUpdates() {
 
 // Start real-time price updates
 setTimeout(startPriceUpdates, 2000);
+
+// ===== REAL-TIME BALANCE MANAGEMENT SYSTEM =====
+class BalanceManager {
+  constructor() {
+    this.balanceHistory = new Map(); // Store balance history for each user
+    this.transactionQueue = []; // Queue for processing transactions
+  }
+
+  // Update user balance with full tracking and real-time sync
+  updateBalance(userId, amount, type, description, metadata = {}) {
+    const user = users.find(u => u.id === userId);
+    if (!user) {
+      console.error(`❌ Balance update failed: User ${userId} not found`);
+      return false;
+    }
+
+    const oldBalance = user.balance;
+    const newBalance = Math.max(0, oldBalance + amount); // Prevent negative balances
+    user.balance = newBalance;
+    user.updated_at = new Date().toISOString();
+
+    // Record transaction
+    const transaction = {
+      id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user_id: userId,
+      username: user.username,
+      type: type, // 'trade_win', 'trade_loss', 'deposit', 'withdrawal', 'spot_buy', 'spot_sell', 'admin_adjustment'
+      amount: amount,
+      symbol: 'USDT',
+      status: 'completed',
+      description: description,
+      metadata: metadata,
+      old_balance: oldBalance,
+      new_balance: newBalance,
+      created_at: new Date().toISOString(),
+      users: { username: user.username }
+    };
+
+    transactions.push(transaction);
+
+    // Store balance history
+    if (!this.balanceHistory.has(userId)) {
+      this.balanceHistory.set(userId, []);
+    }
+    this.balanceHistory.get(userId).push({
+      timestamp: new Date().toISOString(),
+      oldBalance,
+      newBalance,
+      change: amount,
+      type,
+      description
+    });
+
+    // Broadcast real-time update
+    this.broadcastBalanceUpdate(user, amount, type, description, metadata);
+
+    console.log(`💰 BALANCE UPDATED: ${user.username} | ${oldBalance} → ${newBalance} USDT | ${amount > 0 ? '+' : ''}${amount} | ${type} | ${description}`);
+
+    return true;
+  }
+
+  // Broadcast balance update to all connected clients
+  broadcastBalanceUpdate(user, amount, type, description, metadata = {}) {
+    const balanceUpdate = {
+      type: 'balance_update',
+      data: {
+        userId: user.id,
+        username: user.username,
+        symbol: 'USDT',
+        newBalance: user.balance,
+        change: amount,
+        changeType: type,
+        description: description,
+        metadata: metadata,
+        timestamp: new Date().toISOString(),
+        userStatus: user.status,
+        tradingMode: user.trading_mode || 'normal'
+      }
+    };
+
+    // Broadcast to WebSocket clients
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(balanceUpdate));
+      }
+    });
+
+    // Also broadcast to superadmin for monitoring
+    const adminUpdate = {
+      type: 'admin_balance_monitor',
+      data: {
+        ...balanceUpdate.data,
+        adminNotification: true,
+        totalUsers: users.length,
+        totalBalance: users.reduce((sum, u) => sum + u.balance, 0)
+      }
+    };
+
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(adminUpdate));
+      }
+    });
+
+    console.log(`📡 Balance update broadcasted: ${user.username} | ${type} | ${amount > 0 ? '+' : ''}${amount} USDT`);
+  }
+
+  // Get balance history for a user
+  getBalanceHistory(userId) {
+    return this.balanceHistory.get(userId) || [];
+  }
+
+  // Get total platform statistics
+  getPlatformStats() {
+    const totalBalance = users.reduce((sum, u) => sum + u.balance, 0);
+    const totalUsers = users.length;
+    const activeUsers = users.filter(u => u.status === 'active').length;
+
+    return {
+      totalBalance,
+      totalUsers,
+      activeUsers,
+      totalTransactions: transactions.length,
+      lastUpdate: new Date().toISOString()
+    };
+  }
+}
+
+// Initialize global balance manager
+const balanceManager = new BalanceManager();
 
 // ===== IN-MEMORY DATA STORE =====
 let users = [
@@ -796,6 +999,128 @@ app.post('/api/admin/trading-controls', (req, res) => {
       userId: userId
     });
   }
+});
+
+// Admin balance adjustment endpoint
+app.post('/api/admin/balance-adjustment', (req, res) => {
+  console.log('💰 Admin balance adjustment:', req.body);
+  const { userId, amount, reason } = req.body;
+
+  if (!userId || amount === undefined || !reason) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required fields: userId, amount, reason'
+    });
+  }
+
+  const adjustmentAmount = parseFloat(amount);
+  if (isNaN(adjustmentAmount)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid amount format'
+    });
+  }
+
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found',
+      userId: userId
+    });
+  }
+
+  const oldBalance = user.balance;
+  const description = `Admin Adjustment: ${reason}`;
+  const metadata = {
+    adminAction: true,
+    reason: reason,
+    adjustmentAmount: adjustmentAmount,
+    adminTimestamp: new Date().toISOString()
+  };
+
+  const success = balanceManager.updateBalance(
+    userId,
+    adjustmentAmount,
+    'admin_adjustment',
+    description,
+    metadata
+  );
+
+  if (success) {
+    console.log(`✅ ADMIN BALANCE ADJUSTMENT:`);
+    console.log(`   - User: ${user.username} (${userId})`);
+    console.log(`   - Old Balance: ${oldBalance} USDT`);
+    console.log(`   - Adjustment: ${adjustmentAmount > 0 ? '+' : ''}${adjustmentAmount} USDT`);
+    console.log(`   - New Balance: ${user.balance} USDT`);
+    console.log(`   - Reason: ${reason}`);
+
+    res.json({
+      success: true,
+      message: 'Balance adjusted successfully',
+      user: {
+        ...user,
+        password: undefined
+      },
+      adjustment: {
+        oldBalance,
+        newBalance: user.balance,
+        amount: adjustmentAmount,
+        reason: reason,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } else {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update balance'
+    });
+  }
+});
+
+// Get balance history for a user
+app.get('/api/admin/balance-history/:userId', (req, res) => {
+  console.log('📊 Getting balance history for user:', req.params.userId);
+  const { userId } = req.params;
+
+  const user = users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found',
+      userId: userId
+    });
+  }
+
+  const history = balanceManager.getBalanceHistory(userId);
+  const userTransactions = transactions.filter(t => t.user_id === userId);
+
+  res.json({
+    success: true,
+    userId: userId,
+    username: user.username,
+    currentBalance: user.balance,
+    balanceHistory: history,
+    transactions: userTransactions.slice(-50), // Last 50 transactions
+    totalTransactions: userTransactions.length
+  });
+});
+
+// Get platform statistics
+app.get('/api/admin/platform-stats', (req, res) => {
+  console.log('📊 Getting platform statistics');
+
+  const stats = balanceManager.getPlatformStats();
+  const recentTransactions = transactions.slice(-20); // Last 20 transactions
+
+  res.json({
+    success: true,
+    ...stats,
+    recentTransactions: recentTransactions,
+    activeTrades: trades.filter(t => t.status === 'active').length,
+    completedTrades: trades.filter(t => t.status === 'completed').length,
+    spotOrders: spotOrders.length
+  });
 });
 
 // Get current trading control status for a user
@@ -1479,8 +1804,6 @@ app.post('/api/spot/orders', (req, res) => {
     if (user.balance < totalNum) {
       return res.status(400).json({ message: "Insufficient USDT balance" });
     }
-    // Deduct USDT balance for buy orders
-    user.balance -= totalNum;
   }
 
   // Create spot order
@@ -1501,30 +1824,35 @@ app.post('/api/spot/orders', (req, res) => {
 
   spotOrders.push(order);
 
-  // For sell orders, add USDT to balance (user gets money)
-  if (side === 'sell') {
-    user.balance += totalNum;
+  // Update balance using the unified balance manager
+  let balanceChange = 0;
+  let transactionType = '';
+  let description = '';
+
+  if (side === 'buy') {
+    // Deduct USDT balance for buy orders
+    balanceChange = -totalNum;
+    transactionType = 'spot_buy';
+    description = `Spot BUY: ${amountNum} ${symbol} for ${totalNum} USDT`;
+  } else {
+    // Add USDT to balance for sell orders (user gets money)
+    balanceChange = totalNum;
+    transactionType = 'spot_sell';
+    description = `Spot SELL: ${amountNum} ${symbol} for ${totalNum} USDT`;
   }
 
-  // Broadcast balance update to WebSocket clients
-  const balanceUpdate = {
-    type: 'balance_update',
-    data: {
-      userId: user.id,
-      symbol: 'USDT',
-      newBalance: user.balance,
-      username: user.username,
-      orderType: side,
-      orderAmount: totalNum,
-      orderSymbol: symbol
-    }
+  const metadata = {
+    orderId: order.id,
+    symbol: symbol,
+    side: side,
+    type: type,
+    amount: amountNum,
+    price: priceNum,
+    total: totalNum,
+    orderStatus: 'filled'
   };
 
-  wss.clients.forEach(client => {
-    if (client.readyState === client.OPEN) {
-      client.send(JSON.stringify(balanceUpdate));
-    }
-  });
+  balanceManager.updateBalance(actualUserId, balanceChange, transactionType, description, metadata);
 
   console.log(`✅ Spot order ${side.toUpperCase()}: ${amountNum} ${symbol} for $${totalNum.toFixed(2)}, User: ${user.username}, New Balance: $${user.balance.toFixed(2)}`);
 
@@ -1739,30 +2067,22 @@ function handleOptionsTrading(req, res) {
     updatedAt: new Date()
   };
 
-  // Deduct balance
-  user.balance -= tradeAmount;
-
-  // Add to trades
+  // Add to trades first
   trades.push(trade);
 
-  // Broadcast balance update immediately after trade creation
-  const balanceUpdate = {
-    type: 'balance_update',
-    data: {
-      userId: user.id,
-      symbol: 'USDT',
-      newBalance: user.balance,
-      username: user.username,
-      action: 'trade_created',
-      amount: tradeAmount
-    }
+  // Deduct balance using the unified balance manager
+  const description = `Options Trade: ${direction.toUpperCase()} ${amount} USDT on ${symbol} for ${duration}s`;
+  const metadata = {
+    tradeId: trade.id,
+    symbol: symbol,
+    direction: direction,
+    duration: duration,
+    entryPrice: currentPrice,
+    tradeType: 'options',
+    expiresAt: trade.expiresAt.toISOString()
   };
 
-  wss.clients.forEach(client => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify(balanceUpdate));
-    }
-  });
+  balanceManager.updateBalance(userId, -tradeAmount, 'trade_start', description, metadata);
 
   // Schedule trade execution
   setTimeout(() => {
@@ -1886,40 +2206,35 @@ function executeOptionsTrade(tradeId) {
     completedAt: new Date()
   };
 
-  // CRITICAL: Update user balance based on trading control outcome
+  // CRITICAL: Update user balance using the unified balance manager
   const balanceBeforeUpdate = user.balance;
-  user.balance += balanceChange;
+
+  if (balanceChange !== 0) {
+    const transactionType = isWin ? 'trade_win' : 'trade_loss';
+    const description = isWin
+      ? `Trade WIN: ${trade.symbol} ${trade.direction} - ${trade.duration}s - Profit: ${profitAmount} USDT`
+      : `Trade LOSS: ${trade.symbol} ${trade.direction} - ${trade.duration}s - Lost: ${tradeAmount} USDT`;
+
+    const metadata = {
+      tradeId: trade.id,
+      symbol: trade.symbol,
+      direction: trade.direction,
+      duration: trade.duration,
+      entryPrice: entryPrice,
+      exitPrice: exitPrice,
+      tradeAmount: tradeAmount,
+      profitAmount: isWin ? profitAmount : 0,
+      tradingMode: userTradingMode,
+      isControlled: userTradingMode !== 'normal'
+    };
+
+    balanceManager.updateBalance(user.id, balanceChange, transactionType, description, metadata);
+  }
 
   console.log(`💰 BALANCE UPDATE COMPLETE:`);
   console.log(`   - Before: ${balanceBeforeUpdate} USDT`);
   console.log(`   - Change: +${balanceChange} USDT`);
   console.log(`   - After: ${user.balance} USDT`);
-
-  // Broadcast real-time balance update to all connected clients
-  const balanceUpdate = {
-    type: 'balance_update',
-    data: {
-      userId: user.id,
-      symbol: 'USDT',
-      newBalance: user.balance,
-      username: user.username,
-      tradeResult: isWin ? 'win' : 'lose',
-      tradeAmount: tradeAmount,
-      balanceChange: balanceChange,
-      tradingMode: userTradingMode,
-      tradeId: trade.id,
-      entryPrice: entryPrice,
-      exitPrice: exitPrice,
-      profitAmount: isWin ? profitAmount : 0,
-      timestamp: new Date().toISOString()
-    }
-  };
-
-  wss.clients.forEach(client => {
-    if (client.readyState === client.OPEN) {
-      client.send(JSON.stringify(balanceUpdate));
-    }
-  });
 
   console.log(`🎉 TRADING CONTROL SYSTEM EXECUTED SUCCESSFULLY:`);
   console.log(`   - Trade ID: ${tradeId}`);
