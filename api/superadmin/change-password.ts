@@ -52,16 +52,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let updatedUser: any = null;
       try {
         if (supabaseAdmin) {
-          // In production, you should hash the password
-          const { data: user, error } = await supabaseAdmin
+          // Try both password field names for compatibility
+          let user: any, error: any;
+
+          // First try with 'password' field
+          const result1 = await supabaseAdmin
             .from('users')
             .update({
-              password_hash: newPassword, // In production, hash this with bcrypt
+              password: newPassword, // In production, hash this with bcrypt
               updated_at: new Date().toISOString()
             })
             .eq('id', userId)
             .select('id, username, email, role')
             .single();
+
+          if (result1.error && result1.error.message?.includes('column "password" of relation "users" does not exist')) {
+            // If 'password' field doesn't exist, try 'password_hash'
+            const result2 = await supabaseAdmin
+              .from('users')
+              .update({
+                password_hash: newPassword, // In production, hash this with bcrypt
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', userId)
+              .select('id, username, email, role')
+              .single();
+
+            user = result2.data;
+            error = result2.error;
+          } else {
+            user = result1.data;
+            error = result1.error;
+          }
 
           if (error) {
             console.error('❌ Database update error:', error);

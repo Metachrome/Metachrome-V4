@@ -14,14 +14,45 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
     })
   : null;
 
-// Mock user balances - synchronized with trading API
-const userBalances = new Map([
-  ['user-1', { balance: 10000, currency: 'USDT' }],
-  ['demo-user-1', { balance: 10000, currency: 'USDT' }],
-  ['demo-user-2', { balance: 25000, currency: 'USDT' }],
-  ['demo-user-3', { balance: 5000, currency: 'USDT' }],
-  ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
-]);
+// Import shared user balances
+let userBalances: Map<string, { balance: number; currency: string }>;
+
+// Initialize shared balance storage
+try {
+  const balancesModule = require('../balances');
+  userBalances = balancesModule.userBalances;
+} catch {
+  // Fallback if shared module not available
+  userBalances = new Map([
+    ['user-1', { balance: 10000, currency: 'USDT' }],
+    ['demo-user-1', { balance: 10000, currency: 'USDT' }],
+    ['demo-user-2', { balance: 25000, currency: 'USDT' }],
+    ['demo-user-3', { balance: 5000, currency: 'USDT' }],
+    ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
+  ]);
+}
+
+// Sync balances from database to in-memory storage
+async function syncBalancesFromDatabase() {
+  if (supabaseAdmin) {
+    try {
+      const { data: users, error } = await supabaseAdmin
+        .from('users')
+        .select('id, balance');
+
+      if (!error && users) {
+        users.forEach(user => {
+          if (user.balance !== null && user.balance !== undefined) {
+            userBalances.set(user.id, { balance: user.balance, currency: 'USDT' });
+          }
+        });
+        console.log('💰 Synced balances from database for', users.length, 'users');
+      }
+    } catch (error) {
+      console.log('⚠️ Failed to sync balances from database:', error);
+    }
+  }
+}
 
 // Mock users data for demo - synchronized with balance data
 function getMockUsers() {
@@ -161,6 +192,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (dbError) {
         console.log('⚠️ Database query failed, using mock data');
       }
+
+      // Sync balances from database before returning mock data
+      await syncBalancesFromDatabase();
 
       // Fallback to mock data
       const mockUsers = getMockUsers();

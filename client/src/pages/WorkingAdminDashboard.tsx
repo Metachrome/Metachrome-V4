@@ -1771,9 +1771,9 @@ export default function WorkingAdminDashboard() {
                   </div>
 
                   {/* Previous Wallet Addresses */}
-                  {walletHistory.length > 0 && (
-                    <div>
-                      <h4 className="text-white font-medium mb-3">Previous Wallet Addresses</h4>
+                  <div>
+                    <h4 className="text-white font-medium mb-3">Previous Wallet Addresses</h4>
+                    {walletHistory.length > 0 ? (
                       <div className="space-y-2 max-h-40 overflow-y-auto">
                         {Array.isArray(walletHistory) ? walletHistory.map((wallet, index) => (
                           <div key={index} className="bg-gray-700 p-3 rounded flex items-center justify-between">
@@ -1808,8 +1808,12 @@ export default function WorkingAdminDashboard() {
                           </div>
                         )) : []}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="bg-gray-700 p-3 rounded text-center">
+                        <div className="text-gray-400 text-sm">No previous wallet addresses found</div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Warning */}
                   <div className="bg-yellow-900/20 border border-yellow-600/30 p-3 rounded">

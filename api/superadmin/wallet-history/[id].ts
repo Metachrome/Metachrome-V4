@@ -14,69 +14,39 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
     })
   : null;
 
-// Mock wallet history data
+// Mock wallet address history data
 function generateMockWalletHistory(userId: string) {
   const now = new Date();
   const history = [];
-  
-  // Generate 20 mock transactions for the user
-  for (let i = 1; i <= 20; i++) {
-    const createdTime = new Date(now.getTime() - (i * 3 * 60 * 60 * 1000)); // 3 hours apart
-    const types = ['deposit', 'withdrawal', 'trade_win', 'trade_loss', 'bonus', 'admin_adjustment'];
-    const type = types[Math.floor(Math.random() * types.length)];
-    
-    let amount;
-    let status = 'completed';
-    let description;
-    
-    switch (type) {
-      case 'deposit':
-        amount = Math.floor(Math.random() * 5000) + 100;
-        description = `Deposit of ${amount} USDT`;
-        break;
-      case 'withdrawal':
-        amount = -(Math.floor(Math.random() * 2000) + 50);
-        description = `Withdrawal of ${Math.abs(amount)} USDT`;
-        status = Math.random() > 0.8 ? 'pending' : 'completed';
-        break;
-      case 'trade_win':
-        amount = Math.floor(Math.random() * 500) + 10;
-        description = `Trading profit: +${amount} USDT`;
-        break;
-      case 'trade_loss':
-        amount = -(Math.floor(Math.random() * 300) + 10);
-        description = `Trading loss: ${amount} USDT`;
-        break;
-      case 'bonus':
-        amount = Math.floor(Math.random() * 100) + 5;
-        description = `Bonus: +${amount} USDT`;
-        break;
-      case 'admin_adjustment':
-        amount = Math.random() > 0.5 ? 
-          Math.floor(Math.random() * 1000) + 50 : 
-          -(Math.floor(Math.random() * 500) + 25);
-        description = `Admin adjustment: ${amount > 0 ? '+' : ''}${amount} USDT`;
-        break;
-      default:
-        amount = 0;
-        description = 'Unknown transaction';
-    }
+
+  // Generate some mock wallet address changes
+  const mockAddresses = [
+    '0x742d35Cc6479C5f95912c4E8BC2C1234567890AB',
+    '0x123456789ABCDEF123456789ABCDEF1234567890',
+    '0xABCDEF1234567890ABCDEF1234567890ABCDEF12',
+    '0x9876543210987654321098765432109876543210',
+    '0xFEDCBA0987654321FEDCBA0987654321FEDCBA09'
+  ];
+
+  // Generate 3-5 wallet address changes for the user
+  const numChanges = Math.floor(Math.random() * 3) + 3;
+  for (let i = 0; i < numChanges; i++) {
+    const changedTime = new Date(now.getTime() - (i * 7 * 24 * 60 * 60 * 1000)); // 1 week apart
+    const address = mockAddresses[i % mockAddresses.length];
 
     history.push({
-      id: `wallet-${userId}-${i}`,
+      id: `wallet-change-${userId}-${i}`,
       user_id: userId,
-      type,
-      amount,
-      status,
-      description,
-      balance_before: Math.floor(Math.random() * 10000) + 1000,
-      balance_after: Math.floor(Math.random() * 10000) + 1000,
-      created_at: createdTime.toISOString(),
-      updated_at: createdTime.toISOString()
+      address: address,
+      changed_at: changedTime.toISOString(),
+      changed_by: i === 0 ? 'superadmin' : 'user',
+      reason: i === 0 ? 'Admin update' : 'User requested change',
+      created_at: changedTime.toISOString(),
+      updated_at: changedTime.toISOString()
     });
   }
 
-  return history.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return history.sort((a, b) => new Date(b.changed_at).getTime() - new Date(a.changed_at).getTime());
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -106,21 +76,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { limit = '50', type, status } = req.query;
 
       try {
-        // Try to get from database first
+        // Try to get wallet address history from database first
         if (supabaseAdmin) {
           let query = supabaseAdmin
-            .from('transactions')
+            .from('wallet_address_history')
             .select('*')
             .eq('user_id', id)
-            .order('created_at', { ascending: false });
-
-          // Apply filters
-          if (type) {
-            query = query.eq('type', type);
-          }
-          if (status) {
-            query = query.eq('status', status);
-          }
+            .order('changed_at', { ascending: false });
 
           // Apply limit
           const limitNum = parseInt(limit as string);
@@ -128,14 +90,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             query = query.limit(limitNum);
           }
 
-          const { data: transactions, error } = await query;
+          const { data: walletHistory, error } = await query;
 
-          if (!error && transactions && transactions.length > 0) {
-            console.log(`💰 Wallet history from database - Count: ${transactions.length}`);
+          if (!error && walletHistory && walletHistory.length > 0) {
+            console.log(`🏦 Wallet address history from database - Count: ${walletHistory.length}`);
             return res.json({
               success: true,
-              history: transactions,
-              total: transactions.length,
+              history: walletHistory,
+              total: walletHistory.length,
               source: 'database'
             });
           }
@@ -147,21 +109,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Fallback to mock data
       let mockHistory = generateMockWalletHistory(id);
 
-      // Apply filters to mock data
-      if (type) {
-        mockHistory = mockHistory.filter(item => item.type === type);
-      }
-      if (status) {
-        mockHistory = mockHistory.filter(item => item.status === status);
-      }
-
       // Apply limit
       const limitNum = parseInt(limit as string);
       if (!isNaN(limitNum)) {
         mockHistory = mockHistory.slice(0, limitNum);
       }
 
-      console.log(`💰 Using mock wallet history - Count: ${mockHistory.length}`);
+      console.log(`🏦 Using mock wallet address history - Count: ${mockHistory.length}`);
       return res.json({
         success: true,
         history: mockHistory,
