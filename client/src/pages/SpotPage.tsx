@@ -7,6 +7,8 @@ import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useToast } from "../hooks/use-toast";
 import { apiRequest } from "../lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import type { MarketData } from "../../../shared/schema";
 
 interface SpotOrder {
@@ -102,6 +104,16 @@ export default function SpotPage() {
     usdtBalance,
     btcBalance
   });
+
+  // Handle WebSocket balance updates for real-time sync
+  useEffect(() => {
+    if (lastMessage?.type === 'balance_update') {
+      console.log('🔄 SPOT: Real-time balance update received:', lastMessage.data);
+
+      // Invalidate balance queries to trigger refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+    }
+  }, [lastMessage, queryClient]);
 
   // Fetch Binance price data
   const fetchBinancePrice = async () => {

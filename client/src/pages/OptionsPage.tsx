@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { apiRequest } from '../lib/queryClient';
+import { useEffect } from 'react';
 import type { MarketData } from '../../../shared/schema';
 
 interface ActiveTrade {
@@ -163,6 +164,16 @@ export default function OptionsPage() {
     balanceData,
     finalBalance: balance
   });
+
+  // Handle WebSocket balance updates for real-time sync
+  useEffect(() => {
+    if (lastMessage?.type === 'balance_update') {
+      console.log('🔄 OPTIONS: Real-time balance update received:', lastMessage.data);
+
+      // Invalidate balance queries to trigger refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+    }
+  }, [lastMessage, queryClient]);
 
   // Get current BTC price from real market data
   const btcMarketData = marketData?.find(item => item.symbol === 'BTCUSDT');

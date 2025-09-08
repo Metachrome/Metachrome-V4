@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from '../hooks/use-toast';
+import { useWebSocket } from '../hooks/useWebSocket';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -126,6 +127,8 @@ interface SystemStats {
 
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
+  const { lastMessage, connected } = useWebSocket();
+  const queryClient = useQueryClient();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [newUserData, setNewUserData] = useState({
@@ -170,6 +173,26 @@ export default function SuperAdminDashboard() {
     queryKey: ['/api/superadmin/system-stats'],
     enabled: !!user && user.role === 'super_admin'
   });
+
+  // Handle WebSocket balance updates for real-time admin dashboard sync
+  useEffect(() => {
+    if (lastMessage?.type === 'balance_update') {
+      console.log('🔄 ADMIN: Real-time balance update received:', lastMessage.data);
+
+      // Refresh all data when any balance changes
+      refetchUsers();
+      refetchSystemStats();
+
+      // Show notification for balance changes
+      if (lastMessage.data.changeType === 'spot_buy' || lastMessage.data.changeType === 'spot_sell') {
+        toast({
+          title: "Balance Updated",
+          description: `${lastMessage.data.username}: ${lastMessage.data.changeType} - New balance: ${lastMessage.data.newBalance} USDT`,
+          duration: 3000
+        });
+      }
+    }
+  }, [lastMessage, refetchUsers, refetchSystemStats]);
 
   // Mutations
   const createUserMutation = useMutation({
