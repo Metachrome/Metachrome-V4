@@ -1,5 +1,9 @@
 console.log('🚀 Starting METACHROME server...');
 
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -8,7 +12,7 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import https from 'https';
-// import DatabaseService from './database-integration.js';
+import { DatabaseService } from './database-integration.js';
 
 console.log('📦 Imports loaded successfully');
 
@@ -2765,15 +2769,34 @@ app.get('*', (req, res) => {
   }
 });
 
+// ===== DATABASE FUNCTIONS =====
+async function refreshUsersFromDatabase() {
+  try {
+    console.log('🔄 Refreshing users from database...');
+    const dbUsers = await DatabaseService.getUsers();
+
+    if (dbUsers && dbUsers.length > 0) {
+      users.length = 0; // Clear existing users
+      users.push(...dbUsers); // Add database users
+      console.log(`✅ Loaded ${dbUsers.length} users from database`);
+    } else {
+      console.log('⚠️ No users found in database, keeping fallback users');
+    }
+  } catch (error) {
+    console.error('❌ Error loading users from database:', error);
+    console.log('⚠️ Using fallback users due to database error');
+  }
+}
+
 // ===== DATABASE INITIALIZATION =====
 async function initializeServer() {
-  console.log('🗄️ Database integration temporarily disabled for testing...');
-  // await DatabaseService.initializeDatabase();
-  console.log('✅ Database initialization skipped');
+  console.log('🗄️ Initializing database connection...');
+  await DatabaseService.initializeDatabase();
+  console.log('✅ Database initialized successfully');
 
-  console.log('👥 Loading users from fallback data...');
-  // await refreshUsersFromDatabase();
-  console.log('✅ Users loaded from fallback data');
+  console.log('👥 Loading users from database...');
+  await refreshUsersFromDatabase();
+  console.log('✅ Users loaded from database');
 
   // Start the server
   const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
