@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Test - METACHROME</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .oauth-button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .oauth-button:hover {
+            background-color: #45a049;
+        }
+        .google { background-color: #db4437; }
+        .linkedin { background-color: #0077b5; }
+        .twitter { background-color: #1da1f2; }
+        .metamask { background-color: #f6851b; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #4CAF50; }
+        .error { background-color: #f44336; }
+        .warning { background-color: #ff9800; }
+        .info { background-color: #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 METACHROME OAuth Test Page</h1>
+        <p>Test your social authentication setup here.</p>
+        
+        <h2>📋 OAuth Status Check</h2>
+        <div id="status-container">
+            <div class="status info">Loading OAuth status...</div>
+        </div>
+        
+        <h2>🚀 Test Social Logins</h2>
+        <div>
+            <a href="/api/auth/google" class="oauth-button google">🔴 Test Google OAuth</a>
+            <a href="/api/auth/linkedin" class="oauth-button linkedin">🔵 Test LinkedIn OAuth</a>
+            <a href="/api/auth/twitter" class="oauth-button twitter">🐦 Test Twitter OAuth</a>
+            <button onclick="testMetaMask()" class="oauth-button metamask">🦊 Test MetaMask</button>
+        </div>
+        
+        <h2>📊 Environment Check</h2>
+        <div id="env-container">
+            <div class="status info">Loading environment status...</div>
+        </div>
+        
+        <h2>📝 Instructions</h2>
+        <div class="status warning">
+            <strong>Before Testing:</strong>
+            <ol>
+                <li>Make sure you've added the callback URLs to your OAuth providers</li>
+                <li>Verify environment variables are set correctly</li>
+                <li>Check that your domain is authorized in OAuth settings</li>
+            </ol>
+        </div>
+        
+        <h2>🔗 Required Callback URLs</h2>
+        <div class="status info">
+            <strong>Add these URLs to your OAuth provider settings:</strong><br>
+            <strong>Google:</strong> <code id="google-callback"></code><br>
+            <strong>LinkedIn:</strong> <code id="linkedin-callback"></code><br>
+            <strong>Twitter:</strong> <code id="twitter-callback"></code>
+        </div>
+    </div>
+
+    <script>
+        // Set callback URLs based on current domain
+        const domain = window.location.origin;
+        document.getElementById('google-callback').textContent = `${domain}/api/auth/google/callback`;
+        document.getElementById('linkedin-callback').textContent = `${domain}/api/auth/linkedin/callback`;
+        document.getElementById('twitter-callback').textContent = `${domain}/api/auth/twitter/callback`;
+        
+        // Check OAuth status
+        async function checkOAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/status');
+                const data = await response.json();
+                
+                let statusHtml = '';
+                
+                if (data.google) {
+                    statusHtml += '<div class="status success">✅ Google OAuth: Configured</div>';
+                } else {
+                    statusHtml += '<div class="status error">❌ Google OAuth: Missing credentials</div>';
+                }
+                
+                if (data.linkedin) {
+                    statusHtml += '<div class="status success">✅ LinkedIn OAuth: Configured</div>';
+                } else {
+                    statusHtml += '<div class="status error">❌ LinkedIn OAuth: Missing credentials</div>';
+                }
+                
+                if (data.twitter) {
+                    statusHtml += '<div class="status success">✅ Twitter OAuth: Configured</div>';
+                } else {
+                    statusHtml += '<div class="status warning">⚠️ Twitter OAuth: Missing credentials</div>';
+                }
+                
+                statusHtml += '<div class="status success">✅ MetaMask: Always available</div>';
+                
+                document.getElementById('status-container').innerHTML = statusHtml;
+            } catch (error) {
+                document.getElementById('status-container').innerHTML = 
+                    '<div class="status error">❌ Failed to check OAuth status</div>';
+            }
+        }
+        
+        // Check environment variables
+        async function checkEnvironment() {
+            try {
+                const response = await fetch('/api/env-check');
+                const data = await response.json();
+                
+                let envHtml = '';
+                envHtml += `<div class="status info">Environment: ${data.NODE_ENV || 'development'}</div>`;
+                envHtml += `<div class="status ${data.DATABASE_URL_SET ? 'success' : 'error'}">Database: ${data.DATABASE_URL_SET ? 'Connected' : 'Not configured'}</div>`;
+                envHtml += `<div class="status ${data.JWT_SECRET_SET ? 'success' : 'error'}">JWT Secret: ${data.JWT_SECRET_SET ? 'Set' : 'Missing'}</div>`;
+                envHtml += `<div class="status ${data.SESSION_SECRET_SET ? 'success' : 'error'}">Session Secret: ${data.SESSION_SECRET_SET ? 'Set' : 'Missing'}</div>`;
+                
+                document.getElementById('env-container').innerHTML = envHtml;
+            } catch (error) {
+                document.getElementById('env-container').innerHTML = 
+                    '<div class="status error">❌ Failed to check environment</div>';
+            }
+        }
+        
+        // Test MetaMask
+        async function testMetaMask() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    alert(`✅ MetaMask connected! Account: ${accounts[0]}`);
+                } catch (error) {
+                    alert(`❌ MetaMask error: ${error.message}`);
+                }
+            } else {
+                alert('❌ MetaMask not installed. Please install MetaMask extension.');
+            }
+        }
+        
+        // Load status on page load
+        checkOAuthStatus();
+        checkEnvironment();
+    </script>
+</body>
+</html>

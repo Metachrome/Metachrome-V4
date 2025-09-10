@@ -2983,5 +2983,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OAuth status check endpoint
+  app.get("/api/auth/status", (req, res) => {
+    try {
+      const status = {
+        google: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+        linkedin: !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET),
+        twitter: !!(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET),
+        metamask: true, // Always available
+        timestamp: new Date().toISOString()
+      };
+
+      res.json(status);
+    } catch (error) {
+      console.error('Error checking OAuth status:', error);
+      res.status(500).json({
+        error: 'Failed to check OAuth status'
+      });
+    }
+  });
+
   return httpServer;
 }

@@ -172,9 +172,12 @@ export default function SignupPage() {
   const handleTwitterLogin = async () => {
     try {
       toast({
-        title: "Twitter OAuth Coming Soon",
-        description: "Twitter authentication will be available soon. Use Google, LinkedIn or email signup for now.",
+        title: "Twitter Signup",
+        description: "Redirecting to Twitter authentication...",
       });
+
+      // Direct OAuth redirect to Twitter
+      window.location.href = '/api/auth/twitter';
     } catch (error: any) {
       toast({
         title: "Twitter Signup Failed",

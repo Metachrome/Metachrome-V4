@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as OAuth2Strategy } from 'passport-oauth2';
 import { Strategy as AppleStrategy } from 'passport-apple';
+import { Strategy as TwitterStrategy } from 'passport-twitter';
 import type { Express } from 'express';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
@@ -12,7 +13,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `https://${process.env.REPLIT_DOMAINS || 'localhost:5000'}/api/auth/google/callback`
+    callbackURL: process.env.NODE_ENV === 'production'
+      ? `https://${process.env.VERCEL_URL || 'metachrome-v2.vercel.app'}/api/auth/google/callback`
+      : `http://localhost:5000/api/auth/google/callback`
   },
   async (accessToken: string, refreshToken: string, profile: any, done: any) => {
     try {
@@ -48,7 +51,9 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
     tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: `https://${process.env.REPLIT_DOMAINS || 'localhost:5000'}/api/auth/linkedin/callback`,
+    callbackURL: process.env.NODE_ENV === 'production'
+      ? `https://${process.env.VERCEL_URL || 'metachrome-v2.vercel.app'}/api/auth/linkedin/callback`
+      : `http://localhost:5000/api/auth/linkedin/callback`,
     scope: ['openid', 'profile', 'email']
   },
   async (accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -90,6 +95,63 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
       return done(null, user);
     } catch (error) {
       console.error('❌ LinkedIn OAuth error:', error);
+      return done(error as Error, undefined);
+    }
+  }));
+}
+
+// Configure Twitter OAuth
+if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
+  passport.use('twitter', new OAuth2Strategy({
+    authorizationURL: 'https://twitter.com/i/oauth2/authorize',
+    tokenURL: 'https://api.twitter.com/2/oauth2/token',
+    clientID: process.env.TWITTER_CLIENT_ID,
+    clientSecret: process.env.TWITTER_CLIENT_SECRET,
+    callbackURL: process.env.NODE_ENV === 'production'
+      ? `https://${process.env.VERCEL_URL || 'metachrome-v2.vercel.app'}/api/auth/twitter/callback`
+      : `http://localhost:5000/api/auth/twitter/callback`,
+    scope: ['tweet.read', 'users.read']
+  },
+  async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+    try {
+      console.log('🔐 Twitter OAuth callback received, fetching profile...');
+
+      // Fetch user profile using Twitter API v2
+      const response = await fetch('https://api.twitter.com/2/users/me?user.fields=name,username,profile_image_url', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Twitter API error: ${response.status} ${response.statusText}`);
+      }
+
+      const twitterData = await response.json();
+      const twitterProfile = twitterData.data;
+      console.log('✅ Twitter profile fetched:', twitterProfile);
+
+      // Check if user exists
+      let user = await storage.getUserByEmail(`${twitterProfile.username}@twitter.local`);
+
+      if (!user) {
+        // Create new user
+        user = await storage.createUser({
+          username: twitterProfile.username || `twitter_user_${twitterProfile.id}`,
+          email: `${twitterProfile.username}@twitter.local`, // Twitter doesn't provide email by default
+          firstName: twitterProfile.name?.split(' ')[0] || '',
+          lastName: twitterProfile.name?.split(' ').slice(1).join(' ') || '',
+          role: 'user',
+        });
+        console.log('✅ New Twitter user created:', user.id);
+      } else {
+        console.log('✅ Existing Twitter user found:', user.id);
+      }
+
+      return done(null, user);
+    } catch (error) {
+      console.error('❌ Twitter OAuth error:', error);
       return done(error as Error, undefined);
     }
   }));
@@ -194,16 +256,48 @@ export function setupOAuth(app: Express) {
     );
   } else {
     app.get('/api/auth/linkedin', (req, res) => {
-      res.status(501).json({ 
-        message: 'LinkedIn OAuth not configured. Please set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET environment variables.' 
+      res.status(501).json({
+        message: 'LinkedIn OAuth not configured. Please set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET environment variables.'
+      });
+    });
+  }
+
+  // Twitter OAuth routes
+  if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
+    app.get('/api/auth/twitter',
+      passport.authenticate('twitter', { scope: ['tweet.read', 'users.read'] })
+    );
+
+    app.get('/api/auth/twitter/callback',
+      passport.authenticate('twitter', {
+        failureRedirect: '/login?error=twitter_auth_failed',
+        failureMessage: true
+      }),
+      (req, res) => {
+        try {
+          // Store user in session
+          req.session.user = req.user as any;
+          console.log('✅ Twitter login successful, user:', req.user);
+          console.log('✅ Redirecting to dashboard');
+          res.redirect('/dashboard');
+        } catch (error) {
+          console.error('❌ Error in Twitter callback:', error);
+          res.redirect('/login?error=callback_error');
+        }
+      }
+    );
+  } else {
+    app.get('/api/auth/twitter', (req, res) => {
+      res.status(501).json({
+        message: 'Twitter OAuth not configured. Please set TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET environment variables.'
       });
     });
   }
 
   // Apple OAuth routes (placeholder for future implementation)
   app.get('/api/auth/apple', (req, res) => {
-    res.status(501).json({ 
-      message: 'Apple OAuth coming soon. Apple OAuth requires complex setup with private keys and JWT signing. For now, please use Google, LinkedIn, or email authentication.' 
+    res.status(501).json({
+      message: 'Apple OAuth coming soon. Apple OAuth requires complex setup with private keys and JWT signing. For now, please use Google, LinkedIn, or email authentication.'
     });
   });
 }

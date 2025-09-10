@@ -224,9 +224,12 @@ export default function UserLogin() {
   const handleTwitterLogin = async () => {
     try {
       toast({
-        title: "Twitter OAuth Coming Soon",
-        description: "Twitter authentication will be available soon. Use Google, LinkedIn or email login for now.",
+        title: "Twitter Login",
+        description: "Redirecting to Twitter authentication...",
       });
+
+      // Direct OAuth redirect to Twitter
+      window.location.href = '/api/auth/twitter';
     } catch (error: any) {
       toast({
         title: "Twitter Login Failed",
@@ -323,6 +326,7 @@ export default function UserLogin() {
                 <Button
                   variant="outline"
                   className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg"
+                  onClick={handleTwitterLogin}
                   type="button"
                 >
                   <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
