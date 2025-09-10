@@ -64,6 +64,7 @@
     "lucide-react": "^0.294.0",
     "pg": "^8.11.3",
     "postcss": "^8.4.32",
+    "postgres": "^3.4.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",

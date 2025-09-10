@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import https from 'https';
+// import DatabaseService from './database-integration.js';
 
 console.log('📦 Imports loaded successfully');
 
@@ -365,7 +366,7 @@ class BalanceManager {
   }
 
   // Update user balance with full tracking and real-time sync
-  updateBalance(userId, amount, type, description, metadata = {}) {
+  async updateBalance(userId, amount, type, description, metadata = {}) {
     const user = users.find(u => u.id === userId);
     if (!user) {
       console.error(`❌ Balance update failed: User ${userId} not found`);
@@ -374,8 +375,19 @@ class BalanceManager {
 
     const oldBalance = user.balance;
     const newBalance = Math.max(0, oldBalance + amount); // Prevent negative balances
+
+    // Update in memory
     user.balance = newBalance;
     user.updated_at = new Date().toISOString();
+
+    // Database update temporarily disabled
+    // try {
+    //   await DatabaseService.updateUserBalance(userId, newBalance);
+    //   console.log(`💾 Database updated: User ${userId} balance = ${newBalance}`);
+    // } catch (error) {
+    //   console.error(`❌ Database update failed for user ${userId}:`, error);
+    //   // Continue with in-memory update even if database fails
+    // }
 
     // Record transaction
     const transaction = {
@@ -544,115 +556,32 @@ function syncBalanceAcrossAllSystems(userId, newBalance, changeType, description
   return true;
 }
 
-// ===== IN-MEMORY DATA STORE =====
+// ===== TEMPORARY IN-MEMORY DATA STORE (FOR TESTING) =====
+// Will be replaced with database-backed storage
 let users = [
   {
-    id: 'user-1',
-    username: 'trader1',
-    email: 'trader1@metachrome.io',
-    balance: 10000,
-    role: 'user',
+    id: 'superadmin-001',
+    username: 'superadmin',
+    email: 'superadmin@metachrome.io',
+    balance: 50000,
+    role: 'super_admin',
     status: 'active',
     trading_mode: 'normal',
-    wallet_address: '0x1234567890abcdef1234567890abcdef12345678',
+    wallet_address: null,
     created_at: new Date().toISOString(),
     last_login: new Date().toISOString()
   },
   {
-    id: 'admin-1',
+    id: 'admin-001',
     username: 'admin',
     email: 'admin@metachrome.io',
-    balance: 50000,
+    balance: 25000,
     role: 'admin',
     status: 'active',
     trading_mode: 'normal',
     wallet_address: null,
     created_at: new Date().toISOString(),
     last_login: new Date().toISOString()
-  },
-  {
-    id: 'superadmin-001',
-    username: 'superadmin',
-    email: 'superadmin@metachrome.io',
-    balance: 49205.64,
-    role: 'super_admin',
-    status: 'active',
-    trading_mode: 'lose',
-    wallet_address: null,
-    created_at: new Date().toISOString(),
-    last_login: new Date().toISOString()
-  },
-  {
-    id: 'user-2',
-    username: 'trader2',
-    email: 'trader2@metachrome.io',
-    balance: 5000,
-    role: 'user',
-    status: 'active',
-    trading_mode: 'win',
-    wallet_address: '0xabcdef1234567890abcdef1234567890abcdef12',
-    created_at: new Date().toISOString(),
-    last_login: new Date(Date.now() - 3600000).toISOString()
-  },
-  {
-    id: 'user-3',
-    username: 'trader3',
-    email: 'trader3@metachrome.io',
-    balance: 15000,
-    role: 'user',
-    status: 'inactive',
-    trading_mode: 'lose',
-    wallet_address: null,
-    created_at: new Date().toISOString(),
-    last_login: new Date(Date.now() - 7200000).toISOString()
-  },
-  {
-    id: 'demo-user-1',
-    username: 'john_trader',
-    email: 'john@example.com',
-    balance: 25000,
-    role: 'user',
-    status: 'active',
-    trading_mode: 'normal',
-    wallet_address: '0x742d35Cc6479C5f95912c4E8BC2C1234567890AB',
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    last_login: new Date(Date.now() - 3600000).toISOString()
-  },
-  {
-    id: 'demo-user-2',
-    username: 'sarah_crypto',
-    email: 'sarah@example.com',
-    balance: 18500,
-    role: 'user',
-    status: 'active',
-    trading_mode: 'win',
-    wallet_address: '0x123456789ABCDEF123456789ABCDEF1234567890',
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-    last_login: new Date(Date.now() - 1800000).toISOString()
-  },
-  {
-    id: 'demo-user-3',
-    username: 'mike_hodler',
-    email: 'mike@example.com',
-    balance: 8200,
-    role: 'user',
-    status: 'active',
-    trading_mode: 'lose',
-    wallet_address: '0xABCDEF1234567890ABCDEF1234567890ABCDEF12',
-    created_at: new Date(Date.now() - 259200000).toISOString(),
-    last_login: new Date(Date.now() - 7200000).toISOString()
-  },
-  {
-    id: 'demo-user-4',
-    username: 'emma_trader',
-    email: 'emma@example.com',
-    balance: 3500,
-    role: 'user',
-    status: 'suspended',
-    trading_mode: 'normal',
-    wallet_address: '0x9876543210987654321098765432109876543210',
-    created_at: new Date(Date.now() - 345600000).toISOString(),
-    last_login: new Date(Date.now() - 86400000).toISOString()
   }
 ];
 
@@ -1232,6 +1161,11 @@ app.post('/api/admin/trading-controls', (req, res) => {
     const oldMode = users[userIndex].trading_mode || 'normal';
     users[userIndex].trading_mode = controlType;
     users[userIndex].updated_at = new Date().toISOString();
+
+    // Database update temporarily disabled
+    // DatabaseService.updateUserTradingMode(userId, controlType).catch(error => {
+    //   console.error(`❌ Database update failed for trading mode:`, error);
+    // });
 
     console.log(`🎯 TRADING CONTROL APPLIED:`);
     console.log(`   - User: ${users[userIndex].username} (${userId})`);
@@ -2831,10 +2765,20 @@ app.get('*', (req, res) => {
   }
 });
 
-// ===== START SERVER =====
-const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+// ===== DATABASE INITIALIZATION =====
+async function initializeServer() {
+  console.log('🗄️ Database integration temporarily disabled for testing...');
+  // await DatabaseService.initializeDatabase();
+  console.log('✅ Database initialization skipped');
 
-server.listen(PORT, HOST, () => {
+  console.log('👥 Loading users from fallback data...');
+  // await refreshUsersFromDatabase();
+  console.log('✅ Users loaded from fallback data');
+
+  // Start the server
+  const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+
+  server.listen(PORT, HOST, () => {
   console.log('🎉 ===================================');
   console.log('🚀 METACHROME V2 WORKING SERVER READY!');
   console.log(`🌐 Server running on: http://${HOST}:${PORT}`);
@@ -2846,6 +2790,13 @@ server.listen(PORT, HOST, () => {
   console.log(`🏥 Health check available at: http://${HOST}:${PORT}/api/health`);
   console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔧 Process ID: ${process.pid}`);
+  });
+}
+
+// Initialize and start the server
+initializeServer().catch(error => {
+  console.error('❌ Failed to initialize server:', error);
+  process.exit(1);
 });
 
 server.on('error', (error) => {
