@@ -2689,21 +2689,28 @@ function handleOptionsTrading(req, res) {
     });
   }
 
-  // Create trade
+  // Create trade - USING CONSISTENT FORMAT WITH DEMO TRADES
   const trade = {
     id: `trade-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-    userId,
+    user_id: userId, // Use snake_case to match demo trades
+    userId: userId, // Keep camelCase for backward compatibility
     symbol,
     type: 'options',
     direction,
     amount: parseFloat(amount), // Store as number for proper calculations
     price: parseFloat(currentPrice),
-    entryPrice: parseFloat(currentPrice),
+    entry_price: parseFloat(currentPrice), // Use snake_case to match demo trades
+    entryPrice: parseFloat(currentPrice), // Keep camelCase for backward compatibility
     status: 'active',
     duration,
-    expiresAt: new Date(Date.now() + duration * 1000),
-    createdAt: new Date(),
-    updatedAt: new Date()
+    expires_at: new Date(Date.now() + duration * 1000).toISOString(), // Use snake_case to match demo trades
+    expiresAt: new Date(Date.now() + duration * 1000), // Keep camelCase for backward compatibility
+    created_at: new Date().toISOString(), // Use snake_case to match demo trades
+    createdAt: new Date(), // Keep camelCase for backward compatibility
+    updated_at: new Date().toISOString(), // Use snake_case to match demo trades
+    updatedAt: new Date(), // Keep camelCase for backward compatibility
+    users: { username: user.username }, // Add users object like demo trades
+    trading_mode: user.trading_mode || 'normal' // Add trading mode
   };
 
   // Add to trades first
@@ -2714,16 +2721,16 @@ function handleOptionsTrading(req, res) {
     type: 'new_trade',
     data: {
       id: trade.id,
-      user_id: trade.userId,
+      user_id: trade.user_id,
       username: user.username,
       symbol: trade.symbol,
       amount: trade.amount,
       direction: trade.direction,
       duration: trade.duration,
-      entry_price: trade.entryPrice,
+      entry_price: trade.entry_price,
       status: trade.status,
-      created_at: trade.createdAt,
-      expires_at: trade.expiresAt,
+      created_at: trade.created_at,
+      expires_at: trade.expires_at,
       trading_mode: user.trading_mode || 'normal'
     }
   };
@@ -2866,14 +2873,17 @@ function executeOptionsTrade(tradeId) {
     console.log(`   📊 LOSE CALCULATION: No balance change (${tradeAmount} USDT already deducted)`);
   }
 
-  // Update trade record
+  // Update trade record - USING CONSISTENT FORMAT
   trades[tradeIndex] = {
     ...trade,
     status: 'completed',
     result: isWin ? 'win' : 'lose',
-    exitPrice: exitPrice,
+    exit_price: exitPrice, // Use snake_case to match demo trades
+    exitPrice: exitPrice, // Keep camelCase for backward compatibility
     profit: isWin ? profitAmount : (-tradeAmount),
-    completedAt: new Date()
+    completed_at: new Date().toISOString(), // Use snake_case to match demo trades
+    completedAt: new Date(), // Keep camelCase for backward compatibility
+    updated_at: new Date().toISOString() // Update the updated_at timestamp
   };
 
   // CRITICAL: Update user balance using the unified balance manager
@@ -2927,13 +2937,13 @@ function executeOptionsTrade(tradeId) {
       amount: completedTrade.amount,
       direction: completedTrade.direction,
       duration: completedTrade.duration,
-      entry_price: completedTrade.entryPrice || completedTrade.entry_price,
-      exit_price: completedTrade.exitPrice || completedTrade.exit_price,
+      entry_price: completedTrade.entry_price,
+      exit_price: completedTrade.exit_price,
       result: completedTrade.result,
       profit: completedTrade.profit,
       status: completedTrade.status,
-      created_at: completedTrade.createdAt || completedTrade.created_at,
-      completed_at: completedTrade.completedAt || new Date().toISOString(),
+      created_at: completedTrade.created_at,
+      completed_at: completedTrade.completed_at,
       trading_mode: userTradingMode,
       balance_change: balanceChange,
       new_balance: user.balance
