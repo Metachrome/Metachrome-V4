@@ -704,8 +704,120 @@ let trades = [
     created_at: new Date(Date.now() - 300000).toISOString(),
     expires_at: new Date(Date.now() - 270000).toISOString(),
     users: { username: 'mike_hodler' }
+  },
+  // ===== ACTIVE TRADES FOR LIVE MONITORING =====
+  {
+    id: 'trade-4',
+    user_id: 'demo-user-1',
+    symbol: 'ETHUSDT',
+    amount: 1200,
+    direction: 'up',
+    duration: 30,
+    entry_price: 4250.50,
+    status: 'active',
+    created_at: new Date(Date.now() - 10000).toISOString(), // 10 seconds ago
+    expires_at: new Date(Date.now() + 20000).toISOString(), // 20 seconds from now
+    users: { username: 'alice_trader' },
+    trading_mode: 'normal'
+  },
+  {
+    id: 'trade-5',
+    user_id: 'demo-user-2',
+    symbol: 'BTCUSDT',
+    amount: 800,
+    direction: 'down',
+    duration: 60,
+    entry_price: 117800,
+    status: 'active',
+    created_at: new Date(Date.now() - 15000).toISOString(), // 15 seconds ago
+    expires_at: new Date(Date.now() + 45000).toISOString(), // 45 seconds from now
+    users: { username: 'bob_crypto' },
+    trading_mode: 'normal'
+  },
+  {
+    id: 'trade-6',
+    user_id: 'demo-user-3',
+    symbol: 'BNBUSDT',
+    amount: 500,
+    direction: 'up',
+    duration: 30,
+    entry_price: 635.25,
+    status: 'active',
+    created_at: new Date(Date.now() - 5000).toISOString(), // 5 seconds ago
+    expires_at: new Date(Date.now() + 25000).toISOString(), // 25 seconds from now
+    users: { username: 'charlie_hodl' },
+    trading_mode: 'normal'
   }
 ];
+
+// ===== ACTIVE TRADES MAINTENANCE SYSTEM =====
+function maintainActiveTrades() {
+  const now = new Date();
+
+  // Remove expired active trades and mark them as completed
+  trades.forEach((trade, index) => {
+    if (trade.status === 'active' && new Date(trade.expires_at) <= now) {
+      console.log(`⏰ Trade ${trade.id} expired, marking as completed`);
+      trades[index] = {
+        ...trade,
+        status: 'completed',
+        result: Math.random() > 0.5 ? 'win' : 'lose',
+        exit_price: trade.entry_price * (0.995 + Math.random() * 0.01), // Random exit price
+        profit: Math.random() > 0.5 ? trade.amount * 0.1 : -trade.amount,
+        completed_at: now.toISOString()
+      };
+    }
+  });
+
+  // Ensure we always have 3-5 active trades for the live monitor
+  const currentActiveTrades = trades.filter(t => t.status === 'active');
+  const targetActiveTrades = 4;
+
+  if (currentActiveTrades.length < targetActiveTrades) {
+    const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT'];
+    const usernames = ['alice_trader', 'bob_crypto', 'charlie_hodl', 'diana_moon', 'eve_whale'];
+    const directions = ['up', 'down'];
+    const durations = [30, 60];
+
+    for (let i = currentActiveTrades.length; i < targetActiveTrades; i++) {
+      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+      const username = usernames[Math.floor(Math.random() * usernames.length)];
+      const direction = directions[Math.floor(Math.random() * directions.length)];
+      const duration = durations[Math.floor(Math.random() * durations.length)];
+      const amount = 100 + Math.floor(Math.random() * 1900); // 100-2000 USDT
+
+      // Get realistic entry price based on current prices
+      let entryPrice = 50000; // Default fallback
+      if (currentPrices[symbol]) {
+        entryPrice = currentPrices[symbol].price * (0.998 + Math.random() * 0.004); // ±0.2% variation
+      }
+
+      const newTrade = {
+        id: `trade-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        user_id: `demo-user-${i + 1}`,
+        symbol: symbol,
+        amount: amount,
+        direction: direction,
+        duration: duration,
+        entry_price: entryPrice,
+        status: 'active',
+        created_at: new Date(now.getTime() - Math.random() * 10000).toISOString(), // 0-10 seconds ago
+        expires_at: new Date(now.getTime() + duration * 1000 + Math.random() * 10000).toISOString(), // duration + 0-10 seconds
+        users: { username: username },
+        trading_mode: 'normal'
+      };
+
+      trades.push(newTrade);
+      console.log(`🆕 Created new active trade: ${newTrade.id} - ${username} - ${symbol} ${direction} ${amount} USDT`);
+    }
+  }
+}
+
+// Run maintenance every 15 seconds
+setInterval(maintainActiveTrades, 15000);
+
+// Run initial maintenance after 5 seconds to ensure we have active trades
+setTimeout(maintainActiveTrades, 5000);
 
 let transactions = [
   {
