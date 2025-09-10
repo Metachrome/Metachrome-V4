@@ -794,8 +794,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
+      // Handle admin users - map them to their trading profile
+      let finalUserId = userId;
+      if (userId === 'superadmin-001' || userId === 'admin-001') {
+        finalUserId = `${userId}-trading`;
+        console.log(`🔧 Admin user ${userId} trading as ${finalUserId}`);
+      }
+
       const result = await tradingService.createOptionsTrade({
-        userId,
+        userId: finalUserId,
         symbol,
         direction,
         amount,

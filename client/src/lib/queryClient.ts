@@ -26,7 +26,7 @@ const getApiBaseUrl = () => {
   // Development or local production - use local server
   if (isLocal) {
     console.log('🏠 Using local server endpoints');
-    return 'http://127.0.0.1:3003';
+    return 'http://127.0.0.1:3000';
   }
 
   // Fallback to Vite proxy

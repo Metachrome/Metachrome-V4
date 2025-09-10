@@ -54,8 +54,19 @@ export function useAuth() {
           }
         }
 
-        // For real JWT tokens (admin login), make API request to verify
-        if (authToken && !authToken.startsWith('demo-token-') && !authToken.startsWith('admin-session-') && !authToken.startsWith('mock-jwt-token') && authToken !== 'mock-jwt-token') {
+        // For admin tokens (new format), use stored user data
+        if (authToken && (authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_'))) {
+          console.log("Found admin token, using stored user data");
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            console.log("Admin token user data:", userData);
+            return userData;
+          }
+        }
+
+        // For real JWT tokens (other cases), make API request to verify
+        if (authToken && !authToken.startsWith('demo-token-') && !authToken.startsWith('admin-session-') && !authToken.startsWith('mock-jwt-token') && authToken !== 'mock-jwt-token' && !authToken.startsWith('token_admin-001_') && !authToken.startsWith('token_superadmin-001_')) {
           console.log("Making API request for JWT token user");
           const response = await apiRequest("GET", "/api/auth");
           const userData = await response.json();
@@ -69,10 +80,10 @@ export function useAuth() {
 
         // For mock tokens (including admin tokens), try to use stored user data instead of clearing
         const authToken = localStorage.getItem('authToken');
-        if (authToken && (authToken.startsWith('mock-jwt-token') || authToken === 'mock-jwt-token' || authToken === 'mock-admin-token')) {
+        if (authToken && (authToken.startsWith('mock-jwt-token') || authToken === 'mock-jwt-token' || authToken === 'mock-admin-token' || authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_'))) {
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
-            console.log("Auth query failed, but using stored user data for mock token:", authToken);
+            console.log("Auth query failed, but using stored user data for mock token:", authToken.substring(0, 20) + '...');
             return JSON.parse(storedUser);
           }
         }
@@ -129,8 +140,8 @@ export function useAuth() {
   const adminLoginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       try {
-        // Use correct endpoint for admin login
-        let endpoint = "/api/admin/login";
+        // Use direct fetch to bypass any API configuration issues
+        const endpoint = "/api/admin/login";
 
         // Check if we're running locally
         const isLocal = window.location.hostname === 'localhost' ||
@@ -140,16 +151,33 @@ export function useAuth() {
         // Check if we're on Vercel
         const isVercel = window.location.hostname.includes('vercel.app');
 
+        // Construct the full URL directly
+        const baseUrl = isLocal ? 'http://127.0.0.1:3000' : '';
+        const fullUrl = `${baseUrl}${endpoint}`;
+
         console.log('🔧 Login Debug Info:', {
           isLocal,
           isVercel,
           isProd: import.meta.env.PROD,
           hostname: window.location.hostname,
           endpoint,
-          apiBaseUrl: isLocal ? 'http://127.0.0.1:3003' : 'Vercel API'
+          baseUrl,
+          fullUrl
         });
-        
-        const response = await apiRequest("POST", endpoint, credentials);
+
+        // Use direct fetch instead of apiRequest to avoid any configuration issues
+        const response = await fetch(fullUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const data = await response.json();
         return data;
       } catch (error: any) {

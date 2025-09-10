@@ -28,7 +28,7 @@ export function useWebSocket() {
       // Use correct WebSocket URL
       let wsUrl;
       if (isLocal) {
-        wsUrl = 'ws://127.0.0.1:3003/ws';
+        wsUrl = 'ws://127.0.0.1:3000/ws'; // Fixed: Use port 3000 to match server
       } else if (isVercel) {
         // Vercel doesn't support WebSockets in serverless functions
         // We'll use polling instead for Vercel deployment

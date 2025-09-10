@@ -30,7 +30,8 @@ import {
   Minus,
   Key,
   Wallet,
-  Send
+  Send,
+  Trash2
 } from 'lucide-react';
 
 interface User {
@@ -129,7 +130,7 @@ export default function WorkingAdminDashboard() {
       
       const [usersRes, tradesRes, transactionsRes, statsRes] = await Promise.all([
         fetch('/api/admin/users'),
-        fetch('/api/admin/trades'),
+        fetch('/api/admin/live-trades'),
         fetch('/api/admin/transactions'),
         fetch('/api/admin/stats')
       ]);
@@ -142,8 +143,10 @@ export default function WorkingAdminDashboard() {
 
       if (tradesRes.ok) {
         const tradesData = await tradesRes.json();
-        console.log('📈 Trades loaded:', tradesData);
-        setTrades(tradesData);
+        console.log('🔴 Live trades loaded:', tradesData);
+        // Extract trades array from the response
+        const tradesArray = tradesData.trades || tradesData;
+        setTrades(tradesArray);
       }
 
       if (transactionsRes.ok) {
@@ -370,6 +373,38 @@ export default function WorkingAdminDashboard() {
     }
   };
 
+  const handleDeleteUser = async (user: User) => {
+    if (!confirm(`Are you sure you want to delete user "${user.username}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `User "${user.username}" deleted successfully`
+        });
+        fetchData(); // Refresh all data including users list
+      } else {
+        throw new Error('Failed to delete user');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive"
+      });
+    }
+  };
+
   // ===== SUPER ADMIN FUNCTIONS =====
 
   // Process deposit
@@ -568,12 +603,15 @@ export default function WorkingAdminDashboard() {
     }
   };
 
+  // Real-time updates will be handled by the polling mechanism for now
+  // WebSocket integration can be added later when the hook is properly imported
+
   // Load data on component mount
   useEffect(() => {
     fetchData();
-    
-    // Set up auto-refresh every 10 seconds
-    const interval = setInterval(fetchData, 10000);
+
+    // Set up auto-refresh every 5 seconds (less frequent since we have real-time updates)
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1012,6 +1050,15 @@ export default function WorkingAdminDashboard() {
                                   >
                                     <Wallet className="w-4 h-4" />
                                   </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteUser(user)}
+                                    className="text-red-500 hover:text-red-400"
+                                    title="Delete User"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </>
                               )}
                             </div>
@@ -1135,7 +1182,7 @@ export default function WorkingAdminDashboard() {
                               </div>
                             </TableCell>
                             <TableCell className="text-white">
-                              {trade.users?.username || 'Unknown'}
+                              {trade.username || 'Unknown'}
                             </TableCell>
                             <TableCell className="text-white font-medium">{trade.symbol}</TableCell>
                             <TableCell>
@@ -1238,7 +1285,7 @@ export default function WorkingAdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell className="text-white">
-                            {transaction.users?.username || 'Unknown'}
+                            {transaction.username || 'Unknown'}
                           </TableCell>
                           <TableCell>
                             <Badge variant={transaction.type === 'deposit' ? 'default' : 'secondary'}>

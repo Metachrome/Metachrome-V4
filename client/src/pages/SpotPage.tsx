@@ -27,7 +27,7 @@ export default function SpotPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { lastMessage, subscribe, connected } = useWebSocket();
+  const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
 
   // Debug logging
   useEffect(() => {
@@ -67,7 +67,9 @@ export default function SpotPage() {
   const { data: balances } = useQuery({
     queryKey: ['/api/user/balances', user?.id],
     enabled: !!user,
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time sync
+    refetchInterval: 2000, // Very fast refetch for real-time sync
+    staleTime: 0, // Always consider data stale
+    cacheTime: 0, // Don't cache data
     queryFn: async () => {
       const url = user?.id ? `/api/user/balances?userId=${user.id}` : '/api/user/balances';
       console.log('🔍 SPOT: Fetching balance from:', url, 'for user:', user?.id);
@@ -91,29 +93,91 @@ export default function SpotPage() {
     },
   });
 
-  // Get available balances - use actual API data
-  const usdtBalance = balances?.USDT ? parseFloat(balances.USDT.available) :
-                     (Array.isArray(balances?.balances) ?
-                      Number(balances.balances.find((b: any) => b.currency === 'USDT')?.balance || 0) : 0);
-  const btcBalance = balances?.BTC ? parseFloat(balances.BTC.available) : 0.5;
+  // Get available balances - FIXED parsing logic
+  let usdtBalance = 0;
+  let btcBalance = 0.5; // Default BTC balance
 
-  // Debug logging for balance sync
+  if (balances) {
+    // Try multiple parsing strategies to handle different API response formats
+    if (balances.USDT?.available) {
+      // Format: { USDT: { available: "10420", ... } }
+      usdtBalance = Number(balances.USDT.available);
+    } else if (Array.isArray(balances.balances)) {
+      // Format: { balances: [{ currency: "USDT", balance: 10420 }, ...] }
+      const usdtData = balances.balances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
+      usdtBalance = Number(usdtData?.balance || usdtData?.available || 0);
+    } else if (Array.isArray(balances)) {
+      // Format: [{ currency: "USDT", balance: 10420 }, ...]
+      const usdtData = balances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
+      usdtBalance = Number(usdtData?.balance || usdtData?.available || 0);
+    } else if (balances['0']?.currency === 'USDT') {
+      // Format: { "0": { currency: "USDT", balance: 10420 }, ... }
+      usdtBalance = Number(balances['0'].balance || balances['0'].available || 0);
+    }
+
+    // Parse BTC balance similarly
+    if (balances.BTC?.available) {
+      btcBalance = Number(balances.BTC.available);
+    } else if (Array.isArray(balances.balances)) {
+      const btcData = balances.balances.find((b: any) => b.currency === 'BTC' || b.symbol === 'BTC');
+      btcBalance = Number(btcData?.balance || btcData?.available || 0.5);
+    } else if (Array.isArray(balances)) {
+      const btcData = balances.find((b: any) => b.currency === 'BTC' || b.symbol === 'BTC');
+      btcBalance = Number(btcData?.balance || btcData?.available || 0.5);
+    } else if (balances['1']?.currency === 'BTC') {
+      btcBalance = Number(balances['1'].balance || balances['1'].available || 0.5);
+    }
+  }
+
+  // ENHANCED Debug logging for balance sync
   console.log('🔍 SPOT PAGE BALANCE DEBUG:', {
     user: user?.id,
     balances,
     usdtBalance,
-    btcBalance
+    btcBalance,
+    'balances?.USDT': balances?.USDT,
+    'balances?.USDT?.available': balances?.USDT?.available,
+    'Array.isArray(balances?.balances)': Array.isArray(balances?.balances),
+    'Array.isArray(balances)': Array.isArray(balances),
+    'typeof balances': typeof balances,
+    'balances keys': balances ? Object.keys(balances) : 'null'
   });
+
+  // ALERT: Show balance on screen for debugging
+  if (typeof window !== 'undefined') {
+    console.log(`🚨 SPOT PAGE: Displaying balance ${usdtBalance} USDT`);
+  }
+
+  // Subscribe to balance updates via WebSocket
+  useEffect(() => {
+    if (connected && user?.id) {
+      // Subscribe to balance updates for this user
+      sendMessage({
+        type: 'subscribe_user_balance',
+        userId: user.id
+      });
+      console.log('🔌 SPOT: Subscribed to balance updates for user:', user.id);
+    }
+  }, [connected, sendMessage, user?.id]);
 
   // Handle WebSocket balance updates for real-time sync
   useEffect(() => {
     if (lastMessage?.type === 'balance_update') {
       console.log('🔄 SPOT: Real-time balance update received:', lastMessage.data);
+      console.log('🔄 SPOT: Current user ID:', user?.id, 'Update for user:', lastMessage.data?.userId);
 
-      // Invalidate balance queries to trigger refresh
+      // Aggressive cache invalidation - clear all balance-related queries
       queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
+      queryClient.removeQueries({ queryKey: ['/api/user/balances'] });
+
+      // Force immediate refetch with a small delay to ensure cache is cleared
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['/api/user/balances', user?.id] });
+        queryClient.refetchQueries({ queryKey: ['/api/user/balances'] });
+      }, 100);
     }
-  }, [lastMessage, queryClient]);
+  }, [lastMessage, queryClient, user?.id]);
 
   // Fetch Binance price data
   const fetchBinancePrice = async () => {
@@ -228,7 +292,8 @@ export default function SpotPage() {
     if (lastMessage?.type === 'balance_update' && lastMessage.data?.userId === user?.id) {
       console.log('💰 Real-time balance update received in Spot page:', lastMessage.data);
 
-      // Invalidate and refetch balance data to ensure UI sync
+      // Invalidate and refetch balance data to ensure UI sync - use exact query key pattern
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balances', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
 
       // Show notification for balance changes

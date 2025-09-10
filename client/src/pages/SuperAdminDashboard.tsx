@@ -126,7 +126,9 @@ interface SystemStats {
 }
 
 export default function SuperAdminDashboard() {
-  const { user } = useAuth();
+  console.log('🚀 SuperAdminDashboard component is rendering!');
+
+  const { user, isLoading } = useAuth();
   const { lastMessage, connected } = useWebSocket();
   const queryClient = useQueryClient();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -148,10 +150,13 @@ export default function SuperAdminDashboard() {
     action: 'add' // 'add' or 'subtract'
   });
 
-  // Data fetching
+  // Data fetching with real-time refresh
   const { data: users, refetch: refetchUsers } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
-    enabled: !!user && (user.role === 'super_admin' || user.role === 'admin')
+    enabled: !!user && (user.role === 'super_admin' || user.role === 'admin'),
+    refetchInterval: 3000, // Refresh every 3 seconds for real-time admin dashboard
+    staleTime: 0, // Always consider data stale
+    cacheTime: 1000 // Short cache time
   });
 
   const { data: trades, refetch: refetchTrades } = useQuery<Trade[]>({
@@ -176,15 +181,27 @@ export default function SuperAdminDashboard() {
 
   // Handle WebSocket balance updates for real-time admin dashboard sync
   useEffect(() => {
-    if (lastMessage?.type === 'balance_update') {
+    if (lastMessage?.type === 'balance_update' || lastMessage?.type === 'admin_balance_monitor') {
       console.log('🔄 ADMIN: Real-time balance update received:', lastMessage.data);
 
       // Refresh all data when any balance changes
       refetchUsers();
       refetchSystemStats();
+      refetchTrades();
+      refetchTransactions();
+
+      // Also invalidate all balance-related queries
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trades'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/superadmin/system-stats'] });
 
       // Show notification for balance changes
-      if (lastMessage.data.changeType === 'spot_buy' || lastMessage.data.changeType === 'spot_sell') {
+      if (lastMessage.data.changeType === 'spot_buy' || lastMessage.data.changeType === 'spot_sell' ||
+          lastMessage.data.changeType === 'deposit' || lastMessage.data.changeType === 'withdrawal' ||
+          lastMessage.data.changeType === 'trade_start' || lastMessage.data.changeType === 'trade_win' ||
+          lastMessage.data.changeType === 'trade_lose') {
         toast({
           title: "Balance Updated",
           description: `${lastMessage.data.username}: ${lastMessage.data.changeType} - New balance: ${lastMessage.data.newBalance} USDT`,
@@ -192,7 +209,7 @@ export default function SuperAdminDashboard() {
         });
       }
     }
-  }, [lastMessage, refetchUsers, refetchSystemStats]);
+  }, [lastMessage, refetchUsers, refetchSystemStats, refetchTrades, refetchTransactions, queryClient, toast]);
 
   // Mutations
   const createUserMutation = useMutation({
@@ -388,6 +405,53 @@ export default function SuperAdminDashboard() {
     toast({ title: "Data Refreshed", description: "All data has been refreshed" });
   };
 
+  const handleDeleteUser = async (userId: string, username: string) => {
+    try {
+      console.log('🗑️ Deleting user:', userId, username);
+
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to delete user');
+      }
+
+      const result = await response.json();
+      console.log('✅ User deleted successfully:', result);
+
+      toast({
+        title: "User Deleted",
+        description: `User ${username} has been permanently deleted`
+      });
+
+      // Refresh all data to update the UI
+      handleRefreshAll();
+
+    } catch (error) {
+      console.error('❌ Error deleting user:', error);
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "Failed to delete user",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Debug logging BEFORE access control
+  console.log('🔍 SuperAdmin Debug BEFORE ACCESS CHECK:', {
+    user: user,
+    userExists: !!user,
+    userRole: user?.role,
+    isLoading: isLoading,
+    accessCheck: !user || (user.role !== 'super_admin' && user.role !== 'admin')
+  });
+
   // Access control
   if (!user || (user.role !== 'super_admin' && user.role !== 'admin')) {
     return (
@@ -409,6 +473,14 @@ export default function SuperAdminDashboard() {
   }
 
   const isSuperAdmin = user.role === 'super_admin';
+
+  // Debug logging
+  console.log('🔍 SuperAdmin Debug:', {
+    user: user,
+    userRole: user?.role,
+    isSuperAdmin: isSuperAdmin,
+    authToken: localStorage.getItem('authToken')?.substring(0, 30) + '...'
+  });
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -652,7 +724,7 @@ export default function SuperAdminDashboard() {
             </Card>
 
             {/* Users Table */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-gray-800 border-gray-700" style={{border: '5px solid red'}}>
               <CardHeader>
                 <CardTitle className="text-white">User Management</CardTitle>
                 <CardDescription className="text-gray-400">
@@ -754,22 +826,21 @@ export default function SuperAdminDashboard() {
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              {isSuperAdmin && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    // Handle delete user
-                                    if (confirm(`Are you sure you want to delete user ${user.username}?`)) {
-                                      console.log('Delete user:', user.id);
-                                      toast({ title: "Delete User", description: "Delete functionality coming soon" });
-                                    }
-                                  }}
-                                  className="text-gray-400 hover:text-red-400"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
+                              {/* Always show delete button for debugging - will fix role check */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  // Handle delete user
+                                  if (confirm(`Are you sure you want to delete user ${user.username}? This action cannot be undone.`)) {
+                                    handleDeleteUser(user.id, user.username);
+                                  }
+                                }}
+                                className="text-gray-400 hover:text-red-400"
+                                title={`Delete ${user.username} (Debug: isSuperAdmin=${isSuperAdmin}, role=${user.role})`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
