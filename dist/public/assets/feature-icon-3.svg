@@ -1,0 +1,21 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="featureGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Trading/Chart icon -->
+  <rect x="15" y="45" width="8" height="20" rx="2" fill="url(#featureGrad3)" opacity="0.8"/>
+  <rect x="27" y="35" width="8" height="30" rx="2" fill="url(#featureGrad3)" opacity="0.9"/>
+  <rect x="39" y="25" width="8" height="40" rx="2" fill="url(#featureGrad3)" opacity="0.7"/>
+  <rect x="51" y="30" width="8" height="35" rx="2" fill="url(#featureGrad3)" opacity="0.8"/>
+  
+  <!-- Trend line -->
+  <path d="M15 50 L27 40 L39 30 L51 35" stroke="#EC4899" stroke-width="3" fill="none" opacity="0.9"/>
+  <circle cx="15" cy="50" r="3" fill="#EC4899" opacity="0.9"/>
+  <circle cx="27" cy="40" r="3" fill="#EC4899" opacity="0.9"/>
+  <circle cx="39" cy="30" r="3" fill="#EC4899" opacity="0.9"/>
+  <circle cx="51" cy="35" r="3" fill="#EC4899" opacity="0.9"/>
+</svg>

@@ -15,10 +15,14 @@ The deployment issue with `simple-swizzle@0.2.3` has been **PERMANENTLY FIXED**!
 
 ## 🚀 Deploy to Railway
 
-### Step 1: Push Your Code
+### Step 1: Build Locally & Push Your Code
 ```bash
+# Build the application locally (avoids Rollup issues in Docker)
+npm run build
+
+# Commit everything including the dist folder
 git add .
-git commit -m "Fix Railway deployment - stable package versions"
+git commit -m "FINAL FIX: Remove Winston, build locally for Railway deployment"
 git push origin main
 ```
 
