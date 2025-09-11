@@ -12,6 +12,7 @@ RUN npm ci --only=production --legacy-peer-deps || npm install --only=production
 
 # Copy the pre-built application and server files
 COPY simple-start.js ./
+COPY database-integration.js ./
 COPY dist ./dist
 
 # Create non-root user
