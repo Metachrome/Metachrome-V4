@@ -1464,7 +1464,19 @@ app.post('/api/admin/trades/:tradeId/control', (req, res) => {
     // Update trade result
     trade.result = action;
     trade.exit_price = trade.entry_price + (action === 'win' ? 50 : -50);
-    trade.profit = action === 'win' ? trade.amount * 0.1 : -trade.amount;
+
+    // Calculate profit based on duration
+    const profitPercentages = {
+      30: 0.10,   // 10% profit for 30s
+      60: 0.15,   // 15% profit for 60s
+      120: 0.20,  // 20% profit for 120s
+      180: 0.25,  // 25% profit for 180s
+      240: 0.30,  // 30% profit for 240s
+      300: 0.35,  // 35% profit for 300s
+      600: 0.40   // 40% profit for 600s
+    };
+    const profitPercentage = profitPercentages[trade.duration] || 0.15;
+    trade.profit = action === 'win' ? trade.amount * profitPercentage : -trade.amount;
     trade.status = 'completed';
 
     // Update user balance using the unified balance manager
@@ -1549,15 +1561,50 @@ app.get('/api/admin/trading-settings', (req, res) => {
     {
       id: 'setting-30s',
       duration: 30,
-      min_amount: 10,
+      min_amount: 100,
       profit_percentage: 10,
       enabled: true
     },
     {
       id: 'setting-60s',
       duration: 60,
-      min_amount: 10,
+      min_amount: 1000,
       profit_percentage: 15,
+      enabled: true
+    },
+    {
+      id: 'setting-120s',
+      duration: 120,
+      min_amount: 1000,
+      profit_percentage: 20,
+      enabled: true
+    },
+    {
+      id: 'setting-180s',
+      duration: 180,
+      min_amount: 1000,
+      profit_percentage: 25,
+      enabled: true
+    },
+    {
+      id: 'setting-240s',
+      duration: 240,
+      min_amount: 1000,
+      profit_percentage: 30,
+      enabled: true
+    },
+    {
+      id: 'setting-300s',
+      duration: 300,
+      min_amount: 1000,
+      profit_percentage: 35,
+      enabled: true
+    },
+    {
+      id: 'setting-600s',
+      duration: 600,
+      min_amount: 1000,
+      profit_percentage: 40,
       enabled: true
     }
   ]);
@@ -1622,7 +1669,19 @@ app.post('/api/admin/trades/:tradeId/control', (req, res) => {
   // Force the trade outcome
   const isWin = action === 'win';
   const tradeAmount = parseFloat(trade.amount);
-  const profitPercentage = trade.duration === 30 ? 0.10 : 0.15;
+
+  // Calculate profit percentage based on duration
+  const profitPercentages = {
+    30: 0.10,   // 10% profit for 30s
+    60: 0.15,   // 15% profit for 60s
+    120: 0.20,  // 20% profit for 120s
+    180: 0.25,  // 25% profit for 180s
+    240: 0.30,  // 30% profit for 240s
+    300: 0.35,  // 35% profit for 300s
+    600: 0.40   // 40% profit for 600s
+  };
+
+  const profitPercentage = profitPercentages[trade.duration] || 0.15;
   const profit = isWin ? tradeAmount * profitPercentage : 0;
 
   // Update trade
@@ -2347,7 +2406,19 @@ app.post('/api/trades/complete', (req, res) => {
   trade.status = 'completed';
   trade.result = won ? 'win' : 'lose';
   trade.exit_price = trade.entry_price * (won ? 1.01 : 0.99);
-  trade.profit = won ? (payout || amount * 0.1) : -amount;
+
+  // Calculate profit based on duration
+  const profitPercentages = {
+    30: 0.10,   // 10% profit for 30s
+    60: 0.15,   // 15% profit for 60s
+    120: 0.20,  // 20% profit for 120s
+    180: 0.25,  // 25% profit for 180s
+    240: 0.30,  // 30% profit for 240s
+    300: 0.35,  // 35% profit for 300s
+    600: 0.40   // 40% profit for 600s
+  };
+  const profitPercentage = profitPercentages[trade.duration] || 0.15;
+  trade.profit = won ? (payout || amount * profitPercentage) : -amount;
   trade.updated_at = new Date().toISOString();
 
   // Update user balance if won using unified system
@@ -2425,8 +2496,13 @@ function handleOptionsTrading(req, res) {
 
   // Validate minimum amounts based on duration
   const minAmounts = {
-    30: 100,  // 30s requires min 100 USDT
-    60: 1000  // 60s requires min 1000 USDT
+    30: 100,   // 30s requires min 100 USDT
+    60: 1000,  // 60s requires min 1000 USDT
+    120: 1000, // 120s requires min 1000 USDT
+    180: 1000, // 180s requires min 1000 USDT
+    240: 1000, // 240s requires min 1000 USDT
+    300: 1000, // 300s requires min 1000 USDT
+    600: 1000  // 600s requires min 1000 USDT
   };
 
   const minAmount = minAmounts[duration];
@@ -2625,10 +2701,15 @@ function executeOptionsTrade(tradeId) {
   // Calculate profit/loss - SYSTEMATIC IMPLEMENTATION
   const tradeAmount = parseFloat(trade.amount);
   const profitPercentages = {
-    30: 10,  // 10% profit for 30s
-    60: 15   // 15% profit for 60s
+    30: 10,   // 10% profit for 30s
+    60: 15,   // 15% profit for 60s
+    120: 20,  // 20% profit for 120s
+    180: 25,  // 25% profit for 180s
+    240: 30,  // 30% profit for 240s
+    300: 35,  // 35% profit for 300s
+    600: 40   // 40% profit for 600s
   };
-  const profitPercentage = profitPercentages[trade.duration] || 10;
+  const profitPercentage = profitPercentages[trade.duration] || 15;
   const profitAmount = tradeAmount * (profitPercentage / 100);
 
   console.log(`💰 SYSTEMATIC BALANCE CALCULATION:`);
