@@ -21,6 +21,7 @@ import AdminRedirect from "./pages/AdminRedirect";
 import UserLogin from "./pages/UserLogin";
 import SignupPage from "./pages/SignupPage";
 import UserDashboard from "./pages/UserDashboard";
+import TestDashboard from "./pages/TestDashboard";
 import ProfilePage from "./pages/ProfilePage";
 import TransactionHistory from "./pages/TransactionHistory";
 import AdminTransactionsPage from "./pages/AdminTransactionsPage";
