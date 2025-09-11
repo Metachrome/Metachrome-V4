@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../hooks/use-toast';
 import { Link } from 'wouter';
 import { useState } from 'react';
+import { CryptoTopUp } from '../components/CryptoTopUp';
 import {
   TrendingUp,
   TrendingDown,
@@ -40,9 +41,6 @@ export default function UserDashboard() {
 
   // State for UI controls
   const [showBalance, setShowBalance] = useState(true);
-  const [topUpAmount, setTopUpAmount] = useState('');
-  const [selectedCurrency, setSelectedCurrency] = useState('USDT');
-  const [paymentMethod, setPaymentMethod] = useState('crypto');
 
   // Chat state
   const [showChat, setShowChat] = useState(false);
@@ -134,43 +132,7 @@ export default function UserDashboard() {
     },
   });
 
-  // Top-up mutation (real data)
-  const topUpMutation = useMutation({
-    mutationFn: async (data: { amount: string; currency: string; method: string }) => {
-      const response = await fetch('/api/transactions/topup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          amount: data.amount,
-          currency: data.currency,
-          method: data.method,
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Top-up failed');
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: 'Top-up Successful',
-        description: `Successfully added ${topUpAmount} ${selectedCurrency} to your account. New balance: ${data.newBalance}`,
-      });
-      setTopUpAmount('');
-      // Refresh all related data
-      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Top-up Failed',
-        description: error.message || 'Failed to process top-up',
-        variant: 'destructive',
-      });
-    },
-  });
+  // Removed old topUpMutation - now using CryptoTopUp component
 
   // Process real market data for display
   const processedMarketData = marketData?.map(data => ({
@@ -206,21 +168,7 @@ export default function UserDashboard() {
   const winningTrades = completedTrades.filter((t: any) => parseFloat(t.profit || '0') > 0);
   const winRate = completedTrades.length > 0 ? (winningTrades.length / completedTrades.length * 100).toFixed(1) : '0';
 
-  const handleTopUp = () => {
-    if (!topUpAmount || parseFloat(topUpAmount) <= 0) {
-      toast({
-        title: 'Invalid Amount',
-        description: 'Please enter a valid amount',
-        variant: 'destructive',
-      });
-      return;
-    }
-    topUpMutation.mutate({
-      amount: topUpAmount,
-      currency: selectedCurrency,
-      method: paymentMethod,
-    });
-  };
+  // Removed handleTopUp function - now using CryptoTopUp component
 
   const handleSendMessage = () => {
     if (!chatMessage.trim()) {
@@ -368,7 +316,7 @@ export default function UserDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Link href="/trading">
+              <Link href="/trade/options">
                 <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Options Trading
@@ -438,65 +386,12 @@ export default function UserDashboard() {
                       Top Up
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-gray-800 border-gray-700">
+                  <DialogContent className="bg-gray-800 border-gray-700 max-w-4xl">
                     <DialogHeader>
                       <DialogTitle className="text-white">Add Funds to Your Account</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="amount" className="text-gray-300">Amount</Label>
-                        <Input
-                          id="amount"
-                          type="number"
-                          placeholder="Enter amount"
-                          value={topUpAmount}
-                          onChange={(e) => setTopUpAmount(e.target.value)}
-                          className="bg-gray-700 border-gray-600 text-white"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="currency" className="text-gray-300">Currency</Label>
-                        <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                          <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-700 border-gray-600">
-                            <SelectItem value="USDT">USDT</SelectItem>
-                            <SelectItem value="BTC">BTC</SelectItem>
-                            <SelectItem value="ETH">ETH</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="method" className="text-gray-300">Payment Method</Label>
-                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                          <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-700 border-gray-600">
-                            <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                            <SelectItem value="card">Credit/Debit Card</SelectItem>
-                            <SelectItem value="bank">Bank Transfer</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button
-                        onClick={handleTopUp}
-                        disabled={topUpMutation.isPending}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        {topUpMutation.isPending ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Add Funds
-                          </>
-                        )}
-                      </Button>
+                    <div className="mt-4">
+                      <CryptoTopUp />
                     </div>
                   </DialogContent>
                 </Dialog>
