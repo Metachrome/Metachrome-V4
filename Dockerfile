@@ -2,16 +2,17 @@
 FROM node:18-slim AS builder
 WORKDIR /app
 
-# Copy dependency manifests first (better cache)
+# Copy dependency manifests first
 COPY package*.json ./
 
-# Install all dependencies (incl. devDependencies for build)
-RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+# Install all dependencies (including devDeps) using npm install
+# (avoids Rollup optional dependency bug with npm ci)
+RUN npm install --legacy-peer-deps
 
-# Copy the rest of the source
+# Copy project files
 COPY . .
 
-# Run build (generates dist/)
+# Build app (generates dist/)
 RUN npm run build
 
 
@@ -21,7 +22,7 @@ WORKDIR /app
 
 # Copy only package files and install prod deps
 COPY package*.json ./
-RUN npm ci --only=production --legacy-peer-deps || npm install --only=production --legacy-peer-deps
+RUN npm install --only=production --legacy-peer-deps
 
 # Copy required runtime files from builder
 COPY --from=builder /app/dist ./dist
@@ -32,12 +33,12 @@ COPY --from=builder /app/admin-data.json ./
 # Create uploads directory for file uploads
 RUN mkdir -p uploads
 
-# Security: non-root user
+# Security: use non-root user
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Railway exposes $PORT automatically
+# Railway automatically injects $PORT
 EXPOSE $PORT
 
 ENV NODE_ENV=production
