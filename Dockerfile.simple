@@ -1,7 +1,7 @@
-# Simple Dockerfile that doesn't build in container
+# Simple Dockerfile for running pre-built app (no build in container)
 FROM node:18-slim
 
-# Install system dependencies
+# Install system dependencies (minimal)
 RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
@@ -10,12 +10,11 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY .npmrc ./
 
 # Install only production dependencies
 RUN npm ci --only=production --legacy-peer-deps || npm install --only=production --legacy-peer-deps
 
-# Copy pre-built application
+# Copy pre-built application files
 COPY . .
 
 # Create non-root user
@@ -23,7 +22,7 @@ RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port
+# Expose port (Railway will map this automatically)
 EXPOSE 3000
 
 # Set environment
@@ -31,4 +30,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Start the application
-CMD ["node", "simple-start.js"]
+CMD ["node", "working-server.js"]
