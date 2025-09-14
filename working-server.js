@@ -5,7 +5,7 @@ const cors = require('cors');
 const multer = require('multer');
 
 const app = express();
-const PORT = 9000;
+const PORT = process.env.PORT || 9000;
 
 // Configure multer for file uploads
 const upload = multer({
