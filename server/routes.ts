@@ -25,6 +25,31 @@ import { setupOAuth } from "./oauth";
 import { z } from "zod";
 import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdminControlSchema } from "@shared/schema";
 
+// Helper functions for deposit addresses and network info
+function getDepositAddress(currency: string): string {
+  const depositAddresses: { [key: string]: string } = {
+    'USDT-ERC': '0xabc123def456789abc123def456789abc123def45',
+    'USDT-BEP': 'bnb1abc123def456789abc123def456789abc123def',
+    'USDT-TRC': 'TRX123abc456def789abc123def456789abc123def',
+    'BTC': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    'ETH': '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b',
+    'SOL': 'DRpbCBMxVnDK7maPM5tGv6MvB3v1sRMC7Twb4k9UYuza'
+  };
+  return depositAddresses[currency] || 'Address not available';
+}
+
+function getNetworkInfo(currency: string): { name: string; confirmations: number } {
+  const networkInfo: { [key: string]: { name: string; confirmations: number } } = {
+    'USDT-ERC': { name: 'Ethereum (ERC20)', confirmations: 12 },
+    'USDT-BEP': { name: 'Binance Smart Chain (BEP20)', confirmations: 15 },
+    'USDT-TRC': { name: 'Tron (TRC20)', confirmations: 19 },
+    'BTC': { name: 'Bitcoin', confirmations: 3 },
+    'ETH': { name: 'Ethereum', confirmations: 12 },
+    'SOL': { name: 'Solana', confirmations: 32 }
+  };
+  return networkInfo[currency] || { name: 'Unknown Network', confirmations: 1 };
+}
+
 // Production payment verification functions
 async function verifyBlockchainTransaction(txHash: string, currency: string, amount: string): Promise<boolean> {
   try {
@@ -108,7 +133,7 @@ if (multer) {
       const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|zip/;
       const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
       const mimetype = allowedTypes.test(file.mimetype);
-      
+
       if (mimetype && extname) {
         return cb(null, true);
       } else {
@@ -116,10 +141,29 @@ if (multer) {
       }
     }
   });
-  
+
   console.log("✅ File upload system initialized with multer");
 } else {
   console.log("⚠️ File upload system using text-only mode (multer not available)");
+}
+
+// Helper functions for deposit addresses and network info
+function getDepositAddress(currency: string): string {
+  const addresses: { [key: string]: string } = {
+    'USDT-ERC': '0x3BC095D473398033496F94a1a1a3A7084c',
+    'BTC': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    'ETH': '0x3BC095D473398033496F94a1a1a3A7084c'
+  };
+  return addresses[currency] || addresses['USDT-ERC'];
+}
+
+function getNetworkInfo(currency: string): string {
+  const networks: { [key: string]: string } = {
+    'USDT-ERC': 'Ethereum (ERC-20)',
+    'BTC': 'Bitcoin',
+    'ETH': 'Ethereum'
+  };
+  return networks[currency] || 'Ethereum (ERC-20)';
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2167,8 +2211,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create crypto deposit transaction (PRODUCTION READY)
-  app.post("/api/transactions/deposit", async (req, res) => {
+  // Create deposit request endpoint (for user dashboard)
+  app.post("/api/transactions/deposit-request", requireAuth, async (req, res) => {
+    try {
+      // Get user from session
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { amount, currency } = req.body;
+
+      if (!amount || !currency || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: "Invalid amount or currency" });
+      }
+
+      // Validate minimum amounts
+      const minAmounts: { [key: string]: number } = {
+        'USDT-ERC': 10,
+        'USDT-BEP': 10,
+        'USDT-TRC': 10,
+        'BTC': 0.001,
+        'ETH': 0.01,
+        'SOL': 0.1
+      };
+
+      const minAmount = minAmounts[currency] || 1;
+      if (parseFloat(amount) < minAmount) {
+        return res.status(400).json({
+          message: `Minimum deposit amount is ${minAmount} ${currency}`
+        });
+      }
+
+      // Generate unique deposit ID
+      const depositId = `dep_${Date.now()}_${user.id}`;
+
+      // Create pending transaction record
+      const transaction = await storage.createTransaction({
+        userId: user.id,
+        type: 'deposit',
+        symbol: currency,
+        amount: amount,
+        fee: '0',
+        status: 'pending',
+        txHash: `pending_${depositId}`,
+        metadata: JSON.stringify({
+          depositId,
+          depositAddress: getDepositAddress(currency),
+          network: getNetworkInfo(currency),
+          createdAt: new Date().toISOString()
+        }),
+        createdAt: new Date(),
+      });
+
+      res.json({
+        success: true,
+        depositId,
+        transactionId: transaction.id,
+        amount: amount,
+        currency: currency,
+        status: 'pending',
+        message: "Deposit request created successfully. Please complete the payment and upload receipt."
+      });
+    } catch (error) {
+      console.error("Error creating deposit request:", error);
+      res.status(500).json({ message: "Failed to create deposit request" });
+    }
+  });
+
+  // Submit proof endpoint (for receipt upload)
+  app.post("/api/transactions/submit-proof", requireAuth, async (req, res) => {
+    try {
+      // Get user from session
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { depositId, txHash, walletAddress } = req.body;
+
+      if (!depositId) {
+        return res.status(400).json({ message: "Deposit ID is required" });
+      }
+
+      // Find the transaction by deposit ID
+      const transactions = await storage.getTransactionsByUserId(user.id);
+      const transaction = transactions.find(t => {
+        try {
+          const metadata = JSON.parse(t.metadata || '{}');
+          return metadata.depositId === depositId;
+        } catch {
+          return false;
+        }
+      });
+
+      if (!transaction) {
+        return res.status(404).json({ message: "Deposit request not found" });
+      }
+
+      if (transaction.status !== 'pending') {
+        return res.status(400).json({ message: "Deposit request is not pending" });
+      }
+
+      // Update transaction with proof information
+      const updatedMetadata = {
+        ...JSON.parse(transaction.metadata || '{}'),
+        txHash: txHash || `user_upload_${Date.now()}`,
+        walletAddress: walletAddress || 'user_wallet_address',
+        proofSubmittedAt: new Date().toISOString(),
+        status: 'verifying'
+      };
+
+      // Update transaction status to verifying
+      await storage.updateTransaction(transaction.id, {
+        status: 'verifying',
+        txHash: txHash || transaction.txHash,
+        metadata: JSON.stringify(updatedMetadata)
+      });
+
+      res.json({
+        success: true,
+        message: "Transaction proof submitted successfully. Your deposit is now being verified.",
+        depositId,
+        status: 'verifying'
+      });
+    } catch (error) {
+      console.error("Error submitting proof:", error);
+      res.status(500).json({ message: "Failed to submit proof" });
+    }
+  });
+
+  // Create crypto deposit transaction (PRODUCTION READY) with file upload support
+  const depositHandler = upload ? upload.single('receipt') : (req: any, res: any, next: any) => next();
+
+  app.post("/api/transactions/deposit", depositHandler, async (req, res) => {
     try {
       // Get user from session
       const user = req.session.user;
@@ -2177,22 +2353,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { amount, currency, txHash, method, paymentData } = req.body;
+      const receiptFile = req.file;
 
       if (!amount || !currency || parseFloat(amount) <= 0) {
         return res.status(400).json({ message: "Invalid amount or currency" });
       }
 
+      // Validate minimum amounts
+      const minAmounts: { [key: string]: number } = {
+        'USDT-ERC': 10,
+        'BTC': 0.001,
+        'ETH': 0.01
+      };
+
+      const minAmount = minAmounts[currency] || 1;
+      if (parseFloat(amount) < minAmount) {
+        return res.status(400).json({
+          message: `Minimum deposit amount is ${minAmount} ${currency}`
+        });
+      }
+
       // Validate method-specific requirements
       if (method === 'crypto') {
-        if (!txHash) {
-          return res.status(400).json({ message: "Transaction hash required for crypto deposits" });
-        }
-
-        // TODO: Verify transaction on blockchain
-        const isValidTx = await verifyBlockchainTransaction(txHash, currency, amount);
-        if (!isValidTx) {
-          return res.status(400).json({ message: "Invalid or unconfirmed transaction" });
-        }
+        // For crypto deposits with receipt, we don't require txHash immediately
+        // The receipt will be reviewed manually
+        console.log('📄 Crypto deposit with receipt:', receiptFile ? receiptFile.filename : 'No receipt');
       } else if (method === 'card') {
         if (!paymentData?.paymentIntentId) {
           return res.status(400).json({ message: "Payment intent ID required for card payments" });
@@ -2213,8 +2398,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (method === 'bank') {
         transactionStatus = 'pending'; // Bank transfers always need manual approval
       } else if (method === 'crypto') {
-        transactionStatus = 'pending'; // Crypto needs blockchain verification
+        transactionStatus = 'pending'; // Crypto needs manual verification with receipt
       }
+
+      // Prepare metadata including receipt information
+      const metadata = {
+        ...paymentData,
+        receiptFile: receiptFile ? {
+          filename: receiptFile.filename,
+          originalName: receiptFile.originalname,
+          size: receiptFile.size,
+          mimetype: receiptFile.mimetype,
+          uploadedAt: new Date().toISOString()
+        } : null,
+        depositAddress: getDepositAddress(currency),
+        network: getNetworkInfo(currency)
+      };
 
       // Create transaction record
       const transaction = await storage.createTransaction({
@@ -2224,15 +2423,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: amount,
         fee: '0',
         status: transactionStatus,
-        txHash: txHash || null,
-        method: method,
-        metadata: JSON.stringify(paymentData || {}),
+        txHash: txHash || `pending_${Date.now()}`,
+        method: method || 'crypto',
+        metadata: JSON.stringify(metadata),
         createdAt: new Date(),
       });
 
-      // For crypto and card payments, process immediately after verification
-      if (method === 'crypto' || method === 'card') {
-        // Update transaction status to completed
+      // For crypto deposits with receipts, keep as pending for manual review
+      // For card payments, process immediately after verification
+      if (method === 'card' && paymentData?.paymentIntentId) {
+        // Update transaction status to completed for verified card payments
         await storage.updateTransaction(transaction.id, { status: 'completed' });
 
         // Update user balance
@@ -2248,6 +2448,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Deposit successful",
           amount: amount,
           currency: currency
+        });
+      } else {
+        // For crypto and bank deposits, keep as pending
+        res.json({
+          transaction,
+          message: "Deposit request submitted successfully. Your deposit will be processed after verification.",
+          amount: amount,
+          currency: currency,
+          receiptUploaded: !!receiptFile
         });
       } else {
         // Bank transfers remain pending

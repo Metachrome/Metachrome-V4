@@ -3,15 +3,19 @@ import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
 import { Mail, MessageCircle, Clock, ChevronDown, ChevronRight, Phone } from "lucide-react";
+import { useIsMobile } from "../hooks/use-mobile";
 import faqImage from "@assets/FAQ_image-2_1755414462649.png";
+import supportBannerDesktop from "../assets/support_banner_desktop.jpg";
+import supportBannerMobile from "../assets/support_banner_mobile.jpg";
 
 export default function SupportPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const isMobile = useIsMobile();
 
   const supportOptions = [
     {
-      icon: "/assets/icon_support_email.png",
+      icon: "/icon_support_email.png",
       title: "Email Us",
       description: "Email our support team for general queries or platform assistance.",
       contact: "support@metachrome.io",
@@ -19,7 +23,7 @@ export default function SupportPage() {
       color: "from-purple-500 to-purple-600"
     },
     {
-      icon: "/assets/icon_support_livechat.png",
+      icon: "/icon_support_livechat.png",
       title: "Live Chat",
       description: "Get in touch with our team members over Live Chat 24/7.",
       contact: "",
@@ -27,7 +31,7 @@ export default function SupportPage() {
       color: "from-purple-500 to-purple-600"
     },
     {
-      icon: "/assets/icon_support_whatsapp.png",
+      icon: "/icon_support_whatsapp.png",
       title: "WhatsApp",
       description: "Get in touch with our team members over WhatsApp.",
       contact: "",
@@ -50,18 +54,40 @@ export default function SupportPage() {
       <section className="relative overflow-hidden bg-black w-full py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Support Banner Image */}
-          <div className="relative h-52 overflow-hidden rounded-lg">
+          <div className={`relative overflow-hidden rounded-lg ${isMobile ? 'h-64' : 'h-80'}`}>
             <img
-              src="/assets/support_banner_desktop.jpg"
+              src={isMobile ? supportBannerMobile : supportBannerDesktop}
               alt="Support Banner"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
+              style={{ objectPosition: 'center center' }}
+              onLoad={() => console.log('Support banner loaded successfully')}
               onError={(e) => {
-                console.log('Image failed to load:', e.target.src);
+                console.error('Image failed to load:', e.target.src);
                 // Fallback to a solid background if image fails
                 e.target.parentElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                 e.target.style.display = 'none';
               }}
             />
+
+            {/* Text Overlay with Start Trading Button */}
+            <div className="absolute inset-0 flex flex-col justify-center items-start px-8 md:px-16">
+              <div className="text-white max-w-lg">
+                <h1 className={`font-bold mb-4 ${isMobile ? 'text-3xl' : 'text-5xl'}`}>
+                  Need Help?
+                </h1>
+                <p className={`mb-6 opacity-90 ${isMobile ? 'text-base' : 'text-xl'}`}>
+                  Get support from our expert team
+                </p>
+
+                {/* Start Trading Button */}
+                <button
+                  onClick={() => window.location.href = '/trade'}
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                  Start Trading
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -79,8 +105,11 @@ export default function SupportPage() {
                   <img
                     src={option.icon}
                     alt={option.title}
-                    className="mx-auto"
-                    style={{ width: '25%', height: 'auto' }}
+                    className="mx-auto w-16 h-16 object-contain"
+                    onLoad={() => console.log('Support icon loaded:', option.icon)}
+                    onError={(e) => {
+                      console.error('Support icon failed to load:', e.target.src);
+                    }}
                   />
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-4">{option.title}</h3>

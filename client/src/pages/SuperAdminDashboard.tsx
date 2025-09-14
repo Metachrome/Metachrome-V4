@@ -62,6 +62,28 @@ import {
   StopCircle
 } from 'lucide-react';
 
+// Helper function to safely parse balance values
+const parseBalance = (balance: any): number => {
+  if (typeof balance === 'number') {
+    return balance;
+  }
+  if (typeof balance === 'string') {
+    // Remove any formatting and parse as float
+    const cleaned = balance.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+// Helper function to calculate total balance safely
+const calculateTotalBalance = (users: any[]): number => {
+  return users.reduce((sum, user) => {
+    const balance = parseBalance(user.balance);
+    return sum + balance;
+  }, 0);
+};
+
 // Core interfaces
 interface User {
   id: string;
@@ -150,11 +172,14 @@ export default function SuperAdminDashboard() {
     action: 'add' // 'add' or 'subtract'
   });
 
+  // Receipt viewer state
+  const [selectedReceipt, setSelectedReceipt] = useState<{url: string, filename: string} | null>(null);
+
   // Data fetching with real-time refresh
   const { data: users, refetch: refetchUsers } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
     enabled: !!user && (user.role === 'super_admin' || user.role === 'admin'),
-    refetchInterval: 3000, // Refresh every 3 seconds for real-time admin dashboard
+    // refetchInterval: 3000, // Temporarily disabled to stop auto-refresh
     staleTime: 0, // Always consider data stale
     cacheTime: 1000 // Short cache time
   });
@@ -169,6 +194,16 @@ export default function SuperAdminDashboard() {
     enabled: !!user && (user.role === 'super_admin' || user.role === 'admin')
   });
 
+  const { data: pendingRequests, refetch: refetchPendingRequests } = useQuery<{
+    deposits: any[];
+    withdrawals: any[];
+    total: number;
+  }>({
+    queryKey: ['/api/admin/pending-requests'],
+    enabled: !!user && user.role === 'super_admin',
+    refetchInterval: 5000 // Refresh every 5 seconds for real-time updates
+  });
+
   const { data: tradingSettings, refetch: refetchTradingSettings } = useQuery<TradingSettings[]>({
     queryKey: ['/api/admin/trading-settings'],
     enabled: !!user && user.role === 'super_admin'
@@ -179,7 +214,7 @@ export default function SuperAdminDashboard() {
     enabled: !!user && user.role === 'super_admin'
   });
 
-  // Handle WebSocket balance updates for real-time admin dashboard sync
+  // Handle WebSocket updates for real-time admin dashboard sync
   useEffect(() => {
     if (lastMessage?.type === 'balance_update' || lastMessage?.type === 'admin_balance_monitor') {
       console.log('🔄 ADMIN: Real-time balance update received:', lastMessage.data);
@@ -189,12 +224,20 @@ export default function SuperAdminDashboard() {
       refetchSystemStats();
       refetchTrades();
       refetchTransactions();
+    }
 
-      // Also invalidate all balance-related queries
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/trades'] });
+    // Handle real-time transaction updates
+    if (lastMessage?.type === 'transaction_created' || lastMessage?.type === 'admin_transaction_update') {
+      console.log('💰 ADMIN: Real-time transaction update received:', lastMessage.data);
+
+      // Only refresh the necessary data to prevent loops
+      refetchTransactions();
+      refetchUsers(); // Update user balances
+      refetchSystemStats(); // Update total volume, etc.
+
+      // Invalidate specific queries only (reduced to prevent excessive refetching)
       queryClient.invalidateQueries({ queryKey: ['/api/admin/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/superadmin/system-stats'] });
 
       // Show notification for balance changes
@@ -208,6 +251,22 @@ export default function SuperAdminDashboard() {
           duration: 3000
         });
       }
+    }
+
+    // Handle pending request notifications
+    if (lastMessage?.type === 'pending_deposit_proof' || lastMessage?.type === 'pending_withdrawal_request') {
+      console.log('🔔 ADMIN: New pending request received:', lastMessage.data);
+
+      // Refresh pending requests
+      refetchPendingRequests();
+
+      // Show notification
+      const isDeposit = lastMessage.type === 'pending_deposit_proof';
+      toast({
+        title: `New ${isDeposit ? 'Deposit' : 'Withdrawal'} Request`,
+        description: `${lastMessage.data.username} requested ${isDeposit ? 'deposit' : 'withdrawal'} of $${lastMessage.data.amount}`,
+        duration: 5000
+      });
     }
   }, [lastMessage, refetchUsers, refetchSystemStats, refetchTrades, refetchTransactions, queryClient, toast]);
 
@@ -381,6 +440,86 @@ export default function SuperAdminDashboard() {
     }
   });
 
+  // Approve deposit mutation
+  const approveDepositMutation = useMutation({
+    mutationFn: async ({ depositId, action, reason }: { depositId: string; action: 'approve' | 'reject'; reason?: string }) => {
+      console.log('Deposit action:', depositId, action, reason);
+      const response = await fetch(`/api/admin/deposits/${depositId}/action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ action, reason })
+      });
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to process deposit');
+      }
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: `Deposit ${variables.action === 'approve' ? 'Approved' : 'Rejected'}`,
+        description: data.message || `Deposit ${variables.action}d successfully`,
+        duration: 3000
+      });
+      refetchPendingRequests();
+      refetchUsers();
+      refetchTransactions();
+      refetchSystemStats();
+    },
+    onError: (error: any) => {
+      console.error('Failed to process deposit:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process deposit",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  });
+
+  // Approve withdrawal mutation
+  const approveWithdrawalMutation = useMutation({
+    mutationFn: async ({ withdrawalId, action, reason }: { withdrawalId: string; action: 'approve' | 'reject'; reason?: string }) => {
+      console.log('Withdrawal action:', withdrawalId, action, reason);
+      const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ action, reason })
+      });
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to process withdrawal');
+      }
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: `Withdrawal ${variables.action === 'approve' ? 'Approved' : 'Rejected'}`,
+        description: data.message || `Withdrawal ${variables.action}d successfully`,
+        duration: 3000
+      });
+      refetchPendingRequests();
+      refetchUsers();
+      refetchTransactions();
+      refetchSystemStats();
+    },
+    onError: (error: any) => {
+      console.error('Failed to process withdrawal:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process withdrawal",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  });
+
   // Event handlers
   const handleTradingModeChange = (userId: string, mode: 'win' | 'normal' | 'lose') => {
     console.log('Changing trading mode for user:', userId, 'to:', mode);
@@ -520,7 +659,7 @@ export default function SuperAdminDashboard() {
 
       <div className="max-w-7xl mx-auto p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-800 border-gray-700">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-800 border-gray-700">
             <TabsTrigger value="overview">
               <BarChart3 className="w-4 h-4 mr-2" />
               Overview
@@ -536,6 +675,10 @@ export default function SuperAdminDashboard() {
             <TabsTrigger value="transactions">
               <DollarSign className="w-4 h-4 mr-2" />
               Transactions
+            </TabsTrigger>
+            <TabsTrigger value="pending">
+              <Shield className="w-4 h-4 mr-2" />
+              Pending Requests
             </TabsTrigger>
             <TabsTrigger value="controls">
               <Settings className="w-4 h-4 mr-2" />
@@ -636,7 +779,7 @@ export default function SuperAdminDashboard() {
                     <div>
                       <p className="text-gray-400 text-sm">Total Balance</p>
                       <p className="text-2xl font-bold text-white">
-                        ${users?.reduce((sum, u) => sum + u.balance, 0).toLocaleString() || 0}
+                        ${users ? calculateTotalBalance(users).toLocaleString() : 0}
                       </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-purple-500" />
@@ -1302,6 +1445,196 @@ export default function SuperAdminDashboard() {
             </Card>
           </TabsContent>
 
+          {/* Pending Requests Tab */}
+          <TabsContent value="pending" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Pending Deposits */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center space-x-2">
+                    <DollarSign className="w-5 h-5 text-green-400" />
+                    <span>Pending Deposits</span>
+                    <Badge variant="secondary" className="ml-2">
+                      {pendingRequests?.deposits?.length || 0}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Review and approve user deposit requests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pendingRequests?.deposits?.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No pending deposits</p>
+                      </div>
+                    ) : (
+                      pendingRequests?.deposits?.map((deposit: any) => (
+                        <div key={deposit.id} className="bg-gray-700 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-white font-medium">{deposit.username}</p>
+                              <p className="text-sm text-gray-400">Balance: ${deposit.user_balance}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-green-400">${deposit.amount}</p>
+                              <p className="text-sm text-gray-400">{deposit.currency}</p>
+                            </div>
+                          </div>
+
+                          {deposit.tx_hash && (
+                            <div className="text-sm">
+                              <p className="text-gray-400">Transaction Hash:</p>
+                              <p className="text-blue-400 font-mono break-all">{deposit.tx_hash}</p>
+                            </div>
+                          )}
+
+                          <div className="text-sm text-gray-400">
+                            <p>Requested: {new Date(deposit.created_at).toLocaleString()}</p>
+                            <p>Status: <span className="text-yellow-400">{deposit.status}</span></p>
+                          </div>
+
+                          {/* Receipt Display */}
+                          {deposit.receiptUploaded && deposit.receiptViewUrl && (
+                            <div className="bg-gray-600 rounded-lg p-3">
+                              <p className="text-sm text-gray-300 mb-2">📄 Receipt Uploaded:</p>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  onClick={() => setSelectedReceipt({
+                                    url: deposit.receiptViewUrl,
+                                    filename: deposit.receiptFile?.originalname || 'Receipt'
+                                  })}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-white"
+                                >
+                                  View Receipt
+                                </Button>
+                                {deposit.receiptFile?.originalname && (
+                                  <span className="text-xs text-gray-400">
+                                    {deposit.receiptFile.originalname}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => approveDepositMutation.mutate({
+                                depositId: deposit.id,
+                                action: 'approve'
+                              })}
+                              disabled={approveDepositMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 flex-1"
+                              size="sm"
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              Approve
+                            </Button>
+                            <Button
+                              onClick={() => approveDepositMutation.mutate({
+                                depositId: deposit.id,
+                                action: 'reject',
+                                reason: 'Invalid transaction proof'
+                              })}
+                              disabled={approveDepositMutation.isPending}
+                              variant="destructive"
+                              className="flex-1"
+                              size="sm"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pending Withdrawals */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center space-x-2">
+                    <TrendingUp className="w-5 h-5 text-red-400" />
+                    <span>Pending Withdrawals</span>
+                    <Badge variant="secondary" className="ml-2">
+                      {pendingRequests?.withdrawals?.length || 0}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Review and approve user withdrawal requests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pendingRequests?.withdrawals?.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No pending withdrawals</p>
+                      </div>
+                    ) : (
+                      pendingRequests?.withdrawals?.map((withdrawal: any) => (
+                        <div key={withdrawal.id} className="bg-gray-700 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-white font-medium">{withdrawal.username}</p>
+                              <p className="text-sm text-gray-400">Balance: ${withdrawal.user_balance}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-red-400">${withdrawal.amount}</p>
+                              <p className="text-sm text-gray-400">{withdrawal.currency}</p>
+                            </div>
+                          </div>
+
+                          <div className="text-sm">
+                            <p className="text-gray-400">Wallet Address:</p>
+                            <p className="text-blue-400 font-mono break-all">{withdrawal.wallet_address}</p>
+                          </div>
+
+                          <div className="text-sm text-gray-400">
+                            <p>Requested: {new Date(withdrawal.created_at).toLocaleString()}</p>
+                            <p>Status: <span className="text-yellow-400">{withdrawal.status}</span></p>
+                          </div>
+
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => approveWithdrawalMutation.mutate({
+                                withdrawalId: withdrawal.id,
+                                action: 'approve'
+                              })}
+                              disabled={approveWithdrawalMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 flex-1"
+                              size="sm"
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              Approve
+                            </Button>
+                            <Button
+                              onClick={() => approveWithdrawalMutation.mutate({
+                                withdrawalId: withdrawal.id,
+                                action: 'reject',
+                                reason: 'Insufficient verification'
+                              })}
+                              disabled={approveWithdrawalMutation.isPending}
+                              variant="destructive"
+                              className="flex-1"
+                              size="sm"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-6">
             <Card className="bg-gray-800 border-gray-700">
@@ -1552,6 +1885,30 @@ export default function SuperAdminDashboard() {
                  balanceUpdateData.action === 'add' ? 'Add Funds' : 'Subtract Funds'}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Viewer Modal */}
+      <Dialog open={!!selectedReceipt} onOpenChange={() => setSelectedReceipt(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              Receipt: {selectedReceipt?.filename}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center items-center p-4">
+            {selectedReceipt && (
+              <img
+                src={selectedReceipt.url}
+                alt="Receipt"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                onError={(e) => {
+                  console.error('Failed to load receipt image');
+                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNjY2NjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UmVjZWlwdCBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+';
+                }}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

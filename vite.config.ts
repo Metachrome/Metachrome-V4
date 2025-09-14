@@ -29,7 +29,9 @@ export default defineConfig({
         assetFileNames: `assets/[name]-${Date.now()}.[ext]`
       }
     },
+    copyPublicDir: true,
   },
+  publicDir: path.resolve(__dirname, "attached_assets"),
   server: {
     fs: {
       strict: true,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
+import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import TradingViewWidget from "../components/TradingViewWidget";
 import TradeNotification from "../components/TradeNotification";
 import TradeOverlay from "../components/TradeOverlay";
@@ -8,8 +9,8 @@ import { playTradeSound } from "../utils/sounds";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useIsMobile } from '../hooks/use-mobile';
 import { apiRequest } from '../lib/queryClient';
-import { useEffect } from 'react';
 import type { MarketData } from '../../../shared/schema';
 
 interface ActiveTrade {
@@ -30,6 +31,7 @@ export default function OptionsPage() {
   const { user } = useAuth();
   const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("open");
@@ -613,6 +615,263 @@ export default function OptionsPage() {
 
   // Error boundary wrapper
   try {
+    // Mobile layout
+    if (isMobile) {
+      return (
+        <div className="min-h-screen bg-[#10121E] text-white pb-20">
+          <Navigation />
+
+          {/* Mobile Header */}
+          <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700 sticky top-0 z-40">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-white font-bold text-lg">BTC/USDT</div>
+                <div className="text-white text-xl font-bold">${realTimePrice || safeCurrentPrice.toFixed(2)}</div>
+                <div className={`text-sm font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                  {priceChange || btcMarketData?.priceChangePercent24h || '+0.00%'}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-gray-400 text-xs">24h Vol</div>
+                <div className="text-white text-sm font-bold">
+                  {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(2) + 'M' : '0.00M'}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Market Stats */}
+            <div className="grid grid-cols-4 gap-2 mt-3 text-xs">
+              <div className="text-center">
+                <div className="text-gray-400">24h High</div>
+                <div className="text-white font-medium">{btcMarketData?.high24h || '119,558'}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-gray-400">24h Low</div>
+                <div className="text-white font-medium">{btcMarketData?.low24h || '117,205'}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-gray-400">Volume</div>
+                <div className="text-white font-medium">
+                  {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000).toFixed(0) + 'K' : '681K'}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-gray-400">Turnover</div>
+                <div className="text-white font-medium">
+                  {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) * parseFloat(btcMarketData.price) / 1000000).toFixed(0) + 'M' : '80.5M'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Chart */}
+          <div className="h-64 bg-[#10121E] p-2 relative">
+            <TradeOverlay
+              trades={activeTrades}
+              currentPrice={currentPrice}
+            />
+            <TradingViewWidget
+              type="chart"
+              symbol="BINANCE:BTCUSDT"
+              height="100%"
+              interval="1"
+              theme="dark"
+              style="1"
+              locale="en"
+              timezone="Etc/UTC"
+              allow_symbol_change={true}
+              container_id="options_mobile_chart"
+              onPriceUpdate={handlePriceUpdate}
+            />
+          </div>
+
+          {/* Mobile Market Overview */}
+          <div className="px-4 py-3 border-b border-gray-700">
+            <h3 className="text-white font-bold mb-3">Market Overview</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { symbol: 'BTC/USDT', price: safeCurrentPrice.toFixed(2), change: priceChange || '+0.00%' },
+                { symbol: 'ETH/USDT', price: '3,456.78', change: '+1.23%' },
+                { symbol: 'BNB/USDT', price: '712.45', change: '-0.45%' },
+                { symbol: 'ADA/USDT', price: '0.8272', change: '+0.60%' }
+              ].map((market, index) => (
+                <div key={index} className="bg-gray-800 rounded-lg p-3">
+                  <div className="text-white text-sm font-medium">{market.symbol}</div>
+                  <div className="text-white text-lg font-bold">${market.price}</div>
+                  <div className={`text-xs font-medium ${market.change.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                    {market.change}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile Options Trading Interface */}
+          <div className="px-4 py-4 space-y-4">
+            {/* Duration Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Duration</label>
+              <div className="flex space-x-2">
+                {["30s", "60s", "120s", "300s"].map((duration) => (
+                  <button
+                    key={duration}
+                    onClick={() => setSelectedDuration(duration)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                      selectedDuration === duration
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {duration}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Amount Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Amount (USDT)</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setSelectedAmount(amount)}
+                    className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                      selectedAmount === amount
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    ${amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Login to Trade Message for Non-Logged Users */}
+            {!user && (
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-4 mb-4 text-center">
+                <div className="text-white font-bold text-lg mb-2">🔒 Login to Trade</div>
+                <div className="text-white/80 text-sm mb-3">
+                  Sign in to start options trading and earn up to 15% profit
+                </div>
+                <a
+                  href="/login"
+                  className="inline-block bg-white text-purple-600 font-bold py-2 px-6 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Login Now
+                </a>
+              </div>
+            )}
+
+            {/* UP/DOWN Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleTrade('up')}
+                disabled={!user || countdown > 0}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
+              >
+                <span className="text-2xl mb-1">↗</span>
+                <span className="text-sm">UP</span>
+                <span className="text-xs opacity-75">
+                  {selectedDuration === "30s" ? "10%" : "15%"} profit
+                </span>
+              </button>
+              <button
+                onClick={() => handleTrade('down')}
+                disabled={!user || countdown > 0}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
+              >
+                <span className="text-2xl mb-1">↘</span>
+                <span className="text-sm">DOWN</span>
+                <span className="text-xs opacity-75">
+                  {selectedDuration === "30s" ? "10%" : "15%"} profit
+                </span>
+              </button>
+            </div>
+
+            {countdown > 0 && (
+              <div className="text-center py-2">
+                <div className="text-yellow-400 font-bold">
+                  Next trade available in: {countdown}s
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Active Trades */}
+          {activeTrades.length > 0 && (
+            <div className="px-4 py-4">
+              <h3 className="text-white font-bold mb-3">Active Trades</h3>
+              <div className="space-y-2">
+                {activeTrades.map((trade) => {
+                  const timeRemaining = Math.max(0, trade.duration - Math.floor((Date.now() - trade.startTime) / 1000));
+                  const priceChange = currentPrice - trade.entryPrice;
+                  const isWinning = (trade.direction === 'up' && priceChange > 0) ||
+                                   (trade.direction === 'down' && priceChange < 0);
+                  const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) : 0;
+
+                  return (
+                    <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className={`text-sm font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                          {trade.direction.toUpperCase()} ${trade.amount}
+                        </span>
+                        <span className="text-yellow-400 font-bold text-sm">{timeRemaining}s</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>Entry: ${trade.entryPrice.toFixed(2)}</span>
+                        <span>Current: ${currentPrice.toFixed(2)}</span>
+                      </div>
+                      <div className="mt-1">
+                        <span className={`text-xs font-medium ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
+                          {isWinning ? `+$${(potentialPayout - trade.amount).toFixed(2)}` : `-$${trade.amount.toFixed(2)}`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Trade History */}
+          <div className="px-4 py-4">
+            <h3 className="text-white font-bold mb-3">Recent Trades</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {(tradeHistory || []).slice(0, 5).map((trade) => (
+                <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className={`text-sm font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                        {trade.direction.toUpperCase()} ${trade.amount}
+                      </span>
+                      <div className="text-xs text-gray-400">
+                        ${trade.entryPrice.toFixed(2)} → ${trade.currentPrice?.toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-medium ${
+                        trade.status === 'won' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {trade.status === 'won' ? 'WON' : 'LOST'}
+                      </div>
+                      <div className={`text-xs ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                        {trade.status === 'won' ? `+$${(trade.payout! - trade.amount).toFixed(2)}` : `-$${trade.amount.toFixed(2)}`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <MobileBottomNav />
+        </div>
+      );
+    }
+
+    // Desktop layout (existing)
     return (
       <div className="min-h-screen bg-gray-900">
         <Navigation />

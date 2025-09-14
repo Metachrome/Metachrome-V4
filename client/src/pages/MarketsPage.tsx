@@ -3,11 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Search, Star } from "lucide-react";
+import { useIsMobile } from "../hooks/use-mobile";
 import type { MarketData } from "@shared/schema";
 
 export default function MarketsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("Spot");
+  const isMobile = useIsMobile();
 
   const { data: marketData, isLoading } = useQuery<MarketData[]>({
     queryKey: ["/api/market-data"],
@@ -38,14 +40,14 @@ export default function MarketsPage() {
       {/* Header Section with Dark Background */}
       <div className="bg-[#0B0E17] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-white py-5">Markets</h1>
+          <h1 className={`font-bold text-white py-5 ${isMobile ? 'text-xl' : 'text-3xl'}`}>Markets</h1>
         </div>
       </div>
 
       {/* Content Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Tabs and Search in one row */}
-        <div className="flex items-center justify-between mb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tabs and Search - Mobile: Stack vertically, Desktop: One row */}
+        <div className={`mb-8 ${isMobile ? 'space-y-4' : 'flex items-center justify-between'}`}>
           {/* Tabs */}
           <div className="flex items-center space-x-1">
             {tabs.map((tab) => (

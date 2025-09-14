@@ -3,8 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
-import { Navigation } from "./components/ui/navigation";
-import { Footer } from "./components/ui/footer";
+import { MobileLayout } from "./components/ui/mobile-layout";
 import { useAuth } from "./hooks/useAuth";
 import HomePage from "./pages/HomePage";
 import MarketsPage from "./pages/MarketsPage";
@@ -31,16 +30,9 @@ import { ProtectedUserRoute } from "./components/ProtectedUserRoute";
 
 function Router() {
   const { user } = useAuth();
-  const [location] = useLocation();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  
-  // Pages that should not have navigation/footer
-  const noLayoutPages = ['/login', '/signup', '/admin/login', '/trade/options', '/options', '/trade/spot'];
-  const shouldShowLayout = !noLayoutPages.includes(location);
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {shouldShowLayout && <Navigation />}
+    <MobileLayout>
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/dashboard">
@@ -104,8 +96,7 @@ function Router() {
         </Route>
         <Route component={NotFound} />
       </Switch>
-      {shouldShowLayout && <Footer />}
-    </div>
+    </MobileLayout>
   );
 }
 

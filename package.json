@@ -2,20 +2,19 @@
   "name": "metachrome-trading-platform",
   "version": "2.0.0",
   "description": "METACHROME Advanced Trading Platform",
-  "main": "simple-start.js",
-  "type": "module",
+  "main": "working-server.js",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "scripts": {
     "build": "vite build",
-    "start": "node simple-start.js",
-    "start:production": "node simple-start.js",
-    "dev": "node simple-start.js",
+    "start": "node working-server.js",
+    "start:production": "node working-server.js",
+    "dev": "node working-server.js",
     "prod": "npm run build && npm run start",
     "railway-build": "npm run build",
-    "railway-start": "node simple-start.js"
+    "railway-start": "node working-server.js"
   },
   "keywords": [
     "trading",
@@ -49,6 +48,8 @@
     "@supabase/supabase-js": "^2.38.4",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/react-query": "^5.8.4",
+    "@types/multer": "^2.0.0",
+    "@types/qrcode": "^1.5.5",
     "@vitejs/plugin-react": "^4.1.1",
     "autoprefixer": "^10.4.16",
     "bcryptjs": "^2.4.3",
@@ -60,9 +61,11 @@
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "express-session": "^1.18.2",
+    "form-data": "^4.0.4",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.294.0",
+    "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-apple": "^2.0.2",
     "passport-google-oauth20": "^2.0.0",
@@ -71,6 +74,7 @@
     "pg": "^8.11.3",
     "postcss": "^8.4.32",
     "postgres": "^3.4.7",
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
@@ -80,7 +84,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vite": "^5.0.0",
     "wouter": "^3.0.0",
-    "ws": "^8.14.2",
+    "ws": "^8.18.3",
     "zod": "^3.22.4"
   },
   "devDependencies": {

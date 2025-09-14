@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
@@ -8,18 +8,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "../components/ui/label";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
-import { web3Service } from "../services/web3Service";
+import { useIsMobile } from "../hooks/use-mobile";
+import QRCodeGenerator from "../components/QRCodeGenerator";
+
 import StripePayment from "../components/StripePayment";
-import { CreditCard, ArrowUpRight, ArrowDownLeft, Send, Download, Users, Wallet, Plus } from "lucide-react";
+import { CreditCard, ArrowUpRight, ArrowDownLeft, Send, Download, Users, Wallet, Plus, Copy, CheckCircle } from "lucide-react";
 
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState("Balance");
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string>('');
+  const isMobile = useIsMobile();
+
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [selectedCrypto, setSelectedCrypto] = useState('USDT');
+  const [selectedCrypto, setSelectedCrypto] = useState('USDT-BEP20');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Modal states for deposit confirmations
   const [showTxHashModal, setShowTxHashModal] = useState(false);
@@ -32,6 +36,234 @@ export default function WalletPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Real platform deposit addresses (where users send crypto to deposit)
+  const cryptoNetworks = {
+    'USDT-BEP20': {
+      name: 'USDT (BEP20)',
+      address: '0xea3ce2062b00d911d05b609fa37ef0ca58108a75',
+      network: 'Binance Smart Chain (BSC)',
+      minAmount: 10,
+      description: 'Send USDT on Binance Smart Chain to this address',
+      chainId: 56
+    },
+    'USDT-TRC20': {
+      name: 'USDT (TRC20)',
+      address: 'TEos54N7v7EQ4KfAst3YXmuwjFDpmgBvHp',
+      network: 'TRON Network',
+      minAmount: 10,
+      description: 'Send USDT on TRON network to this address',
+      chainId: null
+    },
+    'USDT-ERC20': {
+      name: 'USDT (ERC20)',
+      address: '0xea3ce2062b00d911d05b609fa37ef0ca58108a75',
+      network: 'Ethereum Network',
+      minAmount: 10,
+      description: 'Send USDT on Ethereum network to this address',
+      chainId: 1
+    },
+    'BTC-1': {
+      name: 'BTC',
+      address: 'bc1qgyycw9867fp0d6prnfm88wu8tny8yn84r50yh6',
+      network: 'Bitcoin Network',
+      minAmount: 0.001,
+      description: 'Send Bitcoin to this address',
+      chainId: null
+    },
+    'BTC-2': {
+      name: 'BTC',
+      address: 'bc1qj28p5x4pyc2wn707uqe0rud4kel3nk3aamsl7zk4urhvhpjnax6s8djye6',
+      network: 'Bitcoin Network',
+      minAmount: 0.001,
+      description: 'Send Bitcoin to this address',
+      chainId: null
+    },
+    'SOL-1': {
+      name: 'SOL',
+      address: '6wKMRhC7Fq2MS1WRgTnK6Nzx1SxoZYHHwvpkBUtes2Pw',
+      network: 'Solana Network',
+      minAmount: 0.1,
+      description: 'Send Solana to this address',
+      chainId: null
+    },
+    'BTC-3': {
+      name: 'BTC btc',
+      address: 'bc1q6w3rdy5kwaf4es2lpjk6clpd25pterzvgwu5hu',
+      network: 'Bitcoin Network',
+      minAmount: 0.001,
+      description: 'Send Bitcoin to this address',
+      chainId: null
+    },
+    'ETH': {
+      name: 'ETH eth',
+      address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
+      network: 'Ethereum Network',
+      minAmount: 0.01,
+      description: 'Send Ethereum to this address',
+      chainId: 1
+    },
+    'SOL-2': {
+      name: 'SOL sol',
+      address: '6s2UxAyknMvzN2nUpRdHp6EqDetsdK9mjsLTguzNYeKU',
+      network: 'Solana Network',
+      minAmount: 0.1,
+      description: 'Send Solana to this address',
+      chainId: null
+    },
+    'USDT-ERC20-2': {
+      name: 'USDT erc20',
+      address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
+      network: 'Ethereum Network',
+      minAmount: 10,
+      description: 'Send USDT on Ethereum network to this address',
+      chainId: 1
+    },
+    'USDT-TRC20-2': {
+      name: 'USDT trc20',
+      address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
+      network: 'TRON Network',
+      minAmount: 10,
+      description: 'Send USDT on TRON network to this address',
+      chainId: null
+    },
+    'USDT-BEP20-2': {
+      name: 'USDT bep20',
+      address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
+      network: 'Binance Smart Chain (BSC)',
+      minAmount: 10,
+      description: 'Send USDT on Binance Smart Chain to this address',
+      chainId: 56
+    }
+  };
+
+  // Deposit mutation
+  const depositMutation = useMutation({
+    mutationFn: async (depositData: FormData) => {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/deposits', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: depositData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit deposit');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Deposit Submitted',
+        description: 'Your deposit request has been submitted for review.',
+      });
+      setDepositAmount('');
+      setUploadedFile(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Deposit Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Helper functions
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: 'Invalid File Type',
+          description: 'Please upload a JPEG, PNG, or PDF file.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Please upload a file smaller than 5MB.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setUploadedFile(file);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Address copied to clipboard",
+    });
+  };
+
+  const handleDepositSubmit = () => {
+    // Check if deposit amount is provided and valid
+    if (!depositAmount || parseFloat(depositAmount) <= 0) {
+      toast({
+        title: 'Invalid Amount',
+        description: 'Please enter a valid deposit amount.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if receipt is uploaded
+    if (!uploadedFile) {
+      toast({
+        title: 'Receipt Required',
+        description: 'Please upload a transaction receipt.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const network = cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks];
+    if (parseFloat(depositAmount) < network.minAmount) {
+      toast({
+        title: 'Amount Too Small',
+        description: `Minimum deposit amount is ${network.minAmount} ${selectedCrypto}.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('amount', depositAmount);
+    formData.append('currency', selectedCrypto);
+    formData.append('receipt', uploadedFile);
+
+    depositMutation.mutate(formData);
+  };
+
+  // Generate single QR code - formatted text to prevent wallet auto-detection
+  const generateQRCode = () => {
+    const network = cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks];
+    const address = network.address;
+    console.log('QR Code value:', address); // Debug log
+
+    // Format as descriptive text to prevent MetaMask from trying to interpret it as a transaction
+    return `METACHROME DEPOSIT ADDRESS\n${network.network}\n${address}\n\nCOPY THIS ADDRESS TO YOUR WALLET`;
+  };
 
   // Fetch real user balances
   const { data: userBalances, isLoading: balancesLoading } = useQuery({
@@ -66,100 +298,25 @@ export default function WalletPage() {
     return sum + parseFloat(balance.available || '0') * price;
   }, 0) || 0;
 
-  // Initialize Web3 on component mount
-  useEffect(() => {
-    const initWeb3 = async () => {
-      const initialized = await web3Service.initialize();
-      if (initialized) {
-        const account = await web3Service.getCurrentAccount();
-        if (account) {
-          setWalletConnected(true);
-          setWalletAddress(account);
-        }
-      }
-    };
-    initWeb3();
-  }, []);
-
-  // Connect wallet mutation
-  const connectWalletMutation = useMutation({
-    mutationFn: async () => {
-      const accounts = await web3Service.connectWallet();
-      return accounts[0];
-    },
-    onSuccess: (account) => {
-      setWalletConnected(true);
-      setWalletAddress(account);
-      toast({
-        title: 'Wallet Connected',
-        description: `Connected to ${account.slice(0, 6)}...${account.slice(-4)}`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Connection Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Production-ready deposit mutation
-  const depositMutation = useMutation({
-    mutationFn: async (data: { amount: string; currency: string; method: string; txHash?: string; paymentData?: any }) => {
-      const response = await fetch('/api/transactions/deposit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          amount: data.amount,
-          currency: data.currency,
-          method: data.method,
-          txHash: data.txHash,
-          paymentData: data.paymentData
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Deposit failed');
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      const isCompleted = data.transaction.status === 'completed';
-      toast({
-        title: isCompleted ? 'Deposit Successful' : 'Deposit Submitted',
-        description: isCompleted
-          ? `Successfully deposited ${data.amount} ${data.currency}`
-          : 'Your deposit has been submitted for verification. You will be notified once approved.',
-        variant: isCompleted ? 'default' : 'default',
-      });
-      setDepositAmount('');
-      if (isCompleted) {
-        queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Deposit Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
   // Withdraw mutation
   const withdrawMutation = useMutation({
     mutationFn: async (data: { amount: string; currency: string; address: string }) => {
-      const response = await fetch('/api/transactions/withdraw', {
+      // Get auth token from localStorage
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('Please login first to make a withdrawal');
+      }
+
+      const response = await fetch('/api/transactions/withdrawal-request', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
         body: JSON.stringify({
           amount: data.amount,
           currency: data.currency,
-          address: data.address,
-          method: 'crypto'
+          address: data.address
         }),
       });
       if (!response.ok) {
@@ -291,36 +448,14 @@ export default function WalletPage() {
             <div>
               <h1 className="text-4xl font-bold text-white mb-2">Balance</h1>
               
-              {/* Wallet Connection Status */}
-              {!walletConnected && (
-                <div className="mb-6 p-4 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-yellow-400 font-semibold">Connect Your Wallet</h4>
-                      <p className="text-yellow-300/80 text-sm">Connect MetaMask to enable deposits and withdrawals</p>
-                    </div>
-                    <Button
-                      onClick={() => connectWalletMutation.mutate()}
-                      disabled={connectWalletMutation.isPending}
-                      className="bg-yellow-600 hover:bg-yellow-700"
-                    >
-                      <Wallet className="w-4 h-4 mr-2" />
-                      {connectWalletMutation.isPending ? 'Connecting...' : 'Connect'}
-                    </Button>
-                  </div>
-                </div>
-              )}
+
 
               {/* Total Balance */}
               <div className="mb-8">
                 <div className="flex items-center space-x-2 mb-2">
                   <span className="text-gray-400 text-sm">Total Balances</span>
                   <span className="text-gray-400">💰</span>
-                  {walletConnected && (
-                    <Badge variant="outline" className="text-green-400 border-green-400">
-                      Wallet Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </Badge>
-                  )}
+
                 </div>
                 <div className="text-4xl font-bold text-white">
                   {balancesLoading ? (
@@ -341,144 +476,213 @@ export default function WalletPage() {
             <div>
               <h1 className="text-4xl font-bold text-white mb-8">Deposit</h1>
 
-              {/* Deposit Section from User Dashboard */}
+              {/* Add Funds Section */}
               <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
-                <CardContent className="space-y-6 p-6">
-                  {/* Deposit Network Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Deposit network
-                    </label>
-                    <select
-                      value={selectedCrypto}
-                      onChange={(e) => setSelectedCrypto(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="USDT">USDT-ERC</option>
-                      <option value="BTC">BTC</option>
-                      <option value="ETH">ETH</option>
-                    </select>
-                  </div>
+                <CardHeader>
+                  <CardTitle className="text-white">Add Funds</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Top up your account balance with cryptocurrency
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
 
-                  {/* Deposit Amount */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Deposit amount
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Please enter the recharge amount"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-
-                  {/* Recharge Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Recharge address
-                    </label>
-                    <div className="flex items-center gap-2 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2">
-                      <span className="text-white text-sm font-mono flex-1">
-                        0x3BC095D473398033496F94a1a1a3A7084c
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-purple-400 hover:text-purple-300 p-1"
-                        onClick={() => {
-                          navigator.clipboard.writeText('0x3BC095D473398033496F94a1a1a3A7084c');
-                          toast({
-                            title: "Copied!",
-                            description: "Address copied to clipboard",
-                          });
-                        }}
+                    {/* Deposit Network Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Deposit network
+                      </label>
+                      <select
+                        value={selectedCrypto}
+                        onChange={(e) => setSelectedCrypto(e.target.value)}
+                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
-                          <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
-                        </svg>
-                      </Button>
+                        <optgroup label="USDT Options">
+                          <option value="USDT-BEP20">USDT (BEP20) - Binance Smart Chain</option>
+                          <option value="USDT-TRC20">USDT (TRC20) - TRON Network</option>
+                          <option value="USDT-ERC20">USDT (ERC20) - Ethereum Network</option>
+                          <option value="USDT-ERC20-2">USDT erc20 - Ethereum Network</option>
+                          <option value="USDT-TRC20-2">USDT trc20 - TRON Network</option>
+                          <option value="USDT-BEP20-2">USDT bep20 - Binance Smart Chain</option>
+                        </optgroup>
+                        <optgroup label="Bitcoin Options">
+                          <option value="BTC-1">BTC - Bitcoin Network</option>
+                          <option value="BTC-2">BTC - Bitcoin Network</option>
+                          <option value="BTC-3">BTC btc - Bitcoin Network</option>
+                        </optgroup>
+                        <optgroup label="Other Cryptocurrencies">
+                          <option value="ETH">ETH eth - Ethereum Network</option>
+                          <option value="SOL-1">SOL - Solana Network</option>
+                          <option value="SOL-2">SOL sol - Solana Network</option>
+                        </optgroup>
+                      </select>
                     </div>
-                  </div>
 
-                  {/* QR Code */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      QR wallet address
-                    </label>
-                    <div className="bg-white p-4 rounded-lg inline-block">
-                      <div className="w-32 h-32 bg-black">
-                        {/* QR Code placeholder - in real app, generate actual QR code */}
-                        <svg viewBox="0 0 128 128" className="w-full h-full">
-                          <rect width="128" height="128" fill="white"/>
-                          <g fill="black">
-                            <rect x="0" y="0" width="8" height="8"/>
-                            <rect x="16" y="0" width="8" height="8"/>
-                            <rect x="32" y="0" width="8" height="8"/>
-                            <rect x="48" y="0" width="8" height="8"/>
-                            <rect x="64" y="0" width="8" height="8"/>
-                            <rect x="80" y="0" width="8" height="8"/>
-                            <rect x="96" y="0" width="8" height="8"/>
-                            <rect x="112" y="0" width="8" height="8"/>
-                            <rect x="0" y="16" width="8" height="8"/>
-                            <rect x="32" y="16" width="8" height="8"/>
-                            <rect x="64" y="16" width="8" height="8"/>
-                            <rect x="96" y="16" width="8" height="8"/>
-                            <rect x="112" y="16" width="8" height="8"/>
-                            <rect x="16" y="32" width="8" height="8"/>
-                            <rect x="48" y="32" width="8" height="8"/>
-                            <rect x="80" y="32" width="8" height="8"/>
-                            <rect x="0" y="48" width="8" height="8"/>
-                            <rect x="32" y="48" width="8" height="8"/>
-                            <rect x="64" y="48" width="8" height="8"/>
-                            <rect x="96" y="48" width="8" height="8"/>
-                            <rect x="16" y="64" width="8" height="8"/>
-                            <rect x="48" y="64" width="8" height="8"/>
-                            <rect x="80" y="64" width="8" height="8"/>
-                            <rect x="112" y="64" width="8" height="8"/>
-                            <rect x="0" y="80" width="8" height="8"/>
-                            <rect x="32" y="80" width="8" height="8"/>
-                            <rect x="64" y="80" width="8" height="8"/>
-                            <rect x="96" y="80" width="8" height="8"/>
-                            <rect x="16" y="96" width="8" height="8"/>
-                            <rect x="48" y="96" width="8" height="8"/>
-                            <rect x="80" y="96" width="8" height="8"/>
-                            <rect x="0" y="112" width="8" height="8"/>
-                            <rect x="32" y="112" width="8" height="8"/>
-                            <rect x="64" y="112" width="8" height="8"/>
-                            <rect x="96" y="112" width="8" height="8"/>
-                            <rect x="112" y="112" width="8" height="8"/>
-                          </g>
-                        </svg>
+                    {/* Deposit Amount */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Deposit amount <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Please enter the recharge amount"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                        className={`w-full bg-gray-800 border rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                          !depositAmount ? 'border-red-500' : 'border-gray-600'
+                        }`}
+                        min={cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount || 0}
+                        step="0.01"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Minimum: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount} {selectedCrypto}
+                      </p>
+                    </div>
+
+                    {/* Platform Deposit Address */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Platform Deposit Address
+                      </label>
+                      <div className="p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg mb-2">
+                        <p className="text-blue-300 text-xs mb-1">
+                          ⚠️ Send {selectedCrypto} to this address to deposit funds to your METACHROME account
+                        </p>
+                        <p className="text-yellow-300 text-xs">
+                          <strong>Important:</strong> Only send on {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}.
+                          Sending on wrong network will result in loss of funds!
+                        </p>
                       </div>
+                      <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2">
+                        <span className="text-white text-sm font-mono flex-1 break-all">
+                          {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-purple-400 hover:text-purple-300 p-2 hover:bg-gray-700"
+                          onClick={() => copyToClipboard(cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address)}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Network: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.description}
+                      </p>
                     </div>
-                  </div>
 
-                  {/* Upload Receipt */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Upload receipt
-                    </label>
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                      <Plus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-400 text-sm">Click to upload receipt</p>
+                    {/* QR Code */}
+                    <div className="space-y-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        QR Code - Deposit Address
+                      </label>
+
+                      <div className="text-center">
+                        <div className="bg-white p-6 rounded-lg inline-block">
+                          <QRCodeGenerator
+                            value={generateQRCode()}
+                            size={200}
+                            className="mx-auto"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-300 mt-3">
+                          Scan to see deposit information (copy the address manually)
+                        </p>
+                        <p className="text-xs text-yellow-300 mt-1">
+                          Make sure to send on <strong>{cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}</strong>
+                        </p>
+                        <p className="text-xs text-blue-300 mt-1">
+                          Address: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address}
+                        </p>
+                      </div>
+
+                      {/* Copy Address Button */}
+                      <div className="mt-4">
+                        <Button
+                          onClick={() => copyToClipboard(cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address)}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          size="sm"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Deposit Address
+                        </Button>
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="mt-4 p-3 bg-gray-800/50 border border-gray-600 rounded-lg">
+                        <h5 className="text-sm font-medium text-gray-300 mb-2">💡 How to use:</h5>
+                        <ul className="text-xs text-gray-400 space-y-1">
+                          <li>• <strong>Scan QR Code:</strong> View deposit info (manually copy the address)</li>
+                          <li>• <strong>Copy Address:</strong> Click the button to copy address to clipboard</li>
+                          <li>• <strong>Manual Entry:</strong> Type or paste address in your wallet</li>
+                          <li>• <strong>Send Crypto:</strong> Send to the address on the correct network</li>
+                          <li>• <strong>Upload Receipt:</strong> Upload transaction proof and confirm</li>
+                        </ul>
+                      </div>
+
+
                     </div>
-                  </div>
 
-                  {/* Confirm Button */}
-                  <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3"
-                    onClick={() => {
-                      toast({
-                        title: "Deposit Confirmed",
-                        description: "Your deposit request has been submitted for processing.",
-                      });
-                    }}
-                  >
-                    Confirm recharge
-                  </Button>
+
+
+                    {/* Upload Receipt */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Upload receipt <span className="text-red-400">*</span>
+                      </label>
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-purple-500 transition-colors ${
+                          !uploadedFile ? 'border-red-500' : 'border-gray-600'
+                        }`}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {uploadedFile ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <CheckCircle className="w-6 h-6 text-green-500" />
+                            <span className="text-green-400 text-sm">{uploadedFile.name}</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Plus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-400 text-sm">Click to upload receipt</p>
+                            <p className="text-gray-500 text-xs mt-1">JPEG, PNG, PDF (max 5MB)</p>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg,application/pdf"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {/* Required Fields Notice */}
+                    {(!depositAmount || !uploadedFile) && (
+                      <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg mb-4">
+                        <p className="text-yellow-300 text-sm">
+                          ⚠️ Please complete all required fields:
+                        </p>
+                        <ul className="text-yellow-200 text-xs mt-1 ml-4">
+                          {!depositAmount && <li>• Enter deposit amount</li>}
+                          {!uploadedFile && <li>• Upload transaction receipt</li>}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Confirm Button */}
+                    <Button
+                      className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleDepositSubmit}
+                      disabled={depositMutation.isPending || !depositAmount || !uploadedFile}
+                    >
+                      {depositMutation.isPending ? 'Processing...' : 'Confirm recharge'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -492,84 +696,67 @@ export default function WalletPage() {
 
               <Card className="bg-gray-800 border-gray-700">
                 <CardContent className="p-8">
-                  {walletConnected ? (
-                    <div className="max-w-md mx-auto space-y-6">
-                      <div>
-                        <Label className="text-gray-300">Select Cryptocurrency</Label>
-                        <select
-                          value={selectedCrypto}
-                          onChange={(e) => setSelectedCrypto(e.target.value)}
-                          className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                        >
-                          <option value="USDT">USDT - Tether</option>
-                          <option value="ETH">ETH - Ethereum</option>
-                          <option value="BTC">BTC - Bitcoin</option>
-                        </select>
-                      </div>
+                  <div className="max-w-md mx-auto space-y-6">
+                    <div>
+                      <Label className="text-gray-300">Select Cryptocurrency</Label>
+                      <select
+                        value={selectedCrypto}
+                        onChange={(e) => setSelectedCrypto(e.target.value)}
+                        className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                      >
+                        <option value="USDT">USDT - Tether</option>
+                        <option value="ETH">ETH - Ethereum</option>
+                        <option value="BTC">BTC - Bitcoin</option>
+                      </select>
+                    </div>
 
-                      <div>
-                        <Label className="text-gray-300">Withdrawal Address</Label>
-                        <Input
-                          type="text"
-                          placeholder="Enter wallet address"
-                          value={withdrawAddress}
-                          onChange={(e) => setWithdrawAddress(e.target.value)}
-                          className="mt-2 bg-gray-700 border-gray-600 text-white"
-                        />
-                      </div>
+                    <div>
+                      <Label className="text-gray-300">Withdrawal Address</Label>
+                      <Input
+                        type="text"
+                        placeholder="Enter wallet address"
+                        value={withdrawAddress}
+                        onChange={(e) => setWithdrawAddress(e.target.value)}
+                        className="mt-2 bg-gray-700 border-gray-600 text-white"
+                      />
+                    </div>
 
-                      <div>
-                        <Label className="text-gray-300">Amount</Label>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={withdrawAmount}
-                          onChange={(e) => setWithdrawAmount(e.target.value)}
-                          className="mt-2 bg-gray-700 border-gray-600 text-white"
-                        />
-                        <div className="text-sm text-gray-400 mt-1">
-                          Available: {balances.find(b => b.symbol === selectedCrypto)?.available || '0'} {selectedCrypto}
-                        </div>
+                    <div>
+                      <Label className="text-gray-300">Amount</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={withdrawAmount}
+                        onChange={(e) => setWithdrawAmount(e.target.value)}
+                        className="mt-2 bg-gray-700 border-gray-600 text-white"
+                      />
+                      <div className="text-sm text-gray-400 mt-1">
+                        Available: {balances.find(b => b.symbol === selectedCrypto)?.available || '0'} {selectedCrypto}
                       </div>
+                    </div>
 
-                      <Button
-                        onClick={() => {
-                          if (!withdrawAddress || !withdrawAmount || parseFloat(withdrawAmount) <= 0) {
-                            toast({
-                              title: 'Invalid Input',
-                              description: 'Please enter valid address and amount',
-                              variant: 'destructive',
-                            });
-                            return;
-                          }
-                          withdrawMutation.mutate({
-                            address: withdrawAddress,
-                            amount: withdrawAmount,
-                            currency: selectedCrypto
+                    <Button
+                      onClick={() => {
+                        if (!withdrawAddress || !withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+                          toast({
+                            title: 'Invalid Input',
+                            description: 'Please enter valid address and amount',
+                            variant: 'destructive',
                           });
-                        }}
-                        disabled={!withdrawAddress || !withdrawAmount || withdrawMutation.isPending}
-                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                      >
-                        {withdrawMutation.isPending ? 'Processing...' : `Withdraw ${selectedCrypto}`}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-white mb-2">Connect Wallet Required</h3>
-                      <p className="text-gray-400 mb-6">
-                        Please connect your MetaMask wallet to enable withdrawals.
-                      </p>
-                      <Button
-                        onClick={() => connectWalletMutation.mutate()}
-                        disabled={connectWalletMutation.isPending}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                      >
-                        Connect Wallet
-                      </Button>
-                    </div>
-                  )}
+                          return;
+                        }
+                        withdrawMutation.mutate({
+                          address: withdrawAddress,
+                          amount: withdrawAmount,
+                          currency: selectedCrypto
+                        });
+                      }}
+                      disabled={!withdrawAddress || !withdrawAmount || withdrawMutation.isPending}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    >
+                      {withdrawMutation.isPending ? 'Processing...' : `Withdraw ${selectedCrypto}`}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>

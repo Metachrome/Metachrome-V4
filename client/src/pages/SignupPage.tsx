@@ -11,7 +11,6 @@ import { useLocation, Link } from 'wouter';
 import { Eye, EyeOff } from 'lucide-react';
 import { FaGoogle, FaLinkedin } from 'react-icons/fa';
 import { SiEthereum } from 'react-icons/si';
-import { Navigation } from '../components/ui/navigation';
 import { Footer } from '../components/ui/footer';
 
 // Declare MetaMask types
@@ -207,13 +206,11 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Navigation */}
-      <Navigation />
 
       {/* Main Content */}
-      <div className="flex min-h-[calc(100vh-128px)]">
-        {/* Left Side - 50% Background with Text and Orb */}
-        <div className="w-1/2 flex flex-col items-center justify-center relative overflow-hidden" style={{backgroundColor: '#24083B'}}>
+      <div className="flex min-h-[calc(100vh-128px)] flex-col lg:flex-row">
+        {/* Left Side - Full width on mobile, 50% on desktop */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative overflow-hidden min-h-[40vh] lg:min-h-auto" style={{backgroundColor: '#24083B'}}>
           {/* Content */}
           <div className="text-center z-10 max-w-md relative">
             <p className="text-white/90 text-lg mb-4">Get Started with METACHROME</p>
@@ -230,19 +227,19 @@ export default function SignupPage() {
                 playsInline
                 className="w-full h-full object-cover rounded-full"
               >
+                <source src="/orb_1755576133990.webm" type="video/webm" />
                 <source src="/orb.webm" type="video/webm" />
-                <source src="/asset/orb.webm" type="video/webm" />
               </video>
             </div>
           </div>
         </div>
 
-        {/* Right Side - 50% Signup Form */}
-        <div className="w-1/2 bg-black flex flex-col">
-          <div className="flex-1 flex flex-col justify-center px-12 py-12 max-w-md mx-auto w-full">
+        {/* Right Side - Full width on mobile, 50% on desktop */}
+        <div className="w-full lg:w-1/2 bg-black flex flex-col min-h-[60vh] lg:min-h-auto">
+          <div className="flex-1 flex flex-col justify-center px-4 lg:px-12 py-8 lg:py-12 max-w-md mx-auto w-full">
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-white">Sign Up</h2>
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white mb-2 lg:mb-0">Sign Up</h2>
                 <div className="text-sm">
                   <span className="text-gray-400">Already have an account? </span>
                   <Link href="/login">
@@ -316,8 +313,8 @@ export default function SignupPage() {
               {/* Signup Form */}
               <Form {...signupForm}>
                 <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
-                  {/* First Name and Last Name Row */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* First Name and Last Name Row - Stack on mobile */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <FormField
                       control={signupForm.control}
                       name="firstName"

@@ -2,13 +2,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
+import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
+import { Button } from "../components/ui/button";
 import TradingViewWidget from "../components/TradingViewWidget";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useToast } from "../hooks/use-toast";
+import { useIsMobile } from "../hooks/use-mobile";
 import { apiRequest } from "../lib/queryClient";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import type { MarketData } from "../../../shared/schema";
 
 interface SpotOrder {
@@ -28,6 +29,7 @@ export default function SpotPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
+  const isMobile = useIsMobile();
 
   // Debug logging
   useEffect(() => {
@@ -41,6 +43,7 @@ export default function SpotPage() {
   // UI State
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("open"); // "open" or "history"
+  const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
 
@@ -328,6 +331,11 @@ export default function SpotPage() {
     return (price * amount).toFixed(2);
   };
 
+  const handlePriceUpdate = (price: number) => {
+    setCurrentPrice(price);
+    setRealTimePrice(price.toString());
+  };
+
   // Sync turnover with price/amount changes
   useEffect(() => {
     if (buyPrice && buyAmount) {
@@ -463,13 +471,16 @@ export default function SpotPage() {
 
   // Generate dynamic order book data based on current price
   const generateOrderBookData = (basePrice: number) => {
+    // Safety check for valid price
+    const safeBasePrice = (basePrice && !isNaN(basePrice) && basePrice > 0) ? basePrice : 166373.87;
+
     const sellOrders = [];
     const buyOrders = [];
 
     // Generate sell orders (above current price)
     for (let i = 0; i < 14; i++) {
       const priceOffset = (i + 1) * (Math.random() * 0.5 + 0.1);
-      const price = basePrice + priceOffset;
+      const price = safeBasePrice + priceOffset;
       const volume = (Math.random() * 2 + 0.1).toFixed(4);
       const turnover = (price * parseFloat(volume)).toFixed(2);
 
@@ -483,7 +494,7 @@ export default function SpotPage() {
     // Generate buy orders (below current price)
     for (let i = 0; i < 14; i++) {
       const priceOffset = (i + 1) * (Math.random() * 0.5 + 0.1);
-      const price = basePrice - priceOffset;
+      const price = safeBasePrice - priceOffset;
       const volume = (Math.random() * 2 + 0.1).toFixed(4);
       const turnover = (price * parseFloat(volume)).toFixed(2);
 
@@ -497,10 +508,263 @@ export default function SpotPage() {
     return { sellOrders, buyOrders };
   };
 
-  // Add error boundary protection
-  try {
+  // Mobile layout
+  if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-[#10121E] text-white pb-20">
+        <Navigation />
+
+        {/* Mobile Header */}
+        <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700 sticky top-0 z-40">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-white font-bold text-lg">BTC/USDT</div>
+              <div className="text-white text-xl font-bold">${realTimePrice || currentPrice.toFixed(2)}</div>
+              <div className={`text-sm font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                {priceChange || btcMarketData?.priceChangePercent24h || '+0.50%'}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-gray-400 text-xs">24h Vol</div>
+              <div className="text-white text-sm font-bold">
+                {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(1) + 'M BTC' : '1.2M BTC'}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Market Stats */}
+          <div className="grid grid-cols-4 gap-2 mt-3 text-xs">
+            <div className="text-center">
+              <div className="text-gray-400">24h High</div>
+              <div className="text-white font-medium">{btcMarketData?.high24h || '119,558'}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-gray-400">24h Low</div>
+              <div className="text-white font-medium">{btcMarketData?.low24h || '117,205'}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-gray-400">Volume</div>
+              <div className="text-white font-medium">
+                {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000).toFixed(0) + 'K' : '681K'}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-gray-400">Turnover</div>
+              <div className="text-white font-medium">
+                {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) * parseFloat(btcMarketData.price) / 1000000).toFixed(0) + 'M' : '80.5M'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Chart */}
+        <div className="h-64 bg-[#10121E] p-2">
+          <TradingViewWidget
+            type="chart"
+            symbol="BINANCE:BTCUSDT"
+            height="100%"
+            interval="1"
+            theme="dark"
+            style="1"
+            locale="en"
+            timezone="Etc/UTC"
+            allow_symbol_change={true}
+            container_id="spot_mobile_chart"
+            onPriceUpdate={handlePriceUpdate}
+          />
+        </div>
+
+        {/* Mobile Order Book */}
+        <div className="px-4 py-3 border-b border-gray-700">
+          <h3 className="text-white font-bold mb-3">Order Book</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Sell Orders */}
+            <div>
+              <div className="text-red-400 text-sm font-medium mb-2">Sell Orders</div>
+              <div className="space-y-1">
+                {generateOrderBookData(parseFloat(realTimePrice) || currentPrice || 166373.87).sellOrders.slice(0, 5).map((order, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <span className="text-red-400">{order.price}</span>
+                    <span className="text-gray-400">{order.amount}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Buy Orders */}
+            <div>
+              <div className="text-green-400 text-sm font-medium mb-2">Buy Orders</div>
+              <div className="space-y-1">
+                {generateOrderBookData(parseFloat(realTimePrice) || currentPrice || 166373.87).buyOrders.slice(0, 5).map((order, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <span className="text-green-400">{order.price}</span>
+                    <span className="text-gray-400">{order.amount}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Market Overview */}
+        <div className="px-4 py-3 border-b border-gray-700">
+          <h3 className="text-white font-bold mb-3">Market Overview</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { symbol: 'BTC/USDT', price: realTimePrice || currentPrice.toFixed(2), change: priceChange || '+0.50%' },
+              { symbol: 'ETH/USDT', price: '3,456.78', change: '+1.23%' },
+              { symbol: 'BNB/USDT', price: '712.45', change: '-0.45%' },
+              { symbol: 'ADA/USDT', price: '0.8272', change: '+0.60%' }
+            ].map((market, index) => (
+              <div key={index} className="bg-gray-800 rounded-lg p-3">
+                <div className="text-white text-sm font-medium">{market.symbol}</div>
+                <div className="text-white text-lg font-bold">${market.price}</div>
+                <div className={`text-xs font-medium ${market.change.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                  {market.change}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Trading Interface */}
+        <div className="px-4 py-4 space-y-4">
+          {/* Buy/Sell Toggle */}
+          <div className="flex bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => setMobileTradeTab('buy')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                mobileTradeTab === 'buy'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Buy
+            </button>
+            <button
+              onClick={() => setMobileTradeTab('sell')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                mobileTradeTab === 'sell'
+                  ? 'bg-red-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Sell
+            </button>
+          </div>
+
+          {/* Trading Form */}
+          {mobileTradeTab === 'buy' ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
+                <input
+                  type="number"
+                  value={buyPrice}
+                  onChange={(e) => setBuyPrice(e.target.value)}
+                  placeholder="Market Price"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
+                <input
+                  type="number"
+                  value={buyAmount}
+                  onChange={(e) => setBuyAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Total (USDT)</label>
+                <div className="text-white bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                  {calculateBuyTotal()}
+                </div>
+              </div>
+              <Button
+                onClick={handleBuySubmit}
+                disabled={!buyAmount || buyAmount === '0' || !user}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
+              >
+                {!user ? 'Login to Trade' : `Buy BTC`}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
+                <input
+                  type="number"
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
+                  placeholder="Market Price"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
+                <input
+                  type="number"
+                  value={sellAmount}
+                  onChange={(e) => setSellAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Total (USDT)</label>
+                <div className="text-white bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                  {calculateSellTotal()}
+                </div>
+              </div>
+              <Button
+                onClick={handleSellSubmit}
+                disabled={!sellAmount || sellAmount === '0' || !user}
+                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
+              >
+                {!user ? 'Login to Trade' : `Sell BTC`}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Recent Orders */}
+        <div className="px-4 py-4">
+          <h3 className="text-white font-bold mb-3">Recent Orders</h3>
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {(orders || []).slice(0, 5).map((order) => (
+              <div key={order.id} className="bg-gray-800 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className={`text-sm font-medium ${order.side === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                      {order.side.toUpperCase()} {order.symbol}
+                    </span>
+                    <div className="text-xs text-gray-400">{order.amount} @ ${order.price || 'Market'}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-sm font-medium ${
+                      order.status === 'filled' ? 'text-green-400' :
+                      order.status === 'cancelled' ? 'text-red-400' : 'text-yellow-400'
+                    }`}>
+                      {order.status}
+                    </div>
+                    <div className="text-xs text-gray-400">${order.total}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <MobileBottomNav />
+      </div>
+    );
+  }
+
+  // Desktop layout (existing)
+  return (
+    <div className="min-h-screen bg-gray-900">
         <Navigation />
       <div className="bg-[#10121E] flex min-h-screen">
         {/* Left and Center Content */}
@@ -1193,16 +1457,4 @@ export default function SpotPage() {
       <Footer />
     </div>
   );
-  } catch (error) {
-    console.error('🚨 SpotPage render error:', error);
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <h1 className="text-2xl font-bold mb-4">Error Loading Spot Trading</h1>
-          <p className="text-gray-400 mb-4">There was an error loading the spot trading page.</p>
-          <p className="text-sm text-gray-500">Check the console for more details.</p>
-        </div>
-      </div>
-    );
-  }
 }

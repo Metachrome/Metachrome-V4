@@ -31,6 +31,28 @@ import {
   CheckCircle
 } from 'lucide-react';
 
+// Helper function to safely parse balance values
+const parseBalance = (balance: any): number => {
+  if (typeof balance === 'number') {
+    return balance;
+  }
+  if (typeof balance === 'string') {
+    // Remove any formatting and parse as float
+    const cleaned = balance.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+// Helper function to calculate total balance safely
+const calculateTotalBalance = (users: any[]): number => {
+  return users.reduce((sum, user) => {
+    const balance = parseBalance(user.balance);
+    return sum + balance;
+  }, 0);
+};
+
 interface User {
   id: string;
   username: string;
@@ -252,7 +274,7 @@ export default function EnhancedUserManagement({
                 <div>
                   <p className="text-gray-400 text-sm">Total Balance</p>
                   <p className="text-2xl font-bold text-white">
-                    ${users.reduce((sum, u) => sum + u.balance, 0).toLocaleString()}
+                    ${calculateTotalBalance(users).toLocaleString()}
                   </p>
                 </div>
                 <DollarSign className="w-8 h-8 text-purple-500" />

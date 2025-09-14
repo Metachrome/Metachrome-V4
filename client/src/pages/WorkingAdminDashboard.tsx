@@ -34,6 +34,28 @@ import {
   Trash2
 } from 'lucide-react';
 
+// Helper function to safely parse balance values
+const parseBalance = (balance: any): number => {
+  if (typeof balance === 'number') {
+    return balance;
+  }
+  if (typeof balance === 'string') {
+    // Remove any formatting and parse as float
+    const cleaned = balance.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+// Helper function to calculate total balance safely
+const calculateTotalBalance = (users: any[]): number => {
+  return users.reduce((sum, user) => {
+    const balance = parseBalance(user.balance);
+    return sum + balance;
+  }, 0);
+};
+
 interface User {
   id: string;
   username: string;
@@ -92,6 +114,11 @@ export default function WorkingAdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<{
+    deposits: any[];
+    withdrawals: any[];
+    total: number;
+  }>({ deposits: [], withdrawals: [], total: 0 });
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [newUser, setNewUser] = useState({
@@ -122,50 +149,111 @@ export default function WorkingAdminDashboard() {
   console.log('🔧 Current user:', currentUser);
   console.log('🔧 Is Super Admin:', isSuperAdmin);
 
-  // Fetch all data
+  // Fetch all data with improved error handling
   const fetchData = async () => {
     setLoading(true);
+    let hasErrors = false;
+
     try {
       console.log('🔄 Fetching all data...');
-      
-      const [usersRes, tradesRes, transactionsRes, statsRes] = await Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/live-trades'),
-        fetch('/api/admin/transactions'),
-        fetch('/api/admin/stats')
-      ]);
 
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        console.log('👥 Users loaded:', usersData);
-        setUsers(usersData);
+      // Fetch users
+      try {
+        const usersRes = await fetch('/api/admin/users');
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          console.log('👥 Users loaded:', usersData);
+          setUsers(usersData);
+        } else {
+          console.error('❌ Failed to fetch users:', usersRes.status);
+          hasErrors = true;
+        }
+      } catch (error) {
+        console.error('❌ Users fetch error:', error);
+        hasErrors = true;
       }
 
-      if (tradesRes.ok) {
-        const tradesData = await tradesRes.json();
-        console.log('🔴 Live trades loaded:', tradesData);
-        // Extract trades array from the response
-        const tradesArray = tradesData.trades || tradesData;
-        setTrades(tradesArray);
+      // Fetch live trades
+      try {
+        const tradesRes = await fetch('/api/admin/live-trades');
+        if (tradesRes.ok) {
+          const tradesData = await tradesRes.json();
+          console.log('🔴 Live trades loaded:', tradesData);
+          const tradesArray = tradesData.trades || tradesData;
+          setTrades(tradesArray);
+        } else {
+          console.error('❌ Failed to fetch trades:', tradesRes.status);
+          hasErrors = true;
+        }
+      } catch (error) {
+        console.error('❌ Trades fetch error:', error);
+        hasErrors = true;
       }
 
-      if (transactionsRes.ok) {
-        const transactionsData = await transactionsRes.json();
-        console.log('💰 Transactions loaded:', transactionsData);
-        setTransactions(transactionsData);
+      // Fetch transactions
+      try {
+        const transactionsRes = await fetch('/api/admin/transactions');
+        if (transactionsRes.ok) {
+          const transactionsData = await transactionsRes.json();
+          console.log('💰 Transactions loaded:', transactionsData);
+          setTransactions(transactionsData);
+        } else {
+          console.error('❌ Failed to fetch transactions:', transactionsRes.status);
+          hasErrors = true;
+        }
+      } catch (error) {
+        console.error('❌ Transactions fetch error:', error);
+        hasErrors = true;
       }
 
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        console.log('📊 Stats loaded:', statsData);
-        setSystemStats(statsData);
+      // Fetch stats
+      try {
+        const statsRes = await fetch('/api/admin/stats');
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          console.log('📊 Stats loaded:', statsData);
+          setSystemStats(statsData);
+        } else {
+          console.error('❌ Failed to fetch stats:', statsRes.status);
+          hasErrors = true;
+        }
+      } catch (error) {
+        console.error('❌ Stats fetch error:', error);
+        hasErrors = true;
+      }
+
+      // Fetch pending requests
+      try {
+        const pendingRes = await fetch('/api/admin/pending-requests');
+        if (pendingRes.ok) {
+          const pendingData = await pendingRes.json();
+          console.log('🔔 Pending requests loaded:', pendingData);
+          setPendingRequests(pendingData);
+        } else {
+          console.error('❌ Failed to fetch pending requests:', pendingRes.status);
+          hasErrors = true;
+        }
+      } catch (error) {
+        console.error('❌ Pending requests fetch error:', error);
+        hasErrors = true;
+      }
+
+      // Only show error if there were actual failures
+      if (hasErrors) {
+        toast({
+          title: "Warning",
+          description: "Some data failed to load. Check console for details.",
+          variant: "destructive"
+        });
+      } else {
+        console.log('✅ All data loaded successfully');
       }
 
     } catch (error) {
-      console.error('❌ Error fetching data:', error);
+      console.error('❌ Unexpected error fetching data:', error);
       toast({
         title: "Error",
-        description: "Failed to load data",
+        description: "Unexpected error occurred while loading data",
         variant: "destructive"
       });
     } finally {
@@ -582,6 +670,78 @@ export default function WorkingAdminDashboard() {
     }
   };
 
+  // Approve/Reject deposit
+  const handleDepositAction = async (depositId: string, action: 'approve' | 'reject', reason?: string) => {
+    try {
+      console.log('🏦 Deposit action:', depositId, action, reason);
+      const response = await fetch(`/api/admin/deposits/${depositId}/action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ action, reason })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: `Deposit ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+          description: result.message || `Deposit ${action}d successfully`,
+          duration: 3000
+        });
+        fetchData(); // Refresh all data
+      } else {
+        const error = await response.text();
+        throw new Error(error || 'Failed to process deposit');
+      }
+    } catch (error) {
+      console.error('Failed to process deposit:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process deposit",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
+  // Approve/Reject withdrawal
+  const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject', reason?: string) => {
+    try {
+      console.log('💸 Withdrawal action:', withdrawalId, action, reason);
+      const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ action, reason })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: `Withdrawal ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+          description: result.message || `Withdrawal ${action}d successfully`,
+          duration: 3000
+        });
+        fetchData(); // Refresh all data
+      } else {
+        const error = await response.text();
+        throw new Error(error || 'Failed to process withdrawal');
+      }
+    } catch (error) {
+      console.error('Failed to process withdrawal:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process withdrawal",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
   const openSuperAdminModal = (user: User, action: string) => {
     setSelectedUserForAction(user);
     setNewWalletAddress(user.wallet_address || '');
@@ -621,9 +781,10 @@ export default function WorkingAdminDashboard() {
       normal: 'bg-blue-600',
       lose: 'bg-red-600'
     };
+    const safeMode = mode || 'normal';
     return (
-      <Badge className={`${colors[mode as keyof typeof colors]} text-white`}>
-        {mode.toUpperCase()}
+      <Badge className={`${colors[safeMode as keyof typeof colors]} text-white`}>
+        {safeMode.toUpperCase()}
       </Badge>
     );
   };
@@ -674,7 +835,7 @@ export default function WorkingAdminDashboard() {
 
       <div className="max-w-7xl mx-auto p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-800 border-gray-700">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-800 border-gray-700">
             <TabsTrigger value="overview">
               <BarChart3 className="w-4 h-4 mr-2" />
               Overview
@@ -690,6 +851,10 @@ export default function WorkingAdminDashboard() {
             <TabsTrigger value="transactions">
               <DollarSign className="w-4 h-4 mr-2" />
               Transactions
+            </TabsTrigger>
+            <TabsTrigger value="pending">
+              <Shield className="w-4 h-4 mr-2" />
+              Pending Requests
             </TabsTrigger>
             <TabsTrigger value="controls">
               <Settings className="w-4 h-4 mr-2" />
@@ -753,7 +918,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-orange-100 text-sm">Total Balance</p>
                       <p className="text-3xl font-bold text-white">
-                        ${users.reduce((sum, u) => sum + u.balance, 0).toLocaleString()}
+                        ${calculateTotalBalance(users).toLocaleString()}
                       </p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-orange-200" />
@@ -831,7 +996,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-gray-400 text-sm">Total Balance</p>
                       <p className="text-2xl font-bold text-white">
-                        ${users.reduce((sum, u) => sum + u.balance, 0).toLocaleString()}
+                        ${calculateTotalBalance(users).toLocaleString()}
                       </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-purple-500" />
@@ -1192,7 +1357,7 @@ export default function WorkingAdminDashboard() {
                                 ) : (
                                   <ArrowDown className="w-4 h-4 text-red-500" />
                                 )}
-                                <span className="text-white">{trade.direction.toUpperCase()}</span>
+                                <span className="text-white">{(trade.direction || 'up').toUpperCase()}</span>
                               </div>
                             </TableCell>
                             <TableCell className="text-white">${trade.amount.toLocaleString()}</TableCell>
@@ -1285,7 +1450,7 @@ export default function WorkingAdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell className="text-white">
-                            {transaction.username || 'Unknown'}
+                            {transaction.users?.username || 'Unknown'}
                           </TableCell>
                           <TableCell>
                             <Badge variant={transaction.type === 'deposit' ? 'default' : 'secondary'}>
@@ -1378,6 +1543,222 @@ export default function WorkingAdminDashboard() {
             </Card>
           </TabsContent>
 
+          {/* Pending Requests Tab */}
+          <TabsContent value="pending" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Pending Deposits */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center space-x-2">
+                    <DollarSign className="w-5 h-5 text-green-400" />
+                    <span>Pending Deposits</span>
+                    <Badge variant="secondary" className="ml-2">
+                      {pendingRequests?.deposits?.length || 0}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Review and approve user deposit requests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pendingRequests?.deposits?.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No pending deposits</p>
+                      </div>
+                    ) : (
+                      pendingRequests?.deposits?.map((deposit: any) => (
+                        <div key={deposit.id} className="bg-gray-700 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-white font-medium">{deposit.username}</p>
+                              <p className="text-sm text-gray-400">Balance: ${deposit.user_balance}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-green-400">${deposit.amount}</p>
+                              <p className="text-sm text-gray-400">{deposit.currency}</p>
+                            </div>
+                          </div>
+
+                          {deposit.tx_hash && (
+                            <div className="text-sm">
+                              <p className="text-gray-400">Transaction Hash:</p>
+                              <p className="text-blue-400 font-mono break-all">{deposit.tx_hash}</p>
+                            </div>
+                          )}
+
+                          {deposit.receipt && (
+                            <div className="text-sm">
+                              <p className="text-gray-400 mb-2">Receipt:</p>
+                              <div className="bg-gray-600 rounded-lg p-3">
+                                {deposit.receipt.mimetype?.startsWith('image/') ? (
+                                  <div className="space-y-2">
+                                    <img
+                                      src={deposit.receipt.url}
+                                      alt="Transaction Receipt"
+                                      className="max-w-full h-32 object-contain rounded border border-gray-500"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling.style.display = 'block';
+                                      }}
+                                    />
+                                    <div style={{display: 'none'}} className="text-red-400 text-xs">
+                                      Failed to load image
+                                    </div>
+                                    <a
+                                      href={deposit.receipt.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-400 hover:text-blue-300 text-xs underline"
+                                    >
+                                      View Full Size
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <p className="text-white text-xs">{deposit.receipt.originalName}</p>
+                                    <p className="text-gray-400 text-xs">
+                                      {deposit.receipt.mimetype} • {Math.round(deposit.receipt.size / 1024)}KB
+                                    </p>
+                                    <a
+                                      href={deposit.receipt.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-400 hover:text-blue-300 text-xs underline"
+                                    >
+                                      Download File
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="text-sm text-gray-400">
+                            <p>Requested: {new Date(deposit.created_at).toLocaleString()}</p>
+                            <p>Status: <span className="text-yellow-400">{deposit.status}</span></p>
+                          </div>
+
+                          {/* Receipt Display */}
+                          {deposit.receiptUploaded && deposit.receiptViewUrl && (
+                            <div className="bg-gray-600 rounded-lg p-3">
+                              <p className="text-sm text-gray-300 mb-2">📄 Receipt Uploaded:</p>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  onClick={() => window.open(deposit.receiptViewUrl, '_blank')}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-white"
+                                >
+                                  View Receipt
+                                </Button>
+                                {deposit.receiptFile?.originalname && (
+                                  <span className="text-xs text-gray-400">
+                                    {deposit.receiptFile.originalname}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => handleDepositAction(deposit.id, 'approve')}
+                              className="bg-green-600 hover:bg-green-700 flex-1"
+                              size="sm"
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              Approve
+                            </Button>
+                            <Button
+                              onClick={() => handleDepositAction(deposit.id, 'reject', 'Invalid transaction proof')}
+                              variant="destructive"
+                              className="flex-1"
+                              size="sm"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pending Withdrawals */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center space-x-2">
+                    <TrendingUp className="w-5 h-5 text-red-400" />
+                    <span>Pending Withdrawals</span>
+                    <Badge variant="secondary" className="ml-2">
+                      {pendingRequests?.withdrawals?.length || 0}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Review and approve user withdrawal requests
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pendingRequests?.withdrawals?.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                        <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No pending withdrawals</p>
+                      </div>
+                    ) : (
+                      pendingRequests?.withdrawals?.map((withdrawal: any) => (
+                        <div key={withdrawal.id} className="bg-gray-700 rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-white font-medium">{withdrawal.username}</p>
+                              <p className="text-sm text-gray-400">Balance: ${withdrawal.user_balance}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-red-400">${withdrawal.amount}</p>
+                              <p className="text-sm text-gray-400">{withdrawal.currency}</p>
+                            </div>
+                          </div>
+
+                          <div className="text-sm">
+                            <p className="text-gray-400">Wallet Address:</p>
+                            <p className="text-blue-400 font-mono break-all">{withdrawal.wallet_address}</p>
+                          </div>
+
+                          <div className="text-sm text-gray-400">
+                            <p>Requested: {new Date(withdrawal.created_at).toLocaleString()}</p>
+                            <p>Status: <span className="text-yellow-400">{withdrawal.status}</span></p>
+                          </div>
+
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={() => handleWithdrawalAction(withdrawal.id, 'approve')}
+                              className="bg-green-600 hover:bg-green-700 flex-1"
+                              size="sm"
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              Approve
+                            </Button>
+                            <Button
+                              onClick={() => handleWithdrawalAction(withdrawal.id, 'reject', 'Insufficient verification')}
+                              variant="destructive"
+                              className="flex-1"
+                              size="sm"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-6">
             <Card className="bg-gray-800 border-gray-700">
@@ -1442,7 +1823,7 @@ export default function WorkingAdminDashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Trading Mode:</span>
-                <span className="text-white font-medium">{selectedUser.trading_mode.toUpperCase()}</span>
+                <span className="text-white font-medium">{(selectedUser.trading_mode || 'normal').toUpperCase()}</span>
               </div>
               <div className="border-t border-gray-700 pt-3">
                 <div className="flex justify-between items-start">

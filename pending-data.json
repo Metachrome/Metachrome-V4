@@ -1,0 +1,127 @@
+{
+  "deposits": [
+    {
+      "id": "dep_1757799560625_0n6699tkw",
+      "user_id": "user-1",
+      "username": "amdsnkstudio",
+      "amount": 2000,
+      "currency": "USDT",
+      "network": "BEP20",
+      "status": "verifying",
+      "wallet_address": "",
+      "created_at": "2025-09-13T21:39:20.627Z",
+      "txHash": "user_upload_1757799560647",
+      "walletAddress": "user_wallet_address",
+      "proofSubmittedAt": "2025-09-13T21:39:20.671Z",
+      "receiptUploaded": true,
+      "receiptFile": {
+        "filename": "30dfa194b5700bda62a94ebed1e54511",
+        "originalname": "7d32b4b7-9713-4882-abc8-255e2b664f0d.jpg",
+        "mimetype": "image/jpeg",
+        "size": 116200,
+        "path": "uploads\\30dfa194b5700bda62a94ebed1e54511"
+      }
+    },
+    {
+      "id": "dep_1757799767676_m406vwpm2",
+      "user_id": "user-1",
+      "username": "amdsnkstudio",
+      "amount": 1199.97,
+      "currency": "USDT",
+      "network": "BEP20",
+      "status": "verifying",
+      "wallet_address": "",
+      "created_at": "2025-09-13T21:42:47.676Z",
+      "txHash": "user_upload_1757799767688",
+      "walletAddress": "user_wallet_address",
+      "proofSubmittedAt": "2025-09-13T21:42:47.705Z",
+      "receiptUploaded": true,
+      "receiptFile": {
+        "filename": "f7a121f0af2af3c06e3e46557ae31189",
+        "originalname": "7d32b4b7-9713-4882-abc8-255e2b664f0d.jpg",
+        "mimetype": "image/jpeg",
+        "size": 116200,
+        "path": "uploads\\f7a121f0af2af3c06e3e46557ae31189"
+      }
+    },
+    {
+      "id": "dep_1757800046391_oxtmt84ln",
+      "user_id": "user-3",
+      "username": "trader3",
+      "amount": 2000,
+      "currency": "USDT",
+      "network": "BEP20",
+      "status": "verifying",
+      "wallet_address": "",
+      "created_at": "2025-09-13T21:47:26.391Z",
+      "txHash": "user_upload_1757800046401",
+      "walletAddress": "user_wallet_address",
+      "proofSubmittedAt": "2025-09-13T21:47:26.445Z",
+      "receiptUploaded": true,
+      "receiptFile": {
+        "filename": "e810f5a9b9111914fb64a62e5f3c6243",
+        "originalname": "7d32b4b7-9713-4882-abc8-255e2b664f0d.jpg",
+        "mimetype": "image/jpeg",
+        "size": 116200,
+        "path": "uploads\\e810f5a9b9111914fb64a62e5f3c6243"
+      }
+    },
+    {
+      "id": "dep_1757801584863_6dlt2d0hw",
+      "user_id": "user-3",
+      "username": "trader3",
+      "amount": 1999.97,
+      "currency": "USDT",
+      "network": "BEP20",
+      "status": "verifying",
+      "wallet_address": "",
+      "created_at": "2025-09-13T22:13:04.863Z",
+      "txHash": "user_upload_1757801584868",
+      "walletAddress": "user_wallet_address",
+      "proofSubmittedAt": "2025-09-13T22:13:04.902Z",
+      "receiptUploaded": true,
+      "receiptFile": {
+        "filename": "ca3cb77a7fbadccf1c6acc82e6279e14",
+        "originalname": "7d32b4b7-9713-4882-abc8-255e2b664f0d.jpg",
+        "mimetype": "image/jpeg",
+        "size": 116200,
+        "path": "uploads\\ca3cb77a7fbadccf1c6acc82e6279e14"
+      }
+    },
+    {
+      "id": "dep_1757801763883_5z0e6j4zh",
+      "user_id": "user-3",
+      "username": "trader3",
+      "amount": 1229.98,
+      "currency": "USDT",
+      "network": "BEP20",
+      "status": "verifying",
+      "wallet_address": "",
+      "created_at": "2025-09-13T22:16:03.883Z",
+      "txHash": "user_upload_1757801763888",
+      "walletAddress": "user_wallet_address",
+      "proofSubmittedAt": "2025-09-13T22:16:03.922Z",
+      "receiptUploaded": true,
+      "receiptFile": {
+        "filename": "dc34c9ad6f8a5e1f7efd2bb8655bcaef",
+        "originalname": "7d32b4b7-9713-4882-abc8-255e2b664f0d.jpg",
+        "mimetype": "image/jpeg",
+        "size": 116200,
+        "path": "uploads\\dc34c9ad6f8a5e1f7efd2bb8655bcaef"
+      }
+    }
+  ],
+  "withdrawals": [
+    {
+      "id": "with-001",
+      "user_id": "user-2",
+      "username": "trader2",
+      "amount": 200,
+      "currency": "USDT",
+      "network": "ERC20",
+      "status": "pending",
+      "wallet_address": "0x8ba1f109551bD432803012645Hac136c22C501e5",
+      "created_at": "2025-09-13T21:37:43.407Z"
+    }
+  ]
+}

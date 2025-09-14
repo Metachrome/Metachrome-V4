@@ -98,8 +98,8 @@
         document.getElementById('hostname').textContent = window.location.hostname;
         document.getElementById('port').textContent = window.location.port || '(default)';
         
-        const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://127.0.0.1:3000' 
+        const apiBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://127.0.0.1:9999'
             : '';
         document.getElementById('api-base').textContent = apiBase || '(relative URLs)';
 

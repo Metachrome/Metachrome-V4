@@ -16,6 +16,16 @@ export function useAuth() {
       }
 
       try {
+        // For user session tokens, get from localStorage
+        if (authToken.startsWith('user-session-')) {
+          console.log("Found user session token, using stored user data");
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            console.log("User session auth successful");
+            return JSON.parse(storedUser);
+          }
+        }
+
         // For admin session tokens, make API request
         if (authToken.startsWith('admin-session-')) {
           console.log("Making API request for admin user");
@@ -78,12 +88,12 @@ export function useAuth() {
       } catch (error) {
         console.log("Auth query error:", error);
 
-        // For mock tokens (including admin tokens), try to use stored user data instead of clearing
+        // For mock tokens (including admin tokens and user session tokens), try to use stored user data instead of clearing
         const authToken = localStorage.getItem('authToken');
-        if (authToken && (authToken.startsWith('mock-jwt-token') || authToken === 'mock-jwt-token' || authToken === 'mock-admin-token' || authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_'))) {
+        if (authToken && (authToken.startsWith('mock-jwt-token') || authToken === 'mock-jwt-token' || authToken === 'mock-admin-token' || authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_') || authToken.startsWith('user-session-'))) {
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
-            console.log("Auth query failed, but using stored user data for mock token:", authToken.substring(0, 20) + '...');
+            console.log("Auth query failed, but using stored user data for token:", authToken.substring(0, 20) + '...');
             return JSON.parse(storedUser);
           }
         }
@@ -152,7 +162,7 @@ export function useAuth() {
         const isVercel = window.location.hostname.includes('vercel.app');
 
         // Construct the full URL directly
-        const baseUrl = isLocal ? 'http://127.0.0.1:3000' : '';
+        const baseUrl = isLocal ? 'http://127.0.0.1:9000' : '';
         const fullUrl = `${baseUrl}${endpoint}`;
 
         console.log('🔧 Login Debug Info:', {
@@ -312,6 +322,10 @@ export function useAuth() {
       if (data.token) {
         localStorage.setItem('authToken', data.token);
       }
+      // Store user data for user-session tokens
+      if (data.user && data.token && data.token.startsWith('user-session-')) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
       queryClient.setQueryData(["/api/auth"], data.user);
       queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
     },
@@ -326,6 +340,10 @@ export function useAuth() {
       // Store the token in localStorage
       if (data.token) {
         localStorage.setItem('authToken', data.token);
+      }
+      // Store user data for user-session tokens
+      if (data.user && data.token && data.token.startsWith('user-session-')) {
+        localStorage.setItem('user', JSON.stringify(data.user));
       }
       queryClient.setQueryData(["/api/auth"], data.user);
       queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
