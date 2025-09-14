@@ -2,11 +2,10 @@
 FROM node:18-slim AS builder
 WORKDIR /app
 
-# Copy dependency manifests first
-COPY package*.json ./
+# Copy only package.json (not lockfile)
+COPY package.json ./
 
-# Install all dependencies (including devDeps) using npm install
-# (avoids Rollup optional dependency bug with npm ci)
+# Install all dependencies fresh in Linux (including devDeps)
 RUN npm install --legacy-peer-deps
 
 # Copy project files
@@ -20,8 +19,10 @@ RUN npm run build
 FROM node:18-slim AS production
 WORKDIR /app
 
-# Copy only package files and install prod deps
-COPY package*.json ./
+# Copy only package.json (not lockfile)
+COPY package.json ./
+
+# Install only production deps
 RUN npm install --only=production --legacy-peer-deps
 
 # Copy required runtime files from builder
@@ -33,7 +34,7 @@ COPY --from=builder /app/admin-data.json ./
 # Create uploads directory for file uploads
 RUN mkdir -p uploads
 
-# Security: use non-root user
+# Security: non-root user
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
 RUN chown -R nodejs:nodejs /app
 USER nodejs
