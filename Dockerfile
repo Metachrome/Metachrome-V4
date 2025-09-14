@@ -1,31 +1,34 @@
 # Use Node.js 18 LTS runtime
 FROM node:18-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files for production dependencies only
+# Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production --legacy-peer-deps || npm install --only=production --legacy-peer-deps
+# Install deps
+RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
-# Copy the pre-built application and server files
-COPY simple-start.js ./
-COPY database-integration.js ./
-COPY dist ./dist
+# Copy source
+COPY . .
 
-# Create non-root user
+# Build the app (Vite)
+RUN npm run build
+
+# Clean dev deps (optional optimization)
+RUN npm prune --production
+
+# Create uploads directory
+RUN mkdir -p uploads
+
+# Switch to non-root user
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 
-# Expose port
-EXPOSE 3000
+# Expose Railway's port
+EXPOSE $PORT
 
-# Set environment
 ENV NODE_ENV=production
-ENV PORT=3000
 
-# Start the application
-CMD ["node", "simple-start.js"]
+CMD ["node", "working-server.js"]
