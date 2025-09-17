@@ -53,20 +53,14 @@ export function useMetamask() {
 
       console.log("Connected to chain:", chainId);
 
-      // Sign a message for authentication (optional)
+      // Send to backend for authentication (skip signature for now)
       try {
-        const message = `Welcome to METACHROME! Please sign this message to authenticate your wallet: ${Date.now()}`;
-        const signature = await window.ethereum.request({
-          method: "personal_sign",
-          params: [message, address],
-        });
-
-        // Send to backend for authentication
-        await metamaskLogin({ walletAddress: address, signature });
-      } catch (signError) {
-        console.error("Signature error:", signError);
-        // Still proceed with basic authentication without signature
-        await metamaskLogin({ walletAddress: address });
+        console.log("🔄 Authenticating with backend...");
+        const authResult = await metamaskLogin({ walletAddress: address });
+        console.log("✅ Backend authentication successful:", authResult);
+      } catch (authError) {
+        console.error("❌ Backend authentication failed:", authError);
+        throw new Error(`Authentication failed: ${authError.message || 'Unknown error'}`);
       }
 
       return {

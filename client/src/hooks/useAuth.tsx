@@ -8,6 +8,22 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery<User | null>({
     queryKey: ["/api/auth"],
     queryFn: async () => {
+      // Check for token in URL parameters (from OAuth redirects)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('token');
+      const urlUser = urlParams.get('user');
+
+      if (urlToken && urlUser) {
+        console.log("🔍 Found OAuth token in URL, storing locally");
+        localStorage.setItem('authToken', urlToken);
+        localStorage.setItem('user', decodeURIComponent(urlUser));
+
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        return JSON.parse(decodeURIComponent(urlUser));
+      }
+
       const authToken = localStorage.getItem('authToken');
       console.log("🔍 useAuth queryFn - Auth token:", authToken?.substring(0, 20) + '...');
 

@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
 import { Separator } from "../components/ui/separator";
 import { Eye, EyeOff } from "lucide-react";
-import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { FaGoogle } from "react-icons/fa";
 import { useMetamask } from "../hooks/useMetamask";
 import { useToast } from "../hooks/use-toast";
 
@@ -46,6 +46,11 @@ export default function AuthModal({ isOpen, onClose, type, onSwitchType }: AuthM
           description: "Connected with Metamask successfully!",
         });
         onClose();
+
+        // Redirect to dashboard after successful connection
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 500);
       } else {
         toast({
           title: "Error",
@@ -111,25 +116,16 @@ export default function AuthModal({ isOpen, onClose, type, onSwitchType }: AuthM
 
           {/* Social Login Options */}
           <div className="space-y-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full bg-dark-100 border-dark-100 hover:bg-dark-100/70"
-              disabled
+              onClick={() => window.location.href = '/api/auth/google'}
             >
               <FaGoogle className="w-4 h-4 mr-3 text-red-500" />
               Continue with Google
             </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full bg-dark-100 border-dark-100 hover:bg-dark-100/70"
-              disabled
-            >
-              <FaFacebook className="w-4 h-4 mr-3 text-blue-500" />
-              Continue with Facebook
-            </Button>
-            
-            <Button 
+
+            <Button
               className="w-full bg-orange-500 hover:bg-orange-600"
               onClick={handleMetamaskConnect}
               disabled={isConnecting}

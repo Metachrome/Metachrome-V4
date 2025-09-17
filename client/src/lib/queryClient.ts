@@ -23,10 +23,11 @@ const getApiBaseUrl = () => {
     return '';
   }
 
-  // Development or local production - use local server
+  // Development or local production - use local server with same hostname
   if (isLocal) {
     console.log('🏠 Using local server endpoints');
-    return 'http://127.0.0.1:3001';
+    const hostname = window.location.hostname;
+    return `http://${hostname}:3001`;
   }
 
   // Fallback to Vite proxy

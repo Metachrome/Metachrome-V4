@@ -41,8 +41,34 @@ const upload = multer({
   }
 });
 
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -336,7 +362,7 @@ async function createUser(userData) {
         password_hash: userData.password_hash || userData.password,
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
-        balance: userData.balance || 10000,
+        balance: userData.balance !== undefined ? userData.balance : 0,
         role: userData.role || 'user',
         status: userData.status || 'active',
         trading_mode: userData.trading_mode || 'normal',
@@ -357,8 +383,24 @@ async function createUser(userData) {
     }
   }
 
-  // Development fallback - just return the user data with an ID
-  return { id: 'dev-' + Date.now(), ...userData };
+  // Development fallback - save to local file
+  try {
+    const users = await getUsers();
+    const newUser = {
+      id: userData.id || `dev-${Date.now()}`,
+      ...userData,
+      created_at: userData.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    await saveUsers(users);
+    console.log('✅ User saved to local file:', newUser.username, 'ID:', newUser.id);
+    return newUser;
+  } catch (error) {
+    console.error('❌ Error saving user to local file:', error);
+    throw error;
+  }
 }
 
 async function updateUserBalance(userId, newBalance) {
@@ -579,25 +621,50 @@ app.get('/api/auth', async (req, res) => {
 
     console.log('🔐 Verifying token:', token.substring(0, 20) + '...');
 
-    // For our simple token format (user-token-timestamp), extract user info
-    if (token.startsWith('user-token-')) {
-      // In a real app, you'd verify the token signature
-      // For now, we'll trust tokens and return user data from localStorage/database
+    // For user tokens (including wallet sessions)
+    if (token.startsWith('user-token-') || token.startsWith('user-session-')) {
+      console.log('🔍 Parsing user token:', token);
 
-      // Try to find user by checking recent logins or stored sessions
-      // For simplicity, return the most recent user data
-      const users = await getUsers();
-      const recentUser = users.find(u => u.username === 'angela.soenoko') || users[0];
+      // Extract user ID from token format: user-session-{userId}-{timestamp}
+      let userId = null;
+      if (token.startsWith('user-session-')) {
+        const parts = token.split('-');
+        if (parts.length >= 3) {
+          // For wallet tokens: user-session-wallet-{timestamp}-{timestamp2}
+          if (parts[2] === 'wallet') {
+            userId = `wallet-${parts[3]}`;
+          } else {
+            // For regular user tokens: user-session-{userId}-{timestamp}
+            userId = parts[2];
+          }
+        }
+      } else if (token.startsWith('user-token-')) {
+        // Legacy format - try to find most recent user
+        const users = await getUsers();
+        const recentUser = users.find(u => u.username === 'angela.soenoko') || users[0];
+        if (recentUser) {
+          userId = recentUser.id;
+        }
+      }
 
-      if (recentUser) {
-        console.log('✅ Token verified, returning user:', recentUser.username);
-        return res.json({
-          id: recentUser.id,
-          username: recentUser.username,
-          email: recentUser.email,
-          balance: recentUser.balance,
-          role: recentUser.role || 'user'
-        });
+      console.log('🔍 Extracted user ID from token:', userId);
+
+      if (userId) {
+        const users = await getUsers();
+        const user = users.find(u => u.id === userId);
+
+        if (user) {
+          console.log('✅ Token verified, returning user:', user.username);
+          return res.json({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            balance: user.balance,
+            role: user.role || 'user'
+          });
+        } else {
+          console.log('❌ User not found for ID:', userId);
+        }
       }
     }
 
@@ -630,17 +697,69 @@ app.post('/api/auth', async (req, res) => {
     // If it's a wallet address login
     if (walletAddress) {
       console.log('🔐 Wallet login attempt:', walletAddress);
-      // For now, return a mock response for wallet login
-      return res.json({
-        success: true,
-        token: 'wallet-token-' + Date.now(),
-        user: {
-          id: 'wallet-user-' + Date.now(),
-          username: walletAddress,
-          email: walletAddress + '@wallet.local',
-          balance: 10000
+
+      try {
+        // Check if wallet user already exists
+        const existingUser = await getUserByUsername(walletAddress);
+
+        if (existingUser) {
+          console.log('✅ Existing wallet user found:', walletAddress);
+          // Update last login
+          existingUser.last_login = new Date().toISOString();
+          await updateUser(existingUser.id, { last_login: existingUser.last_login });
+
+          return res.json({
+            success: true,
+            token: `user-session-${existingUser.id}-${Date.now()}`,
+            user: {
+              id: existingUser.id,
+              username: existingUser.username,
+              email: existingUser.email,
+              role: existingUser.role,
+              balance: existingUser.balance,
+              firstName: existingUser.firstName || '',
+              lastName: existingUser.lastName || ''
+            }
+          });
+        } else {
+          // Create new wallet user
+          const userData = {
+            id: `wallet-${Date.now()}`,
+            username: walletAddress,
+            email: walletAddress + '@wallet.local',
+            password_hash: '', // No password for wallet users
+            firstName: '',
+            lastName: '',
+            balance: 0,
+            role: 'user',
+            status: 'active',
+            trading_mode: 'normal',
+            created_at: new Date().toISOString(),
+            last_login: new Date().toISOString()
+          };
+
+          console.log('📝 Creating new wallet user:', walletAddress);
+          const newUser = await createUser(userData);
+          console.log('✅ Wallet user created in database:', newUser.id);
+
+          return res.json({
+            success: true,
+            token: `user-session-${newUser.id}-${Date.now()}`,
+            user: {
+              id: newUser.id,
+              username: newUser.username,
+              email: newUser.email,
+              role: newUser.role,
+              balance: newUser.balance,
+              firstName: newUser.firstName || '',
+              lastName: newUser.lastName || ''
+            }
+          });
         }
-      });
+      } catch (error) {
+        console.error('❌ Wallet authentication error:', error);
+        return res.status(500).json({ error: 'Wallet authentication failed' });
+      }
     }
 
     // If it's a regular login (username + password)
@@ -839,27 +958,47 @@ app.post('/api/auth/register', async (req, res) => {
     // Check if user already exists
     const existingUser = await getUserByUsername(username);
     if (existingUser) {
-      return res.status(400).json({ error: 'Username already exists' });
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Check if email already exists
+    const existingEmail = await getUserByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email already exists' });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user - try both column names for compatibility
+    // Create new user with proper structure
     const userData = {
+      id: `user-${Date.now()}`,
       username,
       email,
-      password: hashedPassword,        // For schema.ts format
-      password_hash: hashedPassword,   // For setup-supabase-database.sql format
-      balance: 10000, // Starting balance
+      password_hash: hashedPassword,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      balance: 10000,
       role: 'user',
       status: 'active',
-      trading_mode: 'normal'
+      trading_mode: 'normal',
+      created_at: new Date().toISOString(),
+      last_login: new Date().toISOString()
     };
 
+    console.log('📝 Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
     const newUser = await createUser(userData);
+    console.log('✅ User created in database:', newUser.id);
 
-    console.log('✅ User registered successfully:', username);
+    // Verify user was actually saved
+    const verifyUser = await getUserByUsername(username);
+    if (!verifyUser) {
+      throw new Error('User creation verification failed');
+    }
+    console.log('✅ User creation verified in database');
+    // Generate a simple token for authentication
+    const token = `user-session-${newUser.id}-${Date.now()}`;
+
     res.json({
       success: true,
       message: 'Registration successful',
@@ -867,8 +1006,12 @@ app.post('/api/auth/register', async (req, res) => {
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        role: newUser.role
-      }
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        role: newUser.role,
+        balance: newUser.balance
+      },
+      token
     });
   } catch (error) {
     console.error('❌ Registration error:', error);
@@ -892,11 +1035,18 @@ app.post('/api/auth/user/register', async (req, res) => {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
+    // Check if email already exists
+    const existingEmail = await getUserByEmail(email);
+    if (existingEmail) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user with firstName and lastName support
     const userData = {
+      id: `user-${Date.now()}`,
       username,
       email,
       password: hashedPassword,
@@ -906,15 +1056,24 @@ app.post('/api/auth/user/register', async (req, res) => {
       balance: 10000,
       role: 'user',
       status: 'active',
-      trading_mode: 'normal'
+      trading_mode: 'normal',
+      created_at: new Date().toISOString(),
+      last_login: new Date().toISOString()
     };
 
+    console.log('📝 Creating user with data:', { ...userData, password: '[HIDDEN]', password_hash: '[HIDDEN]' });
     const newUser = await createUser(userData);
+    console.log('✅ User created in database:', newUser.id);
 
-    console.log('✅ User registered successfully:', username);
+    // Verify user was actually saved
+    const verifyUser = await getUserByUsername(username);
+    if (!verifyUser) {
+      throw new Error('User creation verification failed');
+    }
+    console.log('✅ User creation verified in database');
 
     // Generate a simple token for authentication
-    const token = `user-session-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+    const token = `user-session-${newUser.id}-${Date.now()}`;
 
     res.json({
       success: true,
@@ -1018,6 +1177,131 @@ app.post('/api/auth/user/login', async (req, res) => {
   } catch (error) {
     console.error('❌ Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== GOOGLE OAUTH ENDPOINTS =====
+
+// Google OAuth login endpoint
+app.get('/api/auth/google', (req, res) => {
+  console.log('🔐 Google OAuth login request');
+
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  if (!googleClientId) {
+    return res.status(500).json({ error: 'Google OAuth not configured' });
+  }
+
+  // Construct Google OAuth URL
+  const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  const scope = 'openid email profile';
+  const state = Math.random().toString(36).substring(2, 15);
+
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${googleClientId}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `scope=${encodeURIComponent(scope)}&` +
+    `response_type=code&` +
+    `state=${state}`;
+
+  console.log('🔄 Redirecting to Google OAuth:', googleAuthUrl);
+  res.redirect(googleAuthUrl);
+});
+
+// Google OAuth callback endpoint
+app.get('/api/auth/google/callback', async (req, res) => {
+  console.log('🔐 Google OAuth callback:', req.query);
+
+  const { code, error } = req.query;
+
+  if (error) {
+    console.error('❌ Google OAuth error:', error);
+    return res.redirect('/?error=oauth_failed');
+  }
+
+  if (!code) {
+    console.error('❌ No authorization code received');
+    return res.redirect('/?error=oauth_failed');
+  }
+
+  try {
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: `${req.protocol}://${req.get('host')}/api/auth/google/callback`,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenData.access_token) {
+      throw new Error('Failed to get access token');
+    }
+
+    // Get user info from Google
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    const googleUser = await userResponse.json();
+    console.log('👤 Google user info:', googleUser);
+
+    // Check if user exists in our database
+    let user = await getUserByEmail(googleUser.email);
+
+    if (!user) {
+      // Create new user
+      const userData = {
+        id: `google-${Date.now()}`,
+        username: googleUser.email.split('@')[0] + '_' + Date.now(),
+        email: googleUser.email,
+        password_hash: '', // No password for OAuth users
+        firstName: googleUser.given_name || '',
+        lastName: googleUser.family_name || '',
+        balance: 10000,
+        role: 'user',
+        status: 'active',
+        trading_mode: 'normal',
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString()
+      };
+
+      console.log('📝 Creating new Google user:', googleUser.email);
+      user = await createUser(userData);
+      console.log('✅ Google user created in database:', user.id);
+    } else {
+      // Update last login
+      user.last_login = new Date().toISOString();
+      await updateUser(user.id, { last_login: user.last_login });
+      console.log('✅ Existing Google user logged in:', user.email);
+    }
+
+    // Generate token and redirect to dashboard
+    const token = `user-session-${user.id}-${Date.now()}`;
+
+    // Redirect to frontend with token
+    res.redirect(`/dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      balance: user.balance,
+      firstName: user.firstName || '',
+      lastName: user.lastName || ''
+    }))}`);
+
+  } catch (error) {
+    console.error('❌ Google OAuth callback error:', error);
+    res.redirect('/?error=oauth_failed');
   }
 });
 
@@ -2094,11 +2378,26 @@ app.get('/api/balances', async (req, res) => {
       console.log('💰 Processing auth token:', authToken.substring(0, 30) + '...');
 
       if (authToken.startsWith('user-session-')) {
-        const userId = authToken.replace('user-session-', '');
+        // Extract user ID from token format: user-session-{userId}-{timestamp}
+        const tokenParts = authToken.replace('user-session-', '').split('-');
+        const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+        console.log('💰 Extracted user ID from token:', userId);
+
         const foundUser = users.find(u => u.id === userId);
         if (foundUser) {
           currentUser = foundUser;
-          console.log('💰 Found user by session:', currentUser.username);
+          console.log('💰 Found user by session:', currentUser.username, 'Balance:', currentUser.balance);
+        } else {
+          console.log('💰 No user found for ID:', userId);
+        }
+      }
+      // Handle wallet-session- tokens (from MetaMask login)
+      else if (authToken.startsWith('wallet-session-')) {
+        const walletId = authToken.replace('wallet-session-', '');
+        const foundUser = users.find(u => u.id === walletId || u.username === walletId);
+        if (foundUser) {
+          currentUser = foundUser;
+          console.log('💰 Found wallet user by session:', currentUser.username, 'Balance:', currentUser.balance);
         }
       }
       // Handle user-token- tokens (from regular login)

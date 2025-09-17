@@ -9,9 +9,9 @@ import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, Link } from 'wouter';
 import { Eye, EyeOff } from 'lucide-react';
-import { FaGoogle, FaLinkedin } from 'react-icons/fa';
+import { FaGoogle } from 'react-icons/fa';
 import { SiEthereum } from 'react-icons/si';
-import { Footer } from '../components/ui/footer';
+
 
 // Declare MetaMask types
 declare global {
@@ -128,14 +128,22 @@ export default function SignupPage() {
       const authResult = await metamaskLogin({ walletAddress });
       console.log('✅ MetaMask authentication successful:', authResult);
 
+      // Store user data in localStorage for immediate access
+      if (authResult.user && authResult.token) {
+        localStorage.setItem('authToken', authResult.token);
+        localStorage.setItem('user', JSON.stringify(authResult.user));
+      }
+
       toast({
         title: "MetaMask Connected Successfully!",
         description: `Welcome! Connected with wallet: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`,
       });
 
-      // Navigate to dashboard - auth state is now properly updated
+      // Small delay to ensure state is updated, then navigate to dashboard
       console.log('🔄 Redirecting to dashboard...');
-      setLocation('/dashboard');
+      setTimeout(() => {
+        setLocation('/dashboard');
+      }, 500);
 
     } catch (error: any) {
       console.error('❌ MetaMask connection error:', error);
@@ -168,41 +176,7 @@ export default function SignupPage() {
     }
   };
 
-  const handleTwitterLogin = async () => {
-    try {
-      toast({
-        title: "Twitter Signup",
-        description: "Redirecting to Twitter authentication...",
-      });
 
-      // Direct OAuth redirect to Twitter
-      window.location.href = '/api/auth/twitter';
-    } catch (error: any) {
-      toast({
-        title: "Twitter Signup Failed",
-        description: error.message || "Failed to authenticate with Twitter",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLinkedInLogin = async () => {
-    try {
-      toast({
-        title: "LinkedIn Signup",
-        description: "Redirecting to LinkedIn authentication...",
-      });
-
-      // Direct OAuth redirect to LinkedIn
-      window.location.href = '/api/auth/linkedin';
-    } catch (error: any) {
-      toast({
-        title: "LinkedIn Signup Failed",
-        description: "Please try again or use email signup",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -250,32 +224,15 @@ export default function SignupPage() {
               <p className="text-gray-400 text-sm mb-6">Join the community and unleash endless possibilities</p>
 
               {/* Social Login Buttons */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="flex justify-center mb-6">
                 <Button
                   variant="outline"
-                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg"
+                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg flex items-center space-x-2"
                   onClick={handleGoogleLogin}
                   type="button"
                 >
                   <FaGoogle className="w-5 h-5 text-white" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg"
-                  onClick={handleTwitterLogin}
-                  type="button"
-                >
-                  <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                  </svg>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg"
-                  onClick={handleLinkedInLogin}
-                  type="button"
-                >
-                  <FaLinkedin className="w-5 h-5 text-blue-500" />
+                  <span className="text-white">Continue with Google</span>
                 </Button>
               </div>
 
@@ -481,8 +438,7 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <Footer />
+
     </div>
   );
 }

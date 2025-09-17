@@ -9,10 +9,10 @@ import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation, Link } from 'wouter';
 import { Eye, EyeOff } from 'lucide-react';
-import { FaGoogle, FaLinkedin } from 'react-icons/fa';
+import { FaGoogle } from 'react-icons/fa';
 import { SiEthereum } from 'react-icons/si';
 import { useQueryClient } from '@tanstack/react-query';
-import { Footer } from '../components/ui/footer';
+
 import { apiRequest } from '../lib/queryClient';
 
 // Declare MetaMask types
@@ -195,6 +195,12 @@ export default function UserLogin() {
       const data = await metamaskLogin({ walletAddress });
       console.log('✅ Auth successful:', data);
 
+      // Store user data in localStorage for immediate access
+      if (data.user && data.token) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+
       toast({
         title: "MetaMask Connected",
         description: `Wallet ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)} authenticated successfully!`,
@@ -202,7 +208,9 @@ export default function UserLogin() {
 
       // Navigate to dashboard - the auth state is updated automatically by the mutation
       console.log('🔄 Redirecting to dashboard...');
-      setLocation('/dashboard');
+      setTimeout(() => {
+        setLocation('/dashboard');
+      }, 500);
     } catch (error: any) {
       console.error('❌ MetaMask connection error:', error);
       toast({
@@ -243,50 +251,7 @@ export default function UserLogin() {
     }
   };
 
-  const handleTwitterLogin = async () => {
-    try {
-      toast({
-        title: "Twitter Login",
-        description: "Redirecting to Twitter authentication...",
-      });
 
-      // Direct OAuth redirect to Twitter
-      window.location.href = '/api/auth/twitter';
-    } catch (error: any) {
-      toast({
-        title: "Twitter Login Failed",
-        description: error.message || "Failed to authenticate with Twitter",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLinkedInLogin = async () => {
-    try {
-      toast({
-        title: "LinkedIn Login",
-        description: "Redirecting to LinkedIn authentication...",
-      });
-      
-      // Try direct redirect with a timeout fallback
-      setTimeout(() => {
-        toast({
-          title: "LinkedIn OAuth Issue",
-          description: "If you see 'refused to connect', please contact support.",
-          variant: "destructive",
-        });
-      }, 5000);
-      
-      // Direct OAuth redirect to LinkedIn
-      window.location.href = '/api/auth/linkedin';
-    } catch (error: any) {
-      toast({
-        title: "LinkedIn Login Failed",
-        description: "Please try again or use email login",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -334,32 +299,15 @@ export default function UserLogin() {
               <p className="text-gray-400 text-sm mb-6">Securely connect to your account</p>
 
               {/* Social Login Buttons */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="flex justify-center mb-6">
                 <Button
                   variant="outline"
-                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg"
+                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg flex items-center space-x-2"
                   onClick={handleGoogleLogin}
                   type="button"
                 >
                   <FaGoogle className="w-5 h-5 text-white" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg"
-                  onClick={handleTwitterLogin}
-                  type="button"
-                >
-                  <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                  </svg>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg"
-                  onClick={handleLinkedInLogin}
-                  type="button"
-                >
-                  <FaLinkedin className="w-5 h-5 text-blue-500" />
+                  <span className="text-white">Continue with Google</span>
                 </Button>
               </div>
 
@@ -478,8 +426,7 @@ export default function UserLogin() {
         </div>
       </div>
 
-      {/* Footer */}
-      <Footer />
+
     </div>
   );
 }
