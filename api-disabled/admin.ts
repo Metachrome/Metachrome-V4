@@ -411,9 +411,9 @@ async function handleTrades(req: VercelRequest, res: VercelResponse) {
     try {
       // Check if supabaseAdmin is available
       if (!supabaseAdmin) {
-        console.log('⚠️ Supabase admin not configured, using mock data');
-        console.log('📈 Using mock trades - Count:', MOCK_TRADES.length);
-        return res.json(MOCK_TRADES);
+        console.log('⚠️ Supabase admin not configured, returning empty array');
+        console.log('📈 No database connection, returning empty trades array');
+        return res.json([]);
       }
 
       // Get trades from Supabase
@@ -427,9 +427,9 @@ async function handleTrades(req: VercelRequest, res: VercelResponse) {
 
       if (error) {
         console.error('❌ Trades fetch error:', error);
-        // Fallback to mock data
-        console.log('📈 Using mock trades - Count:', MOCK_TRADES.length);
-        return res.json(MOCK_TRADES);
+        // Return empty array instead of mock data
+        console.log('📈 Database empty, returning empty trades array');
+        return res.json([]);
       }
 
       console.log('📈 Getting trades from database - Count:', trades.length);
@@ -566,9 +566,9 @@ async function handleTransactions(req: VercelRequest, res: VercelResponse) {
     try {
       // Check if supabaseAdmin is available
       if (!supabaseAdmin) {
-        console.log('⚠️ Supabase admin not configured, using mock data');
-        console.log('💰 Using mock transactions - Count:', MOCK_TRANSACTIONS.length);
-        return res.json(MOCK_TRANSACTIONS);
+        console.log('⚠️ Supabase admin not configured, returning empty array');
+        console.log('💰 No database connection, returning empty transactions array');
+        return res.json([]);
       }
 
       // Get transactions from Supabase
@@ -582,9 +582,9 @@ async function handleTransactions(req: VercelRequest, res: VercelResponse) {
 
       if (error) {
         console.error('❌ Transactions fetch error:', error);
-        // Fallback to mock data
-        console.log('💰 Using mock transactions - Count:', MOCK_TRANSACTIONS.length);
-        return res.json(MOCK_TRANSACTIONS);
+        // Return empty array instead of mock data
+        console.log('💰 Database empty, returning empty transactions array');
+        return res.json([]);
       }
 
       console.log('💰 Getting transactions from database - Count:', transactions.length);

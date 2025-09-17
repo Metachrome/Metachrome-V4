@@ -33,11 +33,9 @@ import {
   Key,
   UserX,
   Trash2,
-  Trash2,
   Lock,
   Unlock,
   UserCheck,
-  UserX,
   Wallet,
   CreditCard,
   History,
@@ -59,7 +57,9 @@ import {
   TrendingDown,
   PlayCircle,
   PauseCircle,
-  StopCircle
+  StopCircle,
+  Edit,
+  Settings
 } from 'lucide-react';
 
 // Helper function to safely parse balance values
@@ -74,6 +74,17 @@ const parseBalance = (balance: any): number => {
     return isNaN(parsed) ? 0 : parsed;
   }
   return 0;
+};
+
+// Helper function to format balance for display
+const formatBalance = (balance: any): string => {
+  const numericBalance = parseBalance(balance);
+  // Round to 2 decimal places to avoid floating point precision issues
+  const rounded = Math.round(numericBalance * 100) / 100;
+  return rounded.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 };
 
 // Helper function to calculate total balance safely
@@ -172,8 +183,37 @@ export default function SuperAdminDashboard() {
     action: 'add' // 'add' or 'subtract'
   });
 
+  // Password update state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordUpdateData, setPasswordUpdateData] = useState({
+    userId: '',
+    username: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
   // Receipt viewer state
   const [selectedReceipt, setSelectedReceipt] = useState<{url: string, filename: string} | null>(null);
+
+  // Wallet update state
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [walletUpdateData, setWalletUpdateData] = useState({
+    userId: '',
+    walletAddress: ''
+  });
+
+  // User edit state
+  const [showUserEditModal, setShowUserEditModal] = useState(false);
+  const [userEditData, setUserEditData] = useState({
+    userId: '',
+    username: '',
+    email: '',
+    balance: '',
+    walletAddress: '',
+    tradingMode: 'normal',
+    role: 'user',
+    status: 'active'
+  });
 
   // Data fetching with real-time refresh
   const { data: users, refetch: refetchUsers } = useQuery<User[]>({
@@ -440,6 +480,175 @@ export default function SuperAdminDashboard() {
     }
   });
 
+  // Password update mutation
+  const passwordUpdateMutation = useMutation({
+    mutationFn: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {
+      console.log('Updating password for user:', userId);
+      const response = await fetch(`/api/admin/users/${userId}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ newPassword })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update password');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password Updated",
+        description: "User password has been updated successfully",
+        duration: 3000
+      });
+      setShowPasswordModal(false);
+      setPasswordUpdateData({
+        userId: '',
+        username: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to update password:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  });
+
+  // Wallet update mutation
+  const walletUpdateMutation = useMutation({
+    mutationFn: async ({ userId, walletAddress }: { userId: string; walletAddress: string }) => {
+      console.log('Updating wallet for user:', userId);
+      const response = await fetch(`/api/admin/users/update-wallet`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ userId, walletAddress })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update wallet address');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Wallet Updated",
+        description: "User wallet address has been updated successfully",
+        duration: 3000
+      });
+      setShowWalletModal(false);
+      setWalletUpdateData({
+        userId: '',
+        walletAddress: ''
+      });
+      refetchUsers();
+    },
+    onError: (error: any) => {
+      console.error('Failed to update wallet:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update wallet address",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  });
+
+  // User edit mutation
+  const userEditMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      console.log('Updating user:', userData);
+
+      // Map frontend data to backend format
+      const backendData = {
+        username: userData.username,
+        email: userData.email,
+        walletAddress: userData.walletAddress,
+        role: userData.role,
+        isActive: userData.status === 'active',
+        trading_mode: userData.tradingMode
+      };
+
+      const response = await fetch(`/api/admin/users/${userData.userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify(backendData)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update user');
+      }
+
+      // If balance was changed, update it separately
+      const currentUser = users?.find(u => u.id === userData.userId);
+      const currentBalance = parseBalance(currentUser?.balance || 0);
+      const newBalance = parseBalance(userData.balance);
+
+      if (Math.abs(currentBalance - newBalance) > 0.01) {
+        const balanceResponse = await fetch(`/api/admin/balances/${userData.userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({
+            amount: newBalance,
+            type: 'admin_adjustment',
+            description: 'Balance updated via user edit'
+          })
+        });
+
+        if (!balanceResponse.ok) {
+          console.warn('Failed to update balance, but user data was updated');
+        }
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User Updated",
+        description: "User information has been updated successfully",
+        duration: 3000
+      });
+      setShowUserEditModal(false);
+      setUserEditData({
+        userId: '',
+        username: '',
+        email: '',
+        balance: '',
+        walletAddress: '',
+        tradingMode: 'normal',
+        role: 'user',
+        status: 'active'
+      });
+      refetchUsers();
+    },
+    onError: (error: any) => {
+      console.error('Failed to update user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  });
+
   // Approve deposit mutation
   const approveDepositMutation = useMutation({
     mutationFn: async ({ depositId, action, reason }: { depositId: string; action: 'approve' | 'reject'; reason?: string }) => {
@@ -659,32 +868,32 @@ export default function SuperAdminDashboard() {
 
       <div className="max-w-7xl mx-auto p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-gray-800 border-gray-700">
-            <TabsTrigger value="overview">
+          <TabsList className="flex w-full overflow-x-auto bg-gray-800 border-gray-700 scrollbar-hide gap-2 p-2">
+            <TabsTrigger value="overview" className="flex-shrink-0 px-4 py-2">
               <BarChart3 className="w-4 h-4 mr-2" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="users">
+            <TabsTrigger value="users" className="flex-shrink-0 px-4 py-2">
               <Users className="w-4 h-4 mr-2" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="trades">
+            <TabsTrigger value="trades" className="flex-shrink-0 px-4 py-2">
               <TrendingUp className="w-4 h-4 mr-2" />
               Trades
             </TabsTrigger>
-            <TabsTrigger value="transactions">
+            <TabsTrigger value="transactions" className="flex-shrink-0 px-4 py-2">
               <DollarSign className="w-4 h-4 mr-2" />
               Transactions
             </TabsTrigger>
-            <TabsTrigger value="pending">
+            <TabsTrigger value="pending" className="flex-shrink-0 px-4 py-2">
               <Shield className="w-4 h-4 mr-2" />
               Pending Requests
             </TabsTrigger>
-            <TabsTrigger value="controls">
+            <TabsTrigger value="controls" className="flex-shrink-0 px-4 py-2">
               <Settings className="w-4 h-4 mr-2" />
               Controls
             </TabsTrigger>
-            <TabsTrigger value="support">
+            <TabsTrigger value="support" className="flex-shrink-0 px-4 py-2">
               <MessageSquare className="w-4 h-4 mr-2" />
               Support
             </TabsTrigger>
@@ -906,7 +1115,7 @@ export default function SuperAdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell className="text-white">{user.email}</TableCell>
-                          <TableCell className="text-white font-medium">${user.balance.toLocaleString()}</TableCell>
+                          <TableCell className="text-white font-medium">${formatBalance(user.balance)}</TableCell>
                           <TableCell>
                             <Badge variant={user.role === 'super_admin' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
                               {user.role}
@@ -1716,7 +1925,7 @@ export default function SuperAdminDashboard() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-300">Balance</label>
                   <div className="p-3 bg-gray-700 rounded border border-gray-600">
-                    ${selectedUser.balance?.toLocaleString() || '0.00'}
+                    ${selectedUser.balance ? formatBalance(selectedUser.balance) : '0.00'}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1754,7 +1963,7 @@ export default function SuperAdminDashboard() {
               {isSuperAdmin && (
                 <div className="border-t border-gray-600 pt-4">
                   <h3 className="text-lg font-medium text-white mb-4">Super Admin Actions</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <Button
                       variant="outline"
                       className="bg-green-600 hover:bg-green-700 border-green-500"
@@ -1768,14 +1977,34 @@ export default function SuperAdminDashboard() {
                       }}
                     >
                       <DollarSign className="w-4 h-4 mr-2" />
-                      Update Balance
+                      Deposit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="bg-orange-600 hover:bg-orange-700 border-orange-500"
+                      onClick={() => {
+                        setBalanceUpdateData({
+                          userId: selectedUser.id,
+                          amount: '',
+                          action: 'subtract'
+                        });
+                        setShowBalanceModal(true);
+                      }}
+                    >
+                      <ArrowDown className="w-4 h-4 mr-2" />
+                      Withdraw
                     </Button>
                     <Button
                       variant="outline"
                       className="bg-blue-600 hover:bg-blue-700 border-blue-500"
                       onClick={() => {
-                        // Handle password reset
-                        console.log('Reset password for user:', selectedUser.id);
+                        setPasswordUpdateData({
+                          userId: selectedUser.id,
+                          username: selectedUser.username,
+                          newPassword: '',
+                          confirmPassword: ''
+                        });
+                        setShowPasswordModal(true);
                       }}
                     >
                       <Key className="w-4 h-4 mr-2" />
@@ -1783,25 +2012,50 @@ export default function SuperAdminDashboard() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="bg-purple-600 hover:bg-purple-700 border-purple-500"
+                      className="bg-cyan-600 hover:bg-cyan-700 border-cyan-500"
                       onClick={() => {
-                        // Handle trading mode change
-                        console.log('Change trading mode for user:', selectedUser.id);
+                        setWalletUpdateData({
+                          userId: selectedUser.id,
+                          walletAddress: selectedUser.wallet_address || ''
+                        });
+                        setShowWalletModal(true);
                       }}
                     >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Trading Settings
+                      <Wallet className="w-4 h-4 mr-2" />
+                      Manage Wallet
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="bg-indigo-600 hover:bg-indigo-700 border-indigo-500"
+                      onClick={() => {
+                        setUserEditData({
+                          userId: selectedUser.id,
+                          username: selectedUser.username,
+                          email: selectedUser.email,
+                          balance: selectedUser.balance?.toString() || '0',
+                          walletAddress: selectedUser.wallet_address || '',
+                          tradingMode: selectedUser.trading_mode || 'normal',
+                          role: selectedUser.role,
+                          status: selectedUser.isActive ? 'active' : 'inactive'
+                        });
+                        setShowUserEditModal(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit User
                     </Button>
                     <Button
                       variant="outline"
                       className="bg-red-600 hover:bg-red-700 border-red-500"
                       onClick={() => {
-                        // Handle user suspension
-                        console.log('Toggle user status:', selectedUser.id);
+                        if (confirm(`Are you sure you want to delete user ${selectedUser.username}? This action cannot be undone.`)) {
+                          handleDeleteUser(selectedUser.id, selectedUser.username);
+                          setIsUserDialogOpen(false);
+                        }
                       }}
                     >
-                      <UserX className="w-4 h-4 mr-2" />
-                      {selectedUser.isActive ? 'Suspend' : 'Activate'}
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete User
                     </Button>
                   </div>
                 </div>
@@ -1817,10 +2071,17 @@ export default function SuperAdminDashboard() {
           <DialogHeader>
             <DialogTitle className="text-white flex items-center space-x-2">
               <DollarSign className="w-5 h-5" />
-              <span>Update User Balance</span>
+              <span>
+                {balanceUpdateData.action === 'add' ? '💰 Deposit to' : '💸 Withdraw from'} {
+                  users?.find(u => u.id === balanceUpdateData.userId)?.username || 'User'
+                }
+              </span>
             </DialogTitle>
             <DialogDescription className="text-gray-400">
-              Add or subtract funds from user's account
+              {balanceUpdateData.action === 'add' ? 'Add funds to' : 'Subtract funds from'} user's account
+              {users?.find(u => u.id === balanceUpdateData.userId)?.balance &&
+                ` (Current Balance: $${Number(users.find(u => u.id === balanceUpdateData.userId)?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+              }
             </DialogDescription>
           </DialogHeader>
 
@@ -1881,8 +2142,359 @@ export default function SuperAdminDashboard() {
                 disabled={balanceUpdateMutation.isPending}
                 className={balanceUpdateData.action === 'add' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
               >
-                {balanceUpdateMutation.isPending ? 'Updating...' :
-                 balanceUpdateData.action === 'add' ? 'Add Funds' : 'Subtract Funds'}
+                {balanceUpdateMutation.isPending ? 'Processing...' :
+                 balanceUpdateData.action === 'add' ? 'Process Deposit' : 'Process Withdrawal'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Update Modal */}
+      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+        <DialogContent className="bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Reset Password</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Reset password for user: {passwordUpdateData.username}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                New Password
+              </label>
+              <Input
+                type="password"
+                placeholder="Enter new password (min 6 characters)"
+                value={passwordUpdateData.newPassword}
+                onChange={(e) => setPasswordUpdateData({
+                  ...passwordUpdateData,
+                  newPassword: e.target.value
+                })}
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-300 mb-2 block">
+                Confirm Password
+              </label>
+              <Input
+                type="password"
+                placeholder="Confirm new password"
+                value={passwordUpdateData.confirmPassword}
+                onChange={(e) => setPasswordUpdateData({
+                  ...passwordUpdateData,
+                  confirmPassword: e.target.value
+                })}
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordUpdateData({
+                    userId: '',
+                    username: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                  });
+                }}
+                className="bg-gray-600 hover:bg-gray-700 border-gray-500"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!passwordUpdateData.newPassword || passwordUpdateData.newPassword.length < 6) {
+                    toast({
+                      title: "Invalid Password",
+                      description: "Password must be at least 6 characters long",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  if (passwordUpdateData.newPassword !== passwordUpdateData.confirmPassword) {
+                    toast({
+                      title: "Password Mismatch",
+                      description: "Passwords do not match",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  passwordUpdateMutation.mutate({
+                    userId: passwordUpdateData.userId,
+                    newPassword: passwordUpdateData.newPassword
+                  });
+                }}
+                disabled={passwordUpdateMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {passwordUpdateMutation.isPending ? 'Updating...' : 'Update Password'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Wallet Update Modal */}
+      <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center space-x-2">
+              <Wallet className="w-5 h-5" />
+              <span>🏦 Manage Wallet for {
+                users?.find(u => u.id === walletUpdateData.userId)?.username || 'User'
+              }</span>
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Update user's wallet address for transactions
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Current Wallet Address</label>
+              <div className="p-3 bg-gray-700 rounded border border-gray-600 text-gray-400">
+                {users?.find(u => u.id === walletUpdateData.userId)?.wallet_address || 'No wallet address set'}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">New Wallet Address</label>
+              <Input
+                type="text"
+                placeholder="Enter new wallet address"
+                value={walletUpdateData.walletAddress}
+                onChange={(e) => setWalletUpdateData({
+                  ...walletUpdateData,
+                  walletAddress: e.target.value
+                })}
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Previous Wallet Addresses</label>
+              <div className="p-3 bg-gray-700 rounded border border-gray-600 text-gray-400">
+                No previous wallet addresses found
+              </div>
+            </div>
+
+            <div className="bg-yellow-900/20 border border-yellow-600 rounded p-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-400 text-sm">
+                  Changing the wallet address will move the current address to history
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowWalletModal(false);
+                  setWalletUpdateData({
+                    userId: '',
+                    walletAddress: ''
+                  });
+                }}
+                className="bg-gray-600 hover:bg-gray-700 border-gray-500"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!walletUpdateData.walletAddress.trim()) {
+                    toast({
+                      title: "Invalid Address",
+                      description: "Please enter a valid wallet address",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  walletUpdateMutation.mutate({
+                    userId: walletUpdateData.userId,
+                    walletAddress: walletUpdateData.walletAddress
+                  });
+                }}
+                disabled={walletUpdateMutation.isPending}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {walletUpdateMutation.isPending ? 'Updating...' : 'Update Wallet'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Edit Modal */}
+      <Dialog open={showUserEditModal} onOpenChange={setShowUserEditModal}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center space-x-2">
+              <Settings className="w-5 h-5" />
+              <span>Edit User</span>
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Update user information and settings
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Username</label>
+                <Input
+                  type="text"
+                  value={userEditData.username}
+                  onChange={(e) => setUserEditData({
+                    ...userEditData,
+                    username: e.target.value
+                  })}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Email</label>
+                <Input
+                  type="email"
+                  value={userEditData.email}
+                  onChange={(e) => setUserEditData({
+                    ...userEditData,
+                    email: e.target.value
+                  })}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Balance</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={userEditData.balance}
+                  onChange={(e) => setUserEditData({
+                    ...userEditData,
+                    balance: e.target.value
+                  })}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Wallet Address</label>
+                <Input
+                  type="text"
+                  value={userEditData.walletAddress}
+                  onChange={(e) => setUserEditData({
+                    ...userEditData,
+                    walletAddress: e.target.value
+                  })}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Trading Mode</label>
+                <Select
+                  value={userEditData.tradingMode}
+                  onValueChange={(value) => setUserEditData({
+                    ...userEditData,
+                    tradingMode: value
+                  })}
+                >
+                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">NORMAL</SelectItem>
+                    <SelectItem value="win">WIN</SelectItem>
+                    <SelectItem value="lose">LOSE</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Role</label>
+                <Select
+                  value={userEditData.role}
+                  onValueChange={(value) => setUserEditData({
+                    ...userEditData,
+                    role: value
+                  })}
+                >
+                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Status</label>
+                <Select
+                  value={userEditData.status}
+                  onValueChange={(value) => setUserEditData({
+                    ...userEditData,
+                    status: value
+                  })}
+                >
+                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUserEditModal(false);
+                  setUserEditData({
+                    userId: '',
+                    username: '',
+                    email: '',
+                    balance: '',
+                    walletAddress: '',
+                    tradingMode: 'normal',
+                    role: 'user',
+                    status: 'active'
+                  });
+                }}
+                className="bg-gray-600 hover:bg-gray-700 border-gray-500"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!userEditData.username.trim() || !userEditData.email.trim()) {
+                    toast({
+                      title: "Invalid Data",
+                      description: "Username and email are required",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  userEditMutation.mutate(userEditData);
+                }}
+                disabled={userEditMutation.isPending}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {userEditMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "user-angela",
+    "username": "angela.soenoko",
+    "email": "angela.soenoko@gmail.com",
+    "password_hash": "$2a$10$8Ia4CrAi0.tEt0uT7LfV9.CVrKeAYIzmrHAsq2D9B/IyB7jkWc7Me",
+    "balance": 19300,
+    "role": "user",
+    "status": "active",
+    "trading_mode": "normal",
+    "created_at": "2025-09-16T06:17:04.220Z",
+    "last_login": "2025-09-16T06:17:04.220Z",
+    "updated_at": "2025-09-16T17:00:35.594Z",
+    "wallet_address": "0xSECOND987654321fedcba1234",
+    "wallet_history": [
+      {
+        "address": "0xSUPERADMIN123456789abcdef1",
+        "changed_at": "2025-09-16T16:44:35.452Z",
+        "changed_by": "superadmin"
+      },
+      {
+        "address": "0xFIRST123456789abcdef",
+        "changed_at": "2025-09-16T16:44:35.509Z",
+        "changed_by": "superadmin"
+      },
+      {
+        "address": "0xSECOND987654321fedcba",
+        "changed_at": "2025-09-16T16:57:27.126Z",
+        "changed_by": "superadmin"
+      },
+      {
+        "address": "0xSECOND987654321fedcba12",
+        "changed_at": "2025-09-16T17:00:35.594Z",
+        "changed_by": "superadmin"
+      }
+    ]
+  },
+  {
+    "id": "superadmin-1",
+    "username": "superadmin",
+    "email": "superadmin@metachrome.io",
+    "password_hash": "$2a$10$tzXg/z.lQ0BRVQ/zI6pFEuZkgdFfR9Yu0Mx05/8DZC11w6dO/ksDe",
+    "balance": 1000000,
+    "role": "super_admin",
+    "status": "active",
+    "trading_mode": "normal",
+    "created_at": "2025-09-16T06:17:04.220Z",
+    "last_login": "2025-09-16T06:17:04.220Z"
+  }
+]

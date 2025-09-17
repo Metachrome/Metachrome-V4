@@ -45,6 +45,17 @@ const parseBalance = (balance: any): number => {
   return 0;
 };
 
+// Helper function to format balance for display
+const formatBalance = (balance: any): string => {
+  const numericBalance = parseBalance(balance);
+  // Round to 2 decimal places to avoid floating point precision issues
+  const rounded = Math.round(numericBalance * 100) / 100;
+  return rounded.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
 // Helper function to calculate total balance safely
 const calculateTotalBalance = (users: any[]): number => {
   return users.reduce((sum, user) => {
@@ -322,7 +333,7 @@ export default function EnhancedUserManagement({
                       <div className="text-gray-400 text-sm">{user.phoneNumber}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-white font-medium">${user.balance.toLocaleString()}</div>
+                      <div className="text-white font-medium">${formatBalance(user.balance)}</div>
                       <div className="text-gray-400 text-sm">
                         {user.walletAddress ? 'Wallet Connected' : 'No Wallet'}
                       </div>

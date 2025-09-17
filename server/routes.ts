@@ -228,7 +228,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
       if (token) {
-        console.log('🔍 Auth check - checking JWT token');
+        console.log('🔍 Auth check - checking token:', token.substring(0, 20) + '...');
+
+        // Handle admin tokens (from admin login)
+        if (token.startsWith('admin-token-') || token.startsWith('token_admin-001_') || token.startsWith('token_superadmin-001_')) {
+          console.log('🔧 Admin token detected, checking session');
+          const user = req.session.user || null;
+          console.log('🔧 Session user for admin token:', user);
+          return res.json(user);
+        }
+
+        // Handle regular JWT tokens
         const decoded = verifyToken(token);
         if (decoded) {
           console.log('✅ Valid JWT token found:', decoded);
@@ -416,7 +426,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check database for admin credentials
       const user = await storage.getUserByUsername(username);
 
-      console.log('👤 Found user:', user ? { id: user.id, username: user.username, role: user.role } : 'null');
+      console.log('👤 Found user:', user ? { id: user.id, username: user.username, role: user.role, email: user.email } : 'null');
+      console.log('🔍 Login attempt for username:', username);
+      console.log('🔍 User lookup result:', user);
 
       if (!user) {
         console.log('❌ User not found in database');

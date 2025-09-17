@@ -12,6 +12,10 @@ import heroDesktopImage from "@assets/hero-desktop_1754552987909.jpg";
 import speakerIcon from "../assets/speaker_icon.png";
 import newMetachromeCard from "../assets/new-metachrome-card.png";
 import faqImage from "@assets/FAQ_image-2_1755414462649.png";
+import featureImage01 from "@assets/featureimage01_1754552987907.png";
+import featureImage02 from "@assets/featureimage02_1754552987908.png";
+import featureImage03 from "@assets/featureimage03_1754552987909.png";
+import emailsbImage from "@assets/emailsb_1754552987905.png";
 import TradingViewWidget from "../components/TradingViewWidget";
 import { useCryptoData, getTradingRoute } from "../services/cryptoDataService";
 
@@ -39,17 +43,17 @@ export default function HomePage() {
 
   const features = [
     {
-      icon: "/assets/featureimage01_1754552987907.png",
+      icon: featureImage01,
       title: "Fast Execution",
       description: "Experience blazing-fast trade performance and experience."
     },
     {
-      icon: "/assets/featureimage02_1754552987908.png",
+      icon: featureImage02,
       title: "Secure Wallets",
       description: "Your assets are protected with top-level security protocols."
     },
     {
-      icon: "/assets/featureimage03_1754552987909.png",
+      icon: featureImage03,
       title: "Real-Time Updates",
       description: "Stay updated with real-time charts and market data."
     }
@@ -353,7 +357,7 @@ export default function HomePage() {
                   <div className="flex justify-center">
                     <div className="relative">
                       <img
-                        src="/assets/emailsb_1754552987905.png"
+                        src={emailsbImage}
                         alt="Newsletter Chart"
                         className="w-full max-w-xs h-auto object-contain"
                       />
@@ -693,7 +697,7 @@ export default function HomePage() {
                 <div className="flex justify-center lg:justify-start">
                   <div className="relative">
                     <img
-                      src="/assets/emailsb_1754552987905.png"
+                      src={emailsbImage}
                       alt="Newsletter Chart"
                       className="w-full max-w-lg h-auto object-contain"
                       style={{ width: '512px', height: '384px' }}

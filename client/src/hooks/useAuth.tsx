@@ -9,6 +9,7 @@ export function useAuth() {
     queryKey: ["/api/auth"],
     queryFn: async () => {
       const authToken = localStorage.getItem('authToken');
+      console.log("🔍 useAuth queryFn - Auth token:", authToken?.substring(0, 20) + '...');
 
       if (!authToken) {
         console.log("No auth token found");
@@ -33,6 +34,17 @@ export function useAuth() {
           const userData = await response.json();
           console.log("Admin user query response:", userData);
           return userData;
+        }
+
+        // For admin tokens (admin-token-), use stored user data
+        if (authToken.startsWith('admin-token-')) {
+          console.log("🔧 Found admin-token, using stored user data");
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            console.log("🔧 Admin-token user data:", userData);
+            return userData;
+          }
         }
 
         // For demo tokens, get from localStorage
@@ -66,17 +78,17 @@ export function useAuth() {
 
         // For admin tokens (new format), use stored user data
         if (authToken && (authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_'))) {
-          console.log("Found admin token, using stored user data");
+          console.log("🔧 Found admin token, using stored user data");
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
             const userData = JSON.parse(storedUser);
-            console.log("Admin token user data:", userData);
+            console.log("🔧 Admin token user data:", userData);
             return userData;
           }
         }
 
         // For real JWT tokens (other cases), make API request to verify
-        if (authToken && !authToken.startsWith('demo-token-') && !authToken.startsWith('admin-session-') && !authToken.startsWith('mock-jwt-token') && authToken !== 'mock-jwt-token' && !authToken.startsWith('token_admin-001_') && !authToken.startsWith('token_superadmin-001_')) {
+        if (authToken && !authToken.startsWith('demo-token-') && !authToken.startsWith('admin-session-') && !authToken.startsWith('admin-token-') && !authToken.startsWith('mock-jwt-token') && authToken !== 'mock-jwt-token' && !authToken.startsWith('token_admin-001_') && !authToken.startsWith('token_superadmin-001_')) {
           console.log("Making API request for JWT token user");
           const response = await apiRequest("GET", "/api/auth");
           const userData = await response.json();
@@ -84,13 +96,14 @@ export function useAuth() {
           return userData;
         }
 
+        console.log("🔍 No matching token pattern found");
         return null;
       } catch (error) {
-        console.log("Auth query error:", error);
+        console.log("🔴 Auth query error:", error);
 
         // For mock tokens (including admin tokens and user session tokens), try to use stored user data instead of clearing
         const authToken = localStorage.getItem('authToken');
-        if (authToken && (authToken.startsWith('mock-jwt-token') || authToken === 'mock-jwt-token' || authToken === 'mock-admin-token' || authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_') || authToken.startsWith('user-session-'))) {
+        if (authToken && (authToken.startsWith('mock-jwt-token') || authToken === 'mock-jwt-token' || authToken === 'mock-admin-token' || authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_') || authToken.startsWith('admin-token-') || authToken.startsWith('user-session-'))) {
           const storedUser = localStorage.getItem('user');
           if (storedUser) {
             console.log("Auth query failed, but using stored user data for token:", authToken.substring(0, 20) + '...');
@@ -162,7 +175,7 @@ export function useAuth() {
         const isVercel = window.location.hostname.includes('vercel.app');
 
         // Construct the full URL directly
-        const baseUrl = isLocal ? 'http://127.0.0.1:9000' : '';
+        const baseUrl = isLocal ? 'http://127.0.0.1:3001' : '';
         const fullUrl = `${baseUrl}${endpoint}`;
 
         console.log('🔧 Login Debug Info:', {
@@ -350,6 +363,13 @@ export function useAuth() {
     },
   });
 
+  // Force refresh auth state
+  const refreshAuth = () => {
+    console.log("🔄 Force refreshing auth state");
+    queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
+    queryClient.refetchQueries({ queryKey: ["/api/auth"] });
+  };
+
   return {
     user,
     isLoading,
@@ -360,6 +380,7 @@ export function useAuth() {
     logout: logoutMutation.mutateAsync,
     register: registerMutation.mutateAsync,
     metamaskLogin: metamaskLoginMutation.mutateAsync,
+    refreshAuth,
     isUserLoginPending: userLoginMutation.isPending,
     isAdminLoginPending: adminLoginMutation.isPending,
     isLogoutPending: logoutMutation.isPending,

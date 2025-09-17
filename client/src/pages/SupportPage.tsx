@@ -5,13 +5,20 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../componen
 import { Mail, MessageCircle, Clock, ChevronDown, ChevronRight, Phone } from "lucide-react";
 import { useIsMobile } from "../hooks/use-mobile";
 import faqImage from "@assets/FAQ_image-2_1755414462649.png";
-import supportBannerDesktop from "../assets/support_banner_desktop.jpg";
-import supportBannerMobile from "../assets/support_banner_mobile.jpg";
+import supportBannerDesktop from "@assets/support_banner_desktop.jpg";
+import supportBannerMobile from "@assets/support_banner_mobile.jpg";
+
 
 export default function SupportPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const isMobile = useIsMobile();
+
+  // Force cache refresh
+  const cacheKey = Date.now();
+
+  // Debug log to verify component is loading
+  console.log('SupportPage loaded - NO BANNER TEXT should appear!', { cacheKey });
 
   const supportOptions = [
     {
@@ -49,45 +56,19 @@ export default function SupportPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B0E11]">
-      {/* Hero Section with Banner */}
+    <div className="min-h-screen bg-[#0B0E11]" key={`support-page-clean-${cacheKey}`}>
+      {/* CLEAN BANNER SECTION - ORIGINAL BANNER WITHOUT TEXT */}
       <section className="relative overflow-hidden bg-black w-full py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Support Banner Image */}
+          {/* Original Banner Images - Clean without embedded text */}
           <div className={`relative overflow-hidden rounded-lg ${isMobile ? 'h-64' : 'h-80'}`}>
             <img
               src={isMobile ? supportBannerMobile : supportBannerDesktop}
               alt="Support Banner"
               className="w-full h-full object-contain"
-              style={{ objectPosition: 'center center' }}
-              onLoad={() => console.log('Support banner loaded successfully')}
-              onError={(e) => {
-                console.error('Image failed to load:', e.target.src);
-                // Fallback to a solid background if image fails
-                e.target.parentElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                e.target.style.display = 'none';
-              }}
             />
-
-            {/* Text Overlay with Start Trading Button */}
-            <div className="absolute inset-0 flex flex-col justify-center items-start px-8 md:px-16">
-              <div className="text-white max-w-lg">
-                <h1 className={`font-bold mb-4 ${isMobile ? 'text-3xl' : 'text-5xl'}`}>
-                  Need Help?
-                </h1>
-                <p className={`mb-6 opacity-90 ${isMobile ? 'text-base' : 'text-xl'}`}>
-                  Get support from our expert team
-                </p>
-
-                {/* Start Trading Button */}
-                <button
-                  onClick={() => window.location.href = '/trade'}
-                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
-                >
-                  Start Trading
-                </button>
-              </div>
-            </div>
+            {/* Optional overlay for better text readability if needed */}
+            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
           </div>
         </div>
       </section>

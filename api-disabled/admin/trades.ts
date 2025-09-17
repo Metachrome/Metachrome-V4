@@ -159,9 +159,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('⚠️ Database query failed, using mock data');
       }
 
-      // Fallback to mock data
-      console.log('📈 Using mock trades - Count:', MOCK_TRADES.length);
-      return res.json(MOCK_TRADES);
+      // Return empty array instead of mock data
+      console.log('📈 Database empty, returning empty trades array');
+      return res.json([]);
     }
 
     return res.status(405).json({

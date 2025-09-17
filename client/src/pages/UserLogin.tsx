@@ -83,11 +83,34 @@ export default function UserLogin() {
           const responseData = JSON.parse(responseText);
           console.log('🧪 Parsed response:', responseData);
 
+          // Store the token if provided
+          if (responseData.token) {
+            localStorage.setItem('authToken', responseData.token);
+            console.log('🔐 Token stored:', responseData.token);
+          }
+
+          // Store user data if provided
+          if (responseData.user) {
+            localStorage.setItem('user', JSON.stringify(responseData.user));
+            console.log('👤 User data stored:', responseData.user);
+          }
+
+          // Update query cache to trigger auth state change
+          queryClient.setQueryData(["/api/auth"], responseData.user);
+          queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
+          console.log('🔄 Query cache updated');
+
           toast({
             title: "Login Successful",
             description: `Welcome back!`,
           });
-          setLocation('/dashboard');
+
+          // Small delay to ensure auth state is updated
+          setTimeout(() => {
+            console.log('🔄 Redirecting to dashboard...');
+            setLocation('/dashboard');
+          }, 100);
+
           return;
         } else {
           throw new Error(`Direct fetch failed: ${testResponse.status} ${responseText}`);

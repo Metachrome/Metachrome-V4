@@ -130,6 +130,35 @@ export function setupWebSocket(server: Server) {
     });
   }
 
+  function broadcastTradingControlUpdate(userId: string, controlType: string, adminId: string) {
+    const message: WebSocketMessage = {
+      type: 'trading_control_update',
+      data: {
+        userId,
+        controlType,
+        adminId,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    console.log('📡 Broadcasting trading control update via WebSocket:', message);
+    broadcastToAll(message);
+  }
+
+  function broadcastToUser(userId: string, message: WebSocketMessage) {
+    clients.forEach((client, clientId) => {
+      // Check if this client belongs to the specific user
+      // You might need to implement user identification in WebSocket connection
+      if (client.ws.readyState === WebSocket.OPEN) {
+        const userMessage = {
+          ...message,
+          targetUserId: userId
+        };
+        client.ws.send(JSON.stringify(userMessage));
+      }
+    });
+  }
+
   // Simulate real-time price updates
   async function updatePrices() {
     try {
@@ -190,7 +219,12 @@ export function setupWebSocket(server: Server) {
   // Initial price setup
   setTimeout(updatePrices, 1000);
 
-  return { broadcastPriceUpdate, broadcastToAll };
+  return {
+    broadcastPriceUpdate,
+    broadcastToAll,
+    broadcastTradingControlUpdate,
+    broadcastToUser
+  };
 }
 
 function generateClientId(): string {

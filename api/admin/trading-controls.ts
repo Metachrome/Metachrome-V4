@@ -171,17 +171,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         notes
       });
 
-      // Broadcast control change for real-time sync
+      // Broadcast control change for real-time sync via WebSocket
       try {
-        console.log('📡 Broadcasting trading control update:', {
+        const broadcastMessage = {
           type: 'trading_control_update',
           data: {
             userId,
             controlType,
             adminId: 'superadmin-001',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            message: `Trading mode changed to ${controlType.toUpperCase()}`
           }
-        });
+        };
+
+        console.log('📡 Broadcasting real-time trading control update:', broadcastMessage);
+
+        // Try to access global WebSocket server if available
+        if (global.wss) {
+          let broadcastCount = 0;
+          global.wss.clients.forEach(client => {
+            if (client.readyState === 1) { // WebSocket.OPEN
+              try {
+                client.send(JSON.stringify(broadcastMessage));
+                broadcastCount++;
+              } catch (error) {
+                console.error('❌ Failed to broadcast to client:', error);
+              }
+            }
+          });
+          console.log(`✅ Trading control update broadcasted to ${broadcastCount} connected clients`);
+        } else {
+          console.log('⚠️ WebSocket server not available for broadcasting');
+        }
       } catch (broadcastError) {
         console.log('⚠️ Control broadcast failed:', broadcastError);
       }

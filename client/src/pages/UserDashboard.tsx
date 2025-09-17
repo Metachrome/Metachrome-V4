@@ -71,8 +71,9 @@ export default function UserDashboard() {
     enabled: !!user?.id,
   });
 
-  // Simple calculations for now
-  const totalBalance = user?.balance || 0;
+  // Simple calculations for now - use API balance if available, fallback to user session balance
+  const usdtBalance = Array.isArray(balances) ? balances.find(b => b.symbol === 'USDT') : balances?.USDT;
+  const totalBalance = usdtBalance?.available ? parseFloat(usdtBalance.available) : (user?.balance || 0);
   const totalTrades = 0;
   const winRate = '0';
 

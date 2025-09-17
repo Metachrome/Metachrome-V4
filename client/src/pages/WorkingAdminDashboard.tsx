@@ -6,7 +6,9 @@ import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { toast } from '../hooks/use-toast';
+import { useAuth } from '../hooks/useAuth';
 import {
   Users,
   TrendingUp,
@@ -46,6 +48,17 @@ const parseBalance = (balance: any): number => {
     return isNaN(parsed) ? 0 : parsed;
   }
   return 0;
+};
+
+// Helper function to format balance for display
+const formatBalance = (balance: any): string => {
+  const numericBalance = parseBalance(balance);
+  // Round to 2 decimal places to avoid floating point precision issues
+  const rounded = Math.round(numericBalance * 100) / 100;
+  return rounded.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 };
 
 // Helper function to calculate total balance safely
@@ -111,6 +124,7 @@ interface SystemStats {
 }
 
 export default function WorkingAdminDashboard() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -141,6 +155,9 @@ export default function WorkingAdminDashboard() {
   const [newPassword, setNewPassword] = useState('');
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [walletHistory, setWalletHistory] = useState<any[]>([]);
+
+  // Receipt viewer state
+  const [selectedReceipt, setSelectedReceipt] = useState<{url: string, filename: string} | null>(null);
 
   // Get current user role
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -641,6 +658,8 @@ export default function WorkingAdminDashboard() {
         );
 
         setNewWalletAddress('');
+        // Refresh wallet history to show the updated history
+        loadWalletHistory(selectedUserForAction.id);
         // Don't close the modal immediately so user can see the updated address
         // setShowWalletModal(false);
         fetchData(); // Refresh the main data
@@ -821,11 +840,15 @@ export default function WorkingAdminDashboard() {
               </Button>
               <div className="flex items-center space-x-2 bg-gray-700 rounded-lg px-3 py-2">
                 <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">SA</span>
+                  <span className="text-white text-sm font-bold">
+                    {user?.username ? user.username.substring(0, 2).toUpperCase() : 'SA'}
+                  </span>
                 </div>
                 <div className="text-sm">
-                  <div className="text-white font-medium">superadmin</div>
-                  <div className="text-gray-400 text-xs">Super Admin</div>
+                  <div className="text-white font-medium">{user?.username || 'superadmin'}</div>
+                  <div className="text-gray-400 text-xs">
+                    {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -835,32 +858,32 @@ export default function WorkingAdminDashboard() {
 
       <div className="max-w-7xl mx-auto p-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-gray-800 border-gray-700">
-            <TabsTrigger value="overview">
+          <TabsList className="flex w-full overflow-x-auto bg-gray-800 border-gray-700 scrollbar-hide gap-2 p-2">
+            <TabsTrigger value="overview" className="flex-shrink-0 px-4 py-2">
               <BarChart3 className="w-4 h-4 mr-2" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="users">
+            <TabsTrigger value="users" className="flex-shrink-0 px-4 py-2">
               <Users className="w-4 h-4 mr-2" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="trades">
+            <TabsTrigger value="trades" className="flex-shrink-0 px-4 py-2">
               <TrendingUp className="w-4 h-4 mr-2" />
               Trades
             </TabsTrigger>
-            <TabsTrigger value="transactions">
+            <TabsTrigger value="transactions" className="flex-shrink-0 px-4 py-2">
               <DollarSign className="w-4 h-4 mr-2" />
               Transactions
             </TabsTrigger>
-            <TabsTrigger value="pending">
+            <TabsTrigger value="pending" className="flex-shrink-0 px-4 py-2">
               <Shield className="w-4 h-4 mr-2" />
               Pending Requests
             </TabsTrigger>
-            <TabsTrigger value="controls">
+            <TabsTrigger value="controls" className="flex-shrink-0 px-4 py-2">
               <Settings className="w-4 h-4 mr-2" />
               Controls
             </TabsTrigger>
-            <TabsTrigger value="support">
+            <TabsTrigger value="support" className="flex-shrink-0 px-4 py-2">
               <MessageSquare className="w-4 h-4 mr-2" />
               Support
             </TabsTrigger>
@@ -1091,8 +1114,8 @@ export default function WorkingAdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="border border-gray-700 rounded-lg overflow-hidden">
-                  <Table>
+                <div className="border border-gray-700 rounded-lg overflow-x-auto">
+                  <Table className="min-w-full">
                     <TableHeader>
                       <TableRow className="bg-gray-700">
                         <TableHead className="text-gray-300">User</TableHead>
@@ -1101,7 +1124,7 @@ export default function WorkingAdminDashboard() {
                         <TableHead className="text-gray-300">Role</TableHead>
                         <TableHead className="text-gray-300">Status</TableHead>
                         <TableHead className="text-gray-300">Trading Mode</TableHead>
-                        <TableHead className="text-gray-300">Actions</TableHead>
+                        <TableHead className="text-gray-300 min-w-[300px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1121,7 +1144,7 @@ export default function WorkingAdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell className="text-white">{user.email}</TableCell>
-                          <TableCell className="text-white font-medium">${user.balance.toLocaleString()}</TableCell>
+                          <TableCell className="text-white font-medium">${formatBalance(user.balance)}</TableCell>
                           <TableCell>
                             <Badge variant={user.role === 'super_admin' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
                               {user.role}
@@ -1155,8 +1178,8 @@ export default function WorkingAdminDashboard() {
                               </SelectContent>
                             </Select>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
+                          <TableCell className="min-w-[300px]">
+                            <div className="flex items-center space-x-1 flex-wrap">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1215,15 +1238,18 @@ export default function WorkingAdminDashboard() {
                                   >
                                     <Wallet className="w-4 h-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteUser(user)}
-                                    className="text-red-500 hover:text-red-400"
-                                    title="Delete User"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
+                                  {/* Delete button - only for regular users, not current user */}
+                                  {user.role === 'user' && user.id !== currentUser.id ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteUser(user)}
+                                      className="text-red-500 hover:text-red-400 border border-red-500"
+                                      title="Delete User"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  ) : null}
                                 </>
                               )}
                             </div>
@@ -1646,7 +1672,10 @@ export default function WorkingAdminDashboard() {
                               <p className="text-sm text-gray-300 mb-2">📄 Receipt Uploaded:</p>
                               <div className="flex items-center space-x-2">
                                 <Button
-                                  onClick={() => window.open(deposit.receiptViewUrl, '_blank')}
+                                  onClick={() => setSelectedReceipt({
+                                    url: deposit.receiptViewUrl,
+                                    filename: deposit.receiptFile?.originalname || 'Receipt'
+                                  })}
                                   variant="outline"
                                   size="sm"
                                   className="text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-white"
@@ -1811,7 +1840,7 @@ export default function WorkingAdminDashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Balance:</span>
-                <span className="text-white font-medium">${selectedUser.balance.toLocaleString()}</span>
+                <span className="text-white font-medium">${formatBalance(selectedUser.balance)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Role:</span>
@@ -2076,7 +2105,7 @@ export default function WorkingAdminDashboard() {
                     />
                   </div>
                   <div className="text-sm text-gray-400">
-                    Current Balance: ${selectedUserForAction.balance.toLocaleString()}
+                    Current Balance: ${formatBalance(selectedUserForAction.balance)}
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-2">
@@ -2108,7 +2137,7 @@ export default function WorkingAdminDashboard() {
                     />
                   </div>
                   <div className="text-sm text-gray-400">
-                    Current Balance: ${selectedUserForAction.balance.toLocaleString()}
+                    Current Balance: ${formatBalance(selectedUserForAction.balance)}
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-2">
@@ -2268,6 +2297,30 @@ export default function WorkingAdminDashboard() {
           )}
         </>
       )}
+
+      {/* Receipt Viewer Modal */}
+      <Dialog open={!!selectedReceipt} onOpenChange={() => setSelectedReceipt(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              Receipt: {selectedReceipt?.filename}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center items-center p-4">
+            {selectedReceipt && (
+              <img
+                src={selectedReceipt.url}
+                alt="Receipt"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                onError={(e) => {
+                  console.error('Failed to load receipt image');
+                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNjY2NjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+UmVjZWlwdCBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+';
+                }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
