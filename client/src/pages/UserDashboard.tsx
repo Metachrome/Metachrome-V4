@@ -37,7 +37,7 @@ export default function UserDashboard() {
 
   // State for Add Fund form
   const [depositAmount, setDepositAmount] = useState('');
-  const [selectedCrypto, setSelectedCrypto] = useState('USDT-BEP20');
+  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   // Login handler
@@ -79,98 +79,50 @@ export default function UserDashboard() {
 
   // Real platform deposit addresses (where users send crypto to deposit)
   const cryptoNetworks = {
-    'USDT-BEP20': {
-      name: 'USDT (BEP20)',
-      address: '0xea3ce2062b00d911d05b609fa37ef0ca58108a75',
-      network: 'Binance Smart Chain (BSC)',
-      minAmount: 10,
-      description: 'Send USDT on Binance Smart Chain to this address',
-      chainId: 56
-    },
-    'USDT-TRC20': {
-      name: 'USDT (TRC20)',
-      address: 'TEos54N7v7EQ4KfAst3YXmuwjFDpmgBvHp',
-      network: 'TRON Network',
-      minAmount: 10,
-      description: 'Send USDT on TRON network to this address',
-      chainId: null
-    },
-    'USDT-ERC20': {
-      name: 'USDT (ERC20)',
-      address: '0xea3ce2062b00d911d05b609fa37ef0ca58108a75',
-      network: 'Ethereum Network',
-      minAmount: 10,
-      description: 'Send USDT on Ethereum network to this address',
-      chainId: 1
-    },
-    'BTC-1': {
+    'BTC': {
       name: 'BTC',
-      address: 'bc1qgyycw9867fp0d6prnfm88wu8tny8yn84r50yh6',
-      network: 'Bitcoin Network',
-      minAmount: 0.001,
-      description: 'Send Bitcoin to this address',
-      chainId: null
-    },
-    'BTC-2': {
-      name: 'BTC',
-      address: 'bc1qj28p5x4pyc2wn707uqe0rud4kel3nk3aamsl7zk4urhvhpjnax6s8djye6',
-      network: 'Bitcoin Network',
-      minAmount: 0.001,
-      description: 'Send Bitcoin to this address',
-      chainId: null
-    },
-    'SOL-1': {
-      name: 'SOL',
-      address: '6wKMRhC7Fq2MS1WRgTnK6Nzx1SxoZYHHwvpkBUtes2Pw',
-      network: 'Solana Network',
-      minAmount: 0.1,
-      description: 'Send Solana to this address',
-      chainId: null
-    },
-    'BTC-3': {
-      name: 'BTC btc',
       address: 'bc1q6w3rdy5kwaf4es2lpjk6clpd25pterzvgwu5hu',
-      network: 'Bitcoin Network',
+      network: 'BTC',
       minAmount: 0.001,
       description: 'Send Bitcoin to this address',
       chainId: null
     },
     'ETH': {
-      name: 'ETH eth',
+      name: 'ETH',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
-      network: 'Ethereum Network',
+      network: 'ETH',
       minAmount: 0.01,
       description: 'Send Ethereum to this address',
       chainId: 1
     },
-    'SOL-2': {
-      name: 'SOL sol',
+    'SOL': {
+      name: 'SOL',
       address: '6s2UxAyknMvzN2nUpRdHp6EqDetsdK9mjsLTguzNYeKU',
-      network: 'Solana Network',
+      network: 'SOL',
       minAmount: 0.1,
       description: 'Send Solana to this address',
       chainId: null
     },
-    'USDT-ERC20-2': {
-      name: 'USDT erc20',
+    'USDT-ERC20': {
+      name: 'USDT ERC20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
-      network: 'Ethereum Network',
+      network: 'USDT ERC20',
       minAmount: 10,
       description: 'Send USDT on Ethereum network to this address',
       chainId: 1
     },
-    'USDT-TRC20-2': {
-      name: 'USDT trc20',
+    'USDT-TRC20': {
+      name: 'USDT TRC20',
       address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
-      network: 'TRON Network',
+      network: 'USDT TRC20',
       minAmount: 10,
       description: 'Send USDT on TRON network to this address',
       chainId: null
     },
-    'USDT-BEP20-2': {
-      name: 'USDT bep20',
+    'USDT-BEP20': {
+      name: 'USDT BEP20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
-      network: 'Binance Smart Chain (BSC)',
+      network: 'USDT BEP20',
       minAmount: 10,
       description: 'Send USDT on Binance Smart Chain to this address',
       chainId: 56
@@ -419,6 +371,72 @@ export default function UserDashboard() {
           </p>
         </div>
 
+        {/* Verification Status Notification */}
+        {(!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) && (
+          <div className="mb-8">
+            <Card className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border-yellow-600/50">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-yellow-600 rounded-full flex items-center justify-center">
+                      <Upload className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-yellow-100 mb-2">
+                      🔒 Verification Required for Trading
+                    </h3>
+                    <p className="text-yellow-200 mb-4">
+                      To start trading and access all platform features, please upload your verification documents.
+                      This is required for security and regulatory compliance.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Link href="/profile">
+                        <Button className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload Documents Now
+                        </Button>
+                      </Link>
+                      <div className="text-sm text-yellow-300">
+                        📄 Accepted: ID Card, Driver's License, or Passport
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Verification Pending Notification */}
+        {(user?.verification_status === 'pending') && (
+          <div className="mb-8">
+            <Card className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border-blue-600/50">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-blue-100 mb-2">
+                      ⏳ Verification Under Review
+                    </h3>
+                    <p className="text-blue-200 mb-2">
+                      Your verification documents have been submitted and are currently being reviewed by our team.
+                      Trading will be enabled once verification is approved.
+                    </p>
+                    <div className="text-sm text-blue-300">
+                      ⏱️ Review typically takes 24-48 hours
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Balance Card */}
@@ -560,24 +578,12 @@ export default function UserDashboard() {
                     onChange={(e) => setSelectedCrypto(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   >
-                    <optgroup label="USDT Options">
-                      <option value="USDT-BEP20">USDT (BEP20) - Binance Smart Chain</option>
-                      <option value="USDT-TRC20">USDT (TRC20) - TRON Network</option>
-                      <option value="USDT-ERC20">USDT (ERC20) - Ethereum Network</option>
-                      <option value="USDT-ERC20-2">USDT erc20 - Ethereum Network</option>
-                      <option value="USDT-TRC20-2">USDT trc20 - TRON Network</option>
-                      <option value="USDT-BEP20-2">USDT bep20 - Binance Smart Chain</option>
-                    </optgroup>
-                    <optgroup label="Bitcoin Options">
-                      <option value="BTC-1">BTC - Bitcoin Network</option>
-                      <option value="BTC-2">BTC - Bitcoin Network</option>
-                      <option value="BTC-3">BTC btc - Bitcoin Network</option>
-                    </optgroup>
-                    <optgroup label="Other Cryptocurrencies">
-                      <option value="ETH">ETH eth - Ethereum Network</option>
-                      <option value="SOL-1">SOL - Solana Network</option>
-                      <option value="SOL-2">SOL sol - Solana Network</option>
-                    </optgroup>
+                    <option value="BTC">BTC</option>
+                    <option value="ETH">ETH</option>
+                    <option value="SOL">SOL</option>
+                    <option value="USDT-ERC20">USDT ERC20</option>
+                    <option value="USDT-TRC20">USDT TRC20</option>
+                    <option value="USDT-BEP20">USDT BEP20</option>
                   </select>
                 </div>
 

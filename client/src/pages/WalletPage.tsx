@@ -21,7 +21,7 @@ export default function WalletPage() {
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [selectedCrypto, setSelectedCrypto] = useState('USDT-BEP20');
+  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,98 +39,50 @@ export default function WalletPage() {
 
   // Real platform deposit addresses (where users send crypto to deposit)
   const cryptoNetworks = {
-    'USDT-BEP20': {
-      name: 'USDT (BEP20)',
-      address: '0xea3ce2062b00d911d05b609fa37ef0ca58108a75',
-      network: 'Binance Smart Chain (BSC)',
-      minAmount: 10,
-      description: 'Send USDT on Binance Smart Chain to this address',
-      chainId: 56
-    },
-    'USDT-TRC20': {
-      name: 'USDT (TRC20)',
-      address: 'TEos54N7v7EQ4KfAst3YXmuwjFDpmgBvHp',
-      network: 'TRON Network',
-      minAmount: 10,
-      description: 'Send USDT on TRON network to this address',
-      chainId: null
-    },
-    'USDT-ERC20': {
-      name: 'USDT (ERC20)',
-      address: '0xea3ce2062b00d911d05b609fa37ef0ca58108a75',
-      network: 'Ethereum Network',
-      minAmount: 10,
-      description: 'Send USDT on Ethereum network to this address',
-      chainId: 1
-    },
-    'BTC-1': {
+    'BTC': {
       name: 'BTC',
-      address: 'bc1qgyycw9867fp0d6prnfm88wu8tny8yn84r50yh6',
-      network: 'Bitcoin Network',
-      minAmount: 0.001,
-      description: 'Send Bitcoin to this address',
-      chainId: null
-    },
-    'BTC-2': {
-      name: 'BTC',
-      address: 'bc1qj28p5x4pyc2wn707uqe0rud4kel3nk3aamsl7zk4urhvhpjnax6s8djye6',
-      network: 'Bitcoin Network',
-      minAmount: 0.001,
-      description: 'Send Bitcoin to this address',
-      chainId: null
-    },
-    'SOL-1': {
-      name: 'SOL',
-      address: '6wKMRhC7Fq2MS1WRgTnK6Nzx1SxoZYHHwvpkBUtes2Pw',
-      network: 'Solana Network',
-      minAmount: 0.1,
-      description: 'Send Solana to this address',
-      chainId: null
-    },
-    'BTC-3': {
-      name: 'BTC btc',
       address: 'bc1q6w3rdy5kwaf4es2lpjk6clpd25pterzvgwu5hu',
-      network: 'Bitcoin Network',
+      network: 'BTC',
       minAmount: 0.001,
       description: 'Send Bitcoin to this address',
       chainId: null
     },
     'ETH': {
-      name: 'ETH eth',
+      name: 'ETH',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
-      network: 'Ethereum Network',
+      network: 'ETH',
       minAmount: 0.01,
       description: 'Send Ethereum to this address',
       chainId: 1
     },
-    'SOL-2': {
-      name: 'SOL sol',
+    'SOL': {
+      name: 'SOL',
       address: '6s2UxAyknMvzN2nUpRdHp6EqDetsdK9mjsLTguzNYeKU',
-      network: 'Solana Network',
+      network: 'SOL',
       minAmount: 0.1,
       description: 'Send Solana to this address',
       chainId: null
     },
-    'USDT-ERC20-2': {
-      name: 'USDT erc20',
+    'USDT-ERC20': {
+      name: 'USDT ERC20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
-      network: 'Ethereum Network',
+      network: 'USDT ERC20',
       minAmount: 10,
       description: 'Send USDT on Ethereum network to this address',
       chainId: 1
     },
-    'USDT-TRC20-2': {
-      name: 'USDT trc20',
+    'USDT-TRC20': {
+      name: 'USDT TRC20',
       address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
-      network: 'TRON Network',
+      network: 'USDT TRC20',
       minAmount: 10,
       description: 'Send USDT on TRON network to this address',
       chainId: null
     },
-    'USDT-BEP20-2': {
-      name: 'USDT bep20',
+    'USDT-BEP20': {
+      name: 'USDT BEP20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
-      network: 'Binance Smart Chain (BSC)',
+      network: 'USDT BEP20',
       minAmount: 10,
       description: 'Send USDT on Binance Smart Chain to this address',
       chainId: 56
@@ -497,24 +449,12 @@ export default function WalletPage() {
                         onChange={(e) => setSelectedCrypto(e.target.value)}
                         className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       >
-                        <optgroup label="USDT Options">
-                          <option value="USDT-BEP20">USDT (BEP20) - Binance Smart Chain</option>
-                          <option value="USDT-TRC20">USDT (TRC20) - TRON Network</option>
-                          <option value="USDT-ERC20">USDT (ERC20) - Ethereum Network</option>
-                          <option value="USDT-ERC20-2">USDT erc20 - Ethereum Network</option>
-                          <option value="USDT-TRC20-2">USDT trc20 - TRON Network</option>
-                          <option value="USDT-BEP20-2">USDT bep20 - Binance Smart Chain</option>
-                        </optgroup>
-                        <optgroup label="Bitcoin Options">
-                          <option value="BTC-1">BTC - Bitcoin Network</option>
-                          <option value="BTC-2">BTC - Bitcoin Network</option>
-                          <option value="BTC-3">BTC btc - Bitcoin Network</option>
-                        </optgroup>
-                        <optgroup label="Other Cryptocurrencies">
-                          <option value="ETH">ETH eth - Ethereum Network</option>
-                          <option value="SOL-1">SOL - Solana Network</option>
-                          <option value="SOL-2">SOL sol - Solana Network</option>
-                        </optgroup>
+                        <option value="BTC">BTC</option>
+                        <option value="ETH">ETH</option>
+                        <option value="SOL">SOL</option>
+                        <option value="USDT-ERC20">USDT ERC20</option>
+                        <option value="USDT-TRC20">USDT TRC20</option>
+                        <option value="USDT-BEP20">USDT BEP20</option>
                       </select>
                     </div>
 
@@ -704,9 +644,12 @@ export default function WalletPage() {
                         onChange={(e) => setSelectedCrypto(e.target.value)}
                         className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
                       >
-                        <option value="USDT">USDT - Tether</option>
-                        <option value="ETH">ETH - Ethereum</option>
-                        <option value="BTC">BTC - Bitcoin</option>
+                        <option value="BTC">BTC</option>
+                        <option value="ETH">ETH</option>
+                        <option value="SOL">SOL</option>
+                        <option value="USDT-ERC20">USDT ERC20</option>
+                        <option value="USDT-TRC20">USDT TRC20</option>
+                        <option value="USDT-BEP20">USDT BEP20</option>
                       </select>
                     </div>
 

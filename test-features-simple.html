@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METACHROME - Simple Feature Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-section h2 {
+            color: #8b5cf6;
+            margin-top: 0;
+        }
+        .test-item {
+            background: #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #8b5cf6;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success { background: #065f46; border: 1px solid #10b981; }
+        .error { background: #7f1d1d; border: 1px solid #ef4444; }
+        .info { background: #1e3a8a; border: 1px solid #3b82f6; }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover { background: #7c3aed; }
+        button:disabled { background: #6b7280; cursor: not-allowed; }
+        input, select {
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+            width: 200px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-online { background: #10b981; }
+        .status-offline { background: #ef4444; }
+        .status-testing { background: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 METACHROME New Features - Simple Test Suite</h1>
+        <p>Testing User Verification, Referral System, and Redeem Codes</p>
+
+        <!-- Server Status -->
+        <div class="test-section">
+            <h2>🔌 Server Status</h2>
+            <div class="test-item">
+                <p>Server Status: <span id="server-status" class="status status-offline">Checking...</span></p>
+                <button onclick="checkServerStatus()">Check Server</button>
+                <div id="server-result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- Authentication Test -->
+        <div class="test-section">
+            <h2>🔐 Authentication Test</h2>
+            <div class="test-item">
+                <h3>Login Test</h3>
+                <input type="text" id="username" placeholder="Username" value="superadmin">
+                <input type="password" id="password" placeholder="Password" value="superadmin123">
+                <button onclick="testLogin()">Test Login</button>
+                <div id="auth-result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- User Registration with Referral -->
+        <div class="test-section">
+            <h2>🔗 Referral System Test</h2>
+            <div class="test-item">
+                <h3>Test Registration with Referral Code</h3>
+                <input type="text" id="ref-username" placeholder="Username" value="">
+                <input type="email" id="ref-email" placeholder="Email" value="">
+                <input type="password" id="ref-password" placeholder="Password" value="password123">
+                <input type="text" id="referral-code" placeholder="Referral Code (optional)" value="">
+                <button onclick="testReferralRegistration()">Test Registration</button>
+                <div id="referral-result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- Redeem Code Test -->
+        <div class="test-section">
+            <h2>🎁 Redeem Code Test</h2>
+            <div class="test-item">
+                <h3>Test Redeem Codes</h3>
+                <select id="redeem-code-select">
+                    <option value="FIRSTBONUS">FIRSTBONUS ($100)</option>
+                    <option value="LETSGO1000">LETSGO1000 ($1000)</option>
+                    <option value="WELCOME50">WELCOME50 ($50)</option>
+                    <option value="INVALID">INVALID (Test Error)</option>
+                </select>
+                <button onclick="testRedeemCode()">Test Redeem</button>
+                <div id="redeem-result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- Database Schema Test -->
+        <div class="test-section">
+            <h2>🗄️ Database Schema Test</h2>
+            <div class="test-item">
+                <h3>Check if New Tables Exist</h3>
+                <button onclick="testDatabaseSchema()">Test Database Schema</button>
+                <div id="database-result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- User Management Test -->
+        <div class="test-section">
+            <h2>👥 User Management Test</h2>
+            <div class="test-item">
+                <h3>Test User Operations</h3>
+                <button onclick="testGetUsers()">Get Users List</button>
+                <button onclick="testUserBalance()">Test User Balance</button>
+                <div id="user-mgmt-result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- Trade System Test -->
+        <div class="test-section">
+            <h2>📈 Trade System Test</h2>
+            <div class="test-item">
+                <h3>Test Trade Completion & Count</h3>
+                <input type="text" id="trade-user-id" placeholder="User ID" value="">
+                <button onclick="testTradeCompletion()">Test Trade Completion</button>
+                <div id="trade-result" class="result"></div>
+            </div>
+        </div>
+
+        <!-- Overall Test Summary -->
+        <div class="test-section">
+            <h2>📊 Test Summary</h2>
+            <div class="test-item">
+                <div id="test-summary">
+                    <p>Run tests above to see summary...</p>
+                </div>
+                <button onclick="runAllTests()">Run All Tests</button>
+                <button onclick="clearResults()">Clear Results</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = { passed: 0, failed: 0, total: 0 };
+        let authToken = null;
+
+        // Helper function to make API requests
+        async function makeRequest(method, url, data = null) {
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            if (authToken) {
+                options.headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            if (data && method !== 'GET') {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const result = await response.json();
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    data: result
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // Display test result
+        function showResult(elementId, result, testName) {
+            const element = document.getElementById(elementId);
+            testResults.total++;
+
+            if (result.success) {
+                testResults.passed++;
+                element.className = 'result success';
+                element.textContent = `✅ ${testName} PASSED\n${JSON.stringify(result.data, null, 2)}`;
+            } else {
+                testResults.failed++;
+                element.className = 'result error';
+                element.textContent = `❌ ${testName} FAILED\n${result.error || JSON.stringify(result.data, null, 2)}`;
+            }
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('test-summary');
+            const passRate = testResults.total > 0 ? (testResults.passed / testResults.total * 100).toFixed(1) : 0;
+            
+            summary.innerHTML = `
+                <p><strong>Tests Run:</strong> ${testResults.total}</p>
+                <p><strong>Passed:</strong> ${testResults.passed}</p>
+                <p><strong>Failed:</strong> ${testResults.failed}</p>
+                <p><strong>Pass Rate:</strong> ${passRate}%</p>
+            `;
+        }
+
+        // Test Functions
+        async function checkServerStatus() {
+            const statusElement = document.getElementById('server-status');
+            statusElement.textContent = 'Checking...';
+            statusElement.className = 'status status-testing';
+
+            const result = await makeRequest('GET', '/api/health');
+            
+            if (result.success) {
+                statusElement.textContent = 'Online';
+                statusElement.className = 'status status-online';
+            } else {
+                statusElement.textContent = 'Offline';
+                statusElement.className = 'status status-offline';
+            }
+
+            showResult('server-result', result, 'Server Connection');
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const result = await makeRequest('POST', '/api/auth', {
+                username: username,
+                password: password
+            });
+
+            if (result.success && result.data.token) {
+                authToken = result.data.token;
+                localStorage.setItem('authToken', authToken);
+            }
+
+            showResult('auth-result', result, 'Authentication');
+        }
+
+        async function testReferralRegistration() {
+            const username = document.getElementById('ref-username').value || `testuser_${Date.now()}`;
+            const email = document.getElementById('ref-email').value || `test_${Date.now()}@example.com`;
+            const password = document.getElementById('ref-password').value;
+            const referralCode = document.getElementById('referral-code').value;
+
+            // Update the input fields with generated values
+            document.getElementById('ref-username').value = username;
+            document.getElementById('ref-email').value = email;
+
+            const result = await makeRequest('POST', '/api/auth', {
+                username: username,
+                email: email,
+                password: password,
+                referralCode: referralCode
+            });
+
+            showResult('referral-result', result, 'Referral Registration');
+        }
+
+        async function testRedeemCode() {
+            const code = document.getElementById('redeem-code-select').value;
+            
+            const result = await makeRequest('POST', '/api/user/redeem-code', {
+                code: code
+            });
+
+            showResult('redeem-result', result, 'Redeem Code');
+        }
+
+        async function testDatabaseSchema() {
+            // Test by trying to access admin endpoints that would use new tables
+            const result = await makeRequest('GET', '/api/admin/users');
+            
+            // Check if the response includes new fields
+            let schemaTest = { success: false, data: 'Schema test not implemented' };
+            
+            if (result.success && result.data && Array.isArray(result.data)) {
+                const hasNewFields = result.data.some(user => 
+                    user.hasOwnProperty('verification_status') || 
+                    user.hasOwnProperty('referral_code') ||
+                    user.hasOwnProperty('total_trades')
+                );
+                
+                schemaTest = {
+                    success: true,
+                    data: {
+                        message: hasNewFields ? 'New schema fields detected' : 'New schema fields not found',
+                        userCount: result.data.length,
+                        sampleUser: result.data[0] || null
+                    }
+                };
+            }
+
+            showResult('database-result', schemaTest, 'Database Schema');
+        }
+
+        async function testGetUsers() {
+            const result = await makeRequest('GET', '/api/admin/users');
+            showResult('user-mgmt-result', result, 'Get Users');
+        }
+
+        async function testUserBalance() {
+            const result = await makeRequest('GET', '/api/balances');
+            showResult('user-mgmt-result', result, 'User Balance');
+        }
+
+        async function testTradeCompletion() {
+            const userId = document.getElementById('trade-user-id').value || 'test-user-id';
+            
+            const result = await makeRequest('POST', '/api/trades/complete', {
+                tradeId: `test-trade-${Date.now()}`,
+                userId: userId,
+                won: true,
+                amount: 100,
+                payout: 180
+            });
+
+            showResult('trade-result', result, 'Trade Completion');
+        }
+
+        async function runAllTests() {
+            console.log('🚀 Running all tests...');
+            
+            await checkServerStatus();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testLogin();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testDatabaseSchema();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await testGetUsers();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            console.log('✅ All tests completed');
+        }
+
+        function clearResults() {
+            testResults = { passed: 0, failed: 0, total: 0 };
+            const resultElements = document.querySelectorAll('.result');
+            resultElements.forEach(el => {
+                el.textContent = '';
+                el.className = 'result';
+            });
+            updateSummary();
+        }
+
+        // Auto-run server check on page load
+        window.onload = function() {
+            console.log('🧪 METACHROME Simple Test Suite Loaded');
+            setTimeout(checkServerStatus, 1000);
+        };
+    </script>
+</body>
+</html>

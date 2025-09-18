@@ -664,8 +664,8 @@ app.get('/api/superadmin/system-stats', authenticateToken, requireSuperAdmin, as
       losingTrades: trades.filter(t => t.result === 'lose').length,
       totalTransactions: transactions.length,
       pendingTransactions: transactions.filter(t => t.status === 'pending').length,
-      totalVolume: trades.reduce((sum, t) => sum + t.amount, 0),
-      totalBalance: users.reduce((sum, u) => sum + u.balance, 0)
+      totalVolume: trades.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),
+      totalBalance: users.reduce((sum, u) => sum + parseFloat(u.balance || 0), 0)
     };
 
     res.json(stats);

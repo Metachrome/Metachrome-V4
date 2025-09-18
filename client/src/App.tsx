@@ -13,8 +13,7 @@ import SpotPage from "./pages/SpotPage";
 import TradingPage from "./pages/TradingPage";
 import WalletPage from "./pages/WalletPage";
 import SupportPage from "./pages/SupportPage";
-import SuperAdminDashboard from "./pages/SuperAdminDashboard";
-import WorkingAdminDashboard from "./pages/WorkingAdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRedirect from "./pages/AdminRedirect";
 import UserLogin from "./pages/UserLogin";
@@ -81,12 +80,12 @@ function Router() {
         <Route path="/admin/redirect" component={AdminRedirect} />
         <Route path="/admin">
           <ProtectedAdminRoute>
-            <WorkingAdminDashboard />
+            <AdminDashboard />
           </ProtectedAdminRoute>
         </Route>
         <Route path="/admin/dashboard">
           <ProtectedAdminRoute>
-            <WorkingAdminDashboard />
+            <AdminDashboard />
           </ProtectedAdminRoute>
         </Route>
         <Route path="/admin/transactions">

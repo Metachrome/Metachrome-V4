@@ -70,17 +70,32 @@ export default function OptionsPage() {
   const priceHistoryRef = useRef<number[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Load trade history from server on component mount
+  // Load trade history from server on component mount and persist locally
   useEffect(() => {
     const loadTradeHistory = async () => {
       if (!user?.id) return;
 
       setIsLoadingHistory(true);
+
+      // First, try to load from localStorage for immediate display
+      try {
+        const cachedHistory = localStorage.getItem(`tradeHistory_${user.id}`);
+        if (cachedHistory) {
+          const parsed = JSON.parse(cachedHistory);
+          console.log('📈 Loaded cached trade history:', parsed.length);
+          setTradeHistory(parsed);
+        }
+      } catch (error) {
+        console.error('❌ Error loading cached trade history:', error);
+      }
+
+      // Then fetch fresh data from server
       try {
         const response = await fetch(`/api/users/${user.id}/trades`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
           }
         });
 
@@ -106,17 +121,26 @@ export default function OptionsPage() {
             }));
 
           setTradeHistory(formattedTrades);
+
+          // Cache the trade history for persistence across page refreshes
+          localStorage.setItem(`tradeHistory_${user.id}`, JSON.stringify(formattedTrades));
+          console.log('💾 Trade history cached for user:', user.id);
         } else {
-          console.log('⚠️ Failed to load trade history from server');
+          console.log('⚠️ Failed to load trade history from server, using cached data');
         }
       } catch (error) {
-        console.error('❌ Error loading trade history:', error);
+        console.error('❌ Error loading trade history from server, using cached data:', error);
       } finally {
         setIsLoadingHistory(false);
       }
     };
 
     loadTradeHistory();
+
+    // Set up periodic refresh of trade history (every 30 seconds)
+    const refreshInterval = setInterval(loadTradeHistory, 30000);
+
+    return () => clearInterval(refreshInterval);
   }, [user?.id]);
 
   // Sync trading mode from localStorage on mount and when it changes
@@ -578,6 +602,13 @@ export default function OptionsPage() {
       setTradeHistory(prev => {
         const newHistory = [updatedTrade, ...prev].slice(0, 50);
         console.log('🎯 COMPLETE TRADE: New history length:', newHistory.length);
+
+        // Update cached trade history for persistence
+        if (user?.id) {
+          localStorage.setItem(`tradeHistory_${user.id}`, JSON.stringify(newHistory));
+          console.log('💾 Updated cached trade history for user:', user.id);
+        }
+
         return newHistory;
       });
       console.log('🎯 COMPLETE TRADE: Setting completed trade for notification:', updatedTrade);
@@ -1043,30 +1074,53 @@ export default function OptionsPage() {
             )}
 
             {/* UP/DOWN Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleTrade('up')}
-                disabled={!user || countdown > 0}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
-              >
-                <span className="text-2xl mb-1">↗</span>
-                <span className="text-sm">UP</span>
-                <span className="text-xs opacity-75">
-                  {selectedDuration === "30s" ? "10%" : "15%"} profit
-                </span>
-              </button>
-              <button
-                onClick={() => handleTrade('down')}
-                disabled={!user || countdown > 0}
-                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
-              >
-                <span className="text-2xl mb-1">↘</span>
-                <span className="text-sm">DOWN</span>
-                <span className="text-xs opacity-75">
-                  {selectedDuration === "30s" ? "10%" : "15%"} profit
-                </span>
-              </button>
-            </div>
+            {(!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) ? (
+              <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4 mb-4">
+                <div className="text-center">
+                  <div className="text-yellow-100 font-semibold mb-2">🔒 Verification Required</div>
+                  <div className="text-yellow-200 text-sm mb-3">
+                    Upload your verification documents to start trading
+                  </div>
+                  <a href="/profile" className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm">
+                    Upload Documents
+                  </a>
+                </div>
+              </div>
+            ) : user?.verification_status === 'pending' ? (
+              <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4 mb-4">
+                <div className="text-center">
+                  <div className="text-blue-100 font-semibold mb-2">⏳ Verification Pending</div>
+                  <div className="text-blue-200 text-sm">
+                    Your documents are being reviewed. Trading will be enabled once approved.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleTrade('up')}
+                  disabled={!user || countdown > 0}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
+                >
+                  <span className="text-2xl mb-1">↗</span>
+                  <span className="text-sm">UP</span>
+                  <span className="text-xs opacity-75">
+                    {selectedDuration === "30s" ? "10%" : "15%"} profit
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleTrade('down')}
+                  disabled={!user || countdown > 0}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
+                >
+                  <span className="text-2xl mb-1">↘</span>
+                  <span className="text-sm">DOWN</span>
+                  <span className="text-xs opacity-75">
+                    {selectedDuration === "30s" ? "10%" : "15%"} profit
+                  </span>
+                </button>
+              </div>
+            )}
 
             {countdown > 0 && (
               <div className="text-center py-2">
@@ -1523,6 +1577,31 @@ export default function OptionsPage() {
                     Sign in to start options trading
                   </a>
                 </p>
+              </div>
+            ) : (!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) ? (
+              <div className="space-y-4">
+                <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4">
+                  <div className="text-center">
+                    <div className="text-yellow-100 font-semibold mb-2">🔒 Verification Required</div>
+                    <div className="text-yellow-200 text-sm mb-3">
+                      Upload your verification documents to start trading
+                    </div>
+                    <a href="/profile" className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm">
+                      Upload Documents
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ) : user?.verification_status === 'pending' ? (
+              <div className="space-y-4">
+                <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4">
+                  <div className="text-center">
+                    <div className="text-blue-100 font-semibold mb-2">⏳ Verification Pending</div>
+                    <div className="text-blue-200 text-sm">
+                      Your documents are being reviewed. Trading will be enabled once approved.
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">

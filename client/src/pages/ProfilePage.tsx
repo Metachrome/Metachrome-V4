@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -10,18 +10,21 @@ import { Separator } from "../components/ui/separator";
 import { useToast } from "../hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Shield, 
-  Settings, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Shield,
+  Settings,
   Camera,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  Upload,
+  CheckCircle,
+  FileText
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -32,6 +35,16 @@ export default function ProfilePage() {
   // Form states
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [redeemCode, setRedeemCode] = useState('');
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState(null);
+  const [referralStats, setReferralStats] = useState(null);
+
+  // Document upload states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documentType, setDocumentType] = useState('id_card');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     username: user?.username || '',
     email: user?.email || '',
@@ -92,6 +105,91 @@ export default function ProfilePage() {
     },
   });
 
+  // Redeem code mutation
+  const redeemCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      return await apiRequest('POST', '/api/user/redeem-code', { code });
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Code Redeemed Successfully!",
+        description: data.message || `Bonus of $${data.bonusAmount} added to your account!`,
+      });
+      setRedeemCode('');
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Redeem Failed",
+        description: error.message || "Invalid or expired redeem code",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Document upload mutation
+  const uploadDocumentMutation = useMutation({
+    mutationFn: async (data: { file: File; documentType: string }) => {
+      const formData = new FormData();
+      formData.append('document', data.file);
+      formData.append('documentType', data.documentType);
+
+      const authToken = localStorage.getItem('authToken');
+      const response = await fetch('/api/user/upload-verification', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Failed to upload document');
+      }
+
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Document Uploaded Successfully!",
+        description: "Your verification document has been submitted for review.",
+      });
+      setSelectedFile(null);
+      setIsUploading(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      fetchVerificationStatus();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload verification document",
+        variant: "destructive",
+      });
+      setIsUploading(false);
+    },
+  });
+
+  // Fetch verification status
+  const fetchVerificationStatus = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/user/verification-status');
+      setVerificationStatus(response);
+    } catch (error) {
+      console.error('Failed to fetch verification status:', error);
+    }
+  };
+
+  // Fetch referral stats
+  const fetchReferralStats = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/user/referral-stats');
+      setReferralStats(response);
+    } catch (error) {
+      console.error('Failed to fetch referral stats:', error);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -126,6 +224,67 @@ export default function ProfilePage() {
     });
   };
 
+  const handleRedeemCode = () => {
+    if (!redeemCode.trim()) {
+      toast({
+        title: "Invalid Code",
+        description: "Please enter a redeem code",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRedeeming(true);
+    redeemCodeMutation.mutate(redeemCode.trim().toUpperCase());
+    setIsRedeeming(false);
+  };
+
+  // File upload handlers
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: 'Invalid File Type',
+          description: 'Please upload a JPEG, PNG, or PDF file.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Please upload a file smaller than 5MB.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+    }
+  };
+
+  const handleDocumentUpload = () => {
+    if (!selectedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a document to upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    uploadDocumentMutation.mutate({
+      file: selectedFile,
+      documentType: documentType
+    });
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -144,9 +303,15 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-800 border-gray-700">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-800 border-gray-700">
             <TabsTrigger value="profile" className="data-[state=active]:bg-gray-700">
               Profile Information
+            </TabsTrigger>
+            <TabsTrigger value="verification" className="data-[state=active]:bg-gray-700">
+              Verification
+            </TabsTrigger>
+            <TabsTrigger value="redeem" className="data-[state=active]:bg-gray-700">
+              Redeem Codes
             </TabsTrigger>
             <TabsTrigger value="security" className="data-[state=active]:bg-gray-700">
               Security
@@ -298,6 +463,212 @@ export default function ProfilePage() {
                     </Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Verification Tab */}
+          <TabsContent value="verification">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Account Verification</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Upload your identity documents for account verification
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Verification Status */}
+                <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                  <div>
+                    <h3 className="text-white font-medium">Verification Status</h3>
+                    <p className="text-gray-400 text-sm">
+                      {user?.verification_status === 'verified' ? 'Your account is verified' :
+                       user?.verification_status === 'pending' ? 'Verification pending review' :
+                       user?.verification_status === 'rejected' ? 'Verification rejected' :
+                       'Account not verified'}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      user?.verification_status === 'verified' ? 'default' :
+                      user?.verification_status === 'pending' ? 'secondary' :
+                      user?.verification_status === 'rejected' ? 'destructive' :
+                      'outline'
+                    }
+                    className={
+                      user?.verification_status === 'verified' ? 'bg-green-600' :
+                      user?.verification_status === 'pending' ? 'bg-yellow-600' :
+                      user?.verification_status === 'rejected' ? 'bg-red-600' :
+                      'bg-gray-600'
+                    }
+                  >
+                    {user?.verification_status === 'verified' ? '✓ Verified' :
+                     user?.verification_status === 'pending' ? '⏳ Pending' :
+                     user?.verification_status === 'rejected' ? '✗ Rejected' :
+                     '⚠ Unverified'}
+                  </Badge>
+                </div>
+
+                {/* Upload Section */}
+                {user?.verification_status !== 'verified' && (
+                  <div className="space-y-4 p-4 bg-gray-700 rounded-lg">
+                    <h3 className="text-white font-medium">Upload Verification Document</h3>
+                    <p className="text-gray-400 text-sm">
+                      Please upload a clear photo of your ID card, driver's license, or passport.
+                      This is required for trading and withdrawals.
+                    </p>
+
+                    {/* Document Type Selection */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-300">Document Type</Label>
+                      <select
+                        value={documentType}
+                        onChange={(e) => setDocumentType(e.target.value)}
+                        className="w-full bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2"
+                      >
+                        <option value="id_card">ID Card</option>
+                        <option value="driver_license">Driver's License</option>
+                        <option value="passport">Passport</option>
+                      </select>
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-300">Document File</Label>
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-purple-500 transition-colors ${
+                          selectedFile ? 'border-green-500 bg-green-500/10' : 'border-gray-600'
+                        }`}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {selectedFile ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <CheckCircle className="w-6 h-6 text-green-500" />
+                            <span className="text-green-400 text-sm">{selectedFile.name}</span>
+                          </div>
+                        ) : (
+                          <>
+                            <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-gray-400 text-sm">Click to upload document</p>
+                            <p className="text-gray-500 text-xs mt-1">JPEG, PNG, PDF (max 5MB)</p>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg,application/pdf"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {/* Upload Button */}
+                    <Button
+                      onClick={handleDocumentUpload}
+                      disabled={!selectedFile || isUploading || uploadDocumentMutation.isPending}
+                      className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {isUploading || uploadDocumentMutation.isPending ? 'Uploading...' : 'Upload Document'}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Trading Restrictions */}
+                {user?.verification_status !== 'verified' && user?.verification_status !== 'approved' && (
+                  <div className="p-4 bg-yellow-900/20 border border-yellow-600 rounded-lg">
+                    <h3 className="text-yellow-400 font-medium mb-2">⚠ Account Restrictions</h3>
+                    <ul className="text-yellow-300 text-sm space-y-1">
+                      <li>• Trading is disabled until verification is complete</li>
+                      <li>• Withdrawals are not available</li>
+                      <li>• Some features may be limited</li>
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Redeem Codes Tab */}
+          <TabsContent value="redeem">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Redeem Bonus Codes</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Enter promotional codes to receive bonus credits
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Redeem Code Input */}
+                <div className="space-y-4">
+                  <div className="flex space-x-3">
+                    <Input
+                      value={redeemCode}
+                      onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                      placeholder="Enter redeem code (e.g., FIRSTBONUS)"
+                      className="bg-gray-900 border-gray-600 text-white flex-1"
+                    />
+                    <Button
+                      onClick={handleRedeemCode}
+                      disabled={isRedeeming || !redeemCode.trim()}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      {isRedeeming ? 'Redeeming...' : 'Redeem'}
+                    </Button>
+                  </div>
+
+                  {/* Available Codes Hint */}
+                  <div className="p-4 bg-gray-700 rounded-lg">
+                    <h3 className="text-white font-medium mb-2">💡 Available Codes</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-gray-300">
+                        <span className="font-mono bg-gray-800 px-2 py-1 rounded">FIRSTBONUS</span>
+                        <span className="text-gray-400 ml-2">$100 bonus</span>
+                      </div>
+                      <div className="text-gray-300">
+                        <span className="font-mono bg-gray-800 px-2 py-1 rounded">LETSGO1000</span>
+                        <span className="text-gray-400 ml-2">$1000 bonus</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Withdrawal Restrictions Notice */}
+                <div className="p-4 bg-blue-900/20 border border-blue-600 rounded-lg">
+                  <h3 className="text-blue-400 font-medium mb-2">ℹ Bonus Terms</h3>
+                  <ul className="text-blue-300 text-sm space-y-1">
+                    <li>• Complete 10 trades to unlock withdrawals after claiming bonus</li>
+                    <li>• Each code can only be used once per account</li>
+                    <li>• Bonus credits are added immediately to your balance</li>
+                  </ul>
+                </div>
+
+                {/* Referral Section */}
+                <Separator className="bg-gray-600" />
+                <div className="space-y-4">
+                  <h3 className="text-white font-medium">🔗 Your Referral Code</h3>
+                  <div className="flex items-center space-x-3">
+                    <Input
+                      value={referralStats?.referralCode || 'Loading...'}
+                      readOnly
+                      className="bg-gray-900 border-gray-600 text-white font-mono"
+                    />
+                    <Button
+                      onClick={() => {
+                        navigator.clipboard.writeText(referralStats?.referralCode || '');
+                        toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                      }}
+                      variant="outline"
+                      className="border-gray-600"
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Share this code with friends to earn referral bonuses!
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

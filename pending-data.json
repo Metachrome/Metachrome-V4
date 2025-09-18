@@ -1,27 +1,70 @@
 {
-  "deposits": [
+  "deposits": [],
+  "withdrawals": [],
+  "verificationDocuments": [
     {
-      "id": "dep_1758059837589_i8du7sp08",
+      "id": "doc-1758189753172",
       "user_id": "user-angela",
-      "username": "angela.soenoko",
-      "amount": 20000,
-      "currency": "USDT",
-      "network": "BEP20",
-      "status": "verifying",
-      "wallet_address": "",
-      "created_at": "2025-09-16T21:57:17.605Z",
-      "txHash": "user_upload_1758059837751",
-      "walletAddress": "user_wallet_address",
-      "proofSubmittedAt": "2025-09-16T21:57:17.964Z",
-      "receiptUploaded": true,
-      "receiptFile": {
-        "filename": "eb92e2e15f6520f8128e088347f2a104",
-        "originalname": "7d32b4b7-9713-4882-abc8-255e2b664f0d.jpg",
-        "mimetype": "image/jpeg",
-        "size": 116200,
-        "path": "uploads\\eb92e2e15f6520f8128e088347f2a104"
-      }
+      "document_type": "id_card",
+      "document_url": "/api/admin/verification-document/verification-1758189753053-176358980.png",
+      "verification_status": "approved",
+      "created_at": "2025-09-18T10:02:33.172Z",
+      "users": {
+        "id": "user-angela",
+        "username": "angela.soenoko",
+        "email": "angela.soenoko@gmail.com",
+        "verification_status": "verified"
+      },
+      "admin_notes": "Document approved by admin",
+      "verified_at": "2025-09-18T10:02:41.342Z"
+    },
+    {
+      "id": "doc-1758190436610",
+      "user_id": "user-angela",
+      "document_type": "id_card",
+      "document_url": "/api/admin/verification-document/verification-1758190436558-388044507.png",
+      "verification_status": "approved",
+      "created_at": "2025-09-18T10:13:56.610Z",
+      "users": {
+        "id": "user-angela",
+        "username": "angela.soenoko",
+        "email": "angela.soenoko@gmail.com",
+        "verification_status": "verified"
+      },
+      "admin_notes": "Document approved by admin",
+      "verified_at": "2025-09-18T10:14:44.974Z"
+    },
+    {
+      "id": "doc-1758193176035",
+      "user_id": "user-angela",
+      "document_type": "id_card",
+      "document_url": "/api/admin/verification-document/verification-1758193175997-700075924.png",
+      "verification_status": "approved",
+      "created_at": "2025-09-18T10:59:36.035Z",
+      "users": {
+        "id": "user-angela",
+        "username": "angela.soenoko",
+        "email": "angela.soenoko@gmail.com",
+        "verification_status": "verified"
+      },
+      "admin_notes": "Document approved by admin",
+      "verified_at": "2025-09-18T10:59:42.931Z"
+    },
+    {
+      "id": "doc-1758194064425",
+      "user_id": "user-angela",
+      "document_type": "id_card",
+      "document_url": "/api/admin/verification-document/verification-1758194064245-925255441.png",
+      "verification_status": "approved",
+      "created_at": "2025-09-18T11:14:24.425Z",
+      "users": {
+        "id": "user-angela",
+        "username": "angela.soenoko",
+        "email": "angela.soenoko@gmail.com",
+        "verification_status": "verified"
+      },
+      "admin_notes": "Document approved by admin",
+      "verified_at": "2025-09-18T11:14:31.349Z"
     }
-  ],
-  "withdrawals": []
+  ]
 }

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Feature Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .step {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #8b5cf6;
+        }
+        .step.success {
+            border-left-color: #10b981;
+            background: #065f46;
+        }
+        .step.error {
+            border-left-color: #ef4444;
+            background: #7f1d1d;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #7c3aed; }
+        button:disabled { background: #6b7280; cursor: not-allowed; }
+        .result {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            border: 1px solid #444;
+        }
+        input {
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+            width: 200px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        .status-pending { background: #f59e0b; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Minimal Feature Test</h1>
+    <p>Step-by-step testing to identify exactly what's not working</p>
+
+    <div class="step" id="step1">
+        <h3>Step 1: Server Health Check</h3>
+        <button onclick="testStep1()">Test Server Health</button>
+        <span id="status1" class="status status-pending">Pending</span>
+        <div id="result1" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="step" id="step2">
+        <h3>Step 2: Authentication Test</h3>
+        <input type="text" id="username" placeholder="Username" value="superadmin">
+        <input type="password" id="password" placeholder="Password" value="superadmin123">
+        <button onclick="testStep2()" id="btn2" disabled>Test Login</button>
+        <span id="status2" class="status status-pending">Waiting for Step 1</span>
+        <div id="result2" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="step" id="step3">
+        <h3>Step 3: Basic Registration Test</h3>
+        <button onclick="testStep3()" id="btn3" disabled>Test Registration</button>
+        <span id="status3" class="status status-pending">Waiting for Step 2</span>
+        <div id="result3" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="step" id="step4">
+        <h3>Step 4: New Feature Endpoints</h3>
+        <button onclick="testStep4()" id="btn4" disabled>Test New Endpoints</button>
+        <span id="status4" class="status status-pending">Waiting for Step 3</span>
+        <div id="result4" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="step" id="step5">
+        <h3>Step 5: Redeem Code Test</h3>
+        <button onclick="testStep5()" id="btn5" disabled>Test Redeem Code</button>
+        <span id="status5" class="status status-pending">Waiting for Step 4</span>
+        <div id="result5" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let testUserId = null;
+
+        async function makeRequest(method, url, data = null, headers = {}) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...headers
+                    }
+                };
+
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+
+                const response = await fetch(url, options);
+                let result;
+                
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    result = await response.text();
+                }
+
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    data: result
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        function updateStep(stepNum, success, message, data = null) {
+            const step = document.getElementById(`step${stepNum}`);
+            const status = document.getElementById(`status${stepNum}`);
+            const result = document.getElementById(`result${stepNum}`);
+            
+            if (success) {
+                step.classList.add('success');
+                step.classList.remove('error');
+                status.textContent = 'Success';
+                status.className = 'status status-success';
+                
+                // Enable next step
+                const nextBtn = document.getElementById(`btn${stepNum + 1}`);
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                    document.getElementById(`status${stepNum + 1}`).textContent = 'Ready';
+                }
+            } else {
+                step.classList.add('error');
+                step.classList.remove('success');
+                status.textContent = 'Failed';
+                status.className = 'status status-error';
+            }
+
+            result.style.display = 'block';
+            result.textContent = `${success ? '✅' : '❌'} ${message}\n\n${data ? JSON.stringify(data, null, 2) : ''}`;
+        }
+
+        async function testStep1() {
+            console.log('Testing server health...');
+            const result = await makeRequest('GET', '/api/health');
+            
+            if (result.success) {
+                updateStep(1, true, 'Server is healthy and responding', result.data);
+            } else {
+                updateStep(1, false, 'Server health check failed', result);
+            }
+        }
+
+        async function testStep2() {
+            console.log('Testing authentication...');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const result = await makeRequest('POST', '/api/auth', {
+                username: username,
+                password: password
+            });
+            
+            if (result.success && result.data.token) {
+                authToken = result.data.token;
+                testUserId = result.data.user?.id || result.data.user?.username;
+                updateStep(2, true, 'Authentication successful', {
+                    token: authToken.substring(0, 20) + '...',
+                    user: result.data.user
+                });
+            } else {
+                updateStep(2, false, 'Authentication failed', result);
+            }
+        }
+
+        async function testStep3() {
+            console.log('Testing registration...');
+            
+            const testUser = {
+                username: `testuser_${Date.now()}`,
+                email: `test_${Date.now()}@example.com`,
+                password: 'testpass123',
+                firstName: 'Test',
+                lastName: 'User'
+            };
+            
+            const result = await makeRequest('POST', '/api/auth', testUser);
+            
+            if (result.success) {
+                updateStep(3, true, 'Registration successful', {
+                    user: result.data.user,
+                    hasToken: !!result.data.token
+                });
+            } else {
+                updateStep(3, false, 'Registration failed', result);
+            }
+        }
+
+        async function testStep4() {
+            console.log('Testing new feature endpoints...');
+            
+            if (!authToken) {
+                updateStep(4, false, 'No auth token available', null);
+                return;
+            }
+
+            const endpoints = [
+                { name: 'Verification Status', method: 'GET', url: '/api/user/verification-status' },
+                { name: 'Referral Stats', method: 'GET', url: '/api/user/referral-stats' },
+                { name: 'Redeem History', method: 'GET', url: '/api/user/redeem-history' },
+                { name: 'Withdrawal Eligibility', method: 'GET', url: '/api/user/withdrawal-eligibility' }
+            ];
+
+            let results = [];
+            
+            for (const endpoint of endpoints) {
+                const result = await makeRequest(endpoint.method, endpoint.url, null, {
+                    'Authorization': `Bearer ${authToken}`
+                });
+                
+                results.push({
+                    name: endpoint.name,
+                    success: result.success,
+                    status: result.status,
+                    data: result.data
+                });
+            }
+
+            const successCount = results.filter(r => r.success).length;
+            const allSuccess = successCount === endpoints.length;
+            
+            updateStep(4, allSuccess, `New endpoints test: ${successCount}/${endpoints.length} working`, results);
+        }
+
+        async function testStep5() {
+            console.log('Testing redeem code...');
+            
+            if (!authToken) {
+                updateStep(5, false, 'No auth token available', null);
+                return;
+            }
+
+            const result = await makeRequest('POST', '/api/user/redeem-code', {
+                code: 'FIRSTBONUS'
+            }, {
+                'Authorization': `Bearer ${authToken}`
+            });
+            
+            if (result.success) {
+                updateStep(5, true, 'Redeem code successful', result.data);
+            } else {
+                updateStep(5, false, 'Redeem code failed', result);
+            }
+        }
+
+        // Auto-start the first test
+        window.onload = function() {
+            console.log('🔧 Minimal test suite loaded');
+            setTimeout(testStep1, 1000);
+        };
+    </script>
+</body>
+</html>

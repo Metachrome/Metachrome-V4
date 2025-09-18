@@ -15,6 +15,14 @@ CREATE TABLE IF NOT EXISTS users (
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'banned')),
     trading_mode VARCHAR(20) DEFAULT 'normal' CHECK (trading_mode IN ('win', 'normal', 'lose')),
     restrictions JSONB DEFAULT '[]'::jsonb,
+    -- New verification fields
+    verification_status VARCHAR(20) DEFAULT 'unverified' CHECK (verification_status IN ('unverified', 'pending', 'verified', 'rejected')),
+    -- New referral fields
+    referral_code VARCHAR(50) UNIQUE,
+    referred_by VARCHAR(50),
+    -- New tracking fields
+    total_trades INTEGER DEFAULT 0,
+    pending_bonus_restrictions JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_login TIMESTAMP WITH TIME ZONE
@@ -259,3 +267,161 @@ CREATE TRIGGER update_trading_settings_updated_at BEFORE UPDATE ON trading_setti
 
 CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ===== NEW FEATURE TABLES =====
+
+-- User Verification Documents table
+CREATE TABLE IF NOT EXISTS user_verification_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    document_type VARCHAR(50) NOT NULL CHECK (document_type IN ('id_card', 'driver_license', 'passport')),
+    document_url VARCHAR(500) NOT NULL,
+    verification_status VARCHAR(20) DEFAULT 'pending' CHECK (verification_status IN ('pending', 'approved', 'rejected')),
+    admin_notes TEXT,
+    verified_by UUID REFERENCES users(id),
+    verified_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User Referrals table
+CREATE TABLE IF NOT EXISTS user_referrals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    referrer_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    referred_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    referral_code VARCHAR(50) NOT NULL,
+    bonus_amount DECIMAL(15,2) DEFAULT 0.00,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Redeem Codes table
+CREATE TABLE IF NOT EXISTS redeem_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE NOT NULL,
+    bonus_amount DECIMAL(15,2) NOT NULL,
+    max_uses INTEGER DEFAULT NULL,
+    current_uses INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE
+);
+
+-- User Redeem History table
+CREATE TABLE IF NOT EXISTS user_redeem_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    redeem_code_id UUID REFERENCES redeem_codes(id),
+    code VARCHAR(50) NOT NULL,
+    bonus_amount DECIMAL(15,2) NOT NULL,
+    trades_required INTEGER DEFAULT 10,
+    trades_completed INTEGER DEFAULT 0,
+    withdrawal_unlocked BOOLEAN DEFAULT false,
+    redeemed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ===== INDEXES FOR NEW TABLES =====
+CREATE INDEX IF NOT EXISTS idx_users_verification_status ON users(verification_status);
+CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
+CREATE INDEX IF NOT EXISTS idx_verification_documents_user_id ON user_verification_documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_verification_documents_status ON user_verification_documents(verification_status);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON user_referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred_id ON user_referrals(referred_id);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_code ON redeem_codes(code);
+CREATE INDEX IF NOT EXISTS idx_redeem_history_user_id ON user_redeem_history(user_id);
+
+-- ===== ROW LEVEL SECURITY POLICIES =====
+
+-- Enable RLS on new tables
+ALTER TABLE user_verification_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_referrals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE redeem_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_redeem_history ENABLE ROW LEVEL SECURITY;
+
+-- Verification Documents Policies
+CREATE POLICY "Users can view own verification documents" ON user_verification_documents
+    FOR SELECT USING (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Users can insert own verification documents" ON user_verification_documents
+    FOR INSERT WITH CHECK (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Admins can view all verification documents" ON user_verification_documents
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id::text = auth.uid()::text
+            AND role IN ('admin', 'super_admin')
+        )
+    );
+
+-- Referrals Policies
+CREATE POLICY "Users can view own referrals" ON user_referrals
+    FOR SELECT USING (
+        auth.uid()::text = referrer_id::text OR
+        auth.uid()::text = referred_id::text
+    );
+
+CREATE POLICY "Admins can view all referrals" ON user_referrals
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id::text = auth.uid()::text
+            AND role IN ('admin', 'super_admin')
+        )
+    );
+
+-- Redeem Codes Policies (read-only for users)
+CREATE POLICY "Anyone can view active redeem codes" ON redeem_codes
+    FOR SELECT USING (is_active = true);
+
+CREATE POLICY "Admins can manage redeem codes" ON redeem_codes
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id::text = auth.uid()::text
+            AND role IN ('admin', 'super_admin')
+        )
+    );
+
+-- Redeem History Policies
+CREATE POLICY "Users can view own redeem history" ON user_redeem_history
+    FOR SELECT USING (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Users can insert own redeem history" ON user_redeem_history
+    FOR INSERT WITH CHECK (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Admins can view all redeem history" ON user_redeem_history
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM users
+            WHERE id::text = auth.uid()::text
+            AND role IN ('admin', 'super_admin')
+        )
+    );
+
+-- ===== TRIGGERS FOR NEW TABLES =====
+CREATE TRIGGER update_verification_documents_updated_at BEFORE UPDATE ON user_verification_documents
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ===== DEFAULT DATA FOR NEW FEATURES =====
+
+-- Insert default redeem codes
+INSERT INTO redeem_codes (code, bonus_amount, max_uses, is_active) VALUES
+('FIRSTBONUS', 100.00, NULL, true),
+('LETSGO1000', 1000.00, NULL, true),
+('WELCOME50', 50.00, 100, true),
+('BONUS500', 500.00, 50, true)
+ON CONFLICT (code) DO NOTHING;
+
+-- Update existing users to have verification status and generate referral codes
+UPDATE users
+SET
+    verification_status = CASE
+        WHEN role IN ('admin', 'super_admin') THEN 'verified'
+        ELSE 'unverified'
+    END,
+    referral_code = CASE
+        WHEN referral_code IS NULL THEN UPPER(SUBSTRING(MD5(RANDOM()::text), 1, 8))
+        ELSE referral_code
+    END
+WHERE verification_status IS NULL OR referral_code IS NULL;

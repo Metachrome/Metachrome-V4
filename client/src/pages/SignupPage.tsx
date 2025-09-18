@@ -26,6 +26,11 @@ const signupSchema = z.object({
   email: z.string().email('Valid email is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string().min(1, 'Password confirmation is required'),
+  referralCode: z.string().optional(),
+  documentType: z.enum(['id_card', 'driver_license', 'passport'], {
+    required_error: 'Document type is required',
+    invalid_type_error: 'Please select a valid document type'
+  }),
   agreeToTerms: z.boolean().refine(val => val === true, 'You must agree to the terms'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -42,6 +47,8 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isMetaMaskConnecting, setIsMetaMaskConnecting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const signupForm = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
@@ -51,6 +58,8 @@ export default function SignupPage() {
       email: '',
       password: '',
       confirmPassword: '',
+      referralCode: '',
+      documentType: 'id_card',
       agreeToTerms: false
     },
   });
@@ -58,10 +67,24 @@ export default function SignupPage() {
   const onSignup = async (data: SignupForm) => {
     setIsLoading(true);
     try {
+      // Validate that ID document is uploaded (now mandatory)
+      if (!selectedFile) {
+        toast({
+          title: "ID Verification Required",
+          description: "Please upload your ID document to complete registration. This is mandatory for account security.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       console.log('🔄 Starting signup process...', {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email
+        email: data.email,
+        referralCode: data.referralCode,
+        documentType: data.documentType,
+        hasDocument: !!selectedFile
       });
 
       // Use the register mutation from useAuth hook
@@ -71,13 +94,83 @@ export default function SignupPage() {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
+        referralCode: data.referralCode,
       });
 
       console.log('✅ Registration successful:', registrationResult);
-      toast({
-        title: "Account Created Successfully!",
-        description: "Welcome to METACHROME! You are now logged in.",
-      });
+
+      // Store authentication data immediately for document upload
+      if (registrationResult.token) {
+        localStorage.setItem('authToken', registrationResult.token);
+        console.log('🔑 Stored auth token for immediate use');
+      }
+      if (registrationResult.user) {
+        localStorage.setItem('user', JSON.stringify(registrationResult.user));
+        console.log('👤 Stored user data for immediate use');
+      }
+
+      // Upload verification document (now mandatory)
+      if (selectedFile && data.documentType) {
+        try {
+          setUploadProgress(25);
+          const formData = new FormData();
+          formData.append('document', selectedFile);
+          formData.append('documentType', data.documentType);
+
+          // Use the token from the registration result directly
+          const token = registrationResult.token;
+          console.log('🔑 Using registration token for document upload:', token ? token.substring(0, 30) + '...' : 'No token');
+
+          if (!token) {
+            throw new Error('No authentication token received from registration');
+          }
+
+          // Add a small delay to ensure user is properly saved in database
+          console.log('⏳ Waiting for user to be saved in database...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          setUploadProgress(50);
+
+          const response = await fetch('/api/user/upload-verification', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          setUploadProgress(75);
+
+          if (response.ok) {
+            const uploadResult = await response.json();
+            setUploadProgress(100);
+            console.log('✅ Verification document uploaded successfully:', uploadResult);
+            toast({
+              title: "Account Created & Document Uploaded!",
+              description: "Your account is pending verification. You'll be notified once approved.",
+              duration: 5000,
+            });
+          } else {
+            const errorText = await response.text();
+            console.error('❌ Upload response error:', response.status, errorText);
+            throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+          }
+        } catch (uploadError) {
+          console.error('❌ Document upload error:', uploadError);
+          toast({
+            title: "Account Created",
+            description: `Account created but document upload failed: ${uploadError.message}. You can upload it later in your profile.`,
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
+      } else {
+        toast({
+          title: "Account Created Successfully!",
+          description: "Welcome to METACHROME! Please upload your verification document in your profile.",
+          duration: 5000,
+        });
+      }
 
       // Redirect to dashboard after successful signup and auto-login
       console.log('🔄 Redirecting to dashboard...');
@@ -92,6 +185,36 @@ export default function SignupPage() {
       });
     } finally {
       setIsLoading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload a JPG, PNG, or PDF file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please upload a file smaller than 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+      console.log('📄 File selected:', file.name, file.type, file.size);
     }
   };
 
@@ -329,6 +452,26 @@ export default function SignupPage() {
                     )}
                   />
 
+                  {/* Referral Code */}
+                  <FormField
+                    control={signupForm.control}
+                    name="referralCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-400 text-sm">Referral Code (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="text"
+                            placeholder="Enter referral code if you have one"
+                            className="bg-gray-900 border-gray-600 text-white placeholder:text-gray-500 h-12 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {/* Password and Confirm Password Row */}
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -386,6 +529,94 @@ export default function SignupPage() {
                         </FormItem>
                       )}
                     />
+                  </div>
+
+                  {/* Document Upload Section */}
+                  <div className="space-y-4 p-4 bg-red-900/20 rounded-lg border border-red-700/50">
+                    <h3 className="text-white text-sm font-medium flex items-center">
+                      <span className="text-red-400 mr-2">*</span>
+                      Identity Verification (Required)
+                    </h3>
+                    <p className="text-gray-400 text-xs">
+                      <span className="text-red-400 font-medium">Mandatory:</span> Upload your ID card, driver's license, or passport to complete registration.
+                      This is required for account security and compliance.
+                    </p>
+
+                    {/* Document Type Selection */}
+                    <FormField
+                      control={signupForm.control}
+                      name="documentType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-400 text-sm">
+                            Document Type <span className="text-red-400">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <select
+                              {...field}
+                              className="w-full bg-gray-900 border-gray-600 text-white h-12 rounded-md focus:ring-purple-500 focus:border-purple-500 px-3"
+                            >
+                              <option value="id_card">ID Card</option>
+                              <option value="driver_license">Driver's License</option>
+                              <option value="passport">Passport</option>
+                            </select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* File Upload */}
+                    <div className="space-y-2">
+                      <label className="text-gray-400 text-sm">
+                        Upload Document <span className="text-red-400">*</span>
+                      </label>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          id="document-upload"
+                          required
+                        />
+                        <label
+                          htmlFor="document-upload"
+                          className={`flex-1 bg-gray-900 border-2 border-dashed h-12 rounded-md flex items-center justify-center cursor-pointer transition-colors ${
+                            selectedFile
+                              ? 'border-green-500 text-green-400'
+                              : 'border-red-500 text-gray-400 hover:border-purple-500'
+                          }`}
+                        >
+                          {selectedFile ? `✓ ${selectedFile.name}` : "⚠️ Click to upload document (Required)"}
+                        </label>
+                        {selectedFile && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedFile(null)}
+                            className="text-red-400 hover:text-red-300 text-sm"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {uploadProgress > 0 && (
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div
+                            className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      )}
+                      <p className="text-gray-500 text-xs">
+                        <span className="text-red-400 font-medium">Required:</span> Accepted formats: JPG, PNG, PDF (max 5MB)
+                      </p>
+                      {!selectedFile && (
+                        <p className="text-red-400 text-xs font-medium">
+                          ⚠️ ID verification document is mandatory for registration
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Terms Agreement */}

@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "id": "trade-1758180193398-jnex4ajqy",
+    "user_id": "user-angela",
+    "symbol": "BTCUSDT",
+    "type": "options",
+    "direction": "up",
+    "amount": "5000",
+    "price": "65810.91660543373",
+    "entry_price": "65810.91660543373",
+    "status": "active",
+    "duration": 90,
+    "expires_at": "2025-09-18T07:24:43.398Z",
+    "created_at": "2025-09-18T07:23:13.398Z",
+    "result": "lose",
+    "username": "Unknown User",
+    "time_left": 0,
+    "profit": -5000,
+    "updated_at": "2025-09-18T07:24:45.077Z"
+  }
+]

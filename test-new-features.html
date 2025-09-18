@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METACHROME - New Features Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .section h2 {
+            color: #8b5cf6;
+            border-bottom: 2px solid #8b5cf6;
+            padding-bottom: 10px;
+        }
+        .test-group {
+            background: #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #8b5cf6;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #065f46;
+            border: 1px solid #10b981;
+        }
+        .error {
+            background: #7f1d1d;
+            border: 1px solid #ef4444;
+        }
+        .warning {
+            background: #78350f;
+            border: 1px solid #f59e0b;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        input, select, textarea {
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        .status-warning { background: #f59e0b; }
+        .status-pending { background: #6b7280; }
+        pre {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 METACHROME New Features Test Suite</h1>
+        <p>Comprehensive testing for User Verification, Referral System, and Redeem Codes</p>
+
+        <!-- API Connectivity Test -->
+        <div class="section">
+            <h2>🔌 API Connectivity Test</h2>
+            <div class="test-group">
+                <h3>Server Connection</h3>
+                <button onclick="testServerConnection()">Test Server Connection</button>
+                <div id="server-status"></div>
+            </div>
+        </div>
+
+        <!-- User Verification Tests -->
+        <div class="section">
+            <h2>📄 User Verification System Tests</h2>
+            
+            <div class="test-group">
+                <h3>1. Document Upload Test</h3>
+                <div class="form-group">
+                    <label>Select Document Type:</label>
+                    <select id="docType">
+                        <option value="id_card">ID Card</option>
+                        <option value="driver_license">Driver's License</option>
+                        <option value="passport">Passport</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Upload Document:</label>
+                    <input type="file" id="docFile" accept="image/*,.pdf">
+                </div>
+                <button onclick="testDocumentUpload()">Test Document Upload</button>
+                <div id="upload-result"></div>
+            </div>
+
+            <div class="test-group">
+                <h3>2. Verification Status Check</h3>
+                <button onclick="testVerificationStatus()">Check Verification Status</button>
+                <div id="verification-status"></div>
+            </div>
+
+            <div class="test-group">
+                <h3>3. Admin Verification Management</h3>
+                <button onclick="testPendingVerifications()">Get Pending Verifications</button>
+                <div class="form-group">
+                    <label>Document ID:</label>
+                    <input type="text" id="docId" placeholder="Enter document ID">
+                    <select id="verifyAction">
+                        <option value="approved">Approve</option>
+                        <option value="rejected">Reject</option>
+                    </select>
+                    <button onclick="testDocumentVerification()">Test Verification Action</button>
+                </div>
+                <div id="admin-verification-result"></div>
+            </div>
+        </div>
+
+        <!-- Referral System Tests -->
+        <div class="section">
+            <h2>🔗 Referral System Tests</h2>
+            
+            <div class="test-group">
+                <h3>1. Generate Referral Code</h3>
+                <button onclick="testGenerateReferralCode()">Generate Referral Code</button>
+                <div id="referral-code-result"></div>
+            </div>
+
+            <div class="test-group">
+                <h3>2. Referral Statistics</h3>
+                <button onclick="testReferralStats()">Get Referral Stats</button>
+                <div id="referral-stats-result"></div>
+            </div>
+
+            <div class="test-group">
+                <h3>3. Test Registration with Referral</h3>
+                <div class="form-group">
+                    <label>Test Referral Code:</label>
+                    <input type="text" id="testReferralCode" placeholder="Enter referral code">
+                </div>
+                <button onclick="testReferralRegistration()">Test Referral Registration</button>
+                <div id="referral-registration-result"></div>
+            </div>
+        </div>
+
+        <!-- Redeem Code Tests -->
+        <div class="section">
+            <h2>🎁 Redeem Code System Tests</h2>
+            
+            <div class="test-group">
+                <h3>1. Test Redeem Codes</h3>
+                <div class="form-group">
+                    <label>Redeem Code:</label>
+                    <select id="redeemCodeSelect">
+                        <option value="FIRSTBONUS">FIRSTBONUS ($100)</option>
+                        <option value="LETSGO1000">LETSGO1000 ($1000)</option>
+                        <option value="WELCOME50">WELCOME50 ($50)</option>
+                        <option value="BONUS500">BONUS500 ($500)</option>
+                        <option value="INVALID">INVALID (Test Error)</option>
+                    </select>
+                </div>
+                <button onclick="testRedeemCode()">Test Redeem Code</button>
+                <div id="redeem-result"></div>
+            </div>
+
+            <div class="test-group">
+                <h3>2. Redeem History</h3>
+                <button onclick="testRedeemHistory()">Get Redeem History</button>
+                <div id="redeem-history-result"></div>
+            </div>
+
+            <div class="test-group">
+                <h3>3. Withdrawal Eligibility</h3>
+                <button onclick="testWithdrawalEligibility()">Check Withdrawal Eligibility</button>
+                <div id="withdrawal-eligibility-result"></div>
+            </div>
+        </div>
+
+        <!-- Database Schema Tests -->
+        <div class="section">
+            <h2>🗄️ Database Schema Tests</h2>
+            
+            <div class="test-group">
+                <h3>1. Test New Tables</h3>
+                <button onclick="testDatabaseTables()">Test Database Tables</button>
+                <div id="database-test-result"></div>
+            </div>
+        </div>
+
+        <!-- Integration Tests -->
+        <div class="section">
+            <h2>🔄 Integration Tests</h2>
+            
+            <div class="test-group">
+                <h3>1. Complete User Flow Test</h3>
+                <button onclick="testCompleteUserFlow()">Run Complete User Flow</button>
+                <div id="integration-test-result"></div>
+            </div>
+
+            <div class="test-group">
+                <h3>2. Trade Count & Withdrawal Unlock Test</h3>
+                <div class="form-group">
+                    <label>User ID:</label>
+                    <input type="text" id="testUserId" placeholder="Enter user ID">
+                </div>
+                <button onclick="testTradeCountSystem()">Test Trade Count System</button>
+                <div id="trade-count-result"></div>
+            </div>
+        </div>
+
+        <!-- Test Results Summary -->
+        <div class="section">
+            <h2>📊 Test Results Summary</h2>
+            <div id="test-summary">
+                <p>Run tests above to see results summary...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global test results tracking
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0
+        };
+
+        // Helper function to make API requests
+        async function apiRequest(method, endpoint, data = null) {
+            const token = localStorage.getItem('authToken') || 'test-token';
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+
+            if (data && method !== 'GET') {
+                options.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(endpoint, options);
+                const result = await response.json();
+                return { success: response.ok, data: result, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Helper function to display test results
+        function displayResult(elementId, result, testName) {
+            const element = document.getElementById(elementId);
+            testResults.total++;
+            
+            if (result.success) {
+                testResults.passed++;
+                element.innerHTML = `
+                    <div class="test-result success">
+                        <span class="status-indicator status-success"></span>
+                        <strong>✅ ${testName} - PASSED</strong>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                testResults.failed++;
+                element.innerHTML = `
+                    <div class="test-result error">
+                        <span class="status-indicator status-error"></span>
+                        <strong>❌ ${testName} - FAILED</strong>
+                        <pre>Error: ${result.error || JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            }
+            
+            updateTestSummary();
+        }
+
+        function updateTestSummary() {
+            const summaryElement = document.getElementById('test-summary');
+            const passRate = testResults.total > 0 ? (testResults.passed / testResults.total * 100).toFixed(1) : 0;
+            
+            summaryElement.innerHTML = `
+                <div class="grid">
+                    <div class="test-result ${passRate >= 80 ? 'success' : passRate >= 50 ? 'warning' : 'error'}">
+                        <h3>Overall Test Results</h3>
+                        <p><strong>Total Tests:</strong> ${testResults.total}</p>
+                        <p><strong>Passed:</strong> ${testResults.passed}</p>
+                        <p><strong>Failed:</strong> ${testResults.failed}</p>
+                        <p><strong>Pass Rate:</strong> ${passRate}%</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Test Functions
+        async function testServerConnection() {
+            const result = await apiRequest('GET', '/api/health');
+            displayResult('server-status', result, 'Server Connection');
+        }
+
+        // Document Upload Test
+        async function testDocumentUpload() {
+            const fileInput = document.getElementById('docFile');
+            const docType = document.getElementById('docType').value;
+
+            if (!fileInput.files[0]) {
+                displayResult('upload-result', { success: false, error: 'No file selected' }, 'Document Upload');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('document', fileInput.files[0]);
+            formData.append('documentType', docType);
+
+            const token = localStorage.getItem('authToken') || 'test-token';
+
+            try {
+                const response = await fetch('/api/user/upload-verification', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                displayResult('upload-result', { success: response.ok, data: result }, 'Document Upload');
+            } catch (error) {
+                displayResult('upload-result', { success: false, error: error.message }, 'Document Upload');
+            }
+        }
+
+        // Verification Status Test
+        async function testVerificationStatus() {
+            const result = await apiRequest('GET', '/api/user/verification-status');
+            displayResult('verification-status', result, 'Verification Status Check');
+        }
+
+        // Pending Verifications Test
+        async function testPendingVerifications() {
+            const result = await apiRequest('GET', '/api/admin/pending-verifications');
+            displayResult('admin-verification-result', result, 'Pending Verifications');
+        }
+
+        // Document Verification Test
+        async function testDocumentVerification() {
+            const docId = document.getElementById('docId').value;
+            const action = document.getElementById('verifyAction').value;
+
+            if (!docId) {
+                displayResult('admin-verification-result', { success: false, error: 'Document ID required' }, 'Document Verification');
+                return;
+            }
+
+            const result = await apiRequest('POST', `/api/admin/verify-document/${docId}`, {
+                status: action,
+                adminNotes: `Test ${action} action`
+            });
+            displayResult('admin-verification-result', result, 'Document Verification');
+        }
+
+        // Generate Referral Code Test
+        async function testGenerateReferralCode() {
+            const result = await apiRequest('POST', '/api/user/generate-referral-code');
+            displayResult('referral-code-result', result, 'Generate Referral Code');
+        }
+
+        // Referral Stats Test
+        async function testReferralStats() {
+            const result = await apiRequest('GET', '/api/user/referral-stats');
+            displayResult('referral-stats-result', result, 'Referral Statistics');
+        }
+
+        // Referral Registration Test
+        async function testReferralRegistration() {
+            const referralCode = document.getElementById('testReferralCode').value;
+
+            const testUserData = {
+                username: `testuser_${Date.now()}`,
+                email: `test_${Date.now()}@example.com`,
+                password: 'testpassword123',
+                firstName: 'Test',
+                lastName: 'User',
+                referralCode: referralCode
+            };
+
+            const result = await apiRequest('POST', '/api/auth', testUserData);
+            displayResult('referral-registration-result', result, 'Referral Registration');
+        }
+
+        // Redeem Code Test
+        async function testRedeemCode() {
+            const code = document.getElementById('redeemCodeSelect').value;
+            const result = await apiRequest('POST', '/api/user/redeem-code', { code });
+            displayResult('redeem-result', result, 'Redeem Code');
+        }
+
+        // Redeem History Test
+        async function testRedeemHistory() {
+            const result = await apiRequest('GET', '/api/user/redeem-history');
+            displayResult('redeem-history-result', result, 'Redeem History');
+        }
+
+        // Withdrawal Eligibility Test
+        async function testWithdrawalEligibility() {
+            const result = await apiRequest('GET', '/api/user/withdrawal-eligibility');
+            displayResult('withdrawal-eligibility-result', result, 'Withdrawal Eligibility');
+        }
+
+        // Database Tables Test
+        async function testDatabaseTables() {
+            const tables = [
+                'user_verification_documents',
+                'user_referrals',
+                'redeem_codes',
+                'user_redeem_history'
+            ];
+
+            let allResults = [];
+
+            for (const table of tables) {
+                try {
+                    // Test if we can query the table (this will show if tables exist)
+                    const result = await apiRequest('GET', `/api/admin/test-table/${table}`);
+                    allResults.push({ table, status: result.success ? 'EXISTS' : 'MISSING', result });
+                } catch (error) {
+                    allResults.push({ table, status: 'ERROR', error: error.message });
+                }
+            }
+
+            displayResult('database-test-result', { success: true, data: allResults }, 'Database Tables');
+        }
+
+        // Complete User Flow Test
+        async function testCompleteUserFlow() {
+            const flowResults = [];
+
+            // Step 1: Generate referral code
+            let result = await apiRequest('POST', '/api/user/generate-referral-code');
+            flowResults.push({ step: 'Generate Referral Code', success: result.success, data: result.data });
+
+            // Step 2: Check verification status
+            result = await apiRequest('GET', '/api/user/verification-status');
+            flowResults.push({ step: 'Check Verification Status', success: result.success, data: result.data });
+
+            // Step 3: Try redeem code
+            result = await apiRequest('POST', '/api/user/redeem-code', { code: 'FIRSTBONUS' });
+            flowResults.push({ step: 'Redeem Code', success: result.success, data: result.data });
+
+            // Step 4: Check withdrawal eligibility
+            result = await apiRequest('GET', '/api/user/withdrawal-eligibility');
+            flowResults.push({ step: 'Check Withdrawal Eligibility', success: result.success, data: result.data });
+
+            const overallSuccess = flowResults.every(r => r.success);
+            displayResult('integration-test-result', { success: overallSuccess, data: flowResults }, 'Complete User Flow');
+        }
+
+        // Trade Count System Test
+        async function testTradeCountSystem() {
+            const userId = document.getElementById('testUserId').value;
+
+            if (!userId) {
+                displayResult('trade-count-result', { success: false, error: 'User ID required' }, 'Trade Count System');
+                return;
+            }
+
+            // Simulate trade completion
+            const tradeData = {
+                tradeId: `test-trade-${Date.now()}`,
+                userId: userId,
+                won: true,
+                amount: 100,
+                payout: 180
+            };
+
+            const result = await apiRequest('POST', '/api/trades/complete', tradeData);
+            displayResult('trade-count-result', result, 'Trade Count System');
+        }
+
+        // Auto-run basic connectivity test on page load
+        window.onload = function() {
+            console.log('🧪 METACHROME New Features Test Suite Loaded');
+            console.log('📝 Instructions:');
+            console.log('1. Make sure your server is running on port 3001');
+            console.log('2. Login to get an auth token or tests will use mock data');
+            console.log('3. Run tests in order to verify functionality');
+
+            // Auto-test server connection
+            setTimeout(testServerConnection, 1000);
+        };
+    </script>
+</body>
+</html>

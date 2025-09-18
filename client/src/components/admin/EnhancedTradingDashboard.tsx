@@ -32,13 +32,13 @@ interface Trade {
   id: string;
   user_id: string;
   symbol: string;
-  amount: number;
+  amount: string | number;
   direction: 'up' | 'down';
   duration: number;
-  entry_price: number;
-  exit_price?: number;
+  entry_price: number | string;
+  exit_price?: number | string;
   result?: 'win' | 'lose' | 'pending';
-  profit?: number;
+  profit?: number | string;
   created_at: string;
   expires_at: string;
   completed_at?: string;
@@ -144,8 +144,8 @@ export default function EnhancedTradingDashboard({
   const activeTrades = trades.filter(t => t.result === 'pending');
   const completedTrades = trades.filter(t => t.result !== 'pending');
   const winningTrades = completedTrades.filter(t => t.result === 'win');
-  const totalVolume = trades.reduce((sum, t) => sum + t.amount, 0);
-  const totalProfit = completedTrades.reduce((sum, t) => sum + (t.profit || 0), 0);
+  const totalVolume = trades.reduce((sum, t) => sum + parseFloat(String(t.amount || 0)), 0);
+  const totalProfit = completedTrades.reduce((sum, t) => sum + parseFloat(String(t.profit || 0)), 0);
 
   return (
     <div className="space-y-6">
@@ -371,9 +371,9 @@ export default function EnhancedTradingDashboard({
                     <TableCell>{getResultBadge(trade.result)}</TableCell>
                     <TableCell>
                       <div className={`text-sm font-medium ${
-                        (trade.profit || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                        parseFloat(String(trade.profit || 0)) >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        ${(trade.profit || 0).toFixed(2)}
+                        ${parseFloat(String(trade.profit || 0)).toFixed(2)}
                       </div>
                       {trade.pnlPercentage && (
                         <div className="text-gray-400 text-xs">

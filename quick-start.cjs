@@ -378,7 +378,7 @@ app.get('/api/admin/dashboard/summary', (req, res) => {
     totalUsers: demoData.users.length,
     activeControls: demoData.controls.filter(c => c.status === 'Active').length,
     totalTrades: demoData.trades.length,
-    totalVolume: demoData.trades.reduce((sum, trade) => sum + parseFloat(trade.amount), 0).toFixed(2)
+    totalVolume: demoData.trades.reduce((sum, trade) => sum + parseFloat(trade.amount || 0), 0).toFixed(2)
   };
   res.json(summary);
 });

@@ -28,12 +28,14 @@ import {
   ArrowDown,
   Clock,
   Target,
+  Trash2,
+  FileCheck,
+  Gift,
   PlayCircle,
   Minus,
   Key,
   Wallet,
-  Send,
-  Trash2
+  Send
 } from 'lucide-react';
 
 // Helper function to safely parse balance values
@@ -135,6 +137,17 @@ export default function WorkingAdminDashboard() {
   }>({ deposits: [], withdrawals: [], total: 0 });
   const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingVerifications, setPendingVerifications] = useState<any[]>([]);
+  const [verificationStats, setVerificationStats] = useState<any>(null);
+  const [redeemCodes, setRedeemCodes] = useState<any[]>([]);
+  const [redeemStats, setRedeemStats] = useState<any>(null);
+  const [showCreateCodeModal, setShowCreateCodeModal] = useState(false);
+  const [newRedeemCode, setNewRedeemCode] = useState({
+    code: '',
+    bonusAmount: '',
+    maxUses: '',
+    description: ''
+  });
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -252,6 +265,48 @@ export default function WorkingAdminDashboard() {
         }
       } catch (error) {
         console.error('❌ Pending requests fetch error:', error);
+        hasErrors = true;
+      }
+
+      // Fetch pending verifications
+      try {
+        const verificationsRes = await fetch('/api/admin/pending-verifications');
+        if (verificationsRes.ok) {
+          const verificationsData = await verificationsRes.json();
+          console.log('📄 Pending verifications loaded:', verificationsData);
+          setPendingVerifications(verificationsData);
+
+          // Calculate verification stats
+          const stats = {
+            pending: verificationsData.filter((v: any) => v.verification_status === 'pending').length,
+            approved: verificationsData.filter((v: any) => v.verification_status === 'approved').length,
+            rejected: verificationsData.filter((v: any) => v.verification_status === 'rejected').length,
+            total: verificationsData.length
+          };
+          setVerificationStats(stats);
+        } else {
+          console.error('❌ Failed to fetch pending verifications:', verificationsRes.status);
+          hasErrors = true;
+        }
+      } catch (error) {
+        console.error('❌ Pending verifications fetch error:', error);
+        hasErrors = true;
+      }
+
+      // Fetch redeem codes
+      try {
+        const redeemCodesRes = await fetch('/api/admin/redeem-codes');
+        if (redeemCodesRes.ok) {
+          const redeemCodesData = await redeemCodesRes.json();
+          console.log('🎁 Redeem codes loaded:', redeemCodesData);
+          setRedeemCodes(redeemCodesData.codes || []);
+          setRedeemStats(redeemCodesData.stats || {});
+        } else {
+          console.error('❌ Failed to fetch redeem codes:', redeemCodesRes.status);
+          hasErrors = true;
+        }
+      } catch (error) {
+        console.error('❌ Redeem codes fetch error:', error);
         hasErrors = true;
       }
 
@@ -725,10 +780,10 @@ export default function WorkingAdminDashboard() {
     }
   };
 
-  // Approve/Reject withdrawal
+  // Handle withdrawal actions
   const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject', reason?: string) => {
     try {
-      console.log('💸 Withdrawal action:', withdrawalId, action, reason);
+      console.log('💰 Withdrawal action:', withdrawalId, action, reason);
       const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/action`, {
         method: 'POST',
         headers: {
@@ -760,6 +815,187 @@ export default function WorkingAdminDashboard() {
       });
     }
   };
+
+  // Handle document verification actions
+  const handleDocumentAction = async (documentId: string, action: 'approve' | 'reject', reason?: string) => {
+    try {
+      console.log('📄 Document action:', documentId, action, reason);
+      const response = await fetch(`/api/admin/verify-document/${documentId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          adminNotes: reason || `Document ${action}d by admin`
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: `Document ${action === 'approve' ? 'Approved' : 'Rejected'}`,
+          description: result.message || `Document ${action}d successfully`,
+          duration: 3000
+        });
+        fetchData(); // Refresh all data
+      } else {
+        const error = await response.text();
+        throw new Error(error || 'Failed to process document');
+      }
+    } catch (error) {
+      console.error('Failed to process document:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process document",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
+
+
+  // Handle transaction deletion
+  const handleDeleteTransaction = async (transactionId: string) => {
+    try {
+      console.log('🗑️ Deleting transaction:', transactionId);
+      const response = await fetch(`/api/admin/transactions/${transactionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Transaction Deleted",
+          description: result.message || "Transaction deleted successfully",
+          duration: 3000
+        });
+        fetchData(); // Refresh all data
+      } else {
+        const error = await response.text();
+        throw new Error(error || 'Failed to delete transaction');
+      }
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete transaction",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
+  // View receipt in popup
+  const viewReceipt = (filename: string) => {
+    const receiptUrl = `/api/admin/receipt/${filename}/view`;
+    window.open(receiptUrl, 'receiptViewer', 'width=800,height=600,scrollbars=yes,resizable=yes');
+  };
+
+  // Handle redeem code actions
+  const handleRedeemCodeAction = async (codeId: string, action: 'edit' | 'disable' | 'delete') => {
+    try {
+      console.log('🎁 Redeem code action:', codeId, action);
+
+      if (action === 'edit') {
+        // For now, just show a toast - could implement edit modal later
+        toast({
+          title: "Edit Code",
+          description: "Edit functionality coming soon",
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/admin/redeem-codes/${codeId}`, {
+        method: action === 'delete' ? 'DELETE' : 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: action === 'disable' ? JSON.stringify({ status: 'disabled' }) : undefined
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: `Code ${action === 'disable' ? 'Disabled' : 'Deleted'}`,
+          description: result.message || `Code ${action}d successfully`,
+          duration: 3000
+        });
+        fetchData(); // Refresh all data
+      } else {
+        const error = await response.text();
+        throw new Error(error || `Failed to ${action} code`);
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} redeem code:`, error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : `Failed to ${action} code`,
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
+  // Create new redeem code
+  const handleCreateRedeemCode = async () => {
+    try {
+      if (!newRedeemCode.code || !newRedeemCode.bonusAmount) {
+        toast({
+          title: "Missing Information",
+          description: "Please fill in code and bonus amount",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await fetch('/api/admin/redeem-codes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          code: newRedeemCode.code.toUpperCase(),
+          bonusAmount: parseFloat(newRedeemCode.bonusAmount),
+          maxUses: newRedeemCode.maxUses ? parseInt(newRedeemCode.maxUses) : null,
+          description: newRedeemCode.description || `Bonus code for $${newRedeemCode.bonusAmount}`
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Code Created",
+          description: `Redeem code ${newRedeemCode.code} created successfully`,
+          duration: 3000
+        });
+        setShowCreateCodeModal(false);
+        setNewRedeemCode({ code: '', bonusAmount: '', maxUses: '', description: '' });
+        fetchData(); // Refresh all data
+      } else {
+        const error = await response.text();
+        throw new Error(error || 'Failed to create code');
+      }
+    } catch (error) {
+      console.error('Failed to create redeem code:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create code",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
+
 
   const openSuperAdminModal = (user: User, action: string) => {
     setSelectedUserForAction(user);
@@ -816,7 +1052,28 @@ export default function WorkingAdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <>
+      <style>{`
+        .admin-table-container {
+          scrollbar-width: thin;
+          scrollbar-color: #6b7280 #374151;
+        }
+        .admin-table-container::-webkit-scrollbar {
+          height: 8px;
+        }
+        .admin-table-container::-webkit-scrollbar-track {
+          background: #374151;
+          border-radius: 4px;
+        }
+        .admin-table-container::-webkit-scrollbar-thumb {
+          background: #6b7280;
+          border-radius: 4px;
+        }
+        .admin-table-container::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
+        }
+      `}</style>
+      <div className="min-h-screen bg-gray-900">
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -856,7 +1113,7 @@ export default function WorkingAdminDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-full mx-auto p-6">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="flex w-full overflow-x-auto bg-gray-800 border-gray-700 scrollbar-hide gap-2 p-2">
             <TabsTrigger value="overview" className="flex-shrink-0 px-4 py-2">
@@ -878,6 +1135,14 @@ export default function WorkingAdminDashboard() {
             <TabsTrigger value="pending" className="flex-shrink-0 px-4 py-2">
               <Shield className="w-4 h-4 mr-2" />
               Pending Requests
+            </TabsTrigger>
+            <TabsTrigger value="verification" className="flex-shrink-0 px-4 py-2">
+              <FileCheck className="w-4 h-4 mr-2" />
+              Verification
+            </TabsTrigger>
+            <TabsTrigger value="redeem-codes" className="flex-shrink-0 px-4 py-2">
+              <Gift className="w-4 h-4 mr-2" />
+              Redeem Codes
             </TabsTrigger>
             <TabsTrigger value="controls" className="flex-shrink-0 px-4 py-2">
               <Settings className="w-4 h-4 mr-2" />
@@ -927,7 +1192,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-purple-100 text-sm">Total Volume</p>
                       <p className="text-3xl font-bold text-white">
-                        ${trades.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
+                        ${trades.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0).toLocaleString()}
                       </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-purple-200" />
@@ -1114,17 +1379,17 @@ export default function WorkingAdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="border border-gray-700 rounded-lg overflow-x-auto">
-                  <Table className="min-w-full">
+                <div className="border border-gray-700 rounded-lg overflow-x-auto admin-table-container" style={{ maxWidth: '100%' }}>
+                  <Table className="w-full" style={{ minWidth: '1200px' }}>
                     <TableHeader>
                       <TableRow className="bg-gray-700">
-                        <TableHead className="text-gray-300">User</TableHead>
-                        <TableHead className="text-gray-300">Email</TableHead>
-                        <TableHead className="text-gray-300">Balance</TableHead>
-                        <TableHead className="text-gray-300">Role</TableHead>
-                        <TableHead className="text-gray-300">Status</TableHead>
-                        <TableHead className="text-gray-300">Trading Mode</TableHead>
-                        <TableHead className="text-gray-300 min-w-[300px]">Actions</TableHead>
+                        <TableHead className="text-gray-300 min-w-[200px]">User</TableHead>
+                        <TableHead className="text-gray-300 min-w-[250px]">Email</TableHead>
+                        <TableHead className="text-gray-300 min-w-[120px]">Balance</TableHead>
+                        <TableHead className="text-gray-300 min-w-[100px]">Role</TableHead>
+                        <TableHead className="text-gray-300 min-w-[100px]">Status</TableHead>
+                        <TableHead className="text-gray-300 min-w-[120px]">Trading Mode</TableHead>
+                        <TableHead className="text-gray-300 min-w-[400px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1132,18 +1397,24 @@ export default function WorkingAdminDashboard() {
                         <TableRow key={user.id} className="border-gray-700 hover:bg-gray-700/50">
                           <TableCell>
                             <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                              <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                                 <span className="text-white font-bold">
                                   {user.username.charAt(0).toUpperCase()}
                                 </span>
                               </div>
-                              <div>
-                                <div className="text-white font-medium">{user.username}</div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-white font-medium truncate" title={user.username}>
+                                  {user.username.length > 20 ? `${user.username.slice(0, 20)}...` : user.username}
+                                </div>
                                 <div className="text-gray-400 text-sm">ID: {user.id ? user.id.slice(0, 8) : 'N/A'}...</div>
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-white">{user.email}</TableCell>
+                          <TableCell className="text-white">
+                            <div className="truncate" title={user.email}>
+                              {user.email.length > 30 ? `${user.email.slice(0, 30)}...` : user.email}
+                            </div>
+                          </TableCell>
                           <TableCell className="text-white font-medium">${formatBalance(user.balance)}</TableCell>
                           <TableCell>
                             <Badge variant={user.role === 'super_admin' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
@@ -1302,7 +1573,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-purple-100 text-sm">Total Volume</p>
                       <p className="text-3xl font-bold text-white">
-                        ${trades.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
+                        ${trades.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0).toLocaleString()}
                       </p>
                     </div>
                     <BarChart3 className="w-8 h-8 text-purple-200" />
@@ -1316,7 +1587,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-orange-100 text-sm">Total P&L</p>
                       <p className="text-3xl font-bold text-white">
-                        ${trades.reduce((sum, t) => sum + (t.profit || 0), 0).toLocaleString()}
+                        ${trades.reduce((sum, t) => sum + parseFloat(t.profit || 0), 0).toLocaleString()}
                       </p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-orange-200" />
@@ -1465,6 +1736,7 @@ export default function WorkingAdminDashboard() {
                         <TableHead className="text-gray-300">Amount</TableHead>
                         <TableHead className="text-gray-300">Status</TableHead>
                         <TableHead className="text-gray-300">Date</TableHead>
+                        <TableHead className="text-gray-300">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1493,6 +1765,16 @@ export default function WorkingAdminDashboard() {
                           </TableCell>
                           <TableCell className="text-white">
                             {new Date(transaction.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       )) : []}
@@ -1626,7 +1908,8 @@ export default function WorkingAdminDashboard() {
                                       className="max-w-full h-32 object-contain rounded border border-gray-500"
                                       onError={(e) => {
                                         e.currentTarget.style.display = 'none';
-                                        e.currentTarget.nextElementSibling.style.display = 'block';
+                                        const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                        if (nextElement) nextElement.style.display = 'block';
                                       }}
                                     />
                                     <div style={{display: 'none'}} className="text-red-400 text-xs">
@@ -1672,10 +1955,7 @@ export default function WorkingAdminDashboard() {
                               <p className="text-sm text-gray-300 mb-2">📄 Receipt Uploaded:</p>
                               <div className="flex items-center space-x-2">
                                 <Button
-                                  onClick={() => setSelectedReceipt({
-                                    url: deposit.receiptViewUrl,
-                                    filename: deposit.receiptFile?.originalname || 'Receipt'
-                                  })}
+                                  onClick={() => viewReceipt(deposit.receiptFile?.filename || '')}
                                   variant="outline"
                                   size="sm"
                                   className="text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-white"
@@ -1786,6 +2066,260 @@ export default function WorkingAdminDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Verification Tab */}
+          <TabsContent value="verification" className="space-y-6">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Document Verification</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Review and approve user verification documents
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Verification Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-yellow-400">
+                        {verificationStats?.pending || 0}
+                      </div>
+                      <div className="text-gray-400 text-sm">Pending Review</div>
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-green-400">
+                        {verificationStats?.approved || 0}
+                      </div>
+                      <div className="text-gray-400 text-sm">Approved</div>
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-red-400">
+                        {verificationStats?.rejected || 0}
+                      </div>
+                      <div className="text-gray-400 text-sm">Rejected</div>
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-gray-400">
+                        {verificationStats?.total || 0}
+                      </div>
+                      <div className="text-gray-400 text-sm">Total Documents</div>
+                    </div>
+                  </div>
+
+                  {/* Pending Documents Table */}
+                  <div className="border border-gray-700 rounded-lg overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-700">
+                          <TableHead className="text-gray-300">User</TableHead>
+                          <TableHead className="text-gray-300">Document Type</TableHead>
+                          <TableHead className="text-gray-300">Submitted</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingVerifications.length === 0 ? (
+                          <TableRow className="border-gray-700">
+                            <TableCell colSpan={5} className="text-center py-8 text-gray-400">
+                              No pending verification documents
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          pendingVerifications
+                            .filter(doc => doc.verification_status === 'pending')
+                            .map((doc) => (
+                              <TableRow key={doc.id} className="border-gray-700">
+                                <TableCell className="text-white">
+                                  {doc.users?.email || doc.users?.username || 'Unknown User'}
+                                </TableCell>
+                                <TableCell className="text-gray-300">
+                                  {doc.document_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Unknown Type'}
+                                </TableCell>
+                                <TableCell className="text-gray-300">
+                                  {doc.created_at ? new Date(doc.created_at).toLocaleString() : 'Unknown'}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={
+                                      doc.verification_status === 'pending' ? 'bg-yellow-600' :
+                                      doc.verification_status === 'approved' ? 'bg-green-600' :
+                                      doc.verification_status === 'rejected' ? 'bg-red-600' :
+                                      'bg-gray-600'
+                                    }
+                                  >
+                                    {doc.verification_status?.charAt(0).toUpperCase() + doc.verification_status?.slice(1) || 'Unknown'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button
+                                      size="sm"
+                                      className="bg-blue-600 hover:bg-blue-700"
+                                      onClick={() => window.open(doc.document_url, 'docViewer', 'width=800,height=600')}
+                                    >
+                                      <Eye className="w-4 h-4 mr-1" />
+                                      View
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() => handleDocumentAction(doc.id, 'approve')}
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="bg-red-600 hover:bg-red-700"
+                                      onClick={() => handleDocumentAction(doc.id, 'reject', 'Document review required')}
+                                    >
+                                      <XCircle className="w-4 h-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Redeem Codes Tab */}
+          <TabsContent value="redeem-codes" className="space-y-6">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-white">Redeem Code Management</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Create and manage promotional redeem codes
+                    </CardDescription>
+                  </div>
+                  <Button
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => setShowCreateCodeModal(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Code
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Code Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-400">
+                        {redeemStats?.activeCodes || 0}
+                      </div>
+                      <div className="text-gray-400 text-sm">Active Codes</div>
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-green-400">
+                        {redeemStats?.totalRedeemed || 0}
+                      </div>
+                      <div className="text-gray-400 text-sm">Total Redeemed</div>
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-400">
+                        ${redeemStats?.bonusDistributed || 0}
+                      </div>
+                      <div className="text-gray-400 text-sm">Bonus Distributed</div>
+                    </div>
+                    <div className="bg-gray-700 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-yellow-400">
+                        {redeemStats?.usageRate || 0}%
+                      </div>
+                      <div className="text-gray-400 text-sm">Usage Rate</div>
+                    </div>
+                  </div>
+
+                  {/* Redeem Codes Table */}
+                  <div className="border border-gray-700 rounded-lg overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-700">
+                          <TableHead className="text-gray-300">Code</TableHead>
+                          <TableHead className="text-gray-300">Bonus Amount</TableHead>
+                          <TableHead className="text-gray-300">Usage</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Created</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {redeemCodes.length === 0 ? (
+                          <TableRow className="border-gray-700">
+                            <TableCell colSpan={6} className="text-center py-8 text-gray-400">
+                              No redeem codes found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          redeemCodes.map((code) => (
+                            <TableRow key={code.id} className="border-gray-700">
+                              <TableCell className="text-white font-mono">{code.code}</TableCell>
+                              <TableCell className="text-green-400">${code.bonus_amount}</TableCell>
+                              <TableCell className="text-gray-300">
+                                {code.used_count || 0} / {code.max_uses || '∞'}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={
+                                    code.status === 'active' ? 'bg-green-600' :
+                                    code.status === 'disabled' ? 'bg-red-600' :
+                                    'bg-gray-600'
+                                  }
+                                >
+                                  {code.status?.charAt(0).toUpperCase() + code.status?.slice(1) || 'Unknown'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-gray-300">
+                                {code.created_at ? new Date(code.created_at).toLocaleDateString() : 'Unknown'}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-gray-600"
+                                    onClick={() => handleRedeemCodeAction(code.id, 'edit')}
+                                  >
+                                    <Edit className="w-4 h-4 mr-1" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-red-600 hover:bg-red-700"
+                                    onClick={() => handleRedeemCodeAction(code.id, 'disable')}
+                                    disabled={code.status === 'disabled'}
+                                  >
+                                    Disable
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="bg-gray-600 hover:bg-gray-700"
+                                    onClick={() => handleRedeemCodeAction(code.id, 'delete')}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Support Tab */}
@@ -2321,6 +2855,75 @@ export default function WorkingAdminDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Create Redeem Code Modal */}
+      {showCreateCodeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">🎁 Create Redeem Code</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCreateCodeModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-gray-400 text-sm block mb-2">Code *</label>
+                <Input
+                  value={newRedeemCode.code}
+                  onChange={(e) => setNewRedeemCode({...newRedeemCode, code: e.target.value.toUpperCase()})}
+                  placeholder="e.g., BONUS100"
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm block mb-2">Bonus Amount ($) *</label>
+                <Input
+                  type="number"
+                  value={newRedeemCode.bonusAmount}
+                  onChange={(e) => setNewRedeemCode({...newRedeemCode, bonusAmount: e.target.value})}
+                  placeholder="100"
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm block mb-2">Max Uses (optional)</label>
+                <Input
+                  type="number"
+                  value={newRedeemCode.maxUses}
+                  onChange={(e) => setNewRedeemCode({...newRedeemCode, maxUses: e.target.value})}
+                  placeholder="Leave empty for unlimited"
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm block mb-2">Description (optional)</label>
+                <Input
+                  value={newRedeemCode.description}
+                  onChange={(e) => setNewRedeemCode({...newRedeemCode, description: e.target.value})}
+                  placeholder="Bonus code description"
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowCreateCodeModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateRedeemCode} className="bg-purple-600 hover:bg-purple-700">
+                Create Code
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      </div>
+    </>
   );
 }

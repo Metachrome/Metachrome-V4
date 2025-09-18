@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple METACHROME Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1e3c72; color: white; }
+        button { background: #ff6b6b; color: white; border: none; padding: 10px 20px; margin: 10px; border-radius: 5px; cursor: pointer; }
+        .result { background: rgba(0,0,0,0.3); padding: 15px; margin: 10px 0; border-radius: 5px; white-space: pre-wrap; }
+        .success { border-left: 4px solid #00b894; }
+        .error { border-left: 4px solid #e74c3c; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Simple METACHROME Test</h1>
+    
+    <button onclick="testHealth()">Test Health</button>
+    <button onclick="testCreateDeposit()">Create Sample Deposit</button>
+    <button onclick="testPendingRequests()">Get Pending Requests</button>
+    <button onclick="testDepositAction()">Test Deposit Action</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function log(message, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        async function testHealth() {
+            try {
+                log('Testing health endpoint...');
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                log(`Health check: ${response.status} - ${data.status}`);
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log(`Health check failed: ${error.message}`, true);
+            }
+        }
+
+        async function testCreateDeposit() {
+            try {
+                log('Creating sample deposit...');
+                const response = await fetch('/api/test/create-sample-deposit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}'
+                });
+                const data = await response.json();
+                log(`Create deposit: ${response.status} - ${data.success ? 'SUCCESS' : 'FAILED'}`);
+
+                // Store the deposit ID for later use
+                if (data.success && data.data && data.data.id) {
+                    lastCreatedDepositId = data.data.id;
+                    log(`✅ Deposit ID stored: ${lastCreatedDepositId}`);
+                }
+
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log(`Create deposit failed: ${error.message}`, true);
+            }
+        }
+
+        async function testPendingRequests() {
+            try {
+                log('Getting pending requests...');
+                const response = await fetch('/api/admin/pending-requests');
+                const data = await response.json();
+                log(`Pending requests: ${response.status} - Found ${data.deposits ? data.deposits.length : 0} deposits`);
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log(`Pending requests failed: ${error.message}`, true);
+            }
+        }
+
+        let lastCreatedDepositId = null;
+
+        async function testDepositAction() {
+            try {
+                // First, get the latest deposit ID from pending requests
+                if (!lastCreatedDepositId) {
+                    log('Getting latest deposit ID...');
+                    const pendingResponse = await fetch('/api/admin/pending-requests');
+                    const pendingData = await pendingResponse.json();
+
+                    if (pendingData.deposits && pendingData.deposits.length > 0) {
+                        lastCreatedDepositId = pendingData.deposits[0].id;
+                        log(`Using deposit ID: ${lastCreatedDepositId}`);
+                    } else {
+                        log('No deposits found. Create a sample deposit first.', true);
+                        return;
+                    }
+                }
+
+                log('Testing deposit action...');
+                const response = await fetch(`/api/admin/deposits/${lastCreatedDepositId}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'approve' })
+                });
+                const data = await response.json();
+                log(`Deposit action: ${response.status} - ${data.success ? 'SUCCESS' : 'FAILED'}`);
+                log(JSON.stringify(data, null, 2));
+            } catch (error) {
+                log(`Deposit action failed: ${error.message}`, true);
+            }
+        }
+
+        // Auto-test on load
+        window.onload = function() {
+            log('Simple test page loaded');
+            setTimeout(testHealth, 1000);
+        };
+    </script>
+</body>
+</html>

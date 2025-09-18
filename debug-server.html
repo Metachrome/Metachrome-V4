@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Server Issues</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+        }
+        .test {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #8b5cf6;
+        }
+        .result {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success { border-left-color: #10b981; }
+        .error { border-left-color: #ef4444; }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #7c3aed; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Server Issues</h1>
+    
+    <div class="test">
+        <h3>1. Basic Server Connection</h3>
+        <button onclick="testBasicConnection()">Test Basic Connection</button>
+        <div id="basic-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>2. Health Endpoint</h3>
+        <button onclick="testHealthEndpoint()">Test /api/health</button>
+        <div id="health-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>3. Authentication Endpoint</h3>
+        <button onclick="testAuthEndpoint()">Test /api/auth</button>
+        <div id="auth-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>4. New Feature Endpoints</h3>
+        <button onclick="testNewEndpoints()">Test New Endpoints</button>
+        <div id="new-endpoints-result" class="result"></div>
+    </div>
+
+    <div class="test">
+        <h3>5. CORS and Headers</h3>
+        <button onclick="testCORS()">Test CORS</button>
+        <div id="cors-result" class="result"></div>
+    </div>
+
+    <script>
+        async function makeRequest(method, url, data = null, headers = {}) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...headers
+                    }
+                };
+
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+
+                console.log(`Making ${method} request to ${url}`);
+                const response = await fetch(url, options);
+                
+                let result;
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    result = await response.text();
+                }
+
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    data: result,
+                    headers: Object.fromEntries(response.headers.entries())
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message,
+                    type: error.name
+                };
+            }
+        }
+
+        function displayResult(elementId, result, testName) {
+            const element = document.getElementById(elementId);
+            const parent = element.closest('.test');
+            
+            if (result.success) {
+                parent.classList.add('success');
+                parent.classList.remove('error');
+                element.textContent = `✅ ${testName} SUCCESS\n\nStatus: ${result.status}\nResponse: ${JSON.stringify(result.data, null, 2)}`;
+            } else {
+                parent.classList.add('error');
+                parent.classList.remove('success');
+                element.textContent = `❌ ${testName} FAILED\n\nError: ${result.error || 'Unknown error'}\nStatus: ${result.status || 'No status'}\nResponse: ${JSON.stringify(result.data, null, 2)}`;
+            }
+        }
+
+        async function testBasicConnection() {
+            console.log('Testing basic connection...');
+            const result = await makeRequest('GET', '/');
+            displayResult('basic-result', result, 'Basic Connection');
+        }
+
+        async function testHealthEndpoint() {
+            console.log('Testing health endpoint...');
+            const result = await makeRequest('GET', '/api/health');
+            displayResult('health-result', result, 'Health Endpoint');
+        }
+
+        async function testAuthEndpoint() {
+            console.log('Testing auth endpoint...');
+            
+            // Test with simple login data
+            const loginData = {
+                username: 'superadmin',
+                password: 'superadmin123'
+            };
+            
+            const result = await makeRequest('POST', '/api/auth', loginData);
+            displayResult('auth-result', result, 'Authentication');
+        }
+
+        async function testNewEndpoints() {
+            console.log('Testing new feature endpoints...');
+            
+            const endpoints = [
+                { method: 'GET', url: '/api/user/verification-status' },
+                { method: 'GET', url: '/api/user/referral-stats' },
+                { method: 'GET', url: '/api/user/redeem-history' },
+                { method: 'GET', url: '/api/user/withdrawal-eligibility' }
+            ];
+
+            let results = [];
+            
+            for (const endpoint of endpoints) {
+                const result = await makeRequest(endpoint.method, endpoint.url, null, {
+                    'Authorization': 'Bearer test-token'
+                });
+                results.push({
+                    endpoint: `${endpoint.method} ${endpoint.url}`,
+                    success: result.success,
+                    status: result.status,
+                    error: result.error || null
+                });
+            }
+
+            const element = document.getElementById('new-endpoints-result');
+            const parent = element.closest('.test');
+            
+            const successCount = results.filter(r => r.success).length;
+            const totalCount = results.length;
+            
+            if (successCount > 0) {
+                parent.classList.add('success');
+                parent.classList.remove('error');
+            } else {
+                parent.classList.add('error');
+                parent.classList.remove('success');
+            }
+            
+            element.textContent = `📊 New Endpoints Test Results (${successCount}/${totalCount} working)\n\n${results.map(r => 
+                `${r.success ? '✅' : '❌'} ${r.endpoint} - Status: ${r.status}${r.error ? ` - Error: ${r.error}` : ''}`
+            ).join('\n')}`;
+        }
+
+        async function testCORS() {
+            console.log('Testing CORS...');
+            
+            const result = await makeRequest('OPTIONS', '/api/health');
+            
+            const corsHeaders = {
+                'Access-Control-Allow-Origin': result.headers['access-control-allow-origin'],
+                'Access-Control-Allow-Methods': result.headers['access-control-allow-methods'],
+                'Access-Control-Allow-Headers': result.headers['access-control-allow-headers']
+            };
+
+            const element = document.getElementById('cors-result');
+            const parent = element.closest('.test');
+            
+            if (corsHeaders['Access-Control-Allow-Origin']) {
+                parent.classList.add('success');
+                parent.classList.remove('error');
+                element.textContent = `✅ CORS Configuration\n\n${JSON.stringify(corsHeaders, null, 2)}`;
+            } else {
+                parent.classList.add('error');
+                parent.classList.remove('success');
+                element.textContent = `❌ CORS Issues Detected\n\nHeaders: ${JSON.stringify(result.headers, null, 2)}`;
+            }
+        }
+
+        // Auto-run basic tests on page load
+        window.onload = function() {
+            console.log('🔧 Debug page loaded, running basic tests...');
+            setTimeout(testBasicConnection, 500);
+            setTimeout(testHealthEndpoint, 1000);
+        };
+    </script>
+</body>
+</html>

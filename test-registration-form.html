@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METACHROME - Registration Form Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        h1 {
+            color: #8b5cf6;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        .file-upload {
+            border: 2px dashed #444;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .file-upload:hover {
+            border-color: #8b5cf6;
+        }
+        .file-upload.has-file {
+            border-color: #10b981;
+            background: #065f46;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        button:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success { background: #065f46; border: 1px solid #10b981; }
+        .error { background: #7f1d1d; border: 1px solid #ef4444; }
+        .info { background: #1e3a8a; border: 1px solid #3b82f6; }
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #8b5cf6;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .feature-highlight {
+            background: #333;
+            border-left: 4px solid #8b5cf6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .feature-highlight h3 {
+            margin-top: 0;
+            color: #8b5cf6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Registration Form Test</h1>
+        <p style="text-align: center; color: #ccc;">Test the new registration features: Referral Code + Document Upload</p>
+
+        <div class="feature-highlight">
+            <h3>🆕 New Features Being Tested:</h3>
+            <ul>
+                <li><strong>Referral Code Field:</strong> Optional field for referral tracking</li>
+                <li><strong>Document Upload:</strong> ID verification during registration</li>
+                <li><strong>Document Type Selection:</strong> ID Card, Driver's License, or Passport</li>
+            </ul>
+        </div>
+
+        <form id="registrationForm">
+            <!-- Basic Information -->
+            <div class="form-group">
+                <label for="firstName">First Name *</label>
+                <input type="text" id="firstName" name="firstName" required value="John">
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name *</label>
+                <input type="text" id="lastName" name="lastName" required value="Doe">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required value="">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password" id="password" name="password" required value="password123">
+            </div>
+
+            <!-- NEW FEATURE: Referral Code -->
+            <div class="form-group">
+                <label for="referralCode">🔗 Referral Code (Optional)</label>
+                <input type="text" id="referralCode" name="referralCode" placeholder="Enter referral code if you have one">
+                <small style="color: #888;">Enter a friend's referral code to get bonus rewards!</small>
+            </div>
+
+            <!-- NEW FEATURE: Document Upload -->
+            <div class="form-group">
+                <label for="documentType">📄 Document Type for Verification</label>
+                <select id="documentType" name="documentType">
+                    <option value="id_card">ID Card</option>
+                    <option value="driver_license">Driver's License</option>
+                    <option value="passport">Passport</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>📤 Upload Verification Document (Optional)</label>
+                <div class="file-upload" id="fileUpload" onclick="document.getElementById('documentFile').click()">
+                    <input type="file" id="documentFile" name="documentFile" accept="image/*,.pdf" style="display: none;" onchange="handleFileSelect(this)">
+                    <div id="fileUploadText">
+                        <p>📁 Click to upload your ID document</p>
+                        <small>Accepted: JPG, PNG, PDF (max 5MB)</small>
+                    </div>
+                </div>
+                <div class="progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn">🚀 Test Registration</button>
+        </form>
+
+        <div id="result" class="result" style="display: none;"></div>
+
+        <!-- Test Instructions -->
+        <div class="feature-highlight">
+            <h3>📋 Test Instructions:</h3>
+            <ol>
+                <li>Fill in the form (email will be auto-generated if empty)</li>
+                <li>Optionally enter a referral code</li>
+                <li>Optionally upload a document for verification</li>
+                <li>Click "Test Registration" to submit</li>
+                <li>Check the result to see if new features work</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            const fileUpload = document.getElementById('fileUpload');
+            const fileUploadText = document.getElementById('fileUploadText');
+
+            if (file) {
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Invalid file type. Please upload JPG, PNG, or PDF files only.');
+                    input.value = '';
+                    return;
+                }
+
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File too large. Please upload files smaller than 5MB.');
+                    input.value = '';
+                    return;
+                }
+
+                selectedFile = file;
+                fileUpload.classList.add('has-file');
+                fileUploadText.innerHTML = `
+                    <p>✅ ${file.name}</p>
+                    <small>${(file.size / 1024 / 1024).toFixed(2)} MB - ${file.type}</small>
+                `;
+            } else {
+                selectedFile = null;
+                fileUpload.classList.remove('has-file');
+                fileUploadText.innerHTML = `
+                    <p>📁 Click to upload your ID document</p>
+                    <small>Accepted: JPG, PNG, PDF (max 5MB)</small>
+                `;
+            }
+        }
+
+        function showProgress(percent) {
+            const progressContainer = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            
+            if (percent > 0) {
+                progressContainer.style.display = 'block';
+                progressBar.style.width = percent + '%';
+            } else {
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+            }
+        }
+
+        function showResult(success, message, data = null) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            
+            if (success) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ SUCCESS: ${message}\n\n${data ? JSON.stringify(data, null, 2) : ''}`;
+            } else {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ERROR: ${message}\n\n${data ? JSON.stringify(data, null, 2) : ''}`;
+            }
+        }
+
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Testing Registration...';
+
+            try {
+                // Get form data
+                const formData = new FormData();
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                let email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const referralCode = document.getElementById('referralCode').value;
+                const documentType = document.getElementById('documentType').value;
+
+                // Auto-generate email if empty
+                if (!email) {
+                    email = `test_${Date.now()}@example.com`;
+                    document.getElementById('email').value = email;
+                }
+
+                // Prepare registration data
+                const registrationData = {
+                    username: email.split('@')[0], // Use email prefix as username
+                    email: email,
+                    password: password,
+                    firstName: firstName,
+                    lastName: lastName,
+                    referralCode: referralCode || undefined
+                };
+
+                console.log('🔄 Testing registration with data:', registrationData);
+
+                // Step 1: Register user
+                showProgress(25);
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(registrationData)
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Registration failed');
+                }
+
+                showProgress(50);
+
+                // Step 2: Upload document if provided
+                if (selectedFile) {
+                    try {
+                        showProgress(75);
+                        
+                        const uploadFormData = new FormData();
+                        uploadFormData.append('document', selectedFile);
+                        uploadFormData.append('documentType', documentType);
+
+                        const uploadResponse = await fetch('/api/user/upload-verification', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${result.token}`
+                            },
+                            body: uploadFormData
+                        });
+
+                        const uploadResult = await uploadResponse.json();
+                        
+                        if (uploadResponse.ok) {
+                            showProgress(100);
+                            showResult(true, 'Registration and document upload successful!', {
+                                registration: result,
+                                documentUpload: uploadResult
+                            });
+                        } else {
+                            showProgress(100);
+                            showResult(true, 'Registration successful, but document upload failed', {
+                                registration: result,
+                                uploadError: uploadResult
+                            });
+                        }
+                    } catch (uploadError) {
+                        showProgress(100);
+                        showResult(true, 'Registration successful, but document upload failed', {
+                            registration: result,
+                            uploadError: uploadError.message
+                        });
+                    }
+                } else {
+                    showProgress(100);
+                    showResult(true, 'Registration successful!', result);
+                }
+
+            } catch (error) {
+                showProgress(0);
+                showResult(false, error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Test Registration';
+                setTimeout(() => showProgress(0), 2000);
+            }
+        });
+
+        // Auto-generate email on page load
+        window.onload = function() {
+            const emailField = document.getElementById('email');
+            if (!emailField.value) {
+                emailField.value = `test_${Date.now()}@example.com`;
+            }
+            
+            console.log('🧪 Registration Form Test Loaded');
+            console.log('📝 This form tests the new referral code and document upload features');
+        };
+    </script>
+</body>
+</html>
