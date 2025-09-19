@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Cache Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .transaction { padding: 10px; border: 1px solid #ccc; margin: 5px 0; }
+        .delete-btn { background: red; color: white; padding: 5px 10px; border: none; cursor: pointer; }
+        .refresh-btn { background: blue; color: white; padding: 10px 20px; border: none; cursor: pointer; margin: 10px 0; }
+        .count { font-weight: bold; font-size: 18px; margin: 10px 0; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Frontend Cache Test - Transaction Deletion</h1>
+        
+        <button class="refresh-btn" onclick="loadTransactions()">🔄 Refresh Transactions</button>
+        <button class="refresh-btn" onclick="clearCache()">🗑️ Clear Cache & Refresh</button>
+        
+        <div class="count" id="transactionCount">Loading...</div>
+        
+        <div id="transactionList">Loading transactions...</div>
+        
+        <div class="log" id="logOutput"></div>
+    </div>
+
+    <script>
+        let transactions = [];
+        
+        function log(message) {
+            const logElement = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+        
+        async function loadTransactions() {
+            try {
+                log('🔄 Loading transactions...');
+                
+                // Use aggressive cache busting
+                const timestamp = Date.now();
+                const random = Math.random().toString(36).substring(7);
+                const url = `/api/admin/transactions?_t=${timestamp}&_r=${random}&_bust=${Date.now()}`;
+                
+                log(`📡 Fetching from: ${url}`);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    cache: 'no-store'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                transactions = data;
+                
+                log(`✅ Loaded ${transactions.length} transactions`);
+                displayTransactions();
+                
+            } catch (error) {
+                log(`❌ Error loading transactions: ${error.message}`);
+            }
+        }
+        
+        function displayTransactions() {
+            const countElement = document.getElementById('transactionCount');
+            const listElement = document.getElementById('transactionList');
+            
+            countElement.textContent = `Total Transactions: ${transactions.length}`;
+            
+            if (transactions.length === 0) {
+                listElement.innerHTML = '<p>No transactions found</p>';
+                return;
+            }
+            
+            listElement.innerHTML = transactions.slice(0, 10).map(transaction => `
+                <div class="transaction">
+                    <strong>ID:</strong> ${transaction.id}<br>
+                    <strong>Type:</strong> ${transaction.type}<br>
+                    <strong>Amount:</strong> ${transaction.amount}<br>
+                    <strong>Status:</strong> ${transaction.status}<br>
+                    <button class="delete-btn" onclick="deleteTransaction('${transaction.id}')">Delete</button>
+                </div>
+            `).join('');
+        }
+        
+        async function deleteTransaction(transactionId) {
+            try {
+                log(`🗑️ Deleting transaction: ${transactionId}`);
+                
+                const response = await fetch(`/api/admin/transactions/${transactionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                log(`✅ Delete result: ${result.success} - ${result.message}`);
+                
+                // Wait a moment then refresh
+                setTimeout(() => {
+                    log('🔄 Auto-refreshing after deletion...');
+                    loadTransactions();
+                }, 1000);
+                
+            } catch (error) {
+                log(`❌ Error deleting transaction: ${error.message}`);
+            }
+        }
+        
+        function clearCache() {
+            log('🗑️ Clearing cache...');
+            
+            // Clear various cache types
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Force reload
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 500);
+        }
+        
+        // Load transactions on page load
+        window.addEventListener('load', loadTransactions);
+    </script>
+</body>
+</html>

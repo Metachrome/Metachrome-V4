@@ -23,6 +23,7 @@ import TestDashboard from "./pages/TestDashboard";
 import ProfilePage from "./pages/ProfilePage";
 import TransactionHistory from "./pages/TransactionHistory";
 import AdminTransactionsPage from "./pages/AdminTransactionsPage";
+import SuperAdminTestPage from "./pages/SuperAdminTestPage";
 import NotFound from "./pages/not-found";
 import { ProtectedAdminRoute } from "./components/ProtectedAdminRoute";
 import { ProtectedUserRoute } from "./components/ProtectedUserRoute";
@@ -91,6 +92,11 @@ function Router() {
         <Route path="/admin/transactions">
           <ProtectedAdminRoute>
             <AdminTransactionsPage />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/test">
+          <ProtectedAdminRoute>
+            <SuperAdminTestPage />
           </ProtectedAdminRoute>
         </Route>
         <Route component={NotFound} />

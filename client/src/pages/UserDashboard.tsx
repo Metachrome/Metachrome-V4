@@ -371,8 +371,8 @@ export default function UserDashboard() {
           </p>
         </div>
 
-        {/* Verification Status Notification */}
-        {(!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) && (
+        {/* Verification Status Notification - DISABLED */}
+        {false && (!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) && (
           <div className="mb-8">
             <Card className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border-yellow-600/50">
               <CardContent className="p-6">
@@ -408,8 +408,8 @@ export default function UserDashboard() {
           </div>
         )}
 
-        {/* Verification Pending Notification */}
-        {(user?.verification_status === 'pending') && (
+        {/* Verification Pending Notification - DISABLED */}
+        {false && (user?.verification_status === 'pending') && (
           <div className="mb-8">
             <Card className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border-blue-600/50">
               <CardContent className="p-6">

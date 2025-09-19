@@ -27,7 +27,7 @@ const getApiBaseUrl = () => {
   if (isLocal) {
     console.log('🏠 Using local server endpoints');
     const hostname = window.location.hostname;
-    return `http://${hostname}:3001`;
+    return `http://${hostname}:3005`;
   }
 
   // Fallback to Vite proxy
@@ -137,7 +137,8 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      staleTime: 0, // Changed from Infinity to 0 for immediate refresh
+      cacheTime: 0, // Disable caching for real-time updates
       retry: false,
     },
     mutations: {

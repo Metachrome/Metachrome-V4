@@ -71,14 +71,16 @@
       "user_id": "user-angela",
       "document_type": "id_card",
       "document_url": "/api/admin/verification-document/verification-1758195195348-660244293.png",
-      "verification_status": "pending",
+      "verification_status": "approved",
       "created_at": "2025-09-18T11:33:15.493Z",
       "users": {
         "id": "user-angela",
         "username": "angela.soenoko",
         "email": "angela.soenoko@gmail.com",
-        "verification_status": "pending"
-      }
+        "verification_status": "verified"
+      },
+      "admin_notes": "Document approved by admin",
+      "verified_at": "2025-09-18T11:33:37.509Z"
     }
   ]
 }

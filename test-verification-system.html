@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METACHROME - Verification System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            color: #00ff88;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid #00ff88;
+        }
+        .test-button {
+            background: #00ff88;
+            color: black;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            background: #00cc6a;
+            transform: translateY(-2px);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+        }
+        .error {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff4444;
+        }
+        .info {
+            background: rgba(0, 123, 255, 0.2);
+            border: 1px solid #007bff;
+        }
+        .login-form {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .login-form input {
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+        .login-form input::placeholder {
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 METACHROME Verification System Test</h1>
+        
+        <div class="test-section">
+            <h3>📋 Test User Login & Verification Status</h3>
+            <p>Test login with different users to check verification status:</p>
+            
+            <div class="login-form">
+                <input type="text" id="username" placeholder="Username" value="angela.soenoko">
+                <input type="password" id="password" placeholder="Password" value="password123">
+                <button class="test-button" onclick="testLogin()">Test Login</button>
+            </div>
+            
+            <div class="login-form">
+                <button class="test-button" onclick="testLoginAngela()">Login as Angela</button>
+                <button class="test-button" onclick="testLoginTestUser()">Login as Test User</button>
+                <button class="test-button" onclick="testLoginSuperadmin()">Login as Superadmin</button>
+            </div>
+            
+            <div id="loginResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Test Verification Status Check</h3>
+            <p>Check if the current user's verification status is properly returned:</p>
+            <button class="test-button" onclick="testVerificationStatus()">Check Verification Status</button>
+            <div id="verificationResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📄 Test Document Upload Simulation</h3>
+            <p>Simulate document upload and approval process:</p>
+            <button class="test-button" onclick="testDocumentUpload()">Simulate Document Upload</button>
+            <button class="test-button" onclick="testDocumentApproval()">Simulate Document Approval</button>
+            <div id="documentResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Test Trading Access</h3>
+            <p>Test if verified users can access trading features:</p>
+            <button class="test-button" onclick="testTradingAccess()">Test Trading Access</button>
+            <div id="tradingResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 Force Refresh User Data</h3>
+            <p>Force refresh user data to get latest verification status:</p>
+            <button class="test-button" onclick="forceRefreshUserData()">Force Refresh</button>
+            <div id="refreshResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentToken = null;
+
+        function showResult(elementId, message, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = message;
+            element.className = `result ${isSuccess ? 'success' : 'error'}`;
+        }
+
+        function showInfo(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = message;
+            element.className = 'result info';
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showResult('loginResult', 'Please enter username and password', false);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentToken = data.token;
+                    showResult('loginResult', 
+                        `✅ LOGIN SUCCESS!\n` +
+                        `Username: ${data.user.username}\n` +
+                        `Email: ${data.user.email}\n` +
+                        `Role: ${data.user.role}\n` +
+                        `Verification Status: ${data.user.verification_status || 'unverified'}\n` +
+                        `Has Documents: ${data.user.has_uploaded_documents || false}\n` +
+                        `Balance: $${data.user.balance || 0}\n` +
+                        `Token: ${data.token.substring(0, 30)}...`
+                    );
+                } else {
+                    showResult('loginResult', `❌ LOGIN FAILED: ${data.error || 'Unknown error'}`, false);
+                }
+            } catch (error) {
+                showResult('loginResult', `❌ NETWORK ERROR: ${error.message}`, false);
+            }
+        }
+
+        function testLoginAngela() {
+            document.getElementById('username').value = 'angela.soenoko';
+            document.getElementById('password').value = 'password123';
+            testLogin();
+        }
+
+        function testLoginTestUser() {
+            document.getElementById('username').value = 'testuser_1758118426856';
+            document.getElementById('password').value = 'password123';
+            testLogin();
+        }
+
+        function testLoginSuperadmin() {
+            document.getElementById('username').value = 'superadmin';
+            document.getElementById('password').value = 'superadmin123';
+            testLogin();
+        }
+
+        async function testVerificationStatus() {
+            if (!currentToken) {
+                showResult('verificationResult', '❌ Please login first', false);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/verification-status', {
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('verificationResult', 
+                        `✅ VERIFICATION STATUS:\n` +
+                        `Status: ${data.verification_status}\n` +
+                        `Documents: ${data.documents ? data.documents.length : 0} found\n` +
+                        `Details: ${JSON.stringify(data, null, 2)}`
+                    );
+                } else {
+                    showResult('verificationResult', `❌ ERROR: ${data.error || 'Unknown error'}`, false);
+                }
+            } catch (error) {
+                showResult('verificationResult', `❌ NETWORK ERROR: ${error.message}`, false);
+            }
+        }
+
+        async function testTradingAccess() {
+            if (!currentToken) {
+                showResult('tradingResult', '❌ Please login first', false);
+                return;
+            }
+
+            try {
+                // Test if user can access trading by trying to place a mock trade
+                const response = await fetch('/api/trades/options', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        symbol: 'BTCUSDT',
+                        amount: 100,
+                        duration: 30,
+                        direction: 'up',
+                        test: true // Add test flag to avoid actual trade
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('tradingResult', 
+                        `✅ TRADING ACCESS GRANTED!\n` +
+                        `User can place trades\n` +
+                        `Response: ${JSON.stringify(data, null, 2)}`
+                    );
+                } else if (response.status === 403 && data.requiresVerification) {
+                    showResult('tradingResult', 
+                        `❌ TRADING BLOCKED - VERIFICATION REQUIRED\n` +
+                        `Message: ${data.message}\n` +
+                        `Requires Verification: ${data.requiresVerification}`, 
+                        false
+                    );
+                } else {
+                    showResult('tradingResult', `❌ ERROR: ${data.error || data.message || 'Unknown error'}`, false);
+                }
+            } catch (error) {
+                showResult('tradingResult', `❌ NETWORK ERROR: ${error.message}`, false);
+            }
+        }
+
+        async function forceRefreshUserData() {
+            if (!currentToken) {
+                showResult('refreshResult', '❌ Please login first', false);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult('refreshResult', 
+                        `✅ USER DATA REFRESHED!\n` +
+                        `Username: ${data.username}\n` +
+                        `Verification Status: ${data.verification_status}\n` +
+                        `Has Documents: ${data.has_uploaded_documents}\n` +
+                        `Balance: $${data.balance}\n` +
+                        `Updated Data: ${JSON.stringify(data, null, 2)}`
+                    );
+                } else {
+                    showResult('refreshResult', `❌ REFRESH FAILED: ${data.error || 'Unknown error'}`, false);
+                }
+            } catch (error) {
+                showResult('refreshResult', `❌ NETWORK ERROR: ${error.message}`, false);
+            }
+        }
+
+        async function testDocumentUpload() {
+            showInfo('documentResult', '📄 Document upload simulation not implemented in this test page.\nThis would require file upload functionality.');
+        }
+
+        async function testDocumentApproval() {
+            showInfo('documentResult', '📄 Document approval simulation not implemented in this test page.\nThis would require admin authentication.');
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            showInfo('loginResult', '💡 Ready to test! Try logging in with different users to check verification status.');
+        };
+    </script>
+</body>
+</html>

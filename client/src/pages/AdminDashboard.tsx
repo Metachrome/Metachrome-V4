@@ -172,12 +172,85 @@ export default function WorkingAdminDashboard() {
   // Receipt viewer state
   const [selectedReceipt, setSelectedReceipt] = useState<{url: string, filename: string} | null>(null);
 
-  // Get current user role
+  // Get current user role - with fallback for admin access
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'superadmin';
+  const authToken = localStorage.getItem('authToken') || '';
+
+  // Check if user is super admin through multiple methods
+  const isSuperAdmin = currentUser.role === 'super_admin' ||
+                      currentUser.role === 'superadmin' ||
+                      currentUser.username === 'superadmin' ||
+                      authToken.includes('superadmin') ||
+                      authToken.includes('admin-session-superadmin');
 
   console.log('🔧 Current user:', currentUser);
+  console.log('🔧 Auth token:', authToken.substring(0, 30) + '...');
+  console.log('🔧 Current user role:', currentUser.role);
   console.log('🔧 Is Super Admin:', isSuperAdmin);
+  console.log('🔧 Role check details:', {
+    role: currentUser.role,
+    username: currentUser.username,
+    isSuper: currentUser.role === 'super_admin',
+    isSuperadmin: currentUser.role === 'superadmin',
+    isUsernameSuper: currentUser.username === 'superadmin',
+    tokenHasSuper: authToken.includes('superadmin'),
+    tokenHasAdminSession: authToken.includes('admin-session-superadmin'),
+    finalResult: isSuperAdmin
+  });
+
+  // Force refresh transactions with aggressive cache busting
+  const forceRefreshTransactions = async () => {
+    try {
+      console.log('🔄 FORCE refreshing transactions with aggressive cache busting...');
+
+      // Clear any potential service worker cache
+      if ('serviceWorker' in navigator && 'caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(7);
+      const superRandomId = Math.random().toString(36).substring(2, 15);
+
+      const url = `/api/admin/transactions?_t=${timestamp}&_r=${randomId}&_bust=${Date.now()}&_force=${superRandomId}&_nocache=${Math.random()}`;
+      console.log('🔄 Force fetching from URL:', url);
+
+      const transactionsRes = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Requested-With': 'XMLHttpRequest',
+          'If-None-Match': '*',
+          'X-Force-Refresh': 'true'
+        },
+        cache: 'no-store'
+      });
+
+      if (transactionsRes.ok) {
+        const transactionsData = await transactionsRes.json();
+        console.log('💰 FORCE refreshed transactions:', transactionsData.length, 'transactions');
+        console.log('💰 First 3 transaction IDs:', transactionsData.slice(0, 3).map(t => t.id));
+
+        // Force React to re-render by creating a new array reference
+        setTransactions([...transactionsData]);
+        return true;
+      } else {
+        console.error('❌ Failed to force refresh transactions:', transactionsRes.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Force refresh error:', error);
+      return false;
+    }
+  };
+
+  // Refresh transactions only
+  const refreshTransactions = async () => {
+    return await forceRefreshTransactions();
+  };
 
   // Fetch all data with improved error handling
   const fetchData = async () => {
@@ -187,9 +260,19 @@ export default function WorkingAdminDashboard() {
     try {
       console.log('🔄 Fetching all data...');
 
+      // Add cache-busting timestamp and headers
+      const timestamp = Date.now();
+      const cacheHeaders = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      };
+
       // Fetch users
       try {
-        const usersRes = await fetch('/api/admin/users');
+        const usersRes = await fetch(`/api/admin/users?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
         if (usersRes.ok) {
           const usersData = await usersRes.json();
           console.log('👥 Users loaded:', usersData);
@@ -205,7 +288,9 @@ export default function WorkingAdminDashboard() {
 
       // Fetch live trades
       try {
-        const tradesRes = await fetch('/api/admin/live-trades');
+        const tradesRes = await fetch(`/api/admin/live-trades?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
         if (tradesRes.ok) {
           const tradesData = await tradesRes.json();
           console.log('🔴 Live trades loaded:', tradesData);
@@ -220,12 +305,18 @@ export default function WorkingAdminDashboard() {
         hasErrors = true;
       }
 
-      // Fetch transactions
+      // Fetch transactions with aggressive cache busting
       try {
-        const transactionsRes = await fetch('/api/admin/transactions');
+        const transactionsRes = await fetch(`/api/admin/transactions?_t=${timestamp}&_r=${Math.random()}`, {
+          headers: {
+            ...cacheHeaders,
+            'X-Requested-With': 'XMLHttpRequest',
+            'If-None-Match': '*'
+          }
+        });
         if (transactionsRes.ok) {
           const transactionsData = await transactionsRes.json();
-          console.log('💰 Transactions loaded:', transactionsData);
+          console.log('💰 Transactions loaded:', transactionsData.length, 'transactions');
           setTransactions(transactionsData);
         } else {
           console.error('❌ Failed to fetch transactions:', transactionsRes.status);
@@ -238,7 +329,9 @@ export default function WorkingAdminDashboard() {
 
       // Fetch stats
       try {
-        const statsRes = await fetch('/api/admin/stats');
+        const statsRes = await fetch(`/api/admin/stats?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           console.log('📊 Stats loaded:', statsData);
@@ -254,7 +347,9 @@ export default function WorkingAdminDashboard() {
 
       // Fetch pending requests
       try {
-        const pendingRes = await fetch('/api/admin/pending-requests');
+        const pendingRes = await fetch(`/api/admin/pending-requests?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
         if (pendingRes.ok) {
           const pendingData = await pendingRes.json();
           console.log('🔔 Pending requests loaded:', pendingData);
@@ -270,7 +365,9 @@ export default function WorkingAdminDashboard() {
 
       // Fetch pending verifications
       try {
-        const verificationsRes = await fetch('/api/admin/pending-verifications');
+        const verificationsRes = await fetch(`/api/admin/pending-verifications?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
         if (verificationsRes.ok) {
           const verificationsData = await verificationsRes.json();
           console.log('📄 Pending verifications loaded:', verificationsData);
@@ -295,7 +392,9 @@ export default function WorkingAdminDashboard() {
 
       // Fetch redeem codes
       try {
-        const redeemCodesRes = await fetch('/api/admin/redeem-codes');
+        const redeemCodesRes = await fetch(`/api/admin/redeem-codes?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
         if (redeemCodesRes.ok) {
           const redeemCodesData = await redeemCodesRes.json();
           console.log('🎁 Redeem codes loaded:', redeemCodesData);
@@ -404,16 +503,18 @@ export default function WorkingAdminDashboard() {
         console.log('✅ Trading mode updated:', result);
         toast({
           title: "Success",
-          description: `Trading mode updated to ${mode.toUpperCase()}`
+          description: `Trading mode updated to ${mode.toUpperCase()}`,
+          duration: 2000
         });
-        
-        // Update local state
-        setUsers(users.map(user => 
+
+        // Update local state immediately for instant UI feedback
+        setUsers(prevUsers => prevUsers.map(user =>
           user.id === userId ? { ...user, trading_mode: mode } : user
         ));
-        
-        // Refresh stats
-        fetchData();
+
+        // Don't call fetchData() immediately to avoid overriding the local state
+        // The auto-refresh will pick up any server-side changes in 5 seconds
+        console.log(`🎯 Trading mode for user ${userId} updated to ${mode.toUpperCase()} in UI`);
       } else {
         throw new Error('Failed to update trading mode');
       }
@@ -519,7 +620,11 @@ export default function WorkingAdminDashboard() {
           description: "User updated successfully"
         });
         setShowEditModal(false);
-        fetchData(); // Refresh all data including users list
+
+        // Force refresh with delay to ensure server has processed the change
+        setTimeout(() => {
+          fetchData();
+        }, 100);
       } else {
         throw new Error('Failed to update user');
       }
@@ -551,7 +656,11 @@ export default function WorkingAdminDashboard() {
           title: "Success",
           description: `User "${user.username}" deleted successfully`
         });
-        fetchData(); // Refresh all data including users list
+
+        // Force refresh with delay to ensure server has processed the change
+        setTimeout(() => {
+          fetchData();
+        }, 100);
       } else {
         throw new Error('Failed to delete user');
       }
@@ -590,7 +699,11 @@ export default function WorkingAdminDashboard() {
         });
         setDepositAmount('');
         setShowDepositModal(false);
-        fetchData();
+
+        // Force refresh with delay to ensure server has processed the change
+        setTimeout(() => {
+          fetchData();
+        }, 100);
       } else {
         throw new Error('Failed to process deposit');
       }
@@ -626,7 +739,11 @@ export default function WorkingAdminDashboard() {
         });
         setWithdrawalAmount('');
         setShowWithdrawalModal(false);
-        fetchData();
+
+        // Force refresh with delay to ensure server has processed the change
+        setTimeout(() => {
+          fetchData();
+        }, 100);
       } else {
         const error = await response.json();
         throw new Error(error.error || 'Failed to process withdrawal');
@@ -662,7 +779,11 @@ export default function WorkingAdminDashboard() {
         });
         setNewPassword('');
         setShowPasswordModal(false);
-        fetchData();
+
+        // Force refresh with delay to ensure server has processed the change
+        setTimeout(() => {
+          fetchData();
+        }, 100);
       } else {
         const error = await response.json();
         throw new Error(error.error || 'Failed to change password');
@@ -717,7 +838,11 @@ export default function WorkingAdminDashboard() {
         loadWalletHistory(selectedUserForAction.id);
         // Don't close the modal immediately so user can see the updated address
         // setShowWalletModal(false);
-        fetchData(); // Refresh the main data
+
+        // Force refresh with delay to ensure server has processed the change
+        setTimeout(() => {
+          fetchData();
+        }, 100);
       } else {
         throw new Error('Failed to update wallet address');
       }
@@ -861,6 +986,14 @@ export default function WorkingAdminDashboard() {
   const handleDeleteTransaction = async (transactionId: string) => {
     try {
       console.log('🗑️ Deleting transaction:', transactionId);
+      console.log('🗑️ Current transactions count before deletion:', transactions.length);
+
+      // Show loading state
+      const originalTransactions = [...transactions];
+      setTransactions(prev => prev.map(t =>
+        t.id === transactionId ? { ...t, deleting: true } : t
+      ));
+
       const response = await fetch(`/api/admin/transactions/${transactionId}`, {
         method: 'DELETE',
         headers: {
@@ -871,18 +1004,40 @@ export default function WorkingAdminDashboard() {
 
       if (response.ok) {
         const result = await response.json();
-        toast({
-          title: "Transaction Deleted",
-          description: result.message || "Transaction deleted successfully",
-          duration: 3000
-        });
-        fetchData(); // Refresh all data
+        console.log('🗑️ Delete response:', result);
+
+        // Immediately refresh from server
+        console.log('🔄 Immediately refreshing transactions after successful deletion...');
+        const refreshSuccess = await refreshTransactions();
+
+        if (refreshSuccess) {
+          toast({
+            title: "Transaction Deleted",
+            description: result.message || "Transaction deleted successfully",
+            duration: 3000
+          });
+        } else {
+          // If refresh failed, manually remove from state
+          setTransactions(prev => prev.filter(t => t.id !== transactionId));
+          toast({
+            title: "Transaction Deleted",
+            description: "Transaction deleted (manual update)",
+            duration: 3000
+          });
+        }
+
       } else {
+        // If deletion failed, restore original state
+        console.log('🗑️ Delete failed, restoring original state...');
+        setTransactions(originalTransactions);
         const error = await response.text();
         throw new Error(error || 'Failed to delete transaction');
       }
     } catch (error) {
       console.error('Failed to delete transaction:', error);
+      // Restore original state on error
+      console.log('🗑️ Error occurred, restoring original state...');
+      setTransactions(prev => prev.filter(t => !t.deleting));
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete transaction",
@@ -912,13 +1067,13 @@ export default function WorkingAdminDashboard() {
         return;
       }
 
-      const response = await fetch(`/api/admin/redeem-codes/${codeId}`, {
-        method: action === 'delete' ? 'DELETE' : 'PUT',
+      // Use the correct API endpoint that exists in the server
+      const response = await fetch(`/api/admin/redeem-codes/${codeId}/action`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          'Content-Type': 'application/json'
         },
-        body: action === 'disable' ? JSON.stringify({ status: 'disabled' }) : undefined
+        body: JSON.stringify({ action: action })
       });
 
       if (response.ok) {
@@ -928,7 +1083,11 @@ export default function WorkingAdminDashboard() {
           description: result.message || `Code ${action}d successfully`,
           duration: 3000
         });
-        fetchData(); // Refresh all data
+
+        // Force refresh with delay to ensure server has processed the change
+        setTimeout(() => {
+          fetchData();
+        }, 100);
       } else {
         const error = await response.text();
         throw new Error(error || `Failed to ${action} code`);
@@ -998,6 +1157,7 @@ export default function WorkingAdminDashboard() {
 
 
   const openSuperAdminModal = (user: User, action: string) => {
+    console.log('🔧 Opening super admin modal:', action, 'for user:', user.username);
     setSelectedUserForAction(user);
     setNewWalletAddress(user.wallet_address || '');
 
@@ -1086,14 +1246,23 @@ export default function WorkingAdminDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button 
-                onClick={fetchData} 
-                variant="outline" 
+              <Button
+                onClick={fetchData}
+                variant="outline"
                 size="sm"
                 disabled={loading}
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
+              </Button>
+              <Button
+                onClick={forceRefreshTransactions}
+                variant="outline"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 border-red-600"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Force Refresh Transactions
               </Button>
               <div className="flex items-center space-x-2 bg-gray-700 rounded-lg px-3 py-2">
                 <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
@@ -1237,10 +1406,13 @@ export default function WorkingAdminDashboard() {
                       <div className="text-sm">Monitor Trades</div>
                     </div>
                   </Button>
-                  <Button className="h-20 bg-purple-600 hover:bg-purple-700">
+                  <Button
+                    className="h-20 bg-purple-600 hover:bg-purple-700"
+                    onClick={() => window.location.href = '/admin/test'}
+                  >
                     <div className="text-center">
                       <Settings className="w-6 h-6 mx-auto mb-2" />
-                      <div className="text-sm">System Settings</div>
+                      <div className="text-sm">Test Features</div>
                     </div>
                   </Button>
                 </div>
@@ -1454,7 +1626,10 @@ export default function WorkingAdminDashboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleUserView(user)}
+                                onClick={() => {
+                                  console.log('🔍 View button clicked for user:', user.username);
+                                  handleUserView(user);
+                                }}
                                 className="text-gray-400 hover:text-white"
                                 title="View User Details"
                               >
@@ -1463,7 +1638,10 @@ export default function WorkingAdminDashboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleUserEdit(user)}
+                                onClick={() => {
+                                  console.log('✏️ Edit button clicked for user:', user.username);
+                                  handleUserEdit(user);
+                                }}
                                 className="text-gray-400 hover:text-white"
                                 title="Edit User"
                               >
@@ -1476,7 +1654,10 @@ export default function WorkingAdminDashboard() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => openSuperAdminModal(user, 'deposit')}
+                                    onClick={() => {
+                                      console.log('💰 Deposit button clicked for user:', user.username);
+                                      openSuperAdminModal(user, 'deposit');
+                                    }}
                                     className="text-green-400 hover:text-green-300"
                                     title="Deposit Money"
                                   >
@@ -1485,7 +1666,10 @@ export default function WorkingAdminDashboard() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => openSuperAdminModal(user, 'withdrawal')}
+                                    onClick={() => {
+                                      console.log('💸 Withdrawal button clicked for user:', user.username);
+                                      openSuperAdminModal(user, 'withdrawal');
+                                    }}
                                     className="text-red-400 hover:text-red-300"
                                     title="Withdraw Money"
                                   >
@@ -1726,6 +1910,18 @@ export default function WorkingAdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Debug Info Panel */}
+                <div className="bg-gray-800 border border-yellow-500 rounded-lg p-4 mb-4">
+                  <h4 className="text-yellow-400 font-semibold mb-2">🐛 Debug Info</h4>
+                  <div className="text-sm text-gray-300 space-y-1">
+                    <div>React State Count: <span className="text-white font-mono">{transactions.length}</span></div>
+                    <div>First 3 IDs: <span className="text-white font-mono text-xs">
+                      {transactions.slice(0, 3).map(t => t.id.slice(0, 8)).join(', ')}
+                    </span></div>
+                    <div>Last Updated: <span className="text-white font-mono">{new Date().toLocaleTimeString()}</span></div>
+                  </div>
+                </div>
+
                 <div className="border border-gray-700 rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -1771,9 +1967,14 @@ export default function WorkingAdminDashboard() {
                               size="sm"
                               variant="destructive"
                               onClick={() => handleDeleteTransaction(transaction.id)}
-                              className="bg-red-600 hover:bg-red-700"
+                              disabled={transaction.deleting}
+                              className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              {transaction.deleting ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
                             </Button>
                           </TableCell>
                         </TableRow>

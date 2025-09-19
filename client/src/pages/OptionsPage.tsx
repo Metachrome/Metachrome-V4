@@ -102,24 +102,35 @@ export default function OptionsPage() {
         if (response.ok) {
           const serverTrades = await response.json();
           console.log('📈 Loaded trade history from server:', serverTrades.length);
+          console.log('📈 Raw server trades:', serverTrades);
 
           // Convert server trades to ActiveTrade format
           const formattedTrades = serverTrades
-            .filter(trade => trade.result !== 'pending') // Only completed trades
-            .map(trade => ({
-              id: trade.id,
-              symbol: trade.symbol || 'BTCUSDT',
-              amount: parseFloat(trade.amount),
-              direction: trade.direction,
-              duration: trade.duration || 30,
-              entryPrice: parseFloat(trade.entry_price || trade.entryPrice || '0'),
-              currentPrice: parseFloat(trade.exit_price || trade.exitPrice || trade.entry_price || '0'),
-              payout: trade.result === 'win' ? parseFloat(trade.amount) * (trade.duration === 30 ? 1.1 : 1.15) : 0,
-              status: trade.result === 'win' ? 'won' : 'lost',
-              endTime: trade.updated_at || trade.created_at,
-              startTime: trade.created_at
-            }));
+            .filter(trade => {
+              const isCompleted = trade.result && trade.result !== 'pending' && trade.status === 'completed';
+              console.log(`📈 Trade ${trade.id}: result=${trade.result}, status=${trade.status}, isCompleted=${isCompleted}`);
+              return isCompleted;
+            })
+            .map(trade => {
+              const formatted = {
+                id: trade.id,
+                symbol: trade.symbol || 'BTCUSDT',
+                amount: parseFloat(trade.amount),
+                direction: trade.direction,
+                duration: trade.duration || 30,
+                entryPrice: parseFloat(trade.entry_price || '0'),
+                currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
+                payout: trade.result === 'win' ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
+                status: trade.result === 'win' ? 'won' : 'lost',
+                endTime: trade.updated_at || trade.created_at,
+                startTime: trade.created_at,
+                profit: parseFloat(trade.profit_loss || '0')
+              };
+              console.log('📈 Formatted trade:', formatted);
+              return formatted;
+            });
 
+          console.log('📈 Final formatted trades:', formattedTrades.length);
           setTradeHistory(formattedTrades);
 
           // Cache the trade history for persistence across page refreshes
@@ -1073,8 +1084,8 @@ export default function OptionsPage() {
               </div>
             )}
 
-            {/* UP/DOWN Buttons */}
-            {(!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) ? (
+            {/* UP/DOWN Buttons - VERIFICATION DISABLED */}
+            {false && (!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) ? (
               <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4 mb-4">
                 <div className="text-center">
                   <div className="text-yellow-100 font-semibold mb-2">🔒 Verification Required</div>
@@ -1086,7 +1097,7 @@ export default function OptionsPage() {
                   </a>
                 </div>
               </div>
-            ) : user?.verification_status === 'pending' ? (
+            ) : false && user?.verification_status === 'pending' ? (
               <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4 mb-4">
                 <div className="text-center">
                   <div className="text-blue-100 font-semibold mb-2">⏳ Verification Pending</div>
@@ -1391,17 +1402,19 @@ export default function OptionsPage() {
                 )}
               </div>
 
-              {/* Trading Mode Indicator */}
-              <div className="flex items-center justify-between mt-2 p-2 rounded-lg bg-gray-700/50">
-                <span className="text-gray-400 text-sm">Trading Mode:</span>
-                <span className={`font-bold text-sm px-2 py-1 rounded ${
-                  currentTradingMode === 'win' ? 'bg-green-600 text-white' :
-                  currentTradingMode === 'lose' ? 'bg-red-600 text-white' :
-                  'bg-gray-600 text-white'
-                }`}>
-                  {currentTradingMode.toUpperCase()}
-                </span>
-              </div>
+              {/* Trading Mode Indicator - HIDDEN FROM USERS */}
+              {false && (
+                <div className="flex items-center justify-between mt-2 p-2 rounded-lg bg-gray-700/50">
+                  <span className="text-gray-400 text-sm">Trading Mode:</span>
+                  <span className={`font-bold text-sm px-2 py-1 rounded ${
+                    currentTradingMode === 'win' ? 'bg-green-600 text-white' :
+                    currentTradingMode === 'lose' ? 'bg-red-600 text-white' :
+                    'bg-gray-600 text-white'
+                  }`}>
+                    {currentTradingMode.toUpperCase()}
+                  </span>
+                </div>
+              )}
 
               {isTrading && activeTrades.length > 0 && (
                 <div className="mt-3 space-y-2">
@@ -1578,7 +1591,7 @@ export default function OptionsPage() {
                   </a>
                 </p>
               </div>
-            ) : (!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) ? (
+            ) : false && (!user?.has_uploaded_documents && (!user?.verification_status || user?.verification_status === 'unverified')) ? (
               <div className="space-y-4">
                 <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4">
                   <div className="text-center">
@@ -1592,7 +1605,7 @@ export default function OptionsPage() {
                   </div>
                 </div>
               </div>
-            ) : user?.verification_status === 'pending' ? (
+            ) : false && user?.verification_status === 'pending' ? (
               <div className="space-y-4">
                 <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4">
                   <div className="text-center">
@@ -1784,6 +1797,61 @@ export default function OptionsPage() {
               <input type="checkbox" className="mr-2" />
               Hide other trading pairs
             </label>
+            {activeTab === "history" && (
+              <button
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered');
+                  if (user?.id) {
+                    const loadTradeHistory = async () => {
+                      setIsLoadingHistory(true);
+                      try {
+                        const response = await fetch(`/api/users/${user.id}/trades`, {
+                          method: 'GET',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                          }
+                        });
+                        if (response.ok) {
+                          const serverTrades = await response.json();
+                          console.log('🔄 Refreshed trade history:', serverTrades.length);
+                          const formattedTrades = serverTrades
+                            .filter(trade => trade.result && trade.result !== 'pending' && trade.status === 'completed')
+                            .map(trade => ({
+                              id: trade.id,
+                              symbol: trade.symbol || 'BTCUSDT',
+                              amount: parseFloat(trade.amount),
+                              direction: trade.direction,
+                              duration: trade.duration || 30,
+                              entryPrice: parseFloat(trade.entry_price || '0'),
+                              currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
+                              payout: trade.result === 'win' ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
+                              status: trade.result === 'win' ? 'won' : 'lost',
+                              endTime: trade.updated_at || trade.created_at,
+                              startTime: trade.created_at,
+                              profit: parseFloat(trade.profit_loss || '0')
+                            }));
+                          setTradeHistory(formattedTrades);
+                          localStorage.setItem(`tradeHistory_${user.id}`, JSON.stringify(formattedTrades));
+                        }
+                      } catch (error) {
+                        console.error('❌ Error refreshing trade history:', error);
+                      } finally {
+                        setIsLoadingHistory(false);
+                      }
+                    };
+                    loadTradeHistory();
+                  }
+                }}
+                className="text-gray-400 hover:text-white flex items-center space-x-1"
+                disabled={isLoadingHistory}
+              >
+                <svg className={`w-4 h-4 ${isLoadingHistory ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span className="text-xs">Refresh</span>
+              </button>
+            )}
             <button className="text-gray-400 hover:text-white">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1853,7 +1921,12 @@ export default function OptionsPage() {
 
           {activeTab === "history" && (
             <>
-              {tradeHistory.length === 0 ? (
+              {isLoadingHistory ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="w-8 h-8 mb-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="text-gray-400 text-sm">Loading trade history...</div>
+                </div>
+              ) : tradeHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <div className="w-16 h-16 mb-4 opacity-50">
                     <svg viewBox="0 0 64 64" className="w-full h-full text-gray-600">
@@ -1862,11 +1935,15 @@ export default function OptionsPage() {
                     </svg>
                   </div>
                   <div className="text-gray-400 text-sm">No trade history</div>
+                  <div className="text-gray-500 text-xs mt-2">Complete some trades to see your history here</div>
                 </div>
               ) : (
                 tradeHistory.map(trade => {
-                  const pnl = trade.status === 'won' ? (trade.payout! - trade.amount) : -trade.amount;
+                  // Use the profit field from the database if available, otherwise calculate
+                  const pnl = trade.profit !== undefined ? trade.profit :
+                             (trade.status === 'won' ? (trade.payout! - trade.amount) : -trade.amount);
                   const endTime = new Date(trade.endTime).toLocaleTimeString();
+                  const profitPercentage = trade.duration === 30 ? 10 : 15; // Default profit percentages
 
                   return (
                     <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
@@ -1876,7 +1953,7 @@ export default function OptionsPage() {
                       <span className="text-gray-300">${trade.entryPrice.toFixed(2)}</span>
                       <span className="text-gray-300">${trade.currentPrice?.toFixed(2) || 'N/A'}</span>
                       <span className="text-gray-300">{trade.amount} USDT</span>
-                      <span className="text-gray-300">{trade.profitPercentage}%</span>
+                      <span className="text-gray-300">{profitPercentage}%</span>
                       <span className={`font-bold ${pnl > 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {pnl > 0 ? '+' : ''}{pnl.toFixed(2)}
                       </span>

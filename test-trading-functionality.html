@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Functionality Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #333; border-radius: 8px; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 4px; white-space: pre-wrap; }
+        input, select { padding: 8px; margin: 5px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Trading Functionality Test</h1>
+        
+        <div class="test-section">
+            <h2>1. Test User Login & Balance</h2>
+            <input type="text" id="username" placeholder="Username" value="angela.soenoko">
+            <input type="password" id="password" placeholder="Password" value="password123">
+            <button onclick="testLogin()">Login & Check Balance</button>
+            <div id="loginResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Trading Controls</h2>
+            <select id="tradingMode">
+                <option value="normal">Normal</option>
+                <option value="win">Force Win</option>
+                <option value="lose">Force Lose</option>
+            </select>
+            <button onclick="setTradingMode()">Set Trading Mode</button>
+            <div id="tradingModeResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Options Trading</h2>
+            <select id="direction">
+                <option value="up">UP</option>
+                <option value="down">DOWN</option>
+            </select>
+            <select id="duration">
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+            </select>
+            <input type="number" id="amount" placeholder="Amount" value="100">
+            <button onclick="createTrade()">Create Trade</button>
+            <div id="tradeResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Test Transaction History</h2>
+            <button onclick="getTransactionHistory()">Get Transaction History</button>
+            <button onclick="getTradeHistory()">Get Trade History</button>
+            <div id="historyResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Test Balance Updates</h2>
+            <button onclick="checkBalance()">Check Current Balance</button>
+            <div id="balanceResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let authToken = null;
+
+        function log(message, isError = false) {
+            console.log(message);
+            const timestamp = new Date().toLocaleTimeString();
+            return `[${timestamp}] ${message}`;
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('loginResult');
+
+            try {
+                resultDiv.innerHTML = log('🔐 Testing login...');
+                
+                const response = await fetch('/api/auth/user/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    currentUser = result.user;
+                    authToken = result.token;
+                    resultDiv.innerHTML = log(`✅ Login successful!\nUser: ${result.user.username}\nBalance: $${result.user.balance}\nID: ${result.user.id}`);
+                } else {
+                    resultDiv.innerHTML = log(`❌ Login failed: ${result.message}`, true);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = log(`❌ Login error: ${error.message}`, true);
+            }
+        }
+
+        async function setTradingMode() {
+            if (!currentUser) {
+                alert('Please login first');
+                return;
+            }
+
+            const mode = document.getElementById('tradingMode').value;
+            const resultDiv = document.getElementById('tradingModeResult');
+
+            try {
+                resultDiv.innerHTML = log(`🎯 Setting trading mode to: ${mode}`);
+                
+                const response = await fetch('/api/admin/trading-controls', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ 
+                        userId: currentUser.id, 
+                        controlType: mode 
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = log(`✅ Trading mode set: ${result.message}`);
+                } else {
+                    resultDiv.innerHTML = log(`❌ Failed to set trading mode: ${result.message}`, true);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = log(`❌ Trading mode error: ${error.message}`, true);
+            }
+        }
+
+        async function createTrade() {
+            if (!currentUser) {
+                alert('Please login first');
+                return;
+            }
+
+            const direction = document.getElementById('direction').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            const amount = parseFloat(document.getElementById('amount').value);
+            const resultDiv = document.getElementById('tradeResult');
+
+            try {
+                resultDiv.innerHTML = log(`📈 Creating trade: ${direction} ${amount} USDT for ${duration}s`);
+                
+                const response = await fetch('/api/trades/options', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        userId: currentUser.id,
+                        symbol: 'BTC/USDT',
+                        direction,
+                        amount,
+                        duration
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = log(`✅ Trade created successfully!\nTrade ID: ${result.trade.id}\nWaiting ${duration} seconds for completion...`);
+                    
+                    // Wait for trade completion and check result
+                    setTimeout(async () => {
+                        await checkTradeResult(result.trade.id);
+                    }, (duration + 2) * 1000); // Wait a bit longer than trade duration
+                } else {
+                    resultDiv.innerHTML = log(`❌ Trade creation failed: ${result.message}`, true);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = log(`❌ Trade creation error: ${error.message}`, true);
+            }
+        }
+
+        async function checkTradeResult(tradeId) {
+            const resultDiv = document.getElementById('tradeResult');
+            
+            try {
+                // Get updated trade history
+                const response = await fetch(`/api/users/${currentUser.id}/trades`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const trades = await response.json();
+                const completedTrade = trades.find(t => t.id === tradeId);
+                
+                if (completedTrade) {
+                    const currentResult = resultDiv.innerHTML;
+                    resultDiv.innerHTML = currentResult + '\n' + log(`🏁 Trade completed: ${completedTrade.result || 'unknown'}\nProfit: ${completedTrade.profit || 'N/A'}`);
+                    
+                    // Check balance update
+                    await checkBalance();
+                } else {
+                    const currentResult = resultDiv.innerHTML;
+                    resultDiv.innerHTML = currentResult + '\n' + log(`⚠️ Trade not found in history`, true);
+                }
+            } catch (error) {
+                const currentResult = resultDiv.innerHTML;
+                resultDiv.innerHTML = currentResult + '\n' + log(`❌ Error checking trade result: ${error.message}`, true);
+            }
+        }
+
+        async function getTransactionHistory() {
+            if (!currentUser) {
+                alert('Please login first');
+                return;
+            }
+
+            const resultDiv = document.getElementById('historyResult');
+
+            try {
+                resultDiv.innerHTML = log('📊 Getting transaction history...');
+                
+                const response = await fetch(`/api/users/${currentUser.id}/transactions`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const transactions = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = log(`✅ Found ${transactions.length} transactions:\n${JSON.stringify(transactions.slice(0, 5), null, 2)}`);
+                } else {
+                    resultDiv.innerHTML = log(`❌ Failed to get transactions: ${transactions.message}`, true);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = log(`❌ Transaction history error: ${error.message}`, true);
+            }
+        }
+
+        async function getTradeHistory() {
+            if (!currentUser) {
+                alert('Please login first');
+                return;
+            }
+
+            const resultDiv = document.getElementById('historyResult');
+
+            try {
+                const currentResult = resultDiv.innerHTML;
+                resultDiv.innerHTML = currentResult + '\n' + log('📈 Getting trade history...');
+                
+                const response = await fetch(`/api/users/${currentUser.id}/trades`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const trades = await response.json();
+                
+                if (response.ok) {
+                    const currentResult = resultDiv.innerHTML;
+                    resultDiv.innerHTML = currentResult + '\n' + log(`✅ Found ${trades.length} trades:\n${JSON.stringify(trades.slice(0, 3), null, 2)}`);
+                } else {
+                    const currentResult = resultDiv.innerHTML;
+                    resultDiv.innerHTML = currentResult + '\n' + log(`❌ Failed to get trades: ${trades.message}`, true);
+                }
+            } catch (error) {
+                const currentResult = resultDiv.innerHTML;
+                resultDiv.innerHTML = currentResult + '\n' + log(`❌ Trade history error: ${error.message}`, true);
+            }
+        }
+
+        async function checkBalance() {
+            if (!currentUser) {
+                alert('Please login first');
+                return;
+            }
+
+            const resultDiv = document.getElementById('balanceResult');
+
+            try {
+                resultDiv.innerHTML = log('💰 Checking current balance...');
+                
+                const response = await fetch(`/api/users/${currentUser.id}/balance`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = log(`✅ Current balance: $${result.balance || result.USDT?.available || 'Unknown'}`);
+                } else {
+                    resultDiv.innerHTML = log(`❌ Failed to get balance: ${result.message}`, true);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = log(`❌ Balance check error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

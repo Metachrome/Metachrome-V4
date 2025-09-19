@@ -191,7 +191,7 @@ export function useAuth() {
         const isVercel = window.location.hostname.includes('vercel.app');
 
         // Construct the full URL directly
-        const baseUrl = isLocal ? 'http://127.0.0.1:3001' : '';
+        const baseUrl = isLocal ? 'http://127.0.0.1:3005' : '';
         const fullUrl = `${baseUrl}${endpoint}`;
 
         console.log('🔧 Login Debug Info:', {

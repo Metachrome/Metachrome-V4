@@ -80,13 +80,13 @@ export default function AdminLogin() {
         localStorage.setItem('authToken', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
         console.log('🔧 Stored user data:', result.user);
-      }
 
-      // Force redirect to intermediate page
-      console.log('🔧 Forcing redirect to admin redirect page...');
-      setTimeout(() => {
-        setLocation('/admin/redirect');
-      }, 500);
+        // Force a page reload to ensure auth state is updated
+        console.log('🔧 Forcing page reload to update auth state...');
+        setTimeout(() => {
+          window.location.href = '/admin/dashboard';
+        }, 1000);
+      }
 
     } catch (error: any) {
       toast({
