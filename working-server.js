@@ -3250,6 +3250,18 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
 
         if (error) {
           console.error('❌ Supabase update error:', error);
+
+          // Check if it's a missing table error
+          if (error.code === 'PGRST106' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
+            return res.status(500).json({
+              success: false,
+              message: 'Database table missing',
+              error: 'The redeem_codes table does not exist in the database',
+              details: 'Please create the redeem_codes table in Supabase first',
+              setupRequired: true
+            });
+          }
+
           throw error;
         }
 
@@ -3268,6 +3280,18 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
 
         if (error) {
           console.error('❌ Supabase disable error:', error);
+
+          // Check if it's a missing table error
+          if (error.code === 'PGRST106' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
+            return res.status(500).json({
+              success: false,
+              message: 'Database table missing',
+              error: 'The redeem_codes table does not exist in the database',
+              details: 'Please create the redeem_codes table in Supabase first',
+              setupRequired: true
+            });
+          }
+
           throw error;
         }
 
@@ -3286,6 +3310,18 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
 
         if (error) {
           console.error('❌ Supabase delete error:', error);
+
+          // Check if it's a missing table error
+          if (error.code === 'PGRST106' || error.message.includes('does not exist') || error.message.includes('schema cache')) {
+            return res.status(500).json({
+              success: false,
+              message: 'Database table missing',
+              error: 'The redeem_codes table does not exist in the database',
+              details: 'Please create the redeem_codes table in Supabase first',
+              setupRequired: true
+            });
+          }
+
           throw error;
         }
 
