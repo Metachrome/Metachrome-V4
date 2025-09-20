@@ -1378,6 +1378,54 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
+// Get current authenticated user (for frontend compatibility)
+app.get('/api/auth/user', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    // Return user data with current balance (fresh from database/file)
+    const users = await getUsers();
+    const currentUser = users.find(u => u.id === user.id);
+
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log('👤 Returning current user data:', {
+      username: currentUser.username,
+      balance: currentUser.balance,
+      id: currentUser.id
+    });
+
+    res.json({
+      id: currentUser.id,
+      username: currentUser.username,
+      email: currentUser.email,
+      role: currentUser.role,
+      balance: currentUser.balance,
+      status: currentUser.status || 'active',
+      trading_mode: currentUser.trading_mode || 'normal',
+      restrictions: currentUser.restrictions || [],
+      firstName: currentUser.firstName || '',
+      lastName: currentUser.lastName || '',
+      verification_status: currentUser.verification_status || 'unverified',
+      has_uploaded_documents: currentUser.has_uploaded_documents || false
+    });
+  } catch (error) {
+    console.error('❌ Error getting current user:', error);
+    res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
 app.post('/api/admin/login', async (req, res) => {
   console.log('🔐 Admin login attempt:', req.body);
   const { username, password } = req.body;
@@ -6042,7 +6090,26 @@ app.put('/api/admin/redeem-codes/:id', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error updating redeem code:', error);
-    res.status(500).json({ error: 'Failed to update redeem code' });
+
+    // Check if it's a missing table error
+    if (error.code === 'PGRST106' ||
+        error.message.includes('does not exist') ||
+        error.message.includes('schema cache')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Database table missing',
+        error: 'The redeem_codes table does not exist in the database',
+        details: 'Please create the redeem_codes table in Supabase first',
+        setupRequired: true
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: 'Could not update redeem code',
+      details: `Failed to update redeem code ${req.params.id}`
+    });
   }
 });
 
@@ -6068,7 +6135,26 @@ app.delete('/api/admin/redeem-codes/:id', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error deleting redeem code:', error);
-    res.status(500).json({ error: 'Failed to delete redeem code' });
+
+    // Check if it's a missing table error
+    if (error.code === 'PGRST106' ||
+        error.message.includes('does not exist') ||
+        error.message.includes('schema cache')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Database table missing',
+        error: 'The redeem_codes table does not exist in the database',
+        details: 'Please create the redeem_codes table in Supabase first',
+        setupRequired: true
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: 'Could not delete redeem code',
+      details: `Failed to delete redeem code ${req.params.id}`
+    });
   }
 });
 
@@ -6649,17 +6735,43 @@ app.post('/api/user/redeem-code', async (req, res) => {
           return res.status(400).json({ error: 'Invalid or expired redeem code' });
         }
 
-        // Use mock redemption logic
-        console.log('🎁 Using mock redemption for:', upperCode, 'Amount:', mockBonus);
-
-        // Update user balance in development
+        // Check if user already used this code in development mode
+        console.log('🎁 Checking if user already used code in development mode...');
         const users = await getUsers();
         const userIndex = users.findIndex(u => u.id === user.id);
+
         if (userIndex !== -1) {
+          // Check user's redeem history (stored in user object)
+          const userRedeemHistory = users[userIndex].redeem_history || [];
+          const alreadyUsed = userRedeemHistory.some(entry => entry.code === upperCode);
+
+          if (alreadyUsed) {
+            console.log('❌ User already used this code in development mode:', upperCode);
+            return res.status(400).json({ error: 'You have already used this redeem code' });
+          }
+
+          // Use mock redemption logic
+          console.log('🎁 Using mock redemption for:', upperCode, 'Amount:', mockBonus);
+
+          // Update user balance and add to redeem history
           const currentBalance = parseFloat(users[userIndex].balance || '0');
           users[userIndex].balance = (currentBalance + mockBonus).toString();
+
+          // Add to redeem history
+          if (!users[userIndex].redeem_history) {
+            users[userIndex].redeem_history = [];
+          }
+          users[userIndex].redeem_history.push({
+            code: upperCode,
+            bonus_amount: mockBonus,
+            redeemed_at: new Date().toISOString(),
+            trades_required: 10,
+            trades_completed: 0
+          });
+
           await saveUsers(users);
           console.log('💰 User balance updated:', users[userIndex].balance);
+          console.log('📝 Added to redeem history:', upperCode);
         }
 
         console.log('✅ Code redeemed successfully (fallback):', code, 'Amount:', mockBonus);
@@ -6705,16 +6817,27 @@ app.post('/api/user/redeem-code', async (req, res) => {
 
       if (historyError) throw historyError;
 
-      // Update user balance
+      // Update user balance (ensure proper number conversion)
+      const currentBalance = parseFloat(user.balance || '0');
+      const bonusAmount = parseFloat(redeemCode.bonus_amount || '0');
+      const newBalance = currentBalance + bonusAmount;
+
+      console.log('💰 Balance update:', {
+        currentBalance,
+        bonusAmount,
+        newBalance,
+        userId: user.id
+      });
+
       const { error: balanceError } = await supabase
         .from('users')
         .update({
-          balance: user.balance + redeemCode.bonus_amount,
+          balance: newBalance,
           pending_bonus_restrictions: [
             ...(user.pending_bonus_restrictions || []),
             {
               redeem_history_id: redeemHistory.id,
-              bonus_amount: redeemCode.bonus_amount,
+              bonus_amount: bonusAmount,
               trades_required: 10,
               trades_completed: 0
             }
@@ -6722,7 +6845,17 @@ app.post('/api/user/redeem-code', async (req, res) => {
         })
         .eq('id', user.id);
 
-      if (balanceError) throw balanceError;
+      if (balanceError) {
+        console.error('❌ Error updating user balance:', balanceError);
+        throw balanceError;
+      }
+
+      console.log('✅ User balance updated successfully:', {
+        userId: user.id,
+        oldBalance: currentBalance,
+        newBalance: newBalance,
+        bonusAdded: bonusAmount
+      });
 
       // Update code usage count
       const { error: updateError } = await supabase
@@ -6730,14 +6863,20 @@ app.post('/api/user/redeem-code', async (req, res) => {
         .update({ current_uses: redeemCode.current_uses + 1 })
         .eq('id', redeemCode.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ Error updating code usage count:', updateError);
+        throw updateError;
+      }
 
       console.log('✅ Code redeemed successfully:', code, 'Amount:', redeemCode.bonus_amount);
+      console.log('💰 Final balance should be:', newBalance);
+
       res.json({
         success: true,
         bonusAmount: redeemCode.bonus_amount,
         tradesRequired: 10,
-        message: `Bonus of $${redeemCode.bonus_amount} added! Complete 10 trades to unlock withdrawals.`
+        message: `Bonus of $${redeemCode.bonus_amount} added! Complete 10 trades to unlock withdrawals.`,
+        newBalance: newBalance // Include new balance in response
       });
 
     } else {
@@ -6756,14 +6895,38 @@ app.post('/api/user/redeem-code', async (req, res) => {
         return res.status(400).json({ error: 'Invalid redeem code' });
       }
 
-      // Update user balance in development
+      // Check for duplicate redemption and update user balance in development
       const users = await getUsers();
       const userIndex = users.findIndex(u => u.id === user.id);
       if (userIndex !== -1) {
+        // Check user's redeem history (stored in user object)
+        const userRedeemHistory = users[userIndex].redeem_history || [];
+        const alreadyUsed = userRedeemHistory.some(entry => entry.code === upperCode);
+
+        if (alreadyUsed) {
+          console.log('❌ User already used this code in development mode:', upperCode);
+          return res.status(400).json({ error: 'You have already used this redeem code' });
+        }
+
+        // Update balance and add to redeem history
         const currentBalance = parseFloat(users[userIndex].balance || '0');
         users[userIndex].balance = (currentBalance + mockBonus).toString();
+
+        // Add to redeem history
+        if (!users[userIndex].redeem_history) {
+          users[userIndex].redeem_history = [];
+        }
+        users[userIndex].redeem_history.push({
+          code: upperCode,
+          bonus_amount: mockBonus,
+          redeemed_at: new Date().toISOString(),
+          trades_required: 10,
+          trades_completed: 0
+        });
+
         await saveUsers(users);
         console.log('💰 User balance updated:', users[userIndex].balance);
+        console.log('📝 Added to redeem history:', upperCode);
       }
 
       console.log('✅ Code redeemed successfully (mock):', code, 'Amount:', mockBonus);
@@ -6806,8 +6969,15 @@ app.get('/api/user/redeem-history', async (req, res) => {
 
       res.json(history || []);
     } else {
-      // Mock data for development
-      res.json([]);
+      // Development mode - get history from user data
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === user.id);
+
+      if (userIndex !== -1 && users[userIndex].redeem_history) {
+        res.json(users[userIndex].redeem_history);
+      } else {
+        res.json([]);
+      }
     }
 
   } catch (error) {

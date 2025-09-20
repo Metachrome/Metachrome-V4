@@ -37,9 +37,14 @@ CREATE TABLE IF NOT EXISTS public.user_redeem_history (
     redeemed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Step 4: Create indexes for user_redeem_history
+-- Step 4: Create indexes and constraints for user_redeem_history
 CREATE INDEX IF NOT EXISTS idx_user_redeem_history_user_id ON public.user_redeem_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_redeem_history_code ON public.user_redeem_history(code);
+
+-- Add unique constraint to prevent duplicate redemptions
+ALTER TABLE public.user_redeem_history
+ADD CONSTRAINT unique_user_code_redemption
+UNIQUE (user_id, code);
 
 -- Step 5: Insert default redeem codes
 INSERT INTO public.redeem_codes (code, bonus_amount, max_uses, current_uses, is_active, description) VALUES
