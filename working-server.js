@@ -3773,18 +3773,90 @@ app.post('/api/spot/orders', async (req, res) => {
       updated_at: new Date().toISOString()
     };
 
-    // Save order to trades file (you might want a separate orders file)
-    const trades = await getTrades();
-    trades.push(order);
-    await saveTrades(trades);
+    // Save order to database/storage
+    try {
+      if (isProduction && supabase) {
+        // Save to Supabase in production
+        const { data, error } = await supabase
+          .from('trades')
+          .insert([{
+            id: order.id,
+            user_id: order.user_id,
+            symbol: order.symbol,
+            direction: order.side, // Map 'side' to 'direction' for consistency
+            amount: parseFloat(order.amount),
+            entry_price: parseFloat(order.price),
+            exit_price: parseFloat(order.price), // Same as entry for spot
+            result: 'completed', // Spot orders are immediately filled
+            status: 'completed',
+            profit_loss: 0, // Spot trades don't have profit/loss like options
+            created_at: order.created_at,
+            updated_at: order.updated_at,
+            expires_at: order.created_at // No expiry for spot
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Error saving spot order to Supabase:', error);
+        } else {
+          console.log('✅ Spot order saved to Supabase:', data.id);
+        }
+      } else {
+        // Save to local file in development
+        const trades = await getTrades();
+        // Convert spot order to trade format for consistency
+        const tradeRecord = {
+          ...order,
+          direction: order.side,
+          entry_price: order.price,
+          exit_price: order.price,
+          result: 'completed',
+          status: 'completed',
+          profit_loss: 0,
+          expires_at: order.created_at
+        };
+        trades.push(tradeRecord);
+        await saveTrades(trades);
+        console.log('✅ Spot order saved to local storage:', orderId);
+      }
+    } catch (saveError) {
+      console.error('❌ Error saving spot order:', saveError);
+      // Continue even if save fails
+    }
 
     console.log('✅ Spot order created successfully:', orderId);
+
+    // Broadcast balance update via WebSocket for real-time sync
+    if (global.wss) {
+      const balanceUpdateMessage = {
+        type: 'balance_update',
+        data: {
+          userId: finalUserId,
+          newBalance: user.balance,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(balanceUpdateMessage));
+          } catch (wsError) {
+            console.log('⚠️ WebSocket send error:', wsError.message);
+          }
+        }
+      });
+
+      console.log('📡 Balance update broadcasted via WebSocket');
+    }
 
     res.json({
       success: true,
       orderId: orderId,
       message: `${side.toUpperCase()} order placed successfully`,
-      order: order
+      order: order,
+      newBalance: user.balance // Include updated balance in response
     });
 
   } catch (error) {
