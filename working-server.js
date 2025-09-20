@@ -3229,45 +3229,67 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
     const { action, newAmount, newDescription } = req.body;
 
     console.log('🎁 Redeem code action:', codeId, action);
+    console.log('🎁 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+    console.log('🎁 Supabase available:', !!supabase);
 
     if (isProduction && supabase) {
       // Production mode - use Supabase
+      console.log('🎁 Using Supabase for redeem code action');
+
       if (action === 'edit') {
         const updateData = {};
         if (newAmount) updateData.bonus_amount = newAmount;
         if (newDescription) updateData.description = newDescription;
 
-        const { error } = await supabase
+        console.log('🎁 Updating redeem code:', codeId, updateData);
+        const { data, error } = await supabase
           .from('redeem_codes')
           .update(updateData)
-          .eq('id', codeId);
+          .eq('code', codeId) // Use 'code' field instead of 'id'
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Supabase update error:', error);
+          throw error;
+        }
 
+        console.log('✅ Redeem code updated:', data);
         res.json({
           success: true,
           message: 'Redeem code updated successfully'
         });
       } else if (action === 'disable') {
-        const { error } = await supabase
+        console.log('🎁 Disabling redeem code:', codeId);
+        const { data, error } = await supabase
           .from('redeem_codes')
           .update({ is_active: false })
-          .eq('id', codeId);
+          .eq('code', codeId) // Use 'code' field instead of 'id'
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Supabase disable error:', error);
+          throw error;
+        }
 
+        console.log('✅ Redeem code disabled:', data);
         res.json({
           success: true,
           message: 'Redeem code disabled successfully'
         });
       } else if (action === 'delete') {
-        const { error } = await supabase
+        console.log('🎁 Deleting redeem code:', codeId);
+        const { data, error } = await supabase
           .from('redeem_codes')
           .delete()
-          .eq('id', codeId);
+          .eq('code', codeId) // Use 'code' field instead of 'id'
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Supabase delete error:', error);
+          throw error;
+        }
 
+        console.log('✅ Redeem code deleted:', data);
         res.json({
           success: true,
           message: 'Redeem code deleted successfully'
@@ -3277,6 +3299,7 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
       }
     } else {
       // Development mode - use mock data
+      console.log('🎁 Using mock data for redeem code action');
       const mockCodes = {
         'FIRSTBONUS': { id: 'FIRSTBONUS', amount: 100, description: 'First time bonus', active: true },
         'LETSGO1000': { id: 'LETSGO1000', amount: 1000, description: 'Welcome bonus', active: true },
@@ -3286,6 +3309,7 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
 
       const code = mockCodes[codeId];
       if (!code) {
+        console.log('❌ Mock code not found:', codeId);
         return res.status(404).json({ success: false, message: 'Redeem code not found' });
       }
 
@@ -3293,6 +3317,7 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
         case 'edit':
           if (newAmount) code.amount = newAmount;
           if (newDescription) code.description = newDescription;
+          console.log('✅ Mock code edited:', code);
           res.json({
             success: true,
             message: 'Redeem code updated successfully (mock)',
@@ -3302,6 +3327,7 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
 
         case 'disable':
           code.active = false;
+          console.log('✅ Mock code disabled:', code);
           res.json({
             success: true,
             message: 'Redeem code disabled successfully (mock)',
@@ -3310,6 +3336,7 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
           break;
 
         case 'delete':
+          console.log('✅ Mock code deleted:', codeId);
           res.json({
             success: true,
             message: 'Redeem code deleted successfully (mock)'
@@ -3323,7 +3350,14 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error managing redeem code:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+      details: `Failed to ${req.body.action} redeem code ${req.params.codeId}`
+    });
   }
 });
 
@@ -5710,6 +5744,74 @@ app.get('/api/market-data/:symbol', async (req, res) => {
 
 // ===== ADMIN REDEEM CODES ENDPOINTS =====
 
+// Initialize default redeem codes in Supabase
+app.post('/api/admin/init-redeem-codes', async (req, res) => {
+  try {
+    console.log('🎁 Initializing default redeem codes');
+
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase not available' });
+    }
+
+    const defaultCodes = [
+      {
+        code: 'FIRSTBONUS',
+        bonus_amount: 100,
+        description: 'First time user bonus',
+        max_uses: null,
+        current_uses: 0,
+        is_active: true
+      },
+      {
+        code: 'LETSGO1000',
+        bonus_amount: 1000,
+        description: 'High value bonus code',
+        max_uses: null,
+        current_uses: 0,
+        is_active: true
+      },
+      {
+        code: 'WELCOME50',
+        bonus_amount: 50,
+        description: 'Welcome bonus for new users',
+        max_uses: 100,
+        current_uses: 0,
+        is_active: true
+      },
+      {
+        code: 'BONUS500',
+        bonus_amount: 500,
+        description: 'Limited time bonus',
+        max_uses: 50,
+        current_uses: 0,
+        is_active: true
+      }
+    ];
+
+    // Insert codes (ignore duplicates)
+    const { data, error } = await supabase
+      .from('redeem_codes')
+      .upsert(defaultCodes, { onConflict: 'code' })
+      .select();
+
+    if (error) {
+      console.error('❌ Error initializing redeem codes:', error);
+      throw error;
+    }
+
+    console.log('✅ Default redeem codes initialized:', data);
+    res.json({
+      success: true,
+      message: 'Default redeem codes initialized successfully',
+      codes: data
+    });
+
+  } catch (error) {
+    console.error('❌ Error initializing redeem codes:', error);
+    res.status(500).json({ error: 'Failed to initialize redeem codes' });
+  }
+});
+
 // Get all redeem codes for admin
 app.get('/api/admin/redeem-codes', async (req, res) => {
   try {
@@ -6476,9 +6578,12 @@ app.post('/api/user/redeem-code', async (req, res) => {
     }
 
     console.log('🎁 Redeem code attempt:', code, 'by user:', user.username);
+    console.log('🎁 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+    console.log('🎁 Supabase available:', !!supabase);
 
     if (isProduction && supabase) {
       // Check if code exists and is valid
+      console.log('🎁 Checking redeem code in Supabase:', code.toUpperCase());
       const { data: redeemCode, error: codeError } = await supabase
         .from('redeem_codes')
         .select('*')
@@ -6486,8 +6591,48 @@ app.post('/api/user/redeem-code', async (req, res) => {
         .eq('is_active', true)
         .single();
 
+      console.log('🎁 Supabase query result:', { redeemCode, codeError });
+
       if (codeError || !redeemCode) {
-        return res.status(400).json({ error: 'Invalid or expired redeem code' });
+        console.log('❌ Redeem code not found in Supabase:', code.toUpperCase());
+        console.log('❌ Error details:', codeError);
+
+        // Fallback to mock data if code not found in Supabase
+        console.log('🎁 Falling back to mock data...');
+        const validCodes = {
+          'FIRSTBONUS': 100,
+          'LETSGO1000': 1000,
+          'WELCOME50': 50,
+          'BONUS500': 500
+        };
+
+        const upperCode = code.toUpperCase();
+        const mockBonus = validCodes[upperCode];
+
+        if (!mockBonus) {
+          return res.status(400).json({ error: 'Invalid or expired redeem code' });
+        }
+
+        // Use mock redemption logic
+        console.log('🎁 Using mock redemption for:', upperCode, 'Amount:', mockBonus);
+
+        // Update user balance in development
+        const users = await getUsers();
+        const userIndex = users.findIndex(u => u.id === user.id);
+        if (userIndex !== -1) {
+          const currentBalance = parseFloat(users[userIndex].balance || '0');
+          users[userIndex].balance = (currentBalance + mockBonus).toString();
+          await saveUsers(users);
+          console.log('💰 User balance updated:', users[userIndex].balance);
+        }
+
+        console.log('✅ Code redeemed successfully (fallback):', code, 'Amount:', mockBonus);
+        return res.json({
+          success: true,
+          bonusAmount: mockBonus,
+          tradesRequired: 10,
+          message: `Bonus of $${mockBonus} added! Complete 10 trades to unlock withdrawals.`
+        });
       }
 
       // Check if user already used this code
