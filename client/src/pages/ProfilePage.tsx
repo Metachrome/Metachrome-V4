@@ -608,6 +608,11 @@ export default function ProfilePage() {
                       onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
                       placeholder="Enter redeem code (e.g., FIRSTBONUS)"
                       className="bg-gray-900 border-gray-600 text-white flex-1"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && redeemCode.trim() && !isRedeeming) {
+                          handleRedeemCode();
+                        }
+                      }}
                     />
                     <Button
                       onClick={handleRedeemCode}
@@ -621,15 +626,42 @@ export default function ProfilePage() {
                   {/* Available Codes Hint */}
                   <div className="p-4 bg-gray-700 rounded-lg">
                     <h3 className="text-white font-medium mb-2">💡 Available Codes</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="text-gray-300">
-                        <span className="font-mono bg-gray-800 px-2 py-1 rounded">FIRSTBONUS</span>
-                        <span className="text-gray-400 ml-2">$100 bonus</span>
-                      </div>
-                      <div className="text-gray-300">
-                        <span className="font-mono bg-gray-800 px-2 py-1 rounded">LETSGO1000</span>
-                        <span className="text-gray-400 ml-2">$1000 bonus</span>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      {[
+                        { code: 'FIRSTBONUS', amount: '$100', description: 'First time user bonus' },
+                        { code: 'LETSGO1000', amount: '$1000', description: 'High value bonus code' },
+                        { code: 'WELCOME50', amount: '$50', description: 'Welcome bonus for new users' },
+                        { code: 'BONUS500', amount: '$500', description: 'Limited time bonus' }
+                      ].map((codeInfo) => (
+                        <div
+                          key={codeInfo.code}
+                          className="bg-gray-800 p-3 rounded border border-gray-600 hover:border-purple-500 cursor-pointer transition-colors"
+                          onClick={() => {
+                            setRedeemCode(codeInfo.code);
+                          }}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-mono text-purple-400 font-bold">{codeInfo.code}</div>
+                              <div className="text-green-400 font-semibold">{codeInfo.amount}</div>
+                              <div className="text-gray-400 text-xs">{codeInfo.description}</div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRedeemCode(codeInfo.code);
+                                setTimeout(() => handleRedeemCode(), 100);
+                              }}
+                              disabled={isRedeeming}
+                            >
+                              Use
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

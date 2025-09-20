@@ -1118,7 +1118,8 @@ export default function WorkingAdminDashboard() {
       const response = await fetch(`/api/admin/redeem-codes/${codeId}/action`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({ action: action })
       });
@@ -2551,7 +2552,7 @@ export default function WorkingAdminDashboard() {
                                     size="sm"
                                     variant="outline"
                                     className="border-gray-600"
-                                    onClick={() => handleRedeemCodeAction(code.id, 'edit')}
+                                    onClick={() => handleRedeemCodeAction(code.code || code.id, 'edit')}
                                   >
                                     <Edit className="w-4 h-4 mr-1" />
                                     Edit
@@ -2559,15 +2560,15 @@ export default function WorkingAdminDashboard() {
                                   <Button
                                     size="sm"
                                     className="bg-red-600 hover:bg-red-700"
-                                    onClick={() => handleRedeemCodeAction(code.id, 'disable')}
-                                    disabled={code.status === 'disabled'}
+                                    onClick={() => handleRedeemCodeAction(code.code || code.id, 'disable')}
+                                    disabled={code.status === 'disabled' || !code.is_active}
                                   >
                                     Disable
                                   </Button>
                                   <Button
                                     size="sm"
                                     className="bg-gray-600 hover:bg-gray-700"
-                                    onClick={() => handleRedeemCodeAction(code.id, 'delete')}
+                                    onClick={() => handleRedeemCodeAction(code.code || code.id, 'delete')}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>

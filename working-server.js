@@ -3222,60 +3222,107 @@ app.get('/api/users/:userId/transactions', async (req, res) => {
 
 // ===== REDEEM CODE MANAGEMENT ENDPOINTS =====
 
-// Handle redeem code actions
-app.post('/api/admin/redeem-codes/:codeId/action', (req, res) => {
+// Handle redeem code actions (CONSOLIDATED VERSION)
+app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
   try {
     const { codeId } = req.params;
     const { action, newAmount, newDescription } = req.body;
 
     console.log('🎁 Redeem code action:', codeId, action);
 
-    // Mock redeem codes data
-    const redeemCodes = {
-      'FIRSTBONUS': { id: 'FIRSTBONUS', amount: 100, description: 'First time bonus', active: true },
-      'LETSGO1000': { id: 'LETSGO1000', amount: 1000, description: 'Welcome bonus', active: true },
-      'WELCOME50': { id: 'WELCOME50', amount: 50, description: 'Welcome gift', active: true }
-    };
+    if (isProduction && supabase) {
+      // Production mode - use Supabase
+      if (action === 'edit') {
+        const updateData = {};
+        if (newAmount) updateData.bonus_amount = newAmount;
+        if (newDescription) updateData.description = newDescription;
 
-    if (!redeemCodes[codeId]) {
-      return res.status(404).json({ success: false, message: 'Redeem code not found' });
-    }
+        const { error } = await supabase
+          .from('redeem_codes')
+          .update(updateData)
+          .eq('id', codeId);
 
-    const code = redeemCodes[codeId];
+        if (error) throw error;
 
-    switch (action) {
-      case 'edit':
-        if (newAmount) code.amount = newAmount;
-        if (newDescription) code.description = newDescription;
         res.json({
           success: true,
-          message: `Redeem code ${codeId} updated successfully`,
-          data: code
+          message: 'Redeem code updated successfully'
         });
-        break;
+      } else if (action === 'disable') {
+        const { error } = await supabase
+          .from('redeem_codes')
+          .update({ is_active: false })
+          .eq('id', codeId);
 
-      case 'disable':
-        code.active = false;
+        if (error) throw error;
+
         res.json({
           success: true,
-          message: `Redeem code ${codeId} disabled successfully`,
-          data: code
+          message: 'Redeem code disabled successfully'
         });
-        break;
+      } else if (action === 'delete') {
+        const { error } = await supabase
+          .from('redeem_codes')
+          .delete()
+          .eq('id', codeId);
 
-      case 'delete':
-        delete redeemCodes[codeId];
+        if (error) throw error;
+
         res.json({
           success: true,
-          message: `Redeem code ${codeId} deleted successfully`
+          message: 'Redeem code deleted successfully'
         });
-        break;
-
-      default:
+      } else {
         res.status(400).json({ success: false, message: 'Invalid action' });
+      }
+    } else {
+      // Development mode - use mock data
+      const mockCodes = {
+        'FIRSTBONUS': { id: 'FIRSTBONUS', amount: 100, description: 'First time bonus', active: true },
+        'LETSGO1000': { id: 'LETSGO1000', amount: 1000, description: 'Welcome bonus', active: true },
+        'WELCOME50': { id: 'WELCOME50', amount: 50, description: 'Welcome gift', active: true },
+        'BONUS500': { id: 'BONUS500', amount: 500, description: 'Bonus code', active: true }
+      };
+
+      const code = mockCodes[codeId];
+      if (!code) {
+        return res.status(404).json({ success: false, message: 'Redeem code not found' });
+      }
+
+      switch (action) {
+        case 'edit':
+          if (newAmount) code.amount = newAmount;
+          if (newDescription) code.description = newDescription;
+          res.json({
+            success: true,
+            message: 'Redeem code updated successfully (mock)',
+            data: code
+          });
+          break;
+
+        case 'disable':
+          code.active = false;
+          res.json({
+            success: true,
+            message: 'Redeem code disabled successfully (mock)',
+            data: code
+          });
+          break;
+
+        case 'delete':
+          res.json({
+            success: true,
+            message: 'Redeem code deleted successfully (mock)'
+          });
+          break;
+
+        default:
+          res.status(400).json({ success: false, message: 'Invalid action' });
+      }
     }
+
   } catch (error) {
-    console.error('Redeem code action error:', error);
+    console.error('❌ Error managing redeem code:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
@@ -6796,57 +6843,7 @@ app.post('/api/admin/verification/:documentId/action', async (req, res) => {
   }
 });
 
-// ===== REDEEM CODE MANAGEMENT =====
-app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
-  try {
-    const { codeId } = req.params;
-    const { action, newAmount, newDescription } = req.body; // 'edit', 'disable', 'enable'
-
-    console.log('🎁 Redeem code action:', codeId, action);
-
-    // Mock redeem codes data
-    const mockCodes = {
-      'FIRSTBONUS': { id: 'FIRSTBONUS', amount: 100, description: 'First time bonus', active: true, usage: 45 },
-      'LETSGO1000': { id: 'LETSGO1000', amount: 1000, description: 'Welcome bonus', active: true, usage: 23 }
-    };
-
-    const code = mockCodes[codeId];
-    if (!code) {
-      return res.status(404).json({
-        success: false,
-        message: 'Redeem code not found'
-      });
-    }
-
-    switch (action) {
-      case 'edit':
-        if (newAmount) code.amount = newAmount;
-        if (newDescription) code.description = newDescription;
-        break;
-      case 'disable':
-        code.active = false;
-        break;
-      case 'enable':
-        code.active = true;
-        break;
-      default:
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid action'
-        });
-    }
-
-    res.json({
-      success: true,
-      message: `Redeem code ${action}d successfully`,
-      data: code
-    });
-
-  } catch (error) {
-    console.error('❌ Error managing redeem code:', error);
-    res.status(500).json({ error: 'Failed to manage redeem code' });
-  }
-});
+// ===== REDEEM CODE MANAGEMENT ===== (REMOVED DUPLICATE - USING CONSOLIDATED VERSION ABOVE)
 
 // ===== REDEEM CODE USAGE DETAILS =====
 app.get('/api/admin/redeem-codes/:codeId/usage', async (req, res) => {
