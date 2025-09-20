@@ -5869,6 +5869,25 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
 
       if (userError) throw userError;
 
+      // Broadcast verification status update to user via WebSocket
+      if (wss) {
+        const message = {
+          type: 'verification_status_updated',
+          userId: document.user_id,
+          verification_status: userStatus,
+          message: status === 'approved' ? 'Your account has been verified!' : 'Your verification was rejected.',
+          timestamp: new Date().toISOString()
+        };
+
+        wss.clients.forEach(client => {
+          if (client.readyState === 1) { // WebSocket.OPEN
+            client.send(JSON.stringify(message));
+          }
+        });
+
+        console.log('📡 Broadcasted verification status update via WebSocket');
+      }
+
       console.log('✅ Document verification updated');
       res.json({ success: true, status: userStatus });
     } else {
@@ -5902,6 +5921,26 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
       // Save updated data
       pendingData.verificationDocuments = verificationDocuments;
       savePendingData();
+
+      // Broadcast verification status update to user via WebSocket
+      if (wss) {
+        const userStatus = status === 'approved' ? 'verified' : 'rejected';
+        const message = {
+          type: 'verification_status_updated',
+          userId: document.user_id,
+          verification_status: userStatus,
+          message: status === 'approved' ? 'Your account has been verified!' : 'Your verification was rejected.',
+          timestamp: new Date().toISOString()
+        };
+
+        wss.clients.forEach(client => {
+          if (client.readyState === 1) { // WebSocket.OPEN
+            client.send(JSON.stringify(message));
+          }
+        });
+
+        console.log('📡 Broadcasted verification status update via WebSocket');
+      }
 
       console.log('✅ Document verification updated:', documentId, 'Status:', status);
       res.json({ success: true, status: status === 'approved' ? 'verified' : 'rejected' });

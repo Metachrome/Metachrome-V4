@@ -1,9 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { apiRequest } from "../lib/queryClient";
 import type { User } from "@shared/schema-sqlite";
+import { useWebSocket } from "./useWebSocket";
 
 export function useAuth() {
   const queryClient = useQueryClient();
+  const { lastMessage } = useWebSocket();
 
   const { data: user, isLoading, error } = useQuery<User | null>({
     queryKey: ["/api/auth"],
@@ -385,6 +388,34 @@ export function useAuth() {
     queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
     queryClient.refetchQueries({ queryKey: ["/api/auth"] });
   };
+
+  // Listen for verification status updates via WebSocket
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === 'verification_status_updated') {
+      const { userId, verification_status, message } = lastMessage;
+
+      // Check if this update is for the current user
+      if (user && user.id === userId) {
+        console.log('🔔 Verification status updated:', verification_status);
+
+        // Refresh user data to get updated verification status
+        refreshAuth();
+
+        // Show notification to user
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          if (Notification.permission === 'granted') {
+            new Notification('Account Verification Update', {
+              body: message,
+              icon: '/favicon.ico'
+            });
+          }
+        }
+
+        // Also show a console message for debugging
+        console.log('🎉 Verification status update:', message);
+      }
+    }
+  }, [lastMessage, user, refreshAuth]);
 
   return {
     user,

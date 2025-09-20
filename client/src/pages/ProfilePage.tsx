@@ -576,7 +576,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Trading Restrictions */}
-                {user?.verification_status !== 'verified' && user?.verification_status !== 'approved' && (
+                {user?.verification_status !== 'verified' && (
                   <div className="p-4 bg-yellow-900/20 border border-yellow-600 rounded-lg">
                     <h3 className="text-yellow-400 font-medium mb-2">⚠ Account Restrictions</h3>
                     <ul className="text-yellow-300 text-sm space-y-1">
