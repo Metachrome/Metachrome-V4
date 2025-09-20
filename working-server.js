@@ -3747,14 +3747,43 @@ app.post('/api/spot/orders', async (req, res) => {
       }
 
       // Deduct USDT balance for buy order
-      user.balance = (userBalance - totalCost).toString();
+      const newBalance = userBalance - totalCost;
+      user.balance = parseFloat(newBalance.toFixed(2));
+      console.log(`💰 BUY ORDER: ${tradeAmount} ${symbol} at ${tradePrice} = ${totalCost} USDT`);
+      console.log(`💰 Balance: ${userBalance} → ${user.balance}`);
     } else if (side === 'sell') {
       // For sell orders, add USDT to balance
       const totalReceived = tradeAmount * tradePrice;
-      user.balance = (userBalance + totalReceived).toString();
+      const newBalance = userBalance + totalReceived;
+      user.balance = parseFloat(newBalance.toFixed(2));
+      console.log(`💰 SELL ORDER: ${tradeAmount} ${symbol} at ${tradePrice} = ${totalReceived} USDT`);
+      console.log(`💰 Balance: ${userBalance} → ${user.balance}`);
     }
 
+    console.log(`💰 SPOT TRADE BALANCE UPDATE: User ${user.username} balance updated to ${user.balance}`);
+
     await saveUsers(users);
+
+    // Also update Supabase if in production
+    if (isProduction && supabase) {
+      try {
+        const { error: balanceError } = await supabase
+          .from('users')
+          .update({
+            balance: user.balance,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', finalUserId);
+
+        if (balanceError) {
+          console.error('❌ Error updating balance in Supabase:', balanceError);
+        } else {
+          console.log('✅ Balance updated in Supabase:', user.balance);
+        }
+      } catch (dbError) {
+        console.error('❌ Database balance update failed:', dbError);
+      }
+    }
 
     // Create spot order record
     const orderId = `spot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -3833,7 +3862,13 @@ app.post('/api/spot/orders', async (req, res) => {
         type: 'balance_update',
         data: {
           userId: finalUserId,
+          username: user.username,
           newBalance: user.balance,
+          changeType: `spot_${side}`,
+          orderId: orderId,
+          symbol: symbol,
+          amount: tradeAmount,
+          price: tradePrice,
           timestamp: new Date().toISOString()
         }
       };
