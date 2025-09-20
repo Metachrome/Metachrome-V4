@@ -2279,6 +2279,92 @@ app.post('/api/admin/trades/:tradeId/control', (req, res) => {
   }
 });
 
+// ===== DELETE TRADE ENDPOINT =====
+app.delete('/api/admin/trades/:tradeId', async (req, res) => {
+  try {
+    const { tradeId } = req.params;
+    console.log('🗑️ Deleting trade:', tradeId);
+
+    let deletedTrade = null;
+
+    // Delete from database first if available
+    if (supabase) {
+      try {
+        console.log('🗑️ Deleting trade from database:', tradeId);
+
+        // First get the trade to return it
+        const { data: tradeData, error: fetchError } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('id', tradeId)
+          .single();
+
+        if (fetchError) {
+          console.error('❌ Error fetching trade for deletion:', fetchError);
+        } else {
+          deletedTrade = tradeData;
+        }
+
+        // Delete the trade
+        const { error: deleteError } = await supabase
+          .from('trades')
+          .delete()
+          .eq('id', tradeId);
+
+        if (deleteError) {
+          console.error('❌ Database deletion error:', deleteError);
+          throw new Error('Failed to delete from database');
+        }
+
+        console.log('✅ Trade deleted from database successfully');
+      } catch (dbError) {
+        console.error('❌ Database deletion failed:', dbError);
+        // Continue with file deletion as fallback
+      }
+    }
+
+    // Also delete from local file storage (fallback/backup)
+    try {
+      const trades = await getTrades();
+
+      if (Array.isArray(trades)) {
+        const tradeIndex = trades.findIndex(t => t.id === tradeId);
+        if (tradeIndex !== -1) {
+          const fileDeletedTrade = trades.splice(tradeIndex, 1)[0];
+          if (!deletedTrade) {
+            deletedTrade = fileDeletedTrade;
+          }
+          await saveTrades(trades);
+          console.log('✅ Trade deleted from file storage');
+        }
+      }
+    } catch (fileError) {
+      console.error('❌ File deletion error:', fileError);
+    }
+
+    if (deletedTrade) {
+      res.json({
+        success: true,
+        message: 'Trade deleted successfully',
+        trade: deletedTrade
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: 'Trade not found'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error deleting trade:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete trade',
+      error: error.message
+    });
+  }
+});
+
 // ===== LIVE TRADES ENDPOINT =====
 app.get('/api/admin/live-trades', async (req, res) => {
   try {
@@ -2635,8 +2721,24 @@ app.get('/api/admin/pending-requests', async (req, res) => {
 
     // Add user balance info and receipt URLs to pending requests
     const depositsWithBalance = pendingDeposits.map(deposit => {
-      const user = users.find(u => u.username === deposit.username) || { balance: 20000 };
-      const depositWithBalance = { ...deposit, user_balance: user.balance };
+      // Try multiple ways to find the user to handle different username formats
+      let user = users.find(u => u.username === deposit.username);
+
+      // If not found by username, try by user_id
+      if (!user && deposit.user_id) {
+        user = users.find(u => u.id === deposit.user_id);
+      }
+
+      // If still not found, try by userId field
+      if (!user && deposit.userId) {
+        user = users.find(u => u.id === deposit.userId);
+      }
+
+      const depositWithBalance = {
+        ...deposit,
+        user_balance: user ? user.balance : '0',
+        username: user ? user.username : (deposit.username || 'Unknown User') // Use actual username from user record
+      };
 
     // Add receipt file URL if receipt exists
     if (deposit.receiptFile && deposit.receiptFile.filename) {
@@ -2741,9 +2843,36 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       user.balance = newBalance.toString();
       console.log('✅ Deposit approved, user balance updated:', currentBalance, '→', newBalance);
 
-      // Save updated users data
-      await saveUsers(users);
-      console.log('💾 User balance changes saved to file');
+      // Update balance in database (production) or file (development)
+      if (isProduction && supabase) {
+        try {
+          console.log('🔄 Updating balance in Supabase for deposit approval:', user.id, newBalance);
+          const { data: updateData, error: updateError } = await supabase
+            .from('users')
+            .update({
+              balance: newBalance,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .select();
+
+          if (updateError) {
+            console.error('❌ Error updating user balance in Supabase:', updateError);
+            throw updateError;
+          } else {
+            console.log('✅ User balance updated in Supabase for deposit:', newBalance);
+            console.log('✅ Supabase update response:', updateData);
+          }
+        } catch (dbError) {
+          console.error('❌ Database balance update failed:', dbError);
+          // Continue with file fallback
+          await saveUsers(users);
+        }
+      } else {
+        // Development mode - save to file
+        await saveUsers(users);
+        console.log('💾 User balance changes saved to file');
+      }
 
       // Add approved transaction record
       const transaction = {
@@ -4501,8 +4630,14 @@ app.get('/api/admin/stats', async (req, res) => {
     totalVolume: trades.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),
     totalBalance: users.reduce((sum, u) => sum + parseFloat(u.balance || 0), 0),
     winRate: trades.length > 0 ? Math.round((trades.filter(t => t.result === 'win').length / trades.filter(t => t.result !== 'pending').length) * 100) : 0,
-    totalProfit: transactions.filter(t => t.type === 'trade_win' || t.type === 'bonus').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),
-    totalLoss: Math.abs(transactions.filter(t => t.type === 'trade_loss').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0))
+    totalProfit: trades.reduce((sum, t) => {
+      const profit = parseFloat(t.profit || 0);
+      return sum + (profit > 0 ? profit : 0);
+    }, 0),
+    totalLoss: Math.abs(trades.reduce((sum, t) => {
+      const profit = parseFloat(t.profit || 0);
+      return sum + (profit < 0 ? profit : 0);
+    }, 0))
   };
 
   console.log('📊 Admin stats calculated:', stats);

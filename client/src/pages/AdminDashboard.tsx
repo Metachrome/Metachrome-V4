@@ -568,6 +568,53 @@ export default function WorkingAdminDashboard() {
     }
   };
 
+  // Delete trade function
+  const deleteTrade = async (tradeId: string) => {
+    try {
+      console.log('🗑️ Deleting trade:', tradeId);
+
+      // Optimistic update - remove from UI immediately
+      const originalTrades = [...trades];
+      setTrades(prev => prev.filter(t => t.id !== tradeId));
+
+      const response = await fetch(`/api/admin/trades/${tradeId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Trade deleted:', result);
+        toast({
+          title: "Trade Deleted",
+          description: result.message || "Trade deleted successfully",
+          duration: 3000
+        });
+
+        // Refresh data to ensure consistency
+        fetchData();
+      } else {
+        // If deletion failed, restore original state
+        console.log('🗑️ Delete failed, restoring original state...');
+        setTrades(originalTrades);
+        const error = await response.text();
+        throw new Error(error || 'Failed to delete trade');
+      }
+    } catch (error) {
+      console.error('❌ Error deleting trade:', error);
+      // Restore original state on error
+      setTrades(prev => [...trades]);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete trade",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
   // Modal state
   const [showUserModal, setShowUserModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1771,7 +1818,12 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-orange-100 text-sm">Total P&L</p>
                       <p className="text-3xl font-bold text-white">
-                        ${trades.reduce((sum, t) => sum + parseFloat(t.profit || 0), 0).toLocaleString()}
+                        ${(() => {
+                          const totalProfit = systemStats?.totalProfit || 0;
+                          const totalLoss = systemStats?.totalLoss || 0;
+                          const totalPnL = totalProfit - totalLoss;
+                          return totalPnL.toLocaleString();
+                        })()}
                       </p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-orange-200" />
@@ -1865,30 +1917,39 @@ export default function WorkingAdminDashboard() {
                               )}
                             </TableCell>
                             <TableCell>
-                              {trade.result === 'pending' ? (
-                                <div className="flex items-center space-x-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => controlTrade(trade.id, 'win')}
-                                    className="text-green-400 hover:text-green-300"
-                                    title="Force Win"
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => controlTrade(trade.id, 'lose')}
-                                    className="text-red-400 hover:text-red-300"
-                                    title="Force Lose"
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm">-</span>
-                              )}
+                              <div className="flex items-center space-x-1">
+                                {trade.result === 'pending' ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => controlTrade(trade.id, 'win')}
+                                      className="text-green-400 hover:text-green-300"
+                                      title="Force Win"
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => controlTrade(trade.id, 'lose')}
+                                      className="text-red-400 hover:text-red-300"
+                                      title="Force Lose"
+                                    >
+                                      <XCircle className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                ) : null}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteTrade(trade.id)}
+                                  className="text-gray-400 hover:text-red-400"
+                                  title="Delete Trade"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
