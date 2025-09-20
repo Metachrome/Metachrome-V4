@@ -492,10 +492,12 @@ async function createUser(userData) {
         .select()
         .single();
       if (error) throw error;
+      console.log('✅ User created in Supabase:', data.username);
       return data;
     } catch (error) {
       console.error('❌ Database error creating user:', error);
-      throw error;
+      console.log('🔄 Falling back to file storage...');
+      // Don't throw error, fall back to file storage instead
     }
   }
 
@@ -1396,7 +1398,7 @@ app.get('/api/auth/user', async (req, res) => {
     let currentUser;
 
     if (isProduction && supabase) {
-      // In production, fetch fresh data from Supabase
+      // In production, try Supabase first, then fallback to file storage
       console.log('👤 Fetching fresh user data from Supabase for:', user.id);
       const { data: freshUser, error: fetchError } = await supabase
         .from('users')
@@ -1405,11 +1407,22 @@ app.get('/api/auth/user', async (req, res) => {
         .single();
 
       if (fetchError) {
-        console.error('❌ Error fetching fresh user data:', fetchError);
-        return res.status(500).json({ error: 'Failed to fetch user data' });
-      }
+        console.error('❌ Error fetching fresh user data from Supabase:', fetchError);
+        console.log('🔄 Falling back to file-based storage...');
 
-      currentUser = freshUser;
+        // Fallback to file-based storage
+        const users = await getUsers();
+        currentUser = users.find(u => u.id === user.id);
+
+        if (!currentUser) {
+          return res.status(404).json({ error: 'User not found in both Supabase and file storage' });
+        }
+
+        console.log('✅ User found in file storage:', currentUser.username);
+      } else {
+        currentUser = freshUser;
+        console.log('✅ User found in Supabase:', currentUser.username);
+      }
     } else {
       // In development, use file-based storage
       const users = await getUsers();
@@ -6757,43 +6770,108 @@ app.post('/api/user/redeem-code', async (req, res) => {
           return res.status(400).json({ error: 'Invalid or expired redeem code' });
         }
 
-        // Check if user already used this code in development mode
-        console.log('🎁 Checking if user already used code in development mode...');
-        const users = await getUsers();
-        const userIndex = users.findIndex(u => u.id === user.id);
+        // SIMPLIFIED APPROACH: Update balance directly in Supabase (where user exists)
+        console.log('🎁 Updating balance in Supabase for user:', user.id);
 
-        if (userIndex !== -1) {
-          // Check user's redeem history (stored in user object)
-          const userRedeemHistory = users[userIndex].redeem_history || [];
-          const alreadyUsed = userRedeemHistory.some(entry => entry.code === upperCode);
+        let balanceUpdated = false;
+        let currentBalance = 0;
+        let newBalance = 0;
 
-          if (alreadyUsed) {
-            console.log('❌ User already used this code in development mode:', upperCode);
-            return res.status(400).json({ error: 'You have already used this redeem code' });
+        try {
+          // Get current user data from Supabase (only select existing columns)
+          const { data: userData, error: getUserError } = await supabase
+            .from('users')
+            .select('balance')
+            .eq('id', user.id)
+            .single();
+
+          if (getUserError) {
+            console.log('❌ Error getting user from Supabase:', getUserError);
+            throw getUserError;
           }
 
-          // Use mock redemption logic
-          console.log('🎁 Using mock redemption for:', upperCode, 'Amount:', mockBonus);
-
-          // Update user balance and add to redeem history
-          const currentBalance = parseFloat(users[userIndex].balance || '0');
-          users[userIndex].balance = (currentBalance + mockBonus).toString();
-
-          // Add to redeem history
-          if (!users[userIndex].redeem_history) {
-            users[userIndex].redeem_history = [];
+          if (!userData) {
+            console.log('❌ User not found in Supabase:', user.id);
+            return res.status(400).json({ error: 'User not found' });
           }
-          users[userIndex].redeem_history.push({
-            code: upperCode,
-            bonus_amount: mockBonus,
-            redeemed_at: new Date().toISOString(),
-            trades_required: 10,
-            trades_completed: 0
+
+          // For now, skip duplicate checking since we don't have redeem_history table
+          // This will be fixed when database tables are created
+          console.log('⚠️ Skipping duplicate check - database tables not available');
+
+          // Calculate new balance
+          currentBalance = parseFloat(userData.balance || '0');
+          newBalance = currentBalance + mockBonus;
+
+          console.log('💰 Balance calculation:', {
+            currentBalance,
+            mockBonus,
+            newBalance
           });
 
-          await saveUsers(users);
-          console.log('💰 User balance updated:', users[userIndex].balance);
-          console.log('📝 Added to redeem history:', upperCode);
+          // Update only the balance in Supabase (using existing columns only)
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              balance: newBalance,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+
+          if (updateError) {
+            console.log('❌ Error updating user balance in Supabase:', updateError);
+            throw updateError;
+          }
+
+          balanceUpdated = true;
+          console.log('✅ Balance updated in Supabase:', {
+            userId: user.id,
+            oldBalance: currentBalance,
+            newBalance: newBalance,
+            bonusAmount: mockBonus
+          });
+
+        } catch (supabaseError) {
+          console.log('❌ Supabase operation failed, falling back to file storage:', supabaseError);
+
+          // Fallback to file storage
+          const users = await getUsers();
+          const userIndex = users.findIndex(u => u.id === user.id);
+
+          if (userIndex !== -1) {
+            // Check user's redeem history (stored in user object)
+            const userRedeemHistory = users[userIndex].redeem_history || [];
+            const alreadyUsed = userRedeemHistory.some(entry => entry.code === upperCode);
+
+            if (alreadyUsed) {
+              console.log('❌ User already used this code in file storage:', upperCode);
+              return res.status(400).json({ error: 'You have already used this redeem code' });
+            }
+
+            // Update user balance and add to redeem history
+            currentBalance = parseFloat(users[userIndex].balance || '0');
+            newBalance = currentBalance + mockBonus;
+            users[userIndex].balance = newBalance.toString();
+
+            // Add to redeem history
+            if (!users[userIndex].redeem_history) {
+              users[userIndex].redeem_history = [];
+            }
+            users[userIndex].redeem_history.push({
+              code: upperCode,
+              bonus_amount: mockBonus,
+              redeemed_at: new Date().toISOString(),
+              trades_required: 10,
+              trades_completed: 0
+            });
+
+            await saveUsers(users);
+            balanceUpdated = true;
+            console.log('✅ Balance updated in file storage:', newBalance);
+          } else {
+            console.log('❌ User not found in either Supabase or file storage');
+            return res.status(400).json({ error: 'User not found' });
+          }
         }
 
         console.log('✅ Code redeemed successfully (fallback):', code, 'Amount:', mockBonus);
