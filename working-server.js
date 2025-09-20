@@ -629,8 +629,9 @@ async function getTrades() {
 // Save trades to storage
 async function saveTrades(trades) {
   if (isProduction && supabase) {
-    // In production, trades are saved individually via Supabase operations
-    console.log('📈 Production mode: Trades saved via individual Supabase operations');
+    // In production, we don't bulk save trades since they're saved individually
+    // This function is mainly for development mode
+    console.log('📈 Production mode: Trades are saved individually via Supabase operations');
     return;
   }
 
@@ -640,6 +641,52 @@ async function saveTrades(trades) {
     console.log('📈 Trades saved to local file:', trades.length);
   } catch (error) {
     console.error('❌ Error saving trades to file:', error);
+  }
+}
+
+// Save individual trade to Supabase (production) or local file (development)
+async function saveTradeToDatabase(trade) {
+  if (isProduction && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('trades')
+        .insert([{
+          id: trade.id,
+          user_id: trade.user_id,
+          symbol: trade.symbol,
+          direction: trade.direction,
+          amount: parseFloat(trade.amount),
+          duration: trade.duration,
+          entry_price: parseFloat(trade.entry_price || '0'),
+          exit_price: trade.exit_price ? parseFloat(trade.exit_price) : null,
+          result: trade.result || 'pending',
+          status: trade.status || 'active',
+          profit_loss: trade.profit ? parseFloat(trade.profit) : null,
+          created_at: trade.created_at,
+          updated_at: trade.updated_at,
+          expires_at: trade.expires_at
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error saving trade to Supabase:', error);
+        throw error;
+      }
+
+      console.log('✅ Trade saved to Supabase:', data.id);
+      return data.id;
+    } catch (error) {
+      console.error('❌ Failed to save trade to Supabase:', error);
+      throw error;
+    }
+  } else {
+    // Development: Save to local file
+    const allTrades = await getTrades();
+    allTrades.unshift(trade); // Add to beginning of array
+    await saveTrades(allTrades);
+    console.log('✅ Trade saved to local storage:', trade.id);
+    return trade.id;
   }
 }
 
@@ -3614,6 +3661,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
           .from('trades')
           .update({
             result: finalWon ? 'win' : 'lose',
+            status: 'completed',
             exit_price: (Math.random() * 1000 + 64000).toFixed(2), // Mock exit price
             profit_loss: balanceChange,
             updated_at: new Date().toISOString()
@@ -3644,6 +3692,109 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
     return { success: false, message: error.message };
   }
 }
+
+// Spot trading endpoint
+app.post('/api/spot/orders', async (req, res) => {
+  try {
+    const { userId, symbol, side, amount, price, type } = req.body;
+    console.log('💰 Spot trade request:', { userId, symbol, side, amount, price, type });
+
+    if (!userId || !symbol || !side || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: userId, symbol, side, amount"
+      });
+    }
+
+    // Handle admin users - find the actual admin user in database
+    const users = await getUsers();
+    let finalUserId = userId;
+
+    // Check if this is an admin user by role or username
+    let adminUser = users.find(u => u.id === userId);
+    if (!adminUser) {
+      adminUser = users.find(u => u.username === userId);
+    }
+
+    // If user has admin role, use their actual ID for trading
+    if (adminUser && (adminUser.role === 'super_admin' || adminUser.role === 'admin')) {
+      finalUserId = adminUser.id;
+      console.log(`💰 Admin user ${userId} (${adminUser.username}) spot trading with ID: ${finalUserId}`);
+    }
+
+    // Find user and check balance
+    const user = users.find(u => u.id === finalUserId || u.username === finalUserId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const tradeAmount = parseFloat(amount);
+    const tradePrice = parseFloat(price || '0');
+    const userBalance = parseFloat(user.balance || '0');
+
+    // For buy orders, check USDT balance
+    // For sell orders, check crypto balance (simplified - assume user has enough crypto)
+    if (side === 'buy') {
+      const totalCost = tradeAmount * tradePrice;
+      if (userBalance < totalCost) {
+        return res.status(400).json({
+          success: false,
+          message: 'Insufficient USDT balance'
+        });
+      }
+
+      // Deduct USDT balance for buy order
+      user.balance = (userBalance - totalCost).toString();
+    } else if (side === 'sell') {
+      // For sell orders, add USDT to balance
+      const totalReceived = tradeAmount * tradePrice;
+      user.balance = (userBalance + totalReceived).toString();
+    }
+
+    await saveUsers(users);
+
+    // Create spot order record
+    const orderId = `spot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const currentPrice = tradePrice || (65000 + (Math.random() - 0.5) * 2000); // Mock price if not provided
+
+    const order = {
+      id: orderId,
+      user_id: finalUserId,
+      symbol: symbol,
+      side: side,
+      type: type || 'market',
+      amount: tradeAmount.toString(),
+      price: currentPrice.toString(),
+      status: 'filled', // Immediately fill for demo
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Save order to trades file (you might want a separate orders file)
+    const trades = await getTrades();
+    trades.push(order);
+    await saveTrades(trades);
+
+    console.log('✅ Spot order created successfully:', orderId);
+
+    res.json({
+      success: true,
+      orderId: orderId,
+      message: `${side.toUpperCase()} order placed successfully`,
+      order: order
+    });
+
+  } catch (error) {
+    console.error('❌ Spot trading error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 // Options trading endpoint
 app.post('/api/trades/options', async (req, res) => {
@@ -4179,6 +4330,7 @@ app.post('/api/trades/complete', async (req, res) => {
           trades[tradeIndex] = {
             ...trades[tradeIndex],
             result: finalOutcome ? 'win' : 'lose',
+            status: 'completed',
             exit_price: currentPrice || 0,
             profit: balanceChange,
             updated_at: new Date().toISOString()
