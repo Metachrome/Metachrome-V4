@@ -112,21 +112,23 @@ export function MobileBottomNav() {
             position: 'fixed',
             left: 0,
             right: 0,
-            zIndex: 9998
+            zIndex: 9998,
+            maxWidth: '100vw', // Ensure it doesn't exceed viewport width
+            overflow: 'hidden' // Prevent any overflow
           }}
         >
-          <div className="py-4 px-6">
-            <h3 className="text-white font-semibold mb-3">Trading Options</h3>
-            <div className="space-y-2">
+          <div className="py-3 px-4"> {/* Reduced padding for smaller screens */}
+            <h3 className="text-white font-semibold mb-2 text-sm">Trading Options</h3> {/* Smaller text */}
+            <div className="space-y-1"> {/* Reduced spacing */}
               <button
                 onClick={() => handleTradeOptionClick("/trade/spot")}
-                className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded"
+                className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded text-sm" // Smaller text
               >
                 Spot Trading
               </button>
               <button
                 onClick={() => handleTradeOptionClick("/trade/options")}
-                className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded"
+                className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded text-sm" // Smaller text
               >
                 Options Trading
               </button>
@@ -137,6 +139,7 @@ export function MobileBottomNav() {
 
       {/* Bottom Navigation - ALWAYS VISIBLE */}
       <div
+        className="mobile-bottom-nav"
         style={{
           position: 'fixed',
           bottom: '0px',
@@ -149,8 +152,10 @@ export function MobileBottomNav() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-around',
-          padding: '0 16px',
-          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)'
+          padding: '0 8px', // Reduced padding for smaller screens
+          boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
+          maxWidth: '100vw', // Ensure it doesn't exceed viewport width
+          overflow: 'hidden' // Prevent any overflow
         }}
       >
         {navItems.map((item) => {
@@ -171,23 +176,28 @@ export function MobileBottomNav() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '8px',
-                minWidth: '60px',
+                padding: '6px 4px', // Reduced padding for smaller screens
+                flex: '1', // Make buttons equally distribute space
+                maxWidth: '20%', // Ensure 5 buttons fit (100% / 5 = 20%)
+                minWidth: '0', // Allow buttons to shrink if needed
                 backgroundColor: active ? 'rgba(79, 70, 229, 0.2)' : isHovered ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
-                borderRadius: '8px',
+                borderRadius: '6px', // Slightly smaller border radius
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                transform: isHovered ? 'scale(1.05)' : 'scale(1)'
+                transform: isHovered ? 'scale(1.02)' : 'scale(1)' // Reduced scale to prevent overflow
               }}
             >
-              <div style={{
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div
+                className="nav-icon"
+                style={{
+                  width: '32px', // Reduced from 40px to 32px for smaller screens
+                  height: '32px', // Reduced from 40px to 32px for smaller screens
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
                 <img
                   src={shouldShowActive ? item.activeIcon : item.normalIcon}
                   alt={`${item.label} icon`}

@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile Bottom Navigation Responsive Styles */
+@media (max-width: 360px) {
+  .mobile-bottom-nav {
+    padding: 0 4px !important;
+  }
+
+  .mobile-bottom-nav button {
+    padding: 4px 2px !important;
+    min-width: 0 !important;
+  }
+
+  .mobile-bottom-nav .nav-icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+}
+
+@media (max-width: 320px) {
+  .mobile-bottom-nav {
+    padding: 0 2px !important;
+  }
+
+  .mobile-bottom-nav button {
+    padding: 3px 1px !important;
+  }
+
+  .mobile-bottom-nav .nav-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
 /* Admin Table Responsive Styles */
 .admin-table-container {
   overflow-x: auto;

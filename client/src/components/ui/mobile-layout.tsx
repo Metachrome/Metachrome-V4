@@ -36,9 +36,9 @@ export function MobileLayout({ children }: MobileLayoutProps) {
   // Use mobile layout for small screens (including tablets up to 1024px)
   if (isMobile || isSmallScreen) {
     return (
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-gray-900 overflow-x-hidden max-w-full">
         {shouldShowLayout && <MobileHeader />}
-        <main className="relative pb-20">
+        <main className="relative pb-20 overflow-x-hidden max-w-full">
           {children}
         </main>
         {shouldShowLayout && <Footer />}
