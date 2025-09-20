@@ -971,8 +971,8 @@ export default function OptionsPage() {
             </div>
           </div>
 
-          {/* Mobile Chart */}
-          <div className="h-64 bg-[#10121E] p-2 relative">
+          {/* Mobile Chart - Made smaller */}
+          <div className="h-48 bg-[#10121E] p-2 relative">
             <TradeOverlay
               trades={activeTrades}
               currentPrice={currentPrice}

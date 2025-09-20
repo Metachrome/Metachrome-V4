@@ -557,8 +557,8 @@ export default function SpotPage() {
           </div>
         </div>
 
-        {/* Mobile Chart */}
-        <div className="h-64 bg-[#10121E] p-2">
+        {/* Mobile Chart - Made smaller */}
+        <div className="h-48 bg-[#10121E] p-2">
           <TradingViewWidget
             type="chart"
             symbol="BINANCE:BTCUSDT"

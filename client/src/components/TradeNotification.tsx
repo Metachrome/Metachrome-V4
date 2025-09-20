@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useIsMobile } from '../hooks/use-mobile';
 
 interface TradeNotificationProps {
   trade: {
@@ -18,6 +19,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(100);
   const timersRef = useRef<{ timer?: NodeJS.Timeout; progressInterval?: NodeJS.Timeout }>({});
+  const isMobile = useIsMobile();
 
   const handleClose = () => {
     // Clear all timers
@@ -62,6 +64,88 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
   const priceChange = trade.finalPrice - trade.entryPrice;
 
+  // Mobile-specific modal design
+  if (isMobile) {
+    return (
+      <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-500 ${
+        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}>
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose} />
+
+        {/* Modal */}
+        <div className={`relative bg-gray-800 rounded-2xl p-6 w-full max-w-sm mx-auto transform transition-all duration-500 ${
+          isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+        }`}>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-white text-lg font-bold">BTC/USDT</h2>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-white text-xl font-bold w-8 h-8 flex items-center justify-center"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Profit/Loss Amount */}
+          <div className="text-center mb-6">
+            <div className={`text-4xl font-bold mb-2 ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+              {pnl >= 0 ? '+' : ''}{pnl.toFixed(0)} <span className="text-gray-400 text-lg">USDT</span>
+            </div>
+            <div className="text-gray-400 text-sm">Settlement completed</div>
+          </div>
+
+          {/* Trade Details */}
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Current price:</span>
+              <span className="text-white font-medium">{trade.finalPrice.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Time:</span>
+              <span className="text-white font-medium">30s</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Side:</span>
+              <span className={`font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                {trade.direction === 'up' ? 'Buy Up' : 'Sell Down'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Amount:</span>
+              <span className="text-white font-medium">{trade.amount.toFixed(0)} USDT</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Price:</span>
+              <span className="text-white font-medium">{trade.entryPrice.toFixed(2)} USDT</span>
+            </div>
+          </div>
+
+          {/* Settlement Note */}
+          <div className="mt-6 p-3 bg-gray-700/50 rounded-lg">
+            <p className="text-gray-300 text-xs leading-relaxed">
+              The ultimate price for each option contract is determined by the system's settlement process.
+            </p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="w-full bg-gray-700 rounded-full h-1">
+              <div
+                className={`h-1 rounded-full transition-all duration-100 ${
+                  isWin ? 'bg-green-400' : 'bg-red-400'
+                }`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop notification (existing design)
   return (
     <div className={`fixed top-4 right-4 z-50 transition-all duration-500 transform ${
       isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'

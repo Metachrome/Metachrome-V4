@@ -29,8 +29,8 @@ export function MobileHero() {
             }}
           />
 
-          {/* Mobile Start Trading Button Overlay - Left positioned under text */}
-          <div className="absolute bottom-16 left-4 z-20">
+          {/* Mobile Start Trading Button Overlay - Moved further down */}
+          <div className="absolute bottom-8 left-4 z-20">
             <Button
               onClick={handleStartTrading}
               className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-2.5 rounded-lg text-base font-semibold border-0 shadow-lg"
