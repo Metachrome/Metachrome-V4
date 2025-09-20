@@ -2462,43 +2462,20 @@ app.post('/api/transactions/deposit-request', async (req, res) => {
       });
     }
 
-    // Get user from auth token - IMPROVED USER AUTHENTICATION
+    // Get user from auth token - FIXED TO USE PROPER AUTHENTICATION
     const authToken = req.headers.authorization?.replace('Bearer ', '');
     console.log('💰 Looking up user with token:', authToken);
 
-    const users = await getUsers();
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
-    // Default to a real user (not always trader1)
-    let currentUser = users.find(u => u.role === 'user') || users[0];
-
-  // Try different token patterns
-  if (authToken) {
-    // Pattern 1: user-session-{userId}
-    if (authToken.startsWith('user-session-')) {
-      const userId = authToken.replace('user-session-', '');
-      const foundUser = users.find(u => u.id === userId);
-      if (foundUser) {
-        currentUser = foundUser;
-        console.log('💰 Found user by session:', currentUser.username);
-      }
+    // Use the same getUserFromToken function as other endpoints
+    const currentUser = await getUserFromToken(authToken);
+    if (!currentUser) {
+      console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
+      return res.status(401).json({ error: 'Invalid authentication' });
     }
-    // Pattern 2: demo-token-{timestamp} - use different users based on timestamp
-    else if (authToken.startsWith('demo-token-')) {
-      const timestamp = authToken.replace('demo-token-', '');
-      const userIndex = parseInt(timestamp.slice(-1)) % users.filter(u => u.role === 'user').length;
-      const userList = users.filter(u => u.role === 'user');
-      currentUser = userList[userIndex] || userList[0];
-      console.log('💰 Selected user by demo token:', currentUser.username);
-    }
-    // Pattern 3: Direct user lookup by username in token
-    else {
-      const foundUser = users.find(u => authToken.includes(u.username) || authToken.includes(u.id));
-      if (foundUser) {
-        currentUser = foundUser;
-        console.log('💰 Found user by token match:', currentUser.username);
-      }
-    }
-  }
 
   console.log('💰 Final selected user:', currentUser.username, 'Balance:', currentUser.balance);
 
@@ -2814,12 +2791,28 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
     if (action === 'approve') {
       console.log('✅ Processing APPROVE action...');
 
-      // Find the user and update their balance
+      // Find the user and update their balance - ENHANCED USER LOOKUP
       console.log('🔍 Looking for user:', deposit.username);
-      const user = users.find(u => u.username === deposit.username);
+      console.log('🔍 Deposit details:', { username: deposit.username, userId: deposit.userId, user_id: deposit.user_id });
+
+      // Try multiple ways to find the user
+      let user = users.find(u => u.username === deposit.username);
+
+      // If not found by username, try by userId
+      if (!user && deposit.userId) {
+        user = users.find(u => u.id === deposit.userId);
+        console.log('🔍 Found user by userId:', user ? user.username : 'NOT FOUND');
+      }
+
+      // If still not found, try by user_id
+      if (!user && deposit.user_id) {
+        user = users.find(u => u.id === deposit.user_id);
+        console.log('🔍 Found user by user_id:', user ? user.username : 'NOT FOUND');
+      }
 
       if (!user) {
-        console.log('❌ User not found:', deposit.username);
+        console.log('❌ User not found with any method:', deposit.username);
+        console.log('❌ Available users:', users.map(u => ({ id: u.id, username: u.username })));
         return res.status(404).json({
           success: false,
           message: 'User not found'
@@ -3143,21 +3136,7 @@ app.get('/api/users/:userId/transactions', async (req, res) => {
   }
 });
 
-// User-specific trades endpoint for trade history
-app.get('/api/users/:userId/trades', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    console.log('📈 Getting trades for user:', userId);
-
-    const allTrades = await getTrades();
-    const userTrades = allTrades.filter(trade => trade.user_id === userId);
-    console.log('📈 Found trades for user:', userTrades.length);
-    res.json(userTrades);
-  } catch (error) {
-    console.error('❌ Error getting user trades:', error);
-    res.status(500).json({ error: 'Failed to get user trades' });
-  }
-});
+// User-specific trades endpoint for trade history (removed duplicate - using the one below)
 
 // ===== REDEEM CODE MANAGEMENT ENDPOINTS =====
 
@@ -3560,8 +3539,31 @@ app.get('/api/users/:userId/trades', async (req, res) => {
     const { userId } = req.params;
     console.log('📈 Getting trades for user:', userId);
 
+    // Handle admin users - find the actual admin user in database
+    const users = await getUsers();
+    let finalUserId = userId;
+
+    // Check if this is an admin user by role or username
+    let adminUser = users.find(u => u.id === userId);
+    if (!adminUser) {
+      adminUser = users.find(u => u.username === userId);
+    }
+
+    // If user has admin role, use their actual ID for trade lookup
+    if (adminUser && (adminUser.role === 'super_admin' || adminUser.role === 'admin')) {
+      finalUserId = adminUser.id;
+      console.log(`📈 Admin user ${userId} (${adminUser.username}) looking up trades with ID: ${finalUserId}`);
+    } else if (userId === 'superadmin-001' || userId === 'admin-001') {
+      // Legacy support - try to find by username
+      const legacyAdmin = users.find(u => u.username === 'superadmin' || u.username === 'admin');
+      if (legacyAdmin) {
+        finalUserId = legacyAdmin.id;
+        console.log(`📈 Legacy admin user ${userId} mapped to ${legacyAdmin.username} with ID: ${finalUserId}`);
+      }
+    }
+
     const trades = await getTrades();
-    const userTrades = trades.filter(trade => trade.user_id === userId);
+    const userTrades = trades.filter(trade => trade.user_id === finalUserId);
     console.log('📈 Found trades for user:', userTrades.length);
     res.json(userTrades);
   } catch (error) {
@@ -3671,11 +3673,30 @@ app.post('/api/trades/options', async (req, res) => {
       console.log('⚠️ Verification check bypassed - trading allowed without verification');
     }
 
-    // Handle admin users - map them to their trading profile
+    // Handle admin users - find the actual admin user in database
     let finalUserId = userId;
-    if (userId === 'superadmin-001' || userId === 'admin-001') {
-      finalUserId = `${userId}-trading`;
-      console.log(`🔧 Admin user ${userId} trading as ${finalUserId}`);
+    const users = await getUsers();
+
+    // Check if this is an admin user by role or username
+    let adminUser = users.find(u => u.id === userId);
+    if (!adminUser) {
+      adminUser = users.find(u => u.username === userId);
+    }
+
+    // If user has admin role, use their actual ID for trading
+    if (adminUser && (adminUser.role === 'super_admin' || adminUser.role === 'admin')) {
+      finalUserId = adminUser.id;
+      console.log(`🔧 Admin user ${userId} (${adminUser.username}) trading with ID: ${finalUserId}`);
+    } else if (userId === 'superadmin-001' || userId === 'admin-001') {
+      // Legacy support - try to find by username
+      const legacyAdmin = users.find(u => u.username === 'superadmin' || u.username === 'admin');
+      if (legacyAdmin) {
+        finalUserId = legacyAdmin.id;
+        console.log(`🔧 Legacy admin user ${userId} mapped to ${legacyAdmin.username} with ID: ${finalUserId}`);
+      } else {
+        finalUserId = `${userId}-trading`;
+        console.log(`🔧 Admin user ${userId} trading as ${finalUserId} (fallback)`);
+      }
     }
 
     // Validate minimum amount based on duration
@@ -3696,8 +3717,7 @@ app.post('/api/trades/options', async (req, res) => {
       });
     }
 
-    // Check user balance
-    const users = await getUsers();
+    // Check user balance - users already loaded above
     const user = users.find(u => u.id === finalUserId || u.username === finalUserId);
 
     if (!user) {
