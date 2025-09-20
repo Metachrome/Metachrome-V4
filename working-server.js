@@ -309,12 +309,28 @@ console.log('🚀 METACHROME V2 - PRODUCTION SERVER STARTING...');
 console.log('📁 Serving static files from:', distPath);
 
 // ===== DATABASE FUNCTIONS =====
+// Normalize verification status to ensure consistency
+function normalizeVerificationStatus(status) {
+  if (status === 'approved') return 'verified';
+  if (status === 'verified') return 'verified';
+  if (status === 'pending') return 'pending';
+  if (status === 'rejected') return 'rejected';
+  return 'unverified';
+}
+
 async function getUsers() {
   if (isProduction && supabase) {
     try {
       const { data, error } = await supabase.from('users').select('*');
       if (error) throw error;
-      return data || [];
+
+      // Normalize verification status for all users
+      const normalizedUsers = (data || []).map(user => ({
+        ...user,
+        verification_status: normalizeVerificationStatus(user.verification_status)
+      }));
+
+      return normalizedUsers;
     } catch (error) {
       console.error('❌ Database error:', error);
       return [];
@@ -324,7 +340,15 @@ async function getUsers() {
   // Development fallback - use local file storage
   try {
     const usersData = fs.readFileSync(usersFile, 'utf8');
-    return JSON.parse(usersData);
+    const users = JSON.parse(usersData);
+
+    // Normalize verification status for all users
+    const normalizedUsers = users.map(user => ({
+      ...user,
+      verification_status: normalizeVerificationStatus(user.verification_status)
+    }));
+
+    return normalizedUsers;
   } catch (error) {
     console.log('⚠️ Could not load users file, creating default users');
 
@@ -1054,7 +1078,10 @@ app.get('/api/auth', async (req, res) => {
         if (user) {
           console.log('✅ Token verified, returning user:', user.username);
           console.log('🔍 User verification status:', user.verification_status);
-          return res.json({
+          console.log('🔍 User has_uploaded_documents:', user.has_uploaded_documents);
+          console.log('🔍 User verified_at:', user.verified_at);
+
+          const responseData = {
             id: user.id,
             username: user.username,
             email: user.email,
@@ -1062,9 +1089,17 @@ app.get('/api/auth', async (req, res) => {
             role: user.role || 'user',
             firstName: user.firstName || '',
             lastName: user.lastName || '',
-            verification_status: user.verification_status || 'unverified',
+            verification_status: normalizeVerificationStatus(user.verification_status || 'unverified'),
             has_uploaded_documents: user.has_uploaded_documents || false
+          };
+
+          console.log('📤 Sending user data to frontend:', {
+            username: responseData.username,
+            verification_status: responseData.verification_status,
+            has_uploaded_documents: responseData.has_uploaded_documents
           });
+
+          return res.json(responseData);
         } else {
           console.log('❌ User not found for ID:', userId);
         }
@@ -5374,6 +5409,69 @@ app.get('/api/test/verification-status', async (req, res) => {
   }
 });
 
+// Force refresh user data (for debugging verification issues)
+app.post('/api/user/force-refresh', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    // Get fresh user data from database
+    let freshUserData = null;
+
+    if (isProduction && supabase) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && data) {
+        freshUserData = data;
+      }
+    } else {
+      // Development mode - get from file
+      const users = await getUsers();
+      freshUserData = users.find(u => u.id === user.id);
+    }
+
+    if (freshUserData) {
+      console.log('🔄 Force refresh - Fresh user data:', {
+        username: freshUserData.username,
+        verification_status: freshUserData.verification_status,
+        has_uploaded_documents: freshUserData.has_uploaded_documents
+      });
+
+      res.json({
+        success: true,
+        user: {
+          id: freshUserData.id,
+          username: freshUserData.username,
+          email: freshUserData.email,
+          balance: freshUserData.balance,
+          role: freshUserData.role || 'user',
+          verification_status: freshUserData.verification_status || 'unverified',
+          has_uploaded_documents: freshUserData.has_uploaded_documents || false
+        },
+        message: 'User data refreshed successfully'
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+
+  } catch (error) {
+    console.error('❌ Error force refreshing user data:', error);
+    res.status(500).json({ error: 'Failed to refresh user data' });
+  }
+});
+
 // Get user verification status
 app.get('/api/user/verification-status', async (req, res) => {
   try {
@@ -5876,7 +5974,8 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
           userId: document.user_id,
           verification_status: userStatus,
           message: status === 'approved' ? 'Your account has been verified!' : 'Your verification was rejected.',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          forceRefresh: true // Force frontend to refresh user data
         };
 
         wss.clients.forEach(client => {
@@ -5886,6 +5985,24 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
         });
 
         console.log('📡 Broadcasted verification status update via WebSocket');
+      }
+
+      // Also update user data in development mode if using local storage
+      if (!isProduction) {
+        try {
+          const users = await getUsers();
+          const userIndex = users.findIndex(u => u.id === document.user_id);
+          if (userIndex !== -1) {
+            users[userIndex].verification_status = userStatus;
+            users[userIndex].has_uploaded_documents = true;
+            users[userIndex].verified_at = new Date().toISOString();
+            users[userIndex].updated_at = new Date().toISOString();
+            await saveUsers(users);
+            console.log('✅ Updated user verification status in development storage');
+          }
+        } catch (error) {
+          console.error('❌ Error updating user in development storage:', error);
+        }
       }
 
       console.log('✅ Document verification updated');
@@ -5912,10 +6029,15 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
       if (userIndex !== -1) {
         const userStatus = status === 'approved' ? 'verified' : 'rejected';
         users[userIndex].verification_status = userStatus;
+        users[userIndex].has_uploaded_documents = true;
+        users[userIndex].verified_at = new Date().toISOString();
+        users[userIndex].updated_at = new Date().toISOString();
         await saveUsers(users);
 
         // Also update the user info in the document
         document.users.verification_status = userStatus;
+
+        console.log(`✅ Updated user ${users[userIndex].username} verification status to: ${userStatus}`);
       }
 
       // Save updated data
@@ -5930,7 +6052,8 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
           userId: document.user_id,
           verification_status: userStatus,
           message: status === 'approved' ? 'Your account has been verified!' : 'Your verification was rejected.',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          forceRefresh: true // Force frontend to refresh user data
         };
 
         wss.clients.forEach(client => {

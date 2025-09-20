@@ -392,14 +392,27 @@ export function useAuth() {
   // Listen for verification status updates via WebSocket
   useEffect(() => {
     if (lastMessage && lastMessage.type === 'verification_status_updated') {
-      const { userId, verification_status, message } = lastMessage;
+      const { userId, verification_status, message, forceRefresh } = lastMessage;
 
       // Check if this update is for the current user
       if (user && user.id === userId) {
         console.log('🔔 Verification status updated:', verification_status);
 
-        // Refresh user data to get updated verification status
-        refreshAuth();
+        // Force refresh user data to get updated verification status
+        if (forceRefresh) {
+          // Clear any cached user data
+          localStorage.removeItem('user');
+
+          // Force a complete refresh of auth data
+          queryClient.removeQueries({ queryKey: ["/api/auth"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
+          queryClient.refetchQueries({ queryKey: ["/api/auth"] });
+
+          console.log('🔄 Forced complete refresh of user data');
+        } else {
+          // Regular refresh
+          refreshAuth();
+        }
 
         // Show notification to user
         if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -415,7 +428,7 @@ export function useAuth() {
         console.log('🎉 Verification status update:', message);
       }
     }
-  }, [lastMessage, user, refreshAuth]);
+  }, [lastMessage, user, refreshAuth, queryClient]);
 
   return {
     user,
