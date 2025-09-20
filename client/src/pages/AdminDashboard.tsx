@@ -142,6 +142,8 @@ export default function WorkingAdminDashboard() {
   const [redeemCodes, setRedeemCodes] = useState<any[]>([]);
   const [redeemStats, setRedeemStats] = useState<any>(null);
   const [showCreateCodeModal, setShowCreateCodeModal] = useState(false);
+  const [showEditCodeModal, setShowEditCodeModal] = useState(false);
+  const [editingCode, setEditingCode] = useState<any>(null);
   const [newRedeemCode, setNewRedeemCode] = useState({
     code: '',
     bonusAmount: '',
@@ -1106,11 +1108,18 @@ export default function WorkingAdminDashboard() {
       console.log('🎁 Redeem code action:', codeId, action);
 
       if (action === 'edit') {
-        // For now, just show a toast - could implement edit modal later
-        toast({
-          title: "Edit Code",
-          description: "Edit functionality coming soon",
-        });
+        // Find the code to edit
+        const codeToEdit = redeemCodes.find(code => code.id === codeId || code.code === codeId);
+        if (codeToEdit) {
+          setEditingCode(codeToEdit);
+          setShowEditCodeModal(true);
+        } else {
+          toast({
+            title: "Error",
+            description: "Code not found",
+            variant: "destructive"
+          });
+        }
         return;
       }
 
@@ -1145,6 +1154,57 @@ export default function WorkingAdminDashboard() {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : `Failed to ${action} code`,
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
+
+  // Edit existing redeem code
+  const handleEditRedeemCode = async () => {
+    try {
+      if (!editingCode || !editingCode.bonus_amount) {
+        toast({
+          title: "Missing Information",
+          description: "Please fill in bonus amount",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/admin/redeem-codes/${editingCode.id}/action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          action: 'edit',
+          newAmount: parseFloat(editingCode.bonus_amount),
+          newDescription: editingCode.description,
+          newMaxUses: editingCode.max_uses ? parseInt(editingCode.max_uses) : null
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Code Updated",
+          description: `Redeem code ${editingCode.code} updated successfully`,
+          duration: 3000
+        });
+        setShowEditCodeModal(false);
+        setEditingCode(null);
+        fetchData(); // Refresh all data
+      } else {
+        const error = await response.text();
+        throw new Error(error || 'Failed to update code');
+      }
+    } catch (error) {
+      console.error('Failed to update redeem code:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update code",
         variant: "destructive",
         duration: 5000
       });
@@ -3180,6 +3240,92 @@ export default function WorkingAdminDashboard() {
               </Button>
               <Button onClick={handleCreateRedeemCode} className="bg-purple-600 hover:bg-purple-700">
                 Create Code
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Redeem Code Modal */}
+      {showEditCodeModal && editingCode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">✏️ Edit Redeem Code</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowEditCodeModal(false);
+                  setEditingCode(null);
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Code
+                </label>
+                <input
+                  type="text"
+                  value={editingCode.code}
+                  disabled
+                  className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white opacity-50 cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-400 mt-1">Code cannot be changed</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Bonus Amount ($)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingCode.bonus_amount}
+                  onChange={(e) => setEditingCode({...editingCode, bonus_amount: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Max Uses (optional)
+                </label>
+                <input
+                  type="number"
+                  value={editingCode.max_uses || ''}
+                  onChange={(e) => setEditingCode({...editingCode, max_uses: e.target.value})}
+                  placeholder="Unlimited"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={editingCode.description || ''}
+                  onChange={(e) => setEditingCode({...editingCode, description: e.target.value})}
+                  placeholder="Code description"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditCodeModal(false);
+                  setEditingCode(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditRedeemCode} className="bg-blue-600 hover:bg-blue-700">
+                Update Code
               </Button>
             </div>
           </div>

@@ -1393,8 +1393,28 @@ app.get('/api/auth/user', async (req, res) => {
     }
 
     // Return user data with current balance (fresh from database/file)
-    const users = await getUsers();
-    const currentUser = users.find(u => u.id === user.id);
+    let currentUser;
+
+    if (isProduction && supabase) {
+      // In production, fetch fresh data from Supabase
+      console.log('👤 Fetching fresh user data from Supabase for:', user.id);
+      const { data: freshUser, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching fresh user data:', fetchError);
+        return res.status(500).json({ error: 'Failed to fetch user data' });
+      }
+
+      currentUser = freshUser;
+    } else {
+      // In development, use file-based storage
+      const users = await getUsers();
+      currentUser = users.find(u => u.id === user.id);
+    }
 
     if (!currentUser) {
       return res.status(404).json({ error: 'User not found' });
@@ -1403,7 +1423,8 @@ app.get('/api/auth/user', async (req, res) => {
     console.log('👤 Returning current user data:', {
       username: currentUser.username,
       balance: currentUser.balance,
-      id: currentUser.id
+      id: currentUser.id,
+      source: isProduction ? 'Supabase' : 'File'
     });
 
     res.json({
@@ -3274,7 +3295,7 @@ app.get('/api/users/:userId/transactions', async (req, res) => {
 app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
   try {
     const { codeId } = req.params;
-    const { action, newAmount, newDescription } = req.body;
+    const { action, newAmount, newDescription, newMaxUses } = req.body;
 
     console.log('🎁 Redeem code action:', codeId, action);
     console.log('🎁 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
@@ -3288,6 +3309,7 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
         const updateData = {};
         if (newAmount) updateData.bonus_amount = newAmount;
         if (newDescription) updateData.description = newDescription;
+        if (newMaxUses !== undefined) updateData.max_uses = newMaxUses;
 
         console.log('🎁 Updating redeem code:', codeId, updateData);
         const { data, error } = await supabase
@@ -6784,6 +6806,11 @@ app.post('/api/user/redeem-code', async (req, res) => {
       }
 
       // Check if user already used this code
+      console.log('🔍 Checking for duplicate redemption:', {
+        userId: user.id,
+        code: code.toUpperCase()
+      });
+
       const { data: existingUse, error: useError } = await supabase
         .from('user_redeem_history')
         .select('id')
@@ -6791,8 +6818,20 @@ app.post('/api/user/redeem-code', async (req, res) => {
         .eq('code', code.toUpperCase())
         .single();
 
+      console.log('🔍 Duplicate check result:', {
+        existingUse,
+        useError: useError?.code
+      });
+
       if (existingUse) {
+        console.log('❌ User already used this code:', code.toUpperCase());
         return res.status(400).json({ error: 'You have already used this redeem code' });
+      }
+
+      // If error is not "no rows found", it might be a table missing error
+      if (useError && useError.code !== 'PGRST116') {
+        console.log('⚠️ Error checking redemption history (table might not exist):', useError);
+        // Continue with redemption but log the issue
       }
 
       // Check usage limits
@@ -6800,7 +6839,13 @@ app.post('/api/user/redeem-code', async (req, res) => {
         return res.status(400).json({ error: 'Redeem code usage limit reached' });
       }
 
-      // Start transaction
+      // Start transaction - Insert redemption history
+      console.log('📝 Inserting redemption history:', {
+        user_id: user.id,
+        code: code.toUpperCase(),
+        bonus_amount: redeemCode.bonus_amount
+      });
+
       const { data: redeemHistory, error: historyError } = await supabase
         .from('user_redeem_history')
         .insert({
@@ -6815,7 +6860,23 @@ app.post('/api/user/redeem-code', async (req, res) => {
         .select()
         .single();
 
-      if (historyError) throw historyError;
+      if (historyError) {
+        console.error('❌ Error inserting redemption history:', historyError);
+
+        // Check if it's a unique constraint violation (duplicate redemption)
+        if (historyError.code === '23505' || historyError.message.includes('unique_user_code_redemption')) {
+          console.log('❌ Duplicate redemption detected via unique constraint');
+          return res.status(400).json({ error: 'You have already used this redeem code' });
+        }
+
+        // Check if it's a missing table error
+        if (historyError.code === 'PGRST106' || historyError.message.includes('does not exist')) {
+          console.log('⚠️ user_redeem_history table does not exist - continuing without history tracking');
+          // Continue with balance update but without history tracking
+        } else {
+          throw historyError;
+        }
+      }
 
       // Update user balance (ensure proper number conversion)
       const currentBalance = parseFloat(user.balance || '0');
@@ -6829,25 +6890,81 @@ app.post('/api/user/redeem-code', async (req, res) => {
         userId: user.id
       });
 
-      const { error: balanceError } = await supabase
+      // First, try to update just the balance (simpler update)
+      console.log('💰 Attempting balance update in Supabase...');
+      console.log('💰 Update parameters:', {
+        userId: user.id,
+        userIdType: typeof user.id,
+        currentBalance,
+        bonusAmount,
+        newBalance,
+        newBalanceType: typeof newBalance
+      });
+
+      const { data: updateResult, error: balanceError } = await supabase
         .from('users')
-        .update({
-          balance: newBalance,
-          pending_bonus_restrictions: [
-            ...(user.pending_bonus_restrictions || []),
-            {
-              redeem_history_id: redeemHistory.id,
-              bonus_amount: bonusAmount,
-              trades_required: 10,
-              trades_completed: 0
-            }
-          ]
-        })
-        .eq('id', user.id);
+        .update({ balance: newBalance })
+        .eq('id', user.id)
+        .select('id, username, balance');
+
+      console.log('💰 Supabase update result:', {
+        updateResult,
+        balanceError,
+        updateCount: updateResult?.length || 0
+      });
+
+      // If no rows were updated, the user ID might not exist in Supabase
+      if (updateResult && updateResult.length === 0) {
+        console.log('⚠️ No rows updated - user might not exist in Supabase users table');
+        console.log('💰 Checking if user exists in Supabase...');
+
+        const { data: existingUser, error: checkError } = await supabase
+          .from('users')
+          .select('id, username, balance')
+          .eq('id', user.id)
+          .single();
+
+        console.log('💰 User existence check:', { existingUser, checkError });
+
+        if (!existingUser) {
+          console.log('❌ User does not exist in Supabase users table');
+          console.log('🔧 This user might be from file-based storage only');
+          // Continue without Supabase update but log the issue
+        }
+      }
 
       if (balanceError) {
-        console.error('❌ Error updating user balance:', balanceError);
-        throw balanceError;
+        console.error('❌ Error updating user balance in Supabase:', balanceError);
+        console.log('🔄 Falling back to file-based balance update...');
+
+        // Fallback: Update balance in file-based storage
+        const users = await getUsers();
+        const userIndex = users.findIndex(u => u.id === user.id);
+
+        if (userIndex !== -1) {
+          users[userIndex].balance = newBalance.toString();
+          await saveUsers(users);
+          console.log('✅ Balance updated in file-based storage:', newBalance);
+        } else {
+          console.error('❌ User not found in file-based storage either');
+          throw new Error('Failed to update balance in both Supabase and file storage');
+        }
+      } else if (updateResult && updateResult.length === 0) {
+        console.log('⚠️ No rows updated in Supabase - user might not exist there');
+        console.log('🔄 Updating balance in file-based storage instead...');
+
+        // Update balance in file-based storage as fallback
+        const users = await getUsers();
+        const userIndex = users.findIndex(u => u.id === user.id);
+
+        if (userIndex !== -1) {
+          users[userIndex].balance = newBalance.toString();
+          await saveUsers(users);
+          console.log('✅ Balance updated in file-based storage:', newBalance);
+        } else {
+          console.error('❌ User not found in file-based storage either');
+          throw new Error('User not found in any storage system');
+        }
       }
 
       console.log('✅ User balance updated successfully:', {

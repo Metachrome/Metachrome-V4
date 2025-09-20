@@ -21,7 +21,7 @@ async function testRedeemBalanceUpdate() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        username: 'amdsnk',
+        username: 'testuser2025',
         password: 'testpass123'
       })
     });
@@ -65,9 +65,9 @@ async function testRedeemBalanceUpdate() {
     // Step 3: Redeem a code
     console.log('\n🔧 STEP 3: Redeem Code');
     console.log('----------------------');
-    
+
     const testCode = 'FIRSTBONUS';
-    
+
     const redeemResponse = await fetch(`${baseUrl}/api/user/redeem-code`, {
       method: 'POST',
       headers: {
@@ -76,27 +76,57 @@ async function testRedeemBalanceUpdate() {
       },
       body: JSON.stringify({ code: testCode })
     });
-    
+
+    let redeemSuccessful = false;
+    let bonusAmount = 0;
+
     if (redeemResponse.ok) {
       const redeemResult = await redeemResponse.json();
       console.log('✅ Code redeemed successfully');
       console.log(`   Code: ${testCode}`);
       console.log(`   Bonus: $${redeemResult.bonusAmount}`);
       console.log(`   Message: ${redeemResult.message}`);
-      
+
       if (redeemResult.newBalance) {
         console.log(`   New Balance: $${redeemResult.newBalance}`);
       }
-      
+
       const expectedBalance = initialBalance + redeemResult.bonusAmount;
       console.log(`   Expected Balance: $${expectedBalance}`);
-      
+
+      redeemSuccessful = true;
+      bonusAmount = redeemResult.bonusAmount;
+
     } else {
       const error = await redeemResponse.json();
       console.log('❌ Redemption failed:', error.error);
-      
+
       if (error.error && error.error.includes('already used')) {
-        console.log('ℹ️ Code already used - this is expected behavior');
+        console.log('ℹ️ Code already used - testing duplicate prevention');
+
+        // Test duplicate redemption prevention
+        console.log('\n🔧 STEP 3B: Test Duplicate Redemption Prevention');
+        console.log('-----------------------------------------------');
+
+        const duplicateResponse = await fetch(`${baseUrl}/api/user/redeem-code`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken}`
+          },
+          body: JSON.stringify({ code: testCode })
+        });
+
+        if (!duplicateResponse.ok) {
+          const duplicateError = await duplicateResponse.json();
+          if (duplicateError.error && duplicateError.error.includes('already used')) {
+            console.log('✅ Duplicate prevention working correctly');
+          } else {
+            console.log('⚠️ Unexpected duplicate error:', duplicateError.error);
+          }
+        } else {
+          console.log('❌ CRITICAL: Duplicate redemption was allowed!');
+        }
       }
     }
     
@@ -122,13 +152,20 @@ async function testRedeemBalanceUpdate() {
       console.log(`   Current Balance: $${currentBalance}`);
       console.log(`   Initial Balance: $${initialBalance}`);
       console.log(`   Balance Change: $${currentBalance - initialBalance}`);
-      
-      if (currentBalance > initialBalance) {
-        console.log('🎉 SUCCESS: Balance was updated after redemption!');
-      } else if (currentBalance === initialBalance) {
-        console.log('⚠️ WARNING: Balance unchanged - possible duplicate redemption or error');
+
+      if (redeemSuccessful) {
+        const expectedBalance = initialBalance + bonusAmount;
+        if (Math.abs(currentBalance - expectedBalance) < 0.01) {
+          console.log('🎉 SUCCESS: Balance was updated correctly after redemption!');
+        } else {
+          console.log(`❌ ERROR: Balance mismatch - Expected: $${expectedBalance}, Got: $${currentBalance}`);
+        }
       } else {
-        console.log('❌ ERROR: Balance decreased - this should not happen');
+        if (currentBalance === initialBalance) {
+          console.log('✅ CORRECT: Balance unchanged (no redemption occurred)');
+        } else {
+          console.log('⚠️ WARNING: Balance changed without successful redemption');
+        }
       }
     } else {
       const error = await verifyResponse.text();
