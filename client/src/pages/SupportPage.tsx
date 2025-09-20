@@ -65,7 +65,7 @@ export default function SupportPage() {
             <img
               src={isMobile ? supportBannerMobile : supportBannerDesktop}
               alt="Support Banner"
-              className="w-full h-full object-cover sm:object-contain"
+              className="w-full h-full object-contain"
             />
             {/* Optional overlay for better text readability if needed */}
             <div className="absolute inset-0 bg-black bg-opacity-20"></div>
