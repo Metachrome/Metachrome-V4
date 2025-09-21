@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Mobile Modal Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ff00;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 10000;
+            border-bottom: 1px solid #00ff00;
+        }
+        
+        .content {
+            margin-top: 60px;
+        }
+        
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: block;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .test-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .emergency-button {
+            background: #f44336;
+        }
+        
+        .emergency-button:hover {
+            background: #da190b;
+        }
+        
+        /* FORCE MODAL STYLES - MAXIMUM VISIBILITY */
+        .force-modal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.95) !important;
+            backdrop-filter: blur(8px) !important;
+            z-index: 2147483647 !important; /* Maximum z-index */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .force-modal-content {
+            background: #059669 !important;
+            color: white !important;
+            padding: 32px !important;
+            border-radius: 16px !important;
+            text-align: center !important;
+            max-width: 350px !important;
+            width: 100% !important;
+            border: 4px solid white !important;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8) !important;
+            position: relative !important;
+            z-index: 2147483647 !important;
+            animation: forceSlideIn 0.3s ease-out !important;
+        }
+        
+        .force-modal-content.lost {
+            background: #dc2626 !important;
+        }
+        
+        @keyframes forceSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+        
+        .modal-amount {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+        
+        .modal-detail {
+            font-size: 16px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        
+        .modal-close {
+            background: white !important;
+            color: #059669 !important;
+            border: none !important;
+            padding: 12px 24px !important;
+            border-radius: 8px !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+            transition: all 0.2s ease !important;
+            margin-top: 12px !important;
+        }
+        
+        .modal-close:hover {
+            transform: scale(1.05) !important;
+        }
+        
+        .modal-close.lost {
+            color: #dc2626 !important;
+        }
+        
+        .log-area {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar" id="statusBar">
+        Mobile: <span id="mobileStatus">Checking...</span> | 
+        Width: <span id="widthStatus">0px</span> | 
+        Height: <span id="heightStatus">0px</span> | 
+        Touch: <span id="touchStatus">No</span>
+    </div>
+
+    <div class="content">
+        <div class="test-container">
+            <h1>🚀 Force Mobile Modal Test</h1>
+            <p>This test uses maximum z-index and !important CSS to force modal visibility.</p>
+
+            <div class="test-section">
+                <h2>🎯 Force Modal Tests</h2>
+                <button class="test-button" onclick="forceWinModal()">🎉 FORCE WIN Modal</button>
+                <button class="test-button" onclick="forceLoseModal()">💔 FORCE LOSE Modal</button>
+                <button class="test-button emergency-button" onclick="forceEmergencyModal()">🚨 EMERGENCY MODAL</button>
+            </div>
+
+            <div class="test-section">
+                <h2>📱 Device Detection</h2>
+                <div class="log-area" id="deviceInfo">Loading...</div>
+            </div>
+
+            <div class="test-section">
+                <h2>📊 Test Logs</h2>
+                <div class="log-area" id="testLogs">Test logs will appear here...</div>
+                <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const isMobile = width < 768;
+            const hasTouch = 'ontouchstart' in window;
+            
+            document.getElementById('mobileStatus').textContent = isMobile ? 'YES' : 'NO';
+            document.getElementById('mobileStatus').style.color = isMobile ? '#4CAF50' : '#f44336';
+            document.getElementById('widthStatus').textContent = width + 'px';
+            document.getElementById('heightStatus').textContent = height + 'px';
+            document.getElementById('touchStatus').textContent = hasTouch ? 'YES' : 'NO';
+            
+            const deviceInfo = document.getElementById('deviceInfo');
+            deviceInfo.textContent = `
+Screen: ${width} x ${height}px
+Mobile: ${isMobile ? 'YES' : 'NO'}
+Touch: ${hasTouch ? 'YES' : 'NO'}
+Pixel Ratio: ${window.devicePixelRatio || 1}
+User Agent: ${navigator.userAgent}
+Platform: ${navigator.platform}
+            `;
+        }
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logsDiv = document.getElementById('testLogs');
+            logsDiv.textContent += `[${timestamp}] ${message}\n`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            document.getElementById('testLogs').textContent = 'Logs cleared...\n';
+        }
+
+        function createForceModal(data) {
+            log(`🚀 Creating FORCE modal: ${data.won ? 'WIN' : 'LOSE'}`);
+            
+            // Remove any existing modals
+            const existingModals = document.querySelectorAll('.force-modal');
+            existingModals.forEach(modal => {
+                log('🗑️ Removing existing modal');
+                modal.remove();
+            });
+            
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'force-modal';
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            overlay.onclick = (e) => {
+                if (e.target === overlay) {
+                    log('🎯 Modal background clicked, closing');
+                    closeModal(overlay);
+                }
+            };
+            
+            // Create modal content
+            const content = document.createElement('div');
+            content.className = `force-modal-content ${data.won ? '' : 'lost'}`;
+            content.onclick = (e) => e.stopPropagation();
+            
+            const pnlDisplay = isNaN(data.pnl) ? '0.00' : (data.pnl >= 0 ? '+' : '') + data.pnl.toFixed(2);
+            
+            content.innerHTML = `
+                <div class="modal-title">
+                    ${data.won ? '🎉 TRADE WON!' : '💔 TRADE LOST'}
+                </div>
+                <div class="modal-amount">
+                    ${pnlDisplay} USDT
+                </div>
+                <div class="modal-detail">
+                    Direction: ${data.direction.toUpperCase()}
+                </div>
+                <div class="modal-detail">
+                    Amount: ${data.amount} USDT
+                </div>
+                <div class="modal-detail">
+                    Entry: ${data.entryPrice.toFixed(2)} → Final: ${data.finalPrice.toFixed(2)}
+                </div>
+                <button class="modal-close ${data.won ? '' : 'lost'}" onclick="closeModal(this.closest('.force-modal'))">
+                    Close
+                </button>
+            `;
+            
+            overlay.appendChild(content);
+            
+            // Force append to body
+            document.body.appendChild(overlay);
+            
+            log('✅ Modal added to DOM');
+            log(`📊 Modal z-index: ${getComputedStyle(overlay).zIndex}`);
+            log(`📊 Modal visibility: ${getComputedStyle(overlay).visibility}`);
+            log(`📊 Modal opacity: ${getComputedStyle(overlay).opacity}`);
+            
+            // Auto-close after 15 seconds
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    log('⏰ Auto-closing modal after 15 seconds');
+                    closeModal(overlay);
+                }
+            }, 15000);
+            
+            return overlay;
+        }
+
+        function closeModal(modal) {
+            if (modal && modal.parentNode) {
+                log('🔒 Closing modal');
+                modal.remove();
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
+            }
+        }
+
+        function forceWinModal() {
+            log('🎉 Testing FORCE WIN modal');
+            createForceModal({
+                won: true,
+                pnl: 25.50,
+                direction: 'up',
+                amount: 250,
+                entryPrice: 50000,
+                finalPrice: 52550
+            });
+        }
+
+        function forceLoseModal() {
+            log('💔 Testing FORCE LOSE modal');
+            createForceModal({
+                won: false,
+                pnl: -100,
+                direction: 'down',
+                amount: 100,
+                entryPrice: 50000,
+                finalPrice: 49000
+            });
+        }
+
+        function forceEmergencyModal() {
+            log('🚨 Testing EMERGENCY modal with maximum visibility');
+            const modal = createForceModal({
+                won: true,
+                pnl: 999.99,
+                direction: 'up',
+                amount: 1000,
+                entryPrice: 50000,
+                finalPrice: 59999
+            });
+            
+            // Add emergency styling
+            modal.style.background = 'rgba(255, 0, 0, 0.8)';
+            modal.style.border = '5px solid #ff0000';
+            
+            log('🚨 Emergency modal created with red background');
+        }
+
+        // Initialize
+        updateStatus();
+        window.addEventListener('resize', updateStatus);
+        
+        log('🧪 Force Mobile Modal Test initialized');
+        log(`📱 Device: ${window.innerWidth < 768 ? 'Mobile' : 'Desktop'} (${window.innerWidth}px)`);
+        
+        // Global function for button onclick
+        window.closeModal = closeModal;
+    </script>
+</body>
+</html>

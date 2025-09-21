@@ -38,6 +38,32 @@ export default function WalletPage() {
 
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch withdrawal history - REAL DATA
+  const { data: withdrawalHistory = [] } = useQuery({
+    queryKey: [`/api/users/${user?.id}/withdrawals`],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/users/${user.id}/withdrawals`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+        if (!response.ok) {
+          console.log('Withdrawal history API failed, using empty array');
+          return [];
+        }
+        const data = await response.json();
+        console.log('📊 Withdrawal history fetched:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Failed to fetch withdrawal history:', error);
+        return [];
+      }
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
   const queryClient = useQueryClient();
 
   // Real platform deposit addresses (where users send crypto to deposit)
@@ -833,48 +859,42 @@ export default function WalletPage() {
                     <CardContent className="p-6">
                       <h3 className="text-white text-lg font-semibold mb-4">Recent Withdrawals</h3>
                       <div className="space-y-4">
-                        {/* Mock withdrawal history - replace with real data */}
-                        <div className="border-b border-gray-700 pb-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="text-white text-sm font-medium">0.5 BTC</div>
-                              <div className="text-gray-400 text-xs">Bitcoin Network</div>
-                              <div className="text-gray-400 text-xs">2024-01-20 14:30</div>
+                        {/* Real withdrawal history */}
+                        {withdrawalHistory.length > 0 ? (
+                          withdrawalHistory.slice(0, 3).map((withdrawal, index) => (
+                            <div key={withdrawal.id || index} className="border-b border-gray-700 pb-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="text-white text-sm font-medium">
+                                    {withdrawal.amount} {withdrawal.currency}
+                                  </div>
+                                  <div className="text-gray-400 text-xs">
+                                    {withdrawal.currency} Network
+                                  </div>
+                                  <div className="text-gray-400 text-xs">
+                                    {new Date(withdrawal.created_at || withdrawal.timestamp).toLocaleDateString()} {new Date(withdrawal.created_at || withdrawal.timestamp).toLocaleTimeString()}
+                                  </div>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                  withdrawal.status === 'pending'
+                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                    : withdrawal.status === 'approved' || withdrawal.status === 'completed'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {withdrawal.status === 'approved' ? 'Completed' : withdrawal.status.charAt(0).toUpperCase() + withdrawal.status.slice(1)}
+                                </span>
+                              </div>
                             </div>
-                            <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">
-                              Pending
-                            </span>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <div className="text-gray-400 text-sm">No withdrawal history</div>
                           </div>
-                        </div>
-
-                        <div className="border-b border-gray-700 pb-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="text-white text-sm font-medium">1000 USDT</div>
-                              <div className="text-gray-400 text-xs">TRC20</div>
-                              <div className="text-gray-400 text-xs">2024-01-19 09:15</div>
-                            </div>
-                            <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">
-                              Completed
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="border-b border-gray-700 pb-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="text-white text-sm font-medium">2.5 ETH</div>
-                              <div className="text-gray-400 text-xs">ERC20</div>
-                              <div className="text-gray-400 text-xs">2024-01-18 16:45</div>
-                            </div>
-                            <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">
-                              Completed
-                            </span>
-                          </div>
-                        </div>
+                        )}
 
                         <div className="text-center">
-                          <button className="text-purple-400 hover:text-purple-300 text-sm">
+                          <button className="text-purple-400 hover:text-purple-300 text-sm transition-colors">
                             View All History
                           </button>
                         </div>

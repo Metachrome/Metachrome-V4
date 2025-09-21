@@ -1900,8 +1900,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-blue-100 text-sm">Win Rate</p>
                       <p className="text-3xl font-bold text-white">
-                        {Array.isArray(trades) && trades.length > 0 ?
-                          ((trades.filter(t => t.result === 'win').length / trades.filter(t => t.result !== 'pending').length) * 100).toFixed(1) : 0}%
+                        {systemStats?.winRate || 0}%
                       </p>
                     </div>
                     <Target className="w-8 h-8 text-blue-200" />

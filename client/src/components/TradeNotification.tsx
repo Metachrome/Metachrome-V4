@@ -40,7 +40,9 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       console.log('🎯 TRADE NOTIFICATION: Document body overflow:', document.body.style.overflow);
       console.log('🎯 TRADE NOTIFICATION: Document documentElement overflow:', document.documentElement.style.overflow);
 
-
+      // Force immediate visibility for mobile
+      const isMobileDevice = isMobile || window.innerWidth < 768;
+      console.log('🎯 TRADE NOTIFICATION: Is mobile device:', isMobileDevice);
 
       setIsVisible(true);
       setProgress(100);
@@ -73,6 +75,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   }
 
   console.log('🎯 TRADE NOTIFICATION: About to render, isMobile:', isMobile, 'isVisible:', isVisible);
+  console.log('🎯 TRADE NOTIFICATION: Window width check:', window.innerWidth, '< 768 =', window.innerWidth < 768);
 
   const isWin = trade.status === 'won';
 
@@ -105,6 +108,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     console.log('🎯 MOBILE NOTIFICATION: Rendering mobile notification');
     console.log('🎯 MOBILE NOTIFICATION: Screen width:', window.innerWidth);
     console.log('🎯 MOBILE NOTIFICATION: isMobile hook:', isMobile);
+    console.log('🎯 MOBILE NOTIFICATION: isVisible state:', isVisible);
 
     // Force body to not scroll during modal
     useEffect(() => {
@@ -120,37 +124,55 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       };
     }, []);
 
-    return (
+    // Use createPortal to ensure modal renders at document body level with MAXIMUM visibility
+    return createPortal(
       <div
-        className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-5 z-[999999]"
+        className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-5"
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.95)',
-          zIndex: 999999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px',
-          fontFamily: 'system-ui, -apple-system, sans-serif'
+          position: 'fixed !important' as any,
+          top: '0 !important' as any,
+          left: '0 !important' as any,
+          right: '0 !important' as any,
+          bottom: '0 !important' as any,
+          width: '100vw !important' as any,
+          height: '100vh !important' as any,
+          backgroundColor: 'rgba(0, 0, 0, 0.95) !important' as any,
+          zIndex: 2147483647, // Maximum possible z-index
+          display: 'flex !important' as any,
+          alignItems: 'center !important' as any,
+          justifyContent: 'center !important' as any,
+          padding: '20px !important' as any,
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          pointerEvents: 'auto !important' as any,
+          visibility: 'visible !important' as any,
+          opacity: isVisible ? '1 !important' as any : '0.95 !important' as any,
+          transform: isVisible ? 'scale(1) !important' as any : 'scale(0.95) !important' as any,
+          transition: 'all 0.3s ease !important' as any
         }}
         onClick={handleClose}
       >
         <div
           className="bg-green-600 text-white p-8 rounded-2xl text-center max-w-sm w-full border-4 border-white shadow-2xl"
           style={{
-            backgroundColor: isWin ? '#059669' : '#dc2626',
-            color: 'white',
-            padding: '32px',
-            borderRadius: '16px',
-            textAlign: 'center',
-            maxWidth: '350px',
-            width: '100%',
-            border: '4px solid white',
-            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.8)'
+            backgroundColor: (isWin ? '#059669' : '#dc2626') + ' !important' as any,
+            color: 'white !important' as any,
+            padding: '32px !important' as any,
+            borderRadius: '16px !important' as any,
+            textAlign: 'center !important' as any,
+            maxWidth: '350px !important' as any,
+            width: '100% !important' as any,
+            border: '4px solid white !important' as any,
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.8) !important' as any,
+            position: 'relative !important' as any,
+            zIndex: 2147483647, // Maximum z-index
+            transform: isVisible ? 'scale(1) translateY(0) !important' as any : 'scale(0.95) translateY(4px) !important' as any,
+            transition: 'all 0.3s ease !important' as any,
+            animation: isVisible ? 'modalSlideIn 0.3s ease-out' : 'none',
+            pointerEvents: 'auto !important' as any,
+            visibility: 'visible !important' as any,
+            opacity: '1 !important' as any
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -185,13 +207,35 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
               fontSize: '16px',
               fontWeight: 'bold',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
             Close
           </button>
         </div>
-      </div>
+
+        {/* Add CSS animation styles */}
+        <style>{`
+          @keyframes modalSlideIn {
+            from {
+              opacity: 0;
+              transform: scale(0.8) translateY(-20px);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1) translateY(0);
+            }
+          }
+        `}</style>
+      </div>,
+      document.body
     );
   }
 

@@ -630,6 +630,13 @@ export default function OptionsPage() {
         completedAt: new Date().toISOString()
       };
 
+      console.log('🎯 SETTING COMPLETED TRADE:', tradeWithTimestamp);
+      console.log('🎯 MOBILE CHECK AT COMPLETION:', {
+        isMobile,
+        windowWidth: window.innerWidth,
+        userAgent: navigator.userAgent.substring(0, 50)
+      });
+
       setCompletedTrade(tradeWithTimestamp);
       localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
 

@@ -4455,6 +4455,67 @@ app.get('/api/user/balances', async (req, res) => {
   }
 });
 
+// User-specific withdrawals endpoint
+app.get('/api/users/:userId/withdrawals', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('💸 Getting withdrawals for user:', userId);
+
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    let userWithdrawals = [];
+
+    // Try to get from database first
+    if (supabase) {
+      try {
+        const { data: withdrawals, error } = await supabase
+          .from('withdrawals')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (!error && withdrawals) {
+          userWithdrawals = withdrawals;
+          console.log('💸 Found withdrawals in database:', userWithdrawals.length);
+        }
+      } catch (dbError) {
+        console.error('❌ Database query failed:', dbError);
+      }
+    }
+
+    // If no database withdrawals, check local storage
+    if (userWithdrawals.length === 0) {
+      try {
+        const data = fs.readFileSync(dataFile, 'utf8');
+        const pendingData = JSON.parse(data);
+
+        // Get all withdrawals for this user (pending and processed)
+        const allWithdrawals = [
+          ...(pendingData.withdrawals || []).filter(w => w.user_id === userId),
+          ...(pendingData.processedWithdrawals || []).filter(w => w.user_id === userId)
+        ];
+
+        userWithdrawals = allWithdrawals.sort((a, b) =>
+          new Date(b.created_at || b.timestamp).getTime() - new Date(a.created_at || a.timestamp).getTime()
+        );
+
+        console.log('💸 Found withdrawals in local storage:', userWithdrawals.length);
+      } catch (fileError) {
+        console.error('❌ File read error:', fileError);
+      }
+    }
+
+    res.json(userWithdrawals);
+  } catch (error) {
+    console.error('❌ Error getting user withdrawals:', error);
+    res.status(500).json({ error: 'Failed to get user withdrawals' });
+  }
+});
+
 // User-specific trades endpoint
 app.get('/api/users/:userId/trades', async (req, res) => {
   try {
