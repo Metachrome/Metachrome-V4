@@ -1,6 +1,42 @@
 {
   "deposits": [],
-  "withdrawals": [],
+  "withdrawals": [
+    {
+      "id": "with-001",
+      "user_id": "demo-user-1757756401422",
+      "username": "angela.soenoko",
+      "amount": 500,
+      "currency": "BTC",
+      "address": "bc1q6w3rdy5kwaf4es2lpjk6clpd25pterzvgwu5hu",
+      "status": "pending",
+      "created_at": "2025-09-18T08:30:00.000Z",
+      "updated_at": "2025-09-18T08:30:00.000Z"
+    },
+    {
+      "id": "with-002",
+      "user_id": "demo-user-1757756401422",
+      "username": "angela.soenoko",
+      "amount": 1000,
+      "currency": "USDT",
+      "address": "TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9",
+      "status": "approved",
+      "created_at": "2025-09-17T14:20:00.000Z",
+      "updated_at": "2025-09-17T15:45:00.000Z"
+    }
+  ],
+  "processedWithdrawals": [
+    {
+      "id": "with-003",
+      "user_id": "demo-user-1757756401422",
+      "username": "angela.soenoko",
+      "amount": 250,
+      "currency": "ETH",
+      "address": "0x06292164c039E611B37ff0c4B71ce0F72e56AB7A",
+      "status": "completed",
+      "created_at": "2025-09-16T10:15:00.000Z",
+      "updated_at": "2025-09-16T12:30:00.000Z"
+    }
+  ],
   "verificationDocuments": [
     {
       "id": "doc-1758189753172",

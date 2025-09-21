@@ -5844,15 +5844,37 @@ app.get('/api/admin/stats', async (req, res) => {
       totalTransactions: transactions.length,
     totalVolume: trades.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),
     totalBalance: users.reduce((sum, u) => sum + parseFloat(u.balance || 0), 0),
-    winRate: trades.length > 0 ? Math.round((trades.filter(t => t.result === 'win').length / trades.filter(t => t.result !== 'pending').length) * 100) : 0,
-    totalProfit: trades.reduce((sum, t) => {
-      const profit = parseFloat(t.profit || 0);
-      return sum + (profit > 0 ? profit : 0);
-    }, 0),
-    totalLoss: Math.abs(trades.reduce((sum, t) => {
-      const profit = parseFloat(t.profit || 0);
-      return sum + (profit < 0 ? profit : 0);
-    }, 0))
+    winRate: (() => {
+      const completedTrades = trades.filter(t => t.result && t.result !== 'pending');
+      const winTrades = trades.filter(t => t.result === 'win');
+      console.log('📊 Win Rate Calculation:', {
+        totalTrades: trades.length,
+        completedTrades: completedTrades.length,
+        winTrades: winTrades.length,
+        completedTradesData: completedTrades.map(t => ({ id: t.id, result: t.result, profit: t.profit }))
+      });
+      return completedTrades.length > 0 ? Math.round((winTrades.length / completedTrades.length) * 100) : 0;
+    })(),
+    totalProfit: (() => {
+      const profits = trades.reduce((sum, t) => {
+        const profit = parseFloat(t.profit || 0);
+        const positiveProfit = profit > 0 ? profit : 0;
+        console.log('📊 Profit calc for trade:', t.id, 'profit:', profit, 'positive:', positiveProfit);
+        return sum + positiveProfit;
+      }, 0);
+      console.log('📊 Total Profit calculated:', profits);
+      return profits;
+    })(),
+    totalLoss: (() => {
+      const losses = Math.abs(trades.reduce((sum, t) => {
+        const profit = parseFloat(t.profit || 0);
+        const negativeLoss = profit < 0 ? profit : 0;
+        console.log('📊 Loss calc for trade:', t.id, 'profit:', profit, 'negative:', negativeLoss);
+        return sum + negativeLoss;
+      }, 0));
+      console.log('📊 Total Loss calculated:', losses);
+      return losses;
+    })()
   };
 
   console.log('📊 Admin stats calculated:', stats);
