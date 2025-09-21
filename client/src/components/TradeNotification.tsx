@@ -217,8 +217,41 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           console.log('- Trade:', trade);
           console.log('- isVisible:', isVisible);
           console.log('- Window size:', window.innerWidth, 'x', window.innerHeight);
-          console.log('- Native overlay:', document.getElementById('native-trade-notification') !== null);
+          console.log('- Is mobile device:', window.innerWidth <= 768);
+          console.log('- Native overlay exists:', document.getElementById('native-trade-notification') !== null);
           console.log('- React notification elements:', document.querySelectorAll('[data-mobile-notification]').length);
+
+          // Check each notification element
+          const elements = document.querySelectorAll('[data-mobile-notification]');
+          elements.forEach((el, index) => {
+            const styles = window.getComputedStyle(el);
+            console.log(`- Element ${index + 1} display:`, styles.display);
+            console.log(`- Element ${index + 1} visibility:`, styles.visibility);
+            console.log(`- Element ${index + 1} opacity:`, styles.opacity);
+            console.log(`- Element ${index + 1} z-index:`, styles.zIndex);
+            console.log(`- Element ${index + 1} position:`, styles.position);
+          });
+        };
+
+        // Add force show function
+        (window as any).forceShowMobileNotification = () => {
+          console.log('🔧 FORCE SHOW: Creating test notification');
+          const testTrade = {
+            id: 'force-test-' + Date.now(),
+            direction: 'up' as 'up' | 'down',
+            amount: 100,
+            entryPrice: 65000,
+            finalPrice: 66500,
+            status: 'won' as 'won' | 'lost',
+            payout: 115,
+            profitPercentage: 15
+          };
+
+          // Trigger the notification manually
+          if (typeof onClose === 'function') {
+            // This would need to be called from the parent component
+            console.log('🔧 FORCE SHOW: Test trade created, parent needs to set it');
+          }
         };
       }
 
@@ -282,6 +315,16 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
 
   console.log('🎯 RENDERING: Trade notification with data:', trade);
 
+  // MOBILE FIX: Detect mobile and force visibility
+  const isMobileDevice = window.innerWidth <= 768;
+  console.log('🎯 MOBILE DETECTION: isMobileDevice =', isMobileDevice);
+
+  // Force create native overlay for mobile if it doesn't exist
+  if (isMobileDevice && !document.getElementById('native-trade-notification')) {
+    console.log('🎯 MOBILE FIX: Creating native overlay for mobile device');
+    createNativeOverlay(trade);
+  }
+
   // Render directly without portal for maximum compatibility
   return (
     <div
@@ -309,7 +352,12 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
         // Ensure it's above everything
-        isolation: 'isolate'
+        isolation: 'isolate',
+        // Additional mobile fixes
+        minHeight: '100vh',
+        minWidth: '100vw',
+        maxHeight: '100vh',
+        maxWidth: '100vw'
       }}
       onClick={handleClose}
     >

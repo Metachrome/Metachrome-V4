@@ -1,5 +1,17 @@
 {
-  "deposits": [],
+  "deposits": [
+    {
+      "id": "dep_test_1758485200000",
+      "user_id": "user-angela-1758195715",
+      "username": "angela.soenoko",
+      "amount": 100,
+      "currency": "USDT-ERC",
+      "status": "pending",
+      "wallet_address": "",
+      "user_balance": 0,
+      "created_at": "2025-09-21T12:00:00.000Z"
+    }
+  ],
   "withdrawals": [
     {
       "id": "with-002",
