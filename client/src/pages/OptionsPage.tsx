@@ -651,7 +651,18 @@ export default function OptionsPage() {
 
       // MOBILE FIX: Show custom modal with exact design
       console.log('📱 MOBILE CHECK: Window width:', window.innerWidth, 'Is mobile:', window.innerWidth < 768);
-      if (window.innerWidth < 768) {
+      console.log('📱 MOBILE CHECK: User agent:', navigator.userAgent);
+      console.log('📱 MOBILE CHECK: isMobile hook:', isMobile);
+
+      // Use multiple mobile detection methods
+      const isMobileWidth = window.innerWidth < 768;
+      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const shouldShowMobileModal = isMobileWidth || isMobile || isMobileUserAgent;
+
+      console.log('📱 MOBILE CHECK: Width check:', isMobileWidth, 'UserAgent check:', isMobileUserAgent, 'Hook check:', isMobile);
+      console.log('📱 MOBILE CHECK: Final decision - should show mobile modal:', shouldShowMobileModal);
+
+      if (shouldShowMobileModal) {
         console.log('📱 MOBILE MODAL: Triggering mobile modal in 1 second...');
         setTimeout(() => {
           const result = won ? 'WON' : 'LOST';
@@ -985,6 +996,28 @@ export default function OptionsPage() {
               </div>
             </div>
 
+            {/* DEBUG: Test Mobile Modal Button */}
+            <div className="mt-3">
+              <button
+                onClick={() => {
+                  console.log('🧪 TEST: Manually triggering mobile modal');
+                  showMobileTradeModal({
+                    symbol: 'BTC/USDT',
+                    pnl: -100,
+                    won: false,
+                    currentPrice: 166805.05,
+                    duration: '30s',
+                    side: 'Buy Up',
+                    amount: 100,
+                    price: 166805.05
+                  });
+                }}
+                className="bg-yellow-600 text-white px-4 py-2 rounded text-sm w-full"
+              >
+                🧪 Test Mobile Modal
+              </button>
+            </div>
+
             {/* Mobile Market Stats */}
             <div className="grid grid-cols-4 gap-2 mt-3 text-xs">
               <div className="text-center">
@@ -1088,7 +1121,7 @@ export default function OptionsPage() {
                         : 'bg-gray-800 text-gray-400 hover:text-white'
                     }`}
                   >
-                    ${amount}
+                    {amount}
                   </button>
                 ))}
                 <button

@@ -223,6 +223,9 @@ export default function WalletPage() {
   const { data: userBalances, isLoading: balancesLoading } = useQuery({
     queryKey: ["/api/balances"],
     enabled: !!user,
+    refetchInterval: 5000, // Refresh every 5 seconds
+    staleTime: 0, // Always consider data stale
+    cacheTime: 0, // Don't cache data
   });
 
   // Fetch real market data for price calculations
@@ -417,6 +420,25 @@ export default function WalletPage() {
                   ) : (
                     `${totalBalanceUSDT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`
                   )}
+                </div>
+
+                {/* DEBUG: Balance Debug Info */}
+                <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+                  <div className="text-sm text-gray-400 mb-2">🔧 Debug Info:</div>
+                  <div className="text-xs text-gray-300 space-y-1">
+                    <div>Raw Balance Data: {JSON.stringify(userBalances, null, 2)}</div>
+                    <div>Total USDT: {totalBalanceUSDT}</div>
+                    <div>Loading: {balancesLoading ? 'Yes' : 'No'}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      console.log('🔄 Manual balance refresh triggered');
+                      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+                    }}
+                    className="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                  >
+                    🔄 Refresh Balance
+                  </button>
                 </div>
               </div>
 
