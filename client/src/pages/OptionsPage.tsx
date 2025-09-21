@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/use-mobile';
 import { apiRequest } from '../lib/queryClient';
+import { MobileDebug } from '../components/ui/mobile-debug';
 import type { MarketData } from '../../../shared/schema';
 
 interface ActiveTrade {
@@ -635,6 +636,14 @@ export default function OptionsPage() {
 
       console.log('🎯 COMPLETE TRADE: Set completedTrade state:', tradeWithTimestamp);
       console.log('🎯 COMPLETE TRADE: Mobile detected:', window.innerWidth < 768);
+      console.log('🎯 COMPLETE TRADE: isMobile hook value:', isMobile);
+
+      // MOBILE DEBUG: Show alert when trade completes on mobile
+      if (window.innerWidth < 768) {
+        setTimeout(() => {
+          alert(`🎯 MOBILE DEBUG: Trade completed! ${won ? 'WON' : 'LOST'} - ${trade.direction} $${trade.amount}`);
+        }, 1000);
+      }
 
       // Auto-hide notification after 45 seconds (sticky notification)
       setTimeout(() => {
@@ -1974,6 +1983,35 @@ export default function OptionsPage() {
       </div>
 
       <Footer />
+
+      {/* Mobile Debug Component */}
+      <MobileDebug />
+
+      {/* MOBILE DEBUG: Test notification button */}
+      {isMobile && (
+        <div className="fixed top-20 left-4 z-[10000]">
+          <button
+            onClick={() => {
+              console.log('🎯 MOBILE DEBUG: Test button clicked');
+              const testTrade = {
+                id: 'test-123',
+                direction: 'up' as const,
+                amount: 100,
+                entryPrice: 50000,
+                currentPrice: 51000,
+                status: 'won' as const,
+                payout: 110,
+                profitPercentage: 10,
+                completedAt: new Date().toISOString()
+              };
+              setCompletedTrade(testTrade);
+            }}
+            className="bg-red-500 text-white px-4 py-2 rounded text-sm"
+          >
+            Test Notification
+          </button>
+        </div>
+      )}
 
       {/* Trade Notification */}
       <TradeNotification

@@ -19,9 +19,16 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(100);
   const timersRef = useRef<{ timer?: NodeJS.Timeout; progressInterval?: NodeJS.Timeout }>({});
+  const renderCountRef = useRef(0);
   const isMobile = useIsMobile();
 
-  console.log('🎯 TRADE NOTIFICATION: Component render, trade:', !!trade, 'isMobile:', isMobile);
+  renderCountRef.current += 1;
+  console.log('🎯 TRADE NOTIFICATION: Component render #', renderCountRef.current, 'trade:', !!trade, 'isMobile:', isMobile);
+
+  // MOBILE DEBUG: Log every render on mobile
+  if (isMobile) {
+    console.log('🎯 MOBILE RENDER #', renderCountRef.current, '- Trade data:', trade);
+  }
 
   const handleClose = () => {
     // Clear all timers
@@ -38,6 +45,24 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       console.log('🎯 TRADE NOTIFICATION: Mobile detected:', isMobile);
       console.log('🎯 TRADE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
       console.log('🎯 TRADE NOTIFICATION: User agent:', navigator.userAgent);
+      console.log('🎯 TRADE NOTIFICATION: Document body overflow:', document.body.style.overflow);
+      console.log('🎯 TRADE NOTIFICATION: Document documentElement overflow:', document.documentElement.style.overflow);
+
+      // MOBILE DEBUG: Force show notification on mobile
+      if (isMobile) {
+        console.log('🎯 MOBILE DEBUG: Forcing notification visibility on mobile');
+        // Add a temporary visual indicator to the body
+        document.body.style.border = '5px solid red';
+        setTimeout(() => {
+          document.body.style.border = '';
+        }, 3000);
+
+        // MOBILE DEBUG: Show alert to confirm notification is triggered
+        setTimeout(() => {
+          alert(`🎯 MOBILE DEBUG: Trade notification triggered! Status: ${trade.status}, Amount: ${trade.amount}`);
+        }, 500);
+      }
+
       setIsVisible(true);
       setProgress(100);
 
@@ -78,6 +103,20 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   if (isMobile) {
     console.log('🎯 TRADE NOTIFICATION: Rendering mobile modal, isVisible:', isVisible);
     console.log('🎯 TRADE NOTIFICATION: Trade data for mobile:', trade);
+
+    // MOBILE FIX: Use portal-like approach to ensure modal appears
+    useEffect(() => {
+      if (isVisible) {
+        // Temporarily disable body scroll to prevent conflicts
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+          document.body.style.overflow = originalOverflow;
+        };
+      }
+    }, [isVisible]);
+
     return (
       <div
         className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-500 ${
@@ -89,11 +128,18 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: 9999
+          zIndex: 99999, // Increased z-index
+          backgroundColor: isVisible ? 'rgba(0, 0, 0, 0.8)' : 'transparent' // Fallback background
         }}
       >
         {/* Backdrop */}
-        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose} />
+        <div
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          onClick={handleClose}
+          style={{
+            backgroundColor: 'rgba(255, 0, 0, 0.3)' // MOBILE DEBUG: Red tint to make backdrop visible
+          }}
+        />
 
         {/* Modal */}
         <div
@@ -108,7 +154,9 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
             maxWidth: '24rem',
             margin: '0 auto',
             position: 'relative',
-            zIndex: 10000
+            zIndex: 10000,
+            border: '5px solid #00ff00', // MOBILE DEBUG: Bright green border
+            boxShadow: '0 0 20px rgba(0, 255, 0, 0.5)' // MOBILE DEBUG: Green glow
           }}
         >
           {/* Header */}

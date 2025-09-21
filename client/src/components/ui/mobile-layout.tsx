@@ -36,13 +36,15 @@ export function MobileLayout({ children }: MobileLayoutProps) {
   // Use mobile layout for small screens (including tablets up to 1024px)
   if (isMobile || isSmallScreen) {
     return (
-      <div className="min-h-screen bg-gray-900 overflow-x-hidden max-w-full">
+      <div className="min-h-screen bg-gray-900 overflow-x-hidden max-w-full relative">
         {shouldShowLayout && <MobileHeader />}
         <main className="relative pb-20 overflow-x-hidden max-w-full">
           {children}
         </main>
         {shouldShowLayout && <Footer />}
         <MobileBottomNav />
+        {/* MOBILE FIX: Ensure modals can appear above mobile layout */}
+        <div id="mobile-modal-root" className="relative z-[99999]" />
       </div>
     );
   }

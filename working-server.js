@@ -2043,7 +2043,13 @@ app.get('/api/admin/users', async (req, res) => {
       console.log(`💰 User ${user.username} balance: ${user.balance}`);
     });
 
-    res.json(filteredUsers);
+    // BALANCE SYNC FIX: Ensure all users have consistent balance format
+    const usersWithSyncedBalances = filteredUsers.map(user => ({
+      ...user,
+      balance: parseFloat(user.balance || 0) // Ensure balance is a number
+    }));
+
+    res.json(usersWithSyncedBalances);
   } catch (error) {
     console.error('❌ Error getting users:', error);
     res.status(500).json({ error: 'Failed to get users' });
@@ -3140,14 +3146,32 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
       const currentBalance = parseFloat(user?.balance || '0');
       const withdrawalAmount = parseFloat(withdrawal.amount || '0');
 
-    if (user && currentBalance >= withdrawalAmount) {
-      const oldBalance = currentBalance;
-      user.balance = (currentBalance - withdrawalAmount).toString();
-      console.log('✅ Withdrawal approved, user balance updated:', user.balance);
+    if (user) {
+      // BALANCE SYNC FIX: Check if balance was already deducted during request
+      if (withdrawal.balance_deducted) {
+        console.log('✅ Withdrawal approved, balance was already deducted during request. Current balance:', user.balance);
+        // No need to deduct again, balance was already deducted when request was made
+      } else {
+        // Legacy behavior: deduct balance now if it wasn't deducted during request
+        if (currentBalance >= withdrawalAmount) {
+          const oldBalance = currentBalance;
+          user.balance = (currentBalance - withdrawalAmount).toString();
+          console.log('✅ Withdrawal approved, user balance updated:', user.balance);
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient user balance for withdrawal. Current: $${currentBalance}, Requested: $${withdrawalAmount}`
+          });
+        }
+      }
 
       // Save updated users data
       await saveUsers(users);
       console.log('💾 User balance changes saved to file');
+
+      // BALANCE SYNC FIX: Force refresh users cache to ensure immediate sync
+      console.log('🔄 BALANCE SYNC: Forcing users cache refresh after withdrawal approval');
+      usersCache = null; // Clear cache to force reload
 
       // Broadcast balance update via WebSocket for real-time sync
       if (global.wss) {
@@ -3172,6 +3196,27 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
               client.send(JSON.stringify(broadcastMessage));
             } catch (error) {
               console.error('❌ Failed to broadcast withdrawal update:', error);
+            }
+          }
+        });
+
+        // BALANCE SYNC FIX: Also broadcast a general refresh message
+        const refreshMessage = {
+          type: 'force_refresh',
+          data: {
+            reason: 'withdrawal_approved',
+            userId: user.id,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        console.log('📡 Broadcasting force refresh via WebSocket:', refreshMessage);
+        global.wss.clients.forEach(client => {
+          if (client.readyState === 1) { // WebSocket.OPEN
+            try {
+              client.send(JSON.stringify(refreshMessage));
+            } catch (error) {
+              console.error('❌ Failed to broadcast refresh message:', error);
             }
           }
         });
@@ -3213,6 +3258,45 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
 
     // Find the user for transaction record
     const user = users.find(u => u.username === withdrawal.username);
+
+    // BALANCE SYNC FIX: Restore balance if it was deducted during request
+    if (user && withdrawal.balance_deducted) {
+      const currentBalance = parseFloat(user.balance || '0');
+      const withdrawalAmount = parseFloat(withdrawal.amount || '0');
+      const restoredBalance = currentBalance + withdrawalAmount;
+
+      user.balance = restoredBalance.toString();
+      await saveUsers(users);
+
+      console.log('💰 BALANCE RESTORED: User balance restored from', currentBalance, 'to', restoredBalance);
+
+      // Broadcast balance update via WebSocket for real-time sync
+      if (global.wss) {
+        const broadcastMessage = {
+          type: 'balance_update',
+          data: {
+            userId: user.id,
+            username: user.username,
+            oldBalance: currentBalance,
+            newBalance: restoredBalance,
+            changeAmount: withdrawalAmount,
+            changeType: 'withdrawal_rejected',
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        console.log('📡 Broadcasting withdrawal rejection balance update:', broadcastMessage);
+        global.wss.clients.forEach(client => {
+          if (client.readyState === 1) { // WebSocket.OPEN
+            try {
+              client.send(JSON.stringify(broadcastMessage));
+            } catch (error) {
+              console.error('❌ Failed to broadcast withdrawal rejection update:', error);
+            }
+          }
+        });
+      }
+    }
 
     // Add rejected transaction record
     const transaction = {
@@ -3754,11 +3838,15 @@ app.get('/api/balances', async (req, res) => {
 
     console.log('💰 Returning balance for user:', currentUser.username, 'Balance:', currentUser.balance);
 
+    // BALANCE SYNC FIX: Ensure we're using the most up-to-date balance
+    const userBalance = parseFloat(currentUser.balance || 0);
+    console.log('💰 BALANCE SYNC: Parsed balance as number:', userBalance);
+
     // Return all cryptocurrency balances for compatibility
     const balances = [
       {
         symbol: 'USDT',
-        available: currentUser.balance.toString(),
+        available: userBalance.toString(),
         locked: '0'
       },
       {
@@ -3854,11 +3942,15 @@ app.get('/api/user/balances', async (req, res) => {
 
     console.log('💰 Returning user balance for:', currentUser.username, 'Balance:', currentUser.balance);
 
+    // BALANCE SYNC FIX: Ensure we're using the most up-to-date balance
+    const userBalance = parseFloat(currentUser.balance || 0);
+    console.log('💰 BALANCE SYNC: Parsed user balance as number:', userBalance);
+
     // Return all cryptocurrency balances for trading pages compatibility
     const balances = [
       {
         symbol: 'USDT',
-        available: currentUser.balance.toString(),
+        available: userBalance.toString(),
         locked: '0'
       },
       {
@@ -7337,6 +7429,44 @@ app.post('/api/user/withdraw', async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
+    // BALANCE SYNC FIX: Immediately deduct balance when withdrawal is requested
+    // This provides immediate feedback to the user
+    const oldBalance = userBalance;
+    const newBalance = userBalance - withdrawalAmount;
+
+    // Update user balance immediately
+    user.balance = newBalance.toString();
+    await saveUsers(users);
+
+    console.log('💸 IMMEDIATE DEDUCTION: User balance updated from', oldBalance, 'to', newBalance);
+
+    // Broadcast balance update via WebSocket for real-time sync
+    if (global.wss) {
+      const broadcastMessage = {
+        type: 'balance_update',
+        data: {
+          userId: user.id,
+          username: user.username,
+          oldBalance: oldBalance,
+          newBalance: newBalance,
+          changeAmount: -withdrawalAmount,
+          changeType: 'withdrawal_requested',
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📡 Broadcasting withdrawal request balance update:', broadcastMessage);
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(broadcastMessage));
+          } catch (error) {
+            console.error('❌ Failed to broadcast withdrawal request update:', error);
+          }
+        }
+      });
+    }
+
     // Create withdrawal request
     const withdrawal = {
       id: `with-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -7347,7 +7477,8 @@ app.post('/api/user/withdraw', async (req, res) => {
       walletAddress,
       status: 'pending',
       created_at: new Date().toISOString(),
-      requested_at: new Date().toISOString()
+      requested_at: new Date().toISOString(),
+      balance_deducted: true // Track that balance was already deducted
     };
 
     // Add to pending withdrawals
@@ -7412,6 +7543,44 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
 
+    // BALANCE SYNC FIX: Immediately deduct balance when withdrawal is requested
+    // This provides immediate feedback to the user
+    const oldBalance = userBalance;
+    const newBalance = userBalance - withdrawalAmount;
+
+    // Update user balance immediately
+    user.balance = newBalance.toString();
+    await saveUsers(users);
+
+    console.log('💸 IMMEDIATE DEDUCTION (alt endpoint): User balance updated from', oldBalance, 'to', newBalance);
+
+    // Broadcast balance update via WebSocket for real-time sync
+    if (global.wss) {
+      const broadcastMessage = {
+        type: 'balance_update',
+        data: {
+          userId: user.id,
+          username: user.username,
+          oldBalance: oldBalance,
+          newBalance: newBalance,
+          changeAmount: -withdrawalAmount,
+          changeType: 'withdrawal_requested',
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📡 Broadcasting withdrawal request balance update (alt endpoint):', broadcastMessage);
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(broadcastMessage));
+          } catch (error) {
+            console.error('❌ Failed to broadcast withdrawal request update:', error);
+          }
+        }
+      });
+    }
+
     // Create withdrawal request
     const withdrawal = {
       id: `with-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -7422,7 +7591,8 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
       wallet_address: address, // Use 'address' field from frontend
       status: 'pending',
       created_at: new Date().toISOString(),
-      requested_at: new Date().toISOString()
+      requested_at: new Date().toISOString(),
+      balance_deducted: true // Track that balance was already deducted
     };
 
     // Add to pending withdrawals
