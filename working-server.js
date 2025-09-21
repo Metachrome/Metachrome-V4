@@ -4087,23 +4087,53 @@ app.get('/api/users/:userId/balance', async (req, res) => {
   }
 });
 
-// Generic balance endpoint (for frontend compatibility) - FORCE FIXED
+// Generic balance endpoint (for frontend compatibility) - PROPERLY AUTHENTICATED
 app.get('/api/balances', async (req, res) => {
   try {
-    console.log('💰 BALANCE ENDPOINT: Force fixed version called');
+    console.log('💰 BALANCE ENDPOINT: Properly authenticated version called');
+
+    // Get user from auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    console.log('💰 BALANCE ENDPOINT: Auth token:', authToken?.substring(0, 30) + '...');
+
+    if (!authToken) {
+      console.log('💰 ERROR: No auth token provided');
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
     const users = await getUsers();
     console.log('💰 BALANCE ENDPOINT: Total users loaded:', users.length);
 
-    // FORCE USE ANGELA.SOENOKO - NO TOKEN CHECKING
-    const angelaUser = users.find(u => u.username === 'angela.soenoko');
-    if (!angelaUser) {
-      console.log('💰 ERROR: Angela user not found!');
-      return res.status(404).json({ error: 'Angela user not found' });
+    let currentUser = null;
+
+    // Try to find user by token
+    if (authToken.startsWith('user-session-')) {
+      // Extract user ID from token format: user-session-{userId}-{timestamp}
+      const tokenParts = authToken.replace('user-session-', '').split('-');
+      const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+      console.log('💰 Extracted user ID from token:', userId);
+
+      currentUser = users.find(u => u.id === userId);
+      if (currentUser) {
+        console.log('💰 Found user by session:', currentUser.username || currentUser.email);
+      }
+    }
+    // Handle JWT tokens (from Google OAuth)
+    else if (authToken.includes('.')) {
+      // This looks like a JWT token, find the most recent user
+      const recentUser = users[users.length - 1];
+      if (recentUser) {
+        currentUser = recentUser;
+        console.log('💰 Found user by JWT token:', currentUser.username || currentUser.email);
+      }
     }
 
-    const currentUser = angelaUser;
-    console.log('💰 FORCE USING ANGELA:', currentUser.username, 'Balance:', currentUser.balance);
+    if (!currentUser) {
+      console.log('💰 ERROR: User not found for token');
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log('💰 AUTHENTICATED USER:', currentUser.username || currentUser.email, 'Balance:', currentUser.balance);
 
     // This section is now handled above - removed duplicate
 

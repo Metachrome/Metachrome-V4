@@ -469,25 +469,7 @@ export default function WalletPage() {
                   </div>
                 </div>
 
-                {/* DEBUG: Balance Debug Info */}
-                <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-                  <div className="text-sm text-gray-400 mb-2">🔧 Debug Info:</div>
-                  <div className="text-xs text-gray-300 space-y-1">
-                    <div>USDT Balance: {usdtBalance} USDT</div>
-                    <div>Total Balance: ${totalBalanceUSDT.toFixed(2)}</div>
-                    <div>Auto-Conversion: Enabled</div>
-                    <div>Loading: {balancesLoading ? 'Yes' : 'No'}</div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      console.log('🔄 Manual balance refresh triggered');
-                      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
-                    }}
-                    className="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                  >
-                    🔄 Refresh Balance
-                  </button>
-                </div>
+
               </div>
 
 

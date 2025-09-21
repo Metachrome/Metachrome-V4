@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Notification Test - METACHROME</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .test-button {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+        
+        .test-button.win {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+        }
+        
+        .test-button.lose {
+            background: linear-gradient(45deg, #ff4444, #cc2222);
+        }
+        
+        .debug-info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        
+        .mobile-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #ff4444;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10000;
+        }
+        
+        .mobile-indicator.mobile {
+            background: #00ff88;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-indicator" id="mobileIndicator">Desktop Mode</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Production Notification Test</h1>
+            <p>Test trade notifications in production environment</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>This page tests if trade notifications work in the production environment</li>
+                <li>Click the test buttons below to simulate trade completions</li>
+                <li>Check the browser console for detailed logs</li>
+                <li>The notification should appear as a full-screen modal on mobile devices</li>
+                <li>On desktop, it should appear as a smaller notification in the top-right</li>
+            </ol>
+        </div>
+        
+        <div class="status-card">
+            <h3>📱 Device Information</h3>
+            <div class="debug-info">
+                <div>Screen Size: <span id="screenSize"></span></div>
+                <div>Viewport: <span id="viewport"></span></div>
+                <div>User Agent: <span id="userAgent"></span></div>
+                <div>Is Mobile: <span id="isMobile"></span></div>
+                <div>Environment: <span id="environment">Production</span></div>
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h3>🧪 Test Controls</h3>
+            <button class="test-button win" onclick="testWinNotification()">
+                🎉 Test WIN Notification
+            </button>
+            <button class="test-button lose" onclick="testLoseNotification()">
+                💔 Test LOSE Notification
+            </button>
+            <button class="test-button" onclick="testDebugInfo()">
+                🔍 Debug Info
+            </button>
+        </div>
+        
+        <div class="status-card">
+            <h3>📊 Test Results</h3>
+            <div id="testResults" class="debug-info">
+                Click a test button to see results...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update device info
+        function updateDeviceInfo() {
+            document.getElementById('screenSize').textContent = `${screen.width}x${screen.height}`;
+            document.getElementById('viewport').textContent = `${window.innerWidth}x${window.innerHeight}`;
+            document.getElementById('userAgent').textContent = navigator.userAgent;
+            
+            const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            document.getElementById('isMobile').textContent = isMobile ? 'YES' : 'NO';
+            
+            const indicator = document.getElementById('mobileIndicator');
+            indicator.textContent = isMobile ? 'Mobile Mode' : 'Desktop Mode';
+            indicator.className = 'mobile-indicator' + (isMobile ? ' mobile' : '');
+        }
+        
+        // Update on load and resize
+        updateDeviceInfo();
+        window.addEventListener('resize', updateDeviceInfo);
+        
+        function testWinNotification() {
+            console.log('🎉 TESTING WIN NOTIFICATION');
+            
+            const testTrade = {
+                id: 'test-win-' + Date.now(),
+                direction: 'up',
+                amount: 100,
+                entryPrice: 65000,
+                finalPrice: 66500,
+                status: 'won',
+                payout: 115,
+                profitPercentage: 15
+            };
+            
+            // Try to trigger notification via localStorage (like the real app)
+            localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+            
+            // Also try direct window method if available
+            if (window.debugTradeNotification) {
+                window.debugTradeNotification();
+            }
+            
+            document.getElementById('testResults').innerHTML = `
+                <strong>WIN Test Triggered:</strong><br>
+                Trade ID: ${testTrade.id}<br>
+                Amount: ${testTrade.amount} USDT<br>
+                Profit: +${testTrade.payout - testTrade.amount} USDT<br>
+                Status: ${testTrade.status}<br>
+                <em>Check console for detailed logs...</em>
+            `;
+            
+            // Try to redirect to options page to trigger notification
+            setTimeout(() => {
+                if (confirm('Redirect to options page to test notification?')) {
+                    window.location.href = '/trade/options';
+                }
+            }, 2000);
+        }
+        
+        function testLoseNotification() {
+            console.log('💔 TESTING LOSE NOTIFICATION');
+            
+            const testTrade = {
+                id: 'test-lose-' + Date.now(),
+                direction: 'down',
+                amount: 100,
+                entryPrice: 65000,
+                finalPrice: 64000,
+                status: 'lost',
+                payout: 0,
+                profitPercentage: 15
+            };
+            
+            localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+            
+            if (window.debugTradeNotification) {
+                window.debugTradeNotification();
+            }
+            
+            document.getElementById('testResults').innerHTML = `
+                <strong>LOSE Test Triggered:</strong><br>
+                Trade ID: ${testTrade.id}<br>
+                Amount: ${testTrade.amount} USDT<br>
+                Loss: -${testTrade.amount} USDT<br>
+                Status: ${testTrade.status}<br>
+                <em>Check console for detailed logs...</em>
+            `;
+            
+            setTimeout(() => {
+                if (confirm('Redirect to options page to test notification?')) {
+                    window.location.href = '/trade/options';
+                }
+            }, 2000);
+        }
+        
+        function testDebugInfo() {
+            console.log('🔍 RUNNING DEBUG INFO TEST');
+            
+            const debugInfo = {
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                userAgent: navigator.userAgent,
+                isMobile: window.innerWidth <= 768,
+                isMobileUserAgent: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                localStorage: {
+                    completedTrade: localStorage.getItem('completedTrade')
+                },
+                windowMethods: {
+                    debugTradeNotification: typeof window.debugTradeNotification,
+                    currentTradeNotification: typeof window.currentTradeNotification
+                }
+            };
+            
+            console.log('Debug Info:', debugInfo);
+            
+            document.getElementById('testResults').innerHTML = `
+                <strong>Debug Information:</strong><br>
+                <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
+            `;
+        }
+        
+        // Check for existing completed trade on load
+        window.addEventListener('load', () => {
+            const existingTrade = localStorage.getItem('completedTrade');
+            if (existingTrade) {
+                console.log('🎯 Found existing completed trade in localStorage:', existingTrade);
+                document.getElementById('testResults').innerHTML = `
+                    <strong>Existing Trade Found:</strong><br>
+                    <pre>${existingTrade}</pre>
+                    <br><em>This trade should trigger a notification when you visit the options page.</em>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
