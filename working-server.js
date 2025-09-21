@@ -3135,12 +3135,41 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
       const withdrawalAmount = parseFloat(withdrawal.amount || '0');
 
     if (user && currentBalance >= withdrawalAmount) {
+      const oldBalance = currentBalance;
       user.balance = (currentBalance - withdrawalAmount).toString();
       console.log('✅ Withdrawal approved, user balance updated:', user.balance);
 
       // Save updated users data
       await saveUsers(users);
       console.log('💾 User balance changes saved to file');
+
+      // Broadcast balance update via WebSocket for real-time sync
+      if (global.wss) {
+        const broadcastMessage = {
+          type: 'balance_update',
+          data: {
+            userId: user.id,
+            username: user.username,
+            oldBalance: oldBalance,
+            newBalance: parseFloat(user.balance),
+            changeAmount: -withdrawalAmount,
+            changeType: 'admin_withdrawal_approval',
+            adminId: 'superadmin-001',
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        console.log('📡 Broadcasting withdrawal balance update:', broadcastMessage);
+        global.wss.clients.forEach(client => {
+          if (client.readyState === 1) { // WebSocket.OPEN
+            try {
+              client.send(JSON.stringify(broadcastMessage));
+            } catch (error) {
+              console.error('❌ Failed to broadcast withdrawal update:', error);
+            }
+          }
+        });
+      }
 
       // Add approved transaction record
       const transaction = {
@@ -3719,14 +3748,32 @@ app.get('/api/balances', async (req, res) => {
 
     console.log('💰 Returning balance for user:', currentUser.username, 'Balance:', currentUser.balance);
 
-    // Return both formats for compatibility
-    res.json([
+    // Return all cryptocurrency balances for compatibility
+    const balances = [
       {
         symbol: 'USDT',
         available: currentUser.balance.toString(),
         locked: '0'
+      },
+      {
+        symbol: 'BTC',
+        available: '0.5', // Default BTC balance for testing
+        locked: '0'
+      },
+      {
+        symbol: 'ETH',
+        available: '2.0', // Default ETH balance for testing
+        locked: '0'
+      },
+      {
+        symbol: 'SOL',
+        available: '10.0', // Default SOL balance for testing
+        locked: '0'
       }
-    ]);
+    ];
+
+    console.log('💰 Returning balances:', balances);
+    res.json(balances);
   } catch (error) {
     console.error('❌ Error getting balances:', error);
     res.status(500).json({ error: 'Failed to get balances' });
@@ -3801,14 +3848,32 @@ app.get('/api/user/balances', async (req, res) => {
 
     console.log('💰 Returning user balance for:', currentUser.username, 'Balance:', currentUser.balance);
 
-    // Return array format for trading pages compatibility
-    res.json([
+    // Return all cryptocurrency balances for trading pages compatibility
+    const balances = [
       {
         symbol: 'USDT',
         available: currentUser.balance.toString(),
         locked: '0'
+      },
+      {
+        symbol: 'BTC',
+        available: '0.5', // Default BTC balance for testing
+        locked: '0'
+      },
+      {
+        symbol: 'ETH',
+        available: '2.0', // Default ETH balance for testing
+        locked: '0'
+      },
+      {
+        symbol: 'SOL',
+        available: '10.0', // Default SOL balance for testing
+        locked: '0'
       }
-    ]);
+    ];
+
+    console.log('💰 Returning user balances:', balances);
+    res.json(balances);
   } catch (error) {
     console.error('❌ Error getting user balances:', error);
     res.status(500).json({ error: 'Failed to get user balances' });
@@ -7289,6 +7354,83 @@ app.post('/api/user/withdraw', async (req, res) => {
     res.json({
       success: true,
       message: 'Withdrawal request submitted successfully',
+      withdrawal: {
+        id: withdrawal.id,
+        amount: withdrawal.amount,
+        currency: withdrawal.currency,
+        status: withdrawal.status
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating withdrawal request:', error);
+    res.status(500).json({ error: 'Failed to create withdrawal request' });
+  }
+});
+
+// Alternative endpoint for frontend compatibility
+app.post('/api/transactions/withdrawal-request', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    const { amount, currency, address } = req.body;
+
+    console.log('💸 Withdrawal request (transactions endpoint):', { amount, currency, address });
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!amount || !currency || !address) {
+      return res.status(400).json({ error: 'Missing required fields: amount, currency, address' });
+    }
+
+    // Extract user ID from token
+    const userId = authToken.includes('user-session-') ?
+      authToken.split('user-session-')[1].split('-')[0] + '-' + authToken.split('user-session-')[1].split('-')[1] + '-' + authToken.split('user-session-')[1].split('-')[2] :
+      authToken;
+
+    console.log('💸 Processing withdrawal for user:', userId);
+
+    // Get user data
+    const users = await getUsers();
+    const user = users.find(u => u.id === userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userBalance = parseFloat(user.balance || '0');
+    const withdrawalAmount = parseFloat(amount);
+
+    if (withdrawalAmount > userBalance) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+
+    // Create withdrawal request
+    const withdrawal = {
+      id: `with-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user_id: userId,
+      username: user.username,
+      amount: withdrawalAmount,
+      currency,
+      wallet_address: address, // Use 'address' field from frontend
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      requested_at: new Date().toISOString()
+    };
+
+    // Add to pending withdrawals
+    pendingWithdrawals.push(withdrawal);
+    pendingData.withdrawals = pendingWithdrawals;
+    savePendingData();
+
+    console.log('✅ Withdrawal request created:', withdrawal.id);
+
+    res.json({
+      success: true,
+      message: 'Withdrawal request submitted successfully',
+      amount: withdrawal.amount,
+      currency: withdrawal.currency,
       withdrawal: {
         id: withdrawal.id,
         amount: withdrawal.amount,
