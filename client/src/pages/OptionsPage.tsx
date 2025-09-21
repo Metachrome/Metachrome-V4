@@ -2030,6 +2030,43 @@ export default function OptionsPage() {
       {/* Mobile Debug Component */}
       <MobileDebug />
 
+      {/* Mobile Test Button - Only show on mobile */}
+      {isMobile && (
+        <button
+          onClick={() => {
+            console.log('🧪 MOBILE TEST: Triggering test notification');
+            const testTrade = {
+              id: 'mobile-test-' + Date.now(),
+              direction: 'up' as const,
+              amount: 100,
+              entryPrice: 65000,
+              currentPrice: 66500,
+              status: 'won' as const,
+              payout: 115,
+              profitPercentage: 15,
+              completedAt: new Date().toISOString()
+            };
+            setCompletedTrade(testTrade);
+            localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+          }}
+          style={{
+            position: 'fixed',
+            top: '10px',
+            right: '10px',
+            zIndex: 999998,
+            backgroundColor: '#10b981',
+            color: 'white',
+            border: 'none',
+            padding: '8px 12px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            cursor: 'pointer'
+          }}
+        >
+          📱 Test Mobile Modal
+        </button>
+      )}
+
 
 
       {/* Trade Notification */}

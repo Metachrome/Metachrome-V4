@@ -26,14 +26,23 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   };
 
   useEffect(() => {
+    console.log('🎯 NOTIFICATION EFFECT: Running with trade:', trade);
+
     if (trade) {
       console.log('🎯 MOBILE NOTIFICATION: Showing notification for trade:', trade);
       console.log('🎯 MOBILE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
       console.log('🎯 MOBILE NOTIFICATION: Is mobile:', window.innerWidth <= 768);
 
       // Show notification immediately
+      console.log('🎯 MOBILE NOTIFICATION: Setting isVisible to true');
       setIsVisible(true);
       setProgress(100);
+
+      // Force a re-render to ensure visibility
+      setTimeout(() => {
+        console.log('🎯 MOBILE NOTIFICATION: Force re-render check, isVisible should be true');
+        setIsVisible(true);
+      }, 50);
 
       // Add debug info to window
       if (typeof window !== 'undefined') {
@@ -43,8 +52,22 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           console.log('- Trade:', trade);
           console.log('- isVisible:', isVisible);
           console.log('- Window size:', window.innerWidth, 'x', window.innerHeight);
-          console.log('- Notification visible:', document.querySelector('[data-mobile-notification]') !== null);
+          console.log('- Notification elements:', document.querySelectorAll('[data-mobile-notification]').length);
+          console.log('- Body children:', document.body.children.length);
         };
+
+        // Auto-trigger debug after 1 second
+        setTimeout(() => {
+          (window as any).debugMobileNotification();
+
+          // Fallback alert for testing
+          if (window.innerWidth <= 768) {
+            console.log('📱 MOBILE FALLBACK: Showing alert as backup');
+            setTimeout(() => {
+              alert(`🎯 TRADE ${trade.status.toUpperCase()}!\n\nAmount: ${trade.amount} USDT\nP&L: ${trade.status === 'won' ? '+' : '-'}${Math.abs(trade.status === 'won' ? (trade.payout || 0) - trade.amount : trade.amount).toFixed(2)} USDT\n\nThis is a fallback notification.`);
+            }, 500);
+          }
+        }, 1000);
       }
 
       // Auto-close after 45 seconds
@@ -65,6 +88,9 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
         clearTimeout(timer);
         clearInterval(progressTimer);
       };
+    } else {
+      console.log('🎯 NOTIFICATION EFFECT: No trade, setting isVisible to false');
+      setIsVisible(false);
     }
   }, [trade]);
 
@@ -72,6 +98,8 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     console.log('🎯 TRADE NOTIFICATION: No trade data, not rendering');
     return null;
   }
+
+  console.log('🎯 TRADE NOTIFICATION: About to render with isVisible:', isVisible);
 
   const isWin = trade.status === 'won';
 
@@ -88,30 +116,37 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     pnl = -trade.amount;
   }
 
-  // MOBILE-FIRST NOTIFICATION: Simple, guaranteed to work
-  console.log('🎯 MOBILE NOTIFICATION: Rendering mobile-first notification');
-  console.log('🎯 MOBILE NOTIFICATION: Screen width:', window.innerWidth);
-  console.log('🎯 MOBILE NOTIFICATION: isVisible:', isVisible);
+  // DIRECT RENDER: No portal, render directly in page
+  console.log('🎯 DIRECT NOTIFICATION: Rendering directly in page');
+  console.log('🎯 DIRECT NOTIFICATION: Screen width:', window.innerWidth);
+  console.log('🎯 DIRECT NOTIFICATION: isVisible:', isVisible);
+  console.log('🎯 DIRECT NOTIFICATION: trade data:', trade);
 
   if (!isVisible) {
     return null;
   }
 
-  return createPortal(
+  // Render directly without portal for maximum compatibility
+  return (
     <div
       data-mobile-notification="true"
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 999999,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        top: '0px',
+        left: '0px',
+        right: '0px',
+        bottom: '0px',
+        width: '100vw',
+        height: '100vh',
+        zIndex: 2147483647, // Maximum possible z-index
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px'
+        padding: '20px',
+        visibility: 'visible',
+        opacity: 1,
+        pointerEvents: 'auto'
       }}
       onClick={handleClose}
     >
@@ -252,8 +287,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           </div>
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }
 
