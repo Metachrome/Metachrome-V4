@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useIsMobile } from "../hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -24,21 +25,25 @@ import {
   EyeOff,
   Upload,
   CheckCircle,
-  FileText
+  FileText,
+  RefreshCw
 } from "lucide-react";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshAuth } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+  const isMobile = useIsMobile();
+
   // Form states
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [redeemCode, setRedeemCode] = useState('');
   const [isRedeeming, setIsRedeeming] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState(null);
-  const [referralStats, setReferralStats] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState<any>(null);
+  const [referralStats, setReferralStats] = useState<any>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [testResults, setTestResults] = useState<string>('');
 
   // Document upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -180,6 +185,71 @@ export default function ProfilePage() {
     }
   };
 
+  // Force refresh verification status and user data
+  const forceRefreshVerification = async () => {
+    setIsRefreshing(true);
+    try {
+      // Clear cached user data
+      localStorage.removeItem('user');
+
+      // Force refresh auth data
+      queryClient.removeQueries({ queryKey: ["/api/auth"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth"] });
+
+      // Also refresh verification status
+      await fetchVerificationStatus();
+
+      toast({
+        title: "Verification Status Refreshed",
+        description: "Your account verification status has been updated.",
+      });
+
+      setTestResults(`✅ Verification refresh successful! Status: ${user?.verification_status || 'Unknown'}`);
+    } catch (error) {
+      console.error('Failed to refresh verification status:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh verification status. Please try again.",
+        variant: "destructive",
+      });
+
+      setTestResults(`❌ Verification refresh failed: ${error}`);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Test function for debugging mobile verification issues
+  const testMobileVerificationFix = async () => {
+    setTestResults('🔄 Testing mobile verification fix...');
+
+    try {
+      // Step 1: Check current user data
+      const currentUser = localStorage.getItem('user');
+      const currentUserData = currentUser ? JSON.parse(currentUser) : null;
+
+      // Step 2: Test force refresh
+      await forceRefreshVerification();
+
+      // Step 3: Check updated user data
+      const updatedUser = localStorage.getItem('user');
+      const updatedUserData = updatedUser ? JSON.parse(updatedUser) : null;
+
+      setTestResults(`
+✅ Mobile verification fix test completed!
+📱 Screen width: ${window.innerWidth}px (Mobile: ${window.innerWidth < 768 ? 'Yes' : 'No'})
+👤 Current user: ${user?.username || 'Unknown'}
+🔐 Verification status: ${user?.verification_status || 'Unknown'}
+💾 LocalStorage cleared and refetched: ${currentUserData ? 'Yes' : 'No'} → ${updatedUserData ? 'Yes' : 'No'}
+🔄 Refresh completed successfully!
+      `);
+
+    } catch (error) {
+      setTestResults(`❌ Test failed: ${error}`);
+    }
+  };
+
   // Fetch referral stats
   const fetchReferralStats = async () => {
     try {
@@ -294,7 +364,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 pt-20 pb-12">
+    <div className="min-h-screen bg-gray-900 pt-20 pb-24 md:pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -477,10 +547,50 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Mobile Verification Refresh Notice */}
+                {isMobile && user?.verification_status !== 'verified' && (
+                  <div className="p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-blue-100 font-medium mb-1">📱 Mobile Verification Status</h3>
+                        <p className="text-blue-200 text-sm">
+                          If you were verified on desktop, tap refresh to sync your status
+                        </p>
+                      </div>
+                      <Button
+                        onClick={forceRefreshVerification}
+                        disabled={isRefreshing}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {isRefreshing ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-1" />
+                            Refresh
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Verification Status */}
                 <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
-                  <div>
-                    <h3 className="text-white font-medium">Verification Status</h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-white font-medium">Verification Status</h3>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={forceRefreshVerification}
+                        disabled={isRefreshing}
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                     <p className="text-gray-400 text-sm">
                       {user?.verification_status === 'verified' ? 'Your account is verified' :
                        user?.verification_status === 'pending' ? 'Verification pending review' :
