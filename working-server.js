@@ -3333,273 +3333,65 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     const withdrawalId = req.params.id;
     const { action, reason } = req.body;
 
-    console.log('💸 WITHDRAWAL ACTION DEBUG: Starting withdrawal action');
+    console.log('💸 WITHDRAWAL ACTION: Starting withdrawal action');
     console.log('💸 Withdrawal ID:', withdrawalId);
     console.log('💸 Action:', action);
     console.log('💸 Reason:', reason);
-    console.log('💸 Request body:', req.body);
 
-    // Find the withdrawal request
-    console.log('💸 DEBUG: Searching for withdrawal in pending list');
-    console.log('💸 DEBUG: Pending withdrawals count:', pendingWithdrawals.length);
-    console.log('💸 DEBUG: Pending withdrawals:', pendingWithdrawals.map(w => ({ id: w.id, username: w.username, amount: w.amount })));
-
-    const withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
-    console.log('💸 DEBUG: Withdrawal index found:', withdrawalIndex);
-
-    if (withdrawalIndex === -1) {
-      console.log('💸 ERROR: Withdrawal request not found');
-      return res.status(404).json({
-        success: false,
-        message: 'Withdrawal request not found'
-      });
-    }
-
-    const withdrawal = pendingWithdrawals[withdrawalIndex];
-    console.log('💸 DEBUG: Found withdrawal:', withdrawal);
-
-    // Get users and transactions for both approve and reject actions
-    console.log('💸 DEBUG: Getting users and transactions');
-    const users = await getUsers();
-    console.log('💸 DEBUG: Users loaded:', users.length);
-    const transactions = await getTransactions();
-    console.log('💸 DEBUG: Transactions loaded:', transactions.length);
-
-    if (action === 'approve') {
-
-      // Find the user and update their balance
-      const user = users.find(u => u.username === withdrawal.username);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: 'User not found'
-        });
-      }
-
-      const currentBalance = parseFloat(user.balance || '0');
-      const withdrawalAmount = parseFloat(withdrawal.amount || '0');
-      let oldBalance = currentBalance; // Initialize oldBalance
-
-      console.log('💸 WITHDRAWAL APPROVAL: User:', user.username, 'Current balance:', currentBalance, 'Withdrawal amount:', withdrawalAmount);
-
-      // WITHDRAWAL FIX: Always deduct balance on approval regardless of previous deduction
-      if (currentBalance >= withdrawalAmount) {
-        oldBalance = currentBalance;
-        const newBalance = currentBalance - withdrawalAmount;
-        user.balance = newBalance.toString();
-        console.log('✅ WITHDRAWAL APPROVED: Balance deducted from', oldBalance, 'to', newBalance);
-      } else {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient user balance for withdrawal. Current: $${currentBalance}, Requested: $${withdrawalAmount}`
-        });
-      }
-
-      // WITHDRAWAL FIX: Update balance in database (production) or file (development)
-      if (isProduction && supabase) {
-        try {
-          console.log('🔄 Updating balance in Supabase for withdrawal approval:', user.id, user.balance);
-          const { data: updateData, error: updateError } = await supabase
-            .from('users')
-            .update({
-              balance: parseFloat(user.balance),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id)
-            .select();
-
-          if (updateError) {
-            console.error('❌ Error updating user balance in Supabase:', updateError);
-            throw updateError;
-          } else {
-            console.log('✅ User balance updated in Supabase for withdrawal:', user.balance);
-            console.log('✅ Supabase update response:', updateData);
-          }
-        } catch (dbError) {
-          console.error('❌ Database balance update failed:', dbError);
-          // Continue with file fallback
-          await saveUsers(users);
-        }
-      } else {
-        // Development mode - save to file
-        await saveUsers(users);
-        console.log('💾 WITHDRAWAL: User balance changes saved to file');
-      }
-
-      // Clear all caches to force immediate refresh
-      usersCache = null;
-      console.log('🔄 WITHDRAWAL: Cleared users cache for immediate sync');
-
-      // WITHDRAWAL FIX: Broadcast balance update immediately
-      if (global.wss) {
-        const balanceUpdate = {
-          type: 'balance_update',
-          data: {
-            userId: user.id,
-            username: user.username,
-            oldBalance: oldBalance,
-            newBalance: parseFloat(user.balance),
-            changeAmount: -withdrawalAmount,
-            changeType: 'withdrawal_approved',
-            timestamp: new Date().toISOString()
-          }
-        };
-
-        console.log('📡 WITHDRAWAL: Broadcasting balance update:', balanceUpdate);
-        global.wss.clients.forEach(client => {
-          if (client.readyState === 1) {
-            try {
-              client.send(JSON.stringify(balanceUpdate));
-            } catch (error) {
-              console.error('❌ Failed to broadcast balance update:', error);
-            }
-          }
-        });
-
-        // BALANCE SYNC FIX: Also broadcast a general refresh message
-        const refreshMessage = {
-          type: 'force_refresh',
-          data: {
-            reason: 'withdrawal_approved',
-            userId: user.id,
-            timestamp: new Date().toISOString()
-          }
-        };
-
-        console.log('📡 Broadcasting force refresh via WebSocket:', refreshMessage);
-        global.wss.clients.forEach(client => {
-          if (client.readyState === 1) { // WebSocket.OPEN
-            try {
-              client.send(JSON.stringify(refreshMessage));
-            } catch (error) {
-              console.error('❌ Failed to broadcast refresh message:', error);
-            }
-          }
-        });
-      }
-
-      // Add approved transaction record
-      console.log('💸 DEBUG: Creating transaction record for approved withdrawal');
-      const transaction = {
-        id: `txn-${Date.now()}`,
-        user_id: user.id,
-        type: 'withdrawal', // Use 'withdrawal' as it appears in the database
-        amount: withdrawal.amount, // Positive amount for display, negative impact on balance
-        status: 'completed',
-        description: `Withdrawal approved by admin - ${withdrawal.currency} via ${withdrawal.network} to ${withdrawal.wallet_address}`,
-        created_at: new Date().toISOString(),
-        users: { username: user.username }
-      };
-      console.log('💸 DEBUG: Transaction data:', transaction);
-
+    // REAL DATABASE UPDATE - Update withdrawal status in Supabase
+    if (supabase) {
       try {
-        await createTransaction(transaction);
-        console.log('📝 Approved withdrawal transaction recorded successfully');
-      } catch (transactionError) {
-        console.error('❌ Error creating transaction:', transactionError);
-        // Don't fail the whole operation if transaction recording fails
-      }
+        const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
-      // Remove from pending withdrawals
-      pendingWithdrawals.splice(withdrawalIndex, 1);
-      pendingData.withdrawals = pendingWithdrawals;
-      savePendingData();
-      console.log('🗑️ Withdrawal removed from pending list');
+        const { data: updatedWithdrawal, error: updateError } = await supabase
+          .from('withdrawals')
+          .update({
+            status: newStatus,
+            admin_notes: reason || `Withdrawal ${action}d by admin`,
+            processed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', withdrawalId)
+          .select()
+          .single();
 
-      res.json({
-        success: true,
-        message: 'Withdrawal approved successfully',
-        action: 'approve'
-      });
-  } else if (action === 'reject') {
-    console.log('💸 DEBUG: Processing withdrawal rejection');
-    console.log('❌ Withdrawal rejected:', reason);
+        if (updateError) {
+          console.error('❌ Error updating withdrawal in database:', updateError);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to update withdrawal status'
+          });
+        }
 
-    // Find the user for transaction record
-    console.log('💸 DEBUG: Finding user for rejection:', withdrawal.username);
-    const user = users.find(u => u.username === withdrawal.username);
-    console.log('💸 DEBUG: User found for rejection:', !!user);
+        console.log('✅ Withdrawal updated in database:', updatedWithdrawal);
 
-    // BALANCE SYNC FIX: Restore balance if it was deducted during request
-    if (user && withdrawal.balance_deducted) {
-      const currentBalance = parseFloat(user.balance || '0');
-      const withdrawalAmount = parseFloat(withdrawal.amount || '0');
-      const restoredBalance = currentBalance + withdrawalAmount;
+        return res.json({
+          success: true,
+          message: `Withdrawal ${action}d successfully`,
+          withdrawal: updatedWithdrawal
+        });
 
-      user.balance = restoredBalance.toString();
-      await saveUsers(users);
-
-      console.log('💰 BALANCE RESTORED: User balance restored from', currentBalance, 'to', restoredBalance);
-
-      // Broadcast balance update via WebSocket for real-time sync
-      if (global.wss) {
-        const broadcastMessage = {
-          type: 'balance_update',
-          data: {
-            userId: user.id,
-            username: user.username,
-            oldBalance: currentBalance,
-            newBalance: restoredBalance,
-            changeAmount: withdrawalAmount,
-            changeType: 'withdrawal_rejected',
-            timestamp: new Date().toISOString()
-          }
-        };
-
-        console.log('📡 Broadcasting withdrawal rejection balance update:', broadcastMessage);
-        global.wss.clients.forEach(client => {
-          if (client.readyState === 1) { // WebSocket.OPEN
-            try {
-              client.send(JSON.stringify(broadcastMessage));
-            } catch (error) {
-              console.error('❌ Failed to broadcast withdrawal rejection update:', error);
-            }
-          }
+      } catch (error) {
+        console.error('❌ Database error:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Database error occurred'
         });
       }
+    } else {
+      // Fallback for development mode
+      console.log('⚠️ No database connection, using fallback mode');
+      return res.json({
+        success: true,
+        message: `Withdrawal ${action}d successfully (development mode)`
+      });
     }
 
-    // Add rejected transaction record
-    const transaction = {
-      id: `txn-${Date.now()}`,
-      user_id: user ? user.id : withdrawal.user_id,
-      type: 'withdrawal', // Use 'withdrawal' as it appears in the database
-      amount: withdrawal.amount,
-      status: 'failed', // Use 'failed' instead of 'rejected' to match database constraint
-      description: `Withdrawal rejected by admin - Reason: ${reason || 'No reason provided'} - ${withdrawal.currency} via ${withdrawal.network}`,
-      created_at: new Date().toISOString(),
-      users: { username: withdrawal.username }
-    };
-    await createTransaction(transaction);
-    console.log('📝 Rejected withdrawal transaction recorded');
-
-    // Remove from pending withdrawals
-    pendingWithdrawals.splice(withdrawalIndex, 1);
-    pendingData.withdrawals = pendingWithdrawals;
-    savePendingData();
-    console.log('🗑️ Withdrawal removed from pending list');
-
-    res.json({
-      success: true,
-      message: 'Withdrawal rejected',
-      action: 'reject',
-      reason
-    });
-  } else {
-    res.status(400).json({
-      success: false,
-      message: 'Invalid action'
-    });
-  }
   } catch (error) {
-    console.error('❌ WITHDRAWAL ACTION ERROR: Full error details:');
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
-    console.error('❌ Error object:', error);
+    console.error('❌ WITHDRAWAL ACTION ERROR:', error);
     res.status(500).json({
       error: 'Failed to process withdrawal action',
-      details: error.message,
-      stack: error.stack
+      details: error.message
     });
   }
 });

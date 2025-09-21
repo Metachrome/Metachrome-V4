@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Notification Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            display: block;
+            width: 100%;
+            max-width: 300px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .info {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .notification-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.95) !important;
+            z-index: 2147483647 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .notification-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Mobile Notification Test</h1>
+    
+    <div class="info">
+        <h3>Device Info:</h3>
+        <p><strong>Screen Size:</strong> <span id="screenSize"></span></p>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        <p><strong>Is Mobile:</strong> <span id="isMobile"></span></p>
+        <p><strong>Viewport:</strong> <span id="viewport"></span></p>
+    </div>
+
+    <button class="test-button" onclick="showWinNotification()">🎉 Test Win Notification</button>
+    <button class="test-button" onclick="showLoseNotification()">❌ Test Lose Notification</button>
+    <button class="test-button" onclick="testPortalRendering()">🚀 Test Portal Rendering</button>
+
+    <div id="notification-container"></div>
+
+    <script>
+        // Update device info
+        document.getElementById('screenSize').textContent = `${screen.width}x${screen.height}`;
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        document.getElementById('viewport').textContent = `${window.innerWidth}x${window.innerHeight}`;
+        
+        const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        document.getElementById('isMobile').textContent = isMobile ? 'YES' : 'NO';
+
+        function showWinNotification() {
+            console.log('🎯 Showing win notification');
+            showNotification({
+                type: 'win',
+                title: '🎉 Trade Won!',
+                message: 'Congratulations! You won $150.00',
+                amount: 100,
+                payout: 150,
+                profit: 50
+            });
+        }
+
+        function showLoseNotification() {
+            console.log('🎯 Showing lose notification');
+            showNotification({
+                type: 'lose',
+                title: '❌ Trade Lost',
+                message: 'Better luck next time! You lost $100.00',
+                amount: 100,
+                payout: 0,
+                profit: -100
+            });
+        }
+
+        function testPortalRendering() {
+            console.log('🚀 Testing portal rendering');
+            
+            // Create notification using portal-like approach
+            const overlay = document.createElement('div');
+            overlay.className = 'notification-overlay';
+            overlay.innerHTML = `
+                <div class="notification-content" style="position: relative;">
+                    <button class="close-btn" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                    <h2>🚀 Portal Test</h2>
+                    <p>This notification is rendered using portal-like approach</p>
+                    <p><strong>Z-Index:</strong> 2147483647 (Maximum)</p>
+                    <p><strong>Position:</strong> Fixed with !important</p>
+                    <p><strong>Backdrop:</strong> Blur effect applied</p>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: white; color: #333; border: none; padding: 10px 20px; border-radius: 5px; margin-top: 15px; cursor: pointer;">Close</button>
+                </div>
+            `;
+            
+            // Append to body (portal approach)
+            document.body.appendChild(overlay);
+            
+            // Auto-close after 10 seconds
+            setTimeout(() => {
+                if (overlay.parentElement) {
+                    overlay.remove();
+                }
+            }, 10000);
+        }
+
+        function showNotification(data) {
+            console.log('📱 Creating notification:', data);
+            
+            // Force body overflow hidden
+            const originalOverflow = document.body.style.overflow;
+            const originalDocumentOverflow = document.documentElement.style.overflow;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'notification-overlay';
+            
+            const isWin = data.type === 'win';
+            const bgColor = isWin ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)' : 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)';
+            
+            overlay.innerHTML = `
+                <div class="notification-content" style="background: ${bgColor}; position: relative;">
+                    <button class="close-btn" onclick="closeNotification(this)">&times;</button>
+                    <h2>${data.title}</h2>
+                    <p style="font-size: 18px; margin: 20px 0;">${data.message}</p>
+                    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                        <p><strong>Amount:</strong> $${data.amount}</p>
+                        <p><strong>Payout:</strong> $${data.payout}</p>
+                        <p><strong>P&L:</strong> <span style="color: ${isWin ? '#90EE90' : '#FFB6C1'}">${data.profit >= 0 ? '+' : ''}$${data.profit}</span></p>
+                    </div>
+                    <button onclick="closeNotification(this)" style="background: white; color: #333; border: none; padding: 12px 25px; border-radius: 8px; margin-top: 15px; cursor: pointer; font-weight: bold;">Close</button>
+                </div>
+            `;
+            
+            // Append to body for maximum visibility
+            document.body.appendChild(overlay);
+            
+            // Store original overflow for restoration
+            overlay.originalOverflow = originalOverflow;
+            overlay.originalDocumentOverflow = originalDocumentOverflow;
+            
+            console.log('✅ Notification created and appended to body');
+            console.log('📱 Overlay z-index:', window.getComputedStyle(overlay).zIndex);
+            console.log('📱 Overlay position:', window.getComputedStyle(overlay).position);
+            console.log('📱 Body overflow:', document.body.style.overflow);
+        }
+
+        function closeNotification(button) {
+            const overlay = button.closest('.notification-overlay');
+            if (overlay) {
+                // Restore original overflow
+                document.body.style.overflow = overlay.originalOverflow || '';
+                document.documentElement.style.overflow = overlay.originalDocumentOverflow || '';
+                overlay.remove();
+                console.log('✅ Notification closed and overflow restored');
+            }
+        }
+
+        // Log device info for debugging
+        console.log('📱 Device Info:', {
+            screenSize: `${screen.width}x${screen.height}`,
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+            isMobile: isMobile,
+            userAgent: navigator.userAgent,
+            pixelRatio: window.devicePixelRatio
+        });
+    </script>
+</body>
+</html>
