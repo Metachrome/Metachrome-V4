@@ -3395,9 +3395,36 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
         });
       }
 
-      // WITHDRAWAL FIX: Force save and sync balance changes
-      await saveUsers(users);
-      console.log('💾 WITHDRAWAL: User balance changes saved to file');
+      // WITHDRAWAL FIX: Update balance in database (production) or file (development)
+      if (isProduction && supabase) {
+        try {
+          console.log('🔄 Updating balance in Supabase for withdrawal approval:', user.id, user.balance);
+          const { data: updateData, error: updateError } = await supabase
+            .from('users')
+            .update({
+              balance: parseFloat(user.balance),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .select();
+
+          if (updateError) {
+            console.error('❌ Error updating user balance in Supabase:', updateError);
+            throw updateError;
+          } else {
+            console.log('✅ User balance updated in Supabase for withdrawal:', user.balance);
+            console.log('✅ Supabase update response:', updateData);
+          }
+        } catch (dbError) {
+          console.error('❌ Database balance update failed:', dbError);
+          // Continue with file fallback
+          await saveUsers(users);
+        }
+      } else {
+        // Development mode - save to file
+        await saveUsers(users);
+        console.log('💾 WITHDRAWAL: User balance changes saved to file');
+      }
 
       // Clear all caches to force immediate refresh
       usersCache = null;

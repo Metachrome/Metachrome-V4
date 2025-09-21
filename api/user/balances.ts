@@ -60,13 +60,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
 
           if (user) {
-            balanceData = {
-              USDT: {
+            balanceData = [
+              {
+                symbol: 'USDT',
                 available: user.balance.toString(),
-                locked: '0',
-                symbol: 'USDT'
+                locked: '0'
+              },
+              {
+                symbol: 'BTC',
+                available: '0.5', // Default BTC balance for testing
+                locked: '0'
+              },
+              {
+                symbol: 'ETH',
+                available: '2.0', // Default ETH balance for testing
+                locked: '0'
+              },
+              {
+                symbol: 'SOL',
+                available: '10.0', // Default SOL balance for testing
+                locked: '0'
               }
-            };
+            ];
           }
         }
       } catch (dbError) {
@@ -76,13 +91,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Fallback to in-memory balance
       if (!balanceData) {
         const userBalance = userBalances.get(targetUserId) || { balance: 0, currency: 'USDT' };
-        balanceData = {
-          USDT: {
+        balanceData = [
+          {
+            symbol: 'USDT',
             available: userBalance.balance.toString(),
-            locked: '0',
-            symbol: 'USDT'
+            locked: '0'
+          },
+          {
+            symbol: 'BTC',
+            available: '0.5', // Default BTC balance for testing
+            locked: '0'
+          },
+          {
+            symbol: 'ETH',
+            available: '2.0', // Default ETH balance for testing
+            locked: '0'
+          },
+          {
+            symbol: 'SOL',
+            available: '10.0', // Default SOL balance for testing
+            locked: '0'
           }
-        };
+        ];
       }
 
       console.log('✅ Balance data:', balanceData);
@@ -154,13 +184,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         action,
         amount: changeAmount,
         newBalance: currentBalance.balance,
-        balance: {
-          USDT: {
+        balance: [
+          {
+            symbol: 'USDT',
             available: currentBalance.balance.toString(),
-            locked: '0',
-            symbol: 'USDT'
+            locked: '0'
+          },
+          {
+            symbol: 'BTC',
+            available: '0.5', // Default BTC balance for testing
+            locked: '0'
+          },
+          {
+            symbol: 'ETH',
+            available: '2.0', // Default ETH balance for testing
+            locked: '0'
+          },
+          {
+            symbol: 'SOL',
+            available: '10.0', // Default SOL balance for testing
+            locked: '0'
           }
-        }
+        ]
       });
     }
 

@@ -16,6 +16,7 @@ import { CreditCard, ArrowUpRight, ArrowDownLeft, Send, Download, Users, Wallet,
 
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState("Balance");
+  const [showDetailedBalance, setShowDetailedBalance] = useState(true);
   const isMobile = useIsMobile();
 
   const [depositAmount, setDepositAmount] = useState('');
@@ -249,7 +250,13 @@ export default function WalletPage() {
     return marketItem ? parseFloat(marketItem.price) : 0;
   };
 
-  // Calculate total balance in USDT
+  // Get individual balances and calculate total
+  const usdtBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'USDT')?.available || '0');
+  const btcBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'BTC')?.available || '0');
+  const ethBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'ETH')?.available || '0');
+  const solBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'SOL')?.available || '0');
+
+  // Calculate total balance in USDT (for display purposes)
   const totalBalanceUSDT = userBalances?.reduce((sum: number, balance: any) => {
     const price = getMarketPrice(balance.symbol);
     return sum + parseFloat(balance.available || '0') * price;
@@ -409,25 +416,63 @@ export default function WalletPage() {
 
               {/* Total Balance */}
               <div className="mb-8">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-gray-400 text-sm">Total Balances</span>
-                  <span className="text-gray-400">💰</span>
-
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-400 text-sm">Total Balances</span>
+                    <span className="text-gray-400">💰</span>
+                  </div>
+                  <button
+                    onClick={() => setShowDetailedBalance(!showDetailedBalance)}
+                    className="text-purple-400 text-sm hover:text-purple-300"
+                  >
+                    {showDetailedBalance ? 'Simple View' : 'Detailed View'}
+                  </button>
                 </div>
                 <div className="text-4xl font-bold text-white">
                   {balancesLoading ? (
                     <span className="animate-pulse">Loading...</span>
-                  ) : (
+                  ) : showDetailedBalance ? (
                     `${totalBalanceUSDT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`
+                  ) : (
+                    `${usdtBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`
                   )}
                 </div>
+
+                {/* Individual Balance Breakdown - Only show in detailed view */}
+                {showDetailedBalance && (
+                  <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="text-gray-400 text-sm">USDT</div>
+                      <div className="text-white text-xl font-bold">{usdtBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div className="text-gray-500 text-xs">≈ ${usdtBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="text-gray-400 text-sm">BTC</div>
+                      <div className="text-white text-xl font-bold">{btcBalance.toFixed(6)}</div>
+                      <div className="text-gray-500 text-xs">≈ ${(btcBalance * getMarketPrice('BTC')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="text-gray-400 text-sm">ETH</div>
+                      <div className="text-white text-xl font-bold">{ethBalance.toFixed(4)}</div>
+                      <div className="text-gray-500 text-xs">≈ ${(ethBalance * getMarketPrice('ETH')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="text-gray-400 text-sm">SOL</div>
+                      <div className="text-white text-xl font-bold">{solBalance.toFixed(2)}</div>
+                      <div className="text-gray-500 text-xs">≈ ${(solBalance * getMarketPrice('SOL')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </div>
+                  </div>
+                )}
 
                 {/* DEBUG: Balance Debug Info */}
                 <div className="mt-4 p-4 bg-gray-800 rounded-lg">
                   <div className="text-sm text-gray-400 mb-2">🔧 Debug Info:</div>
                   <div className="text-xs text-gray-300 space-y-1">
-                    <div>Raw Balance Data: {JSON.stringify(userBalances, null, 2)}</div>
-                    <div>Total USDT: {totalBalanceUSDT}</div>
+                    <div>USDT: {usdtBalance} (${usdtBalance.toFixed(2)})</div>
+                    <div>BTC: {btcBalance} (${(btcBalance * getMarketPrice('BTC')).toFixed(2)})</div>
+                    <div>ETH: {ethBalance} (${(ethBalance * getMarketPrice('ETH')).toFixed(2)})</div>
+                    <div>SOL: {solBalance} (${(solBalance * getMarketPrice('SOL')).toFixed(2)})</div>
+                    <div>Total: ${totalBalanceUSDT.toFixed(2)}</div>
                     <div>Loading: {balancesLoading ? 'Yes' : 'No'}</div>
                   </div>
                   <button

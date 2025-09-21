@@ -78,8 +78,15 @@ export default function OptionsPage() {
   // Mobile trade modal function
   const showMobileTradeModal = (data: any) => {
     console.log('📱 MOBILE MODAL: Showing mobile trade modal with data:', data);
+    console.log('📱 MOBILE MODAL: Setting mobileTradeData to:', data);
+    console.log('📱 MOBILE MODAL: Setting isMobileModalOpen to true');
     setMobileTradeData(data);
     setIsMobileModalOpen(true);
+    console.log('📱 MOBILE MODAL: Modal state updated');
+
+    // Force body scroll prevention
+    document.body.style.overflow = 'hidden';
+    console.log('📱 MOBILE MODAL: Body scroll disabled');
   };
 
   // Load trade history from server on component mount and persist locally
@@ -299,36 +306,17 @@ export default function OptionsPage() {
     },
   });
 
-  // Get current USDT balance - FIXED parsing logic
+  // Get current USDT balance - Simplified for standardized array format
   let balance = 0;
 
-  if (userBalances) {
-    console.log('🔍 RAW userBalances:', userBalances);
-
-    // Try multiple parsing strategies to handle different API response formats
-    if (userBalances.USDT?.available) {
-      // Format: { USDT: { available: "10420", ... } }
-      balance = Number(userBalances.USDT.available);
-      console.log('🔍 Using USDT.available:', balance);
-    } else if (Array.isArray(userBalances.balances)) {
-      // Format: { balances: [{ currency: "USDT", balance: 10420 }, ...] }
-      const usdtBalance = userBalances.balances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
-      balance = Number(usdtBalance?.balance || usdtBalance?.available || 0);
-      console.log('🔍 Using balances array:', balance, usdtBalance);
-    } else if (Array.isArray(userBalances)) {
-      // Format: [{ symbol: "USDT", available: "1400" }, ...]
-      const usdtBalance = userBalances.find((b: any) => b.symbol === 'USDT' || b.currency === 'USDT');
-      balance = Number(usdtBalance?.available || usdtBalance?.balance || 0);
-      console.log('🔍 Using direct array:', balance, usdtBalance);
-    } else if (userBalances['0']?.currency === 'USDT') {
-      // Format: { "0": { currency: "USDT", balance: 10420 }, ... }
-      balance = Number(userBalances['0'].balance || userBalances['0'].available || 0);
-      console.log('🔍 Using indexed format:', balance);
-    } else {
-      console.log('🔍 No matching format found for userBalances');
-    }
+  if (userBalances && Array.isArray(userBalances)) {
+    console.log('🔍 RAW userBalances (array):', userBalances);
+    // Format: [{ symbol: "USDT", available: "1400" }, ...]
+    const usdtBalance = userBalances.find((b: any) => b.symbol === 'USDT');
+    balance = Number(usdtBalance?.available || 0);
+    console.log('🔍 Using standardized array format:', balance, usdtBalance);
   } else {
-    console.log('🔍 userBalances is null/undefined');
+    console.log('🔍 userBalances is not in expected array format:', typeof userBalances, userBalances);
   }
 
   // Ensure balance is a valid number
@@ -2070,95 +2058,68 @@ export default function OptionsPage() {
       {/* Mobile Trade Modal */}
       {isMobileModalOpen && mobileTradeData && (
         <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            zIndex: 999999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-            fontFamily: 'system-ui, -apple-system, sans-serif'
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-5 z-[999999]"
+          onClick={() => {
+            console.log('📱 MOBILE MODAL: Background clicked, closing modal');
+            setIsMobileModalOpen(false);
+            document.body.style.overflow = 'auto';
           }}
-          onClick={() => setIsMobileModalOpen(false)}
         >
           <div
-            style={{
-              backgroundColor: '#1a1a1a',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '350px',
-              width: '100%',
-              color: 'white',
-              position: 'relative'
-            }}
+            className="bg-gray-900 rounded-xl p-6 max-w-sm w-full text-white relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{mobileTradeData.symbol}</div>
+            <div className="flex justify-between items-center mb-5">
+              <div className="text-lg font-bold">{mobileTradeData.symbol}</div>
               <button
-                onClick={() => setIsMobileModalOpen(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'white',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  padding: '0',
-                  width: '24px',
-                  height: '24px'
+                onClick={() => {
+                  console.log('📱 MOBILE MODAL: Close button clicked, closing modal');
+                  setIsMobileModalOpen(false);
+                  document.body.style.overflow = 'auto';
                 }}
+                className="bg-transparent border-0 text-white text-2xl cursor-pointer p-0 w-6 h-6"
               >
                 ×
               </button>
             </div>
 
             {/* PnL */}
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <div style={{
-                fontSize: '36px',
-                fontWeight: 'bold',
-                color: mobileTradeData.pnl >= 0 ? '#10b981' : '#ef4444',
-                marginBottom: '8px'
-              }}>
+            <div className="text-center mb-5">
+              <div className={`text-4xl font-bold mb-2 ${mobileTradeData.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {mobileTradeData.pnl >= 0 ? '+' : ''}{mobileTradeData.pnl.toFixed(0)} USDT
               </div>
-              <div style={{ color: '#888', fontSize: '16px' }}>Settlement completed</div>
+              <div className="text-gray-400 text-base">Settlement completed</div>
             </div>
 
             {/* Details */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: '#888' }}>Current price :</span>
+            <div className="mb-5">
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-400">Current price :</span>
                 <span>{mobileTradeData.currentPrice}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: '#888' }}>Time :</span>
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-400">Time :</span>
                 <span>{mobileTradeData.duration}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: '#888' }}>Side :</span>
-                <span style={{ color: mobileTradeData.side === 'Buy Up' ? '#10b981' : '#ef4444' }}>
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-400">Side :</span>
+                <span className={mobileTradeData.side === 'Buy Up' ? 'text-green-400' : 'text-red-400'}>
                   {mobileTradeData.side}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: '#888' }}>Amount :</span>
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-400">Amount :</span>
                 <span>{mobileTradeData.amount} USDT</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: '#888' }}>Price :</span>
+              <div className="flex justify-between mb-3">
+                <span className="text-gray-400">Price :</span>
                 <span>{mobileTradeData.price.toFixed(2)} USDT</span>
               </div>
             </div>
 
             {/* Footer text */}
-            <div style={{ color: '#888', fontSize: '14px', lineHeight: '1.4' }}>
+            <div className="text-gray-400 text-sm leading-relaxed">
               The ultimate price for each option contract is determined by the system's settlement process.
             </div>
           </div>
