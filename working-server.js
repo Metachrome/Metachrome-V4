@@ -3077,31 +3077,57 @@ app.post('/api/transactions/submit-proof', upload.single('receipt'), (req, res) 
 // ===== PENDING REQUESTS ENDPOINT =====
 app.get('/api/admin/pending-requests', async (req, res) => {
   try {
-    console.log('🔔 Getting pending requests');
-    console.log('🔔 Raw pendingDeposits:', pendingDeposits);
-    console.log('🔔 Raw pendingWithdrawals:', pendingWithdrawals);
+    console.log('🔔 Getting pending requests - REAL DATABASE VERSION');
+
+    let realWithdrawals = [];
+    let realDeposits = [];
+
+    // REAL DATABASE QUERY - Get pending withdrawals from Supabase
+    if (supabase) {
+      try {
+        const { data: withdrawalsData, error: withdrawalsError } = await supabase
+          .from('withdrawals')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (!withdrawalsError && withdrawalsData) {
+          realWithdrawals = withdrawalsData;
+          console.log('✅ Found real pending withdrawals:', realWithdrawals.length);
+        }
+
+        const { data: depositsData, error: depositsError } = await supabase
+          .from('deposits')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (!depositsError && depositsData) {
+          realDeposits = depositsData;
+          console.log('✅ Found real pending deposits:', realDeposits.length);
+        }
+      } catch (dbError) {
+        console.error('❌ Database query failed:', dbError);
+      }
+    }
+
+    // If no real data found, fall back to mock data for development
+    if (realWithdrawals.length === 0 && realDeposits.length === 0) {
+      console.log('⚠️ No real pending requests found, using mock data for development');
+      realWithdrawals = pendingWithdrawals.filter(w => w.status === 'pending');
+      realDeposits = pendingDeposits.filter(d => d.status === 'pending');
+    }
 
     const users = await getUsers();
 
-    // Add user balance info and receipt URLs to pending requests
-    const depositsWithBalance = pendingDeposits.map(deposit => {
-      // Try multiple ways to find the user to handle different username formats
-      let user = users.find(u => u.username === deposit.username);
-
-      // If not found by username, try by user_id
-      if (!user && deposit.user_id) {
-        user = users.find(u => u.id === deposit.user_id);
-      }
-
-      // If still not found, try by userId field
-      if (!user && deposit.userId) {
-        user = users.find(u => u.id === deposit.userId);
-      }
+    // Add user balance info to pending requests
+    const depositsWithBalance = realDeposits.map(deposit => {
+      let user = users.find(u => u.username === deposit.username || u.id === deposit.user_id);
 
       const depositWithBalance = {
         ...deposit,
         user_balance: user ? user.balance : '0',
-        username: user ? user.username : (deposit.username || 'Unknown User') // Use actual username from user record
+        username: user ? user.username : (deposit.username || 'Unknown User')
       };
 
     // Add receipt file URL if receipt exists
@@ -3113,9 +3139,13 @@ app.get('/api/admin/pending-requests', async (req, res) => {
     return depositWithBalance;
   });
 
-  const withdrawalsWithBalance = pendingWithdrawals.map(withdrawal => {
-    const user = users.find(u => u.username === withdrawal.username) || { balance: 15000 };
-    return { ...withdrawal, user_balance: user.balance };
+  const withdrawalsWithBalance = realWithdrawals.map(withdrawal => {
+    let user = users.find(u => u.username === withdrawal.username || u.id === withdrawal.user_id);
+    return {
+      ...withdrawal,
+      user_balance: user ? user.balance : '0',
+      username: user ? user.username : (withdrawal.username || 'Unknown User')
+    };
   });
 
   const pendingRequests = {
@@ -3124,7 +3154,12 @@ app.get('/api/admin/pending-requests', async (req, res) => {
     total: depositsWithBalance.length + withdrawalsWithBalance.length
   };
 
-  console.log('🔔 Pending requests response:', JSON.stringify(pendingRequests, null, 2));
+  console.log('🔔 REAL PENDING REQUESTS:', {
+    deposits: depositsWithBalance.length,
+    withdrawals: withdrawalsWithBalance.length,
+    total: pendingRequests.total
+  });
+
   res.json(pendingRequests);
   } catch (error) {
     console.error('❌ Error getting pending requests:', error);
@@ -3885,29 +3920,7 @@ app.post('/api/withdrawals', async (req, res) => {
   }
 });
 
-// ===== ADMIN PENDING REQUESTS ENDPOINT =====
-app.get('/api/admin/pending-requests', async (req, res) => {
-  try {
-    console.log('📋 Admin fetching pending requests');
-
-    // Use the same storage as other endpoints
-    const pendingWithdrawalsFiltered = pendingWithdrawals.filter(w => w.status === 'pending');
-    const pendingDepositsFiltered = pendingDeposits.filter(d => d.status === 'pending');
-
-    console.log(`📋 Found ${pendingWithdrawalsFiltered.length} pending withdrawals, ${pendingDepositsFiltered.length} pending deposits`);
-
-    res.json({
-      success: true,
-      withdrawals: pendingWithdrawalsFiltered,
-      deposits: pendingDepositsFiltered,
-      total: pendingWithdrawalsFiltered.length + pendingDepositsFiltered.length
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching pending requests:', error);
-    res.status(500).json({ error: 'Failed to fetch pending requests' });
-  }
-});
+// ===== DUPLICATE ENDPOINT REMOVED - Using real database version above =====
 
 // ===== ADMIN WITHDRAWAL APPROVAL ENDPOINT =====
 app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {

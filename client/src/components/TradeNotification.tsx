@@ -114,20 +114,26 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
 
   // Force body to not scroll during modal
   useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    const originalDocumentOverflow = document.documentElement.style.overflow;
+    if (isVisible) {
+      const originalOverflow = document.body.style.overflow;
+      const originalDocumentOverflow = document.documentElement.style.overflow;
 
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
 
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.documentElement.style.overflow = originalDocumentOverflow;
-    };
-  }, []);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.documentElement.style.overflow = originalDocumentOverflow;
+      };
+    }
+  }, [isVisible]);
 
-  // Use createPortal to ensure modal renders at document body level with MAXIMUM visibility
-  return createPortal(
+  // FORCE MOBILE NOTIFICATION: Always show full-screen notification on mobile
+  if (isMobileDevice || window.innerWidth <= 768) {
+    console.log('🎯 MOBILE NOTIFICATION: Forcing mobile notification display');
+
+    // Use createPortal to ensure modal renders at document body level with MAXIMUM visibility
+    return createPortal(
       <div
         className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-5"
         style={{
@@ -239,10 +245,13 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       </div>,
       document.body
     );
+  }
 
-  // Note: Removed mobile-only condition - now renders for all devices
-  // Mobile-specific modal design (old complex version - keeping as fallback)
-  if (false) {
+  // DESKTOP NOTIFICATION: Show desktop notification for larger screens
+  console.log('🎯 DESKTOP NOTIFICATION: Rendering desktop notification');
+
+  // Use createPortal for desktop too to ensure maximum visibility
+  return createPortal(
     console.log('🎯 TRADE NOTIFICATION: Rendering mobile modal, isVisible:', isVisible);
     console.log('🎯 TRADE NOTIFICATION: Trade data for mobile:', trade);
 
@@ -369,11 +378,17 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     );
   }
 
-  // Desktop notification (existing design)
-  return (
     <div className={`fixed top-4 right-4 z-50 transition-all duration-500 transform ${
       isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
-    }`}>
+    }`}
+    style={{
+      position: 'fixed !important' as any,
+      top: '16px !important' as any,
+      right: '16px !important' as any,
+      zIndex: 2147483647, // Maximum z-index
+      pointerEvents: 'auto !important' as any,
+      visibility: 'visible !important' as any
+    }}>
       <div className={`p-6 rounded-xl shadow-2xl border-l-8 ${
         isWin
           ? 'bg-gradient-to-r from-green-900/95 to-green-800/95 border-green-400 text-green-100 shadow-green-500/20'
@@ -473,6 +488,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
