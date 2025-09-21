@@ -30,6 +30,10 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     console.log('🎯 MOBILE RENDER #', renderCountRef.current, '- Trade data:', trade);
   }
 
+  // FORCE MOBILE NOTIFICATION: Always show notification on mobile if trade exists
+  const shouldShow = trade !== null;
+  const forceVisible = isMobile && shouldShow;
+
   const handleClose = () => {
     // Clear all timers
     if (timersRef.current.timer) clearTimeout(timersRef.current.timer);
@@ -99,8 +103,83 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
   const priceChange = trade.finalPrice - trade.entryPrice;
 
-  // Mobile-specific modal design
+  // SIMPLIFIED MOBILE NOTIFICATION: Use simple overlay approach
   if (isMobile) {
+    console.log('🎯 MOBILE NOTIFICATION: Rendering simplified mobile notification');
+
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}
+        onClick={onClose}
+      >
+        <div
+          style={{
+            backgroundColor: isWin ? '#059669' : '#dc2626',
+            color: 'white',
+            padding: '30px',
+            borderRadius: '15px',
+            textAlign: 'center',
+            maxWidth: '350px',
+            width: '100%',
+            border: '3px solid white',
+            boxShadow: '0 0 30px rgba(255, 255, 255, 0.3)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
+            {isWin ? '🎉 TRADE WON!' : '💔 TRADE LOST'}
+          </div>
+
+          <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '15px' }}>
+            {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT
+          </div>
+
+          <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+            Direction: {trade.direction.toUpperCase()}
+          </div>
+
+          <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+            Amount: ${trade.amount}
+          </div>
+
+          <div style={{ fontSize: '16px', marginBottom: '20px' }}>
+            Entry: ${trade.entryPrice} → Final: ${trade.finalPrice}
+          </div>
+
+          <button
+            onClick={onClose}
+            style={{
+              backgroundColor: 'white',
+              color: isWin ? '#059669' : '#dc2626',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile-specific modal design (old complex version - keeping as fallback)
+  if (false) {
     console.log('🎯 TRADE NOTIFICATION: Rendering mobile modal, isVisible:', isVisible);
     console.log('🎯 TRADE NOTIFICATION: Trade data for mobile:', trade);
 

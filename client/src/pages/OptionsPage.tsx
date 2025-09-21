@@ -34,6 +34,15 @@ export default function OptionsPage() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
+  // MOBILE DEBUG: Show alert when page loads on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setTimeout(() => {
+        alert(`🎯 MOBILE DEBUG: OptionsPage loaded on mobile device! Width: ${window.innerWidth}px`);
+      }, 2000);
+    }
+  }, [isMobile]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("open");
   const [selectedDuration, setSelectedDuration] = useState("30s");
@@ -1987,31 +1996,42 @@ export default function OptionsPage() {
       {/* Mobile Debug Component */}
       <MobileDebug />
 
-      {/* MOBILE DEBUG: Test notification button */}
-      {isMobile && (
-        <div className="fixed top-20 left-4 z-[10000]">
-          <button
-            onClick={() => {
-              console.log('🎯 MOBILE DEBUG: Test button clicked');
-              const testTrade = {
-                id: 'test-123',
-                direction: 'up' as const,
-                amount: 100,
-                entryPrice: 50000,
-                currentPrice: 51000,
-                status: 'won' as const,
-                payout: 110,
-                profitPercentage: 10,
-                completedAt: new Date().toISOString()
-              };
-              setCompletedTrade(testTrade);
-            }}
-            className="bg-red-500 text-white px-4 py-2 rounded text-sm"
-          >
-            Test Notification
-          </button>
-        </div>
-      )}
+      {/* SIMPLIFIED MOBILE TEST BUTTON */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          zIndex: 999999,
+          backgroundColor: '#ff0000',
+          color: 'white',
+          padding: '10px 15px',
+          borderRadius: '5px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          border: '2px solid white'
+        }}
+        onClick={() => {
+          console.log('🎯 MOBILE DEBUG: Test button clicked');
+          alert('Test button clicked! Creating test trade...');
+          const testTrade = {
+            id: 'test-123',
+            direction: 'up' as const,
+            amount: 100,
+            entryPrice: 50000,
+            currentPrice: 51000,
+            status: 'won' as const,
+            payout: 110,
+            profitPercentage: 10,
+            completedAt: new Date().toISOString()
+          };
+          setCompletedTrade(testTrade);
+          console.log('🎯 MOBILE DEBUG: Test trade set:', testTrade);
+        }}
+      >
+        TEST NOTIF
+      </div>
 
       {/* Trade Notification */}
       <TradeNotification

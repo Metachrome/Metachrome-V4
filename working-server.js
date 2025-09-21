@@ -2056,6 +2056,100 @@ app.get('/api/admin/users', async (req, res) => {
   }
 });
 
+// SIMPLE TEST ENDPOINT TO VERIFY SERVER IS RUNNING
+app.get('/api/test/server-status', (req, res) => {
+  res.json({
+    status: 'working-server.js is running',
+    timestamp: new Date().toISOString(),
+    message: 'Server modifications are active',
+    balanceFixApplied: true,
+    mobileNotificationFixApplied: true
+  });
+});
+
+// BALANCE DEBUG ENDPOINT
+app.get('/api/debug/balance/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const users = await getUsers();
+    const user = users.find(u => u.id === userId || u.username === userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log('🔍 BALANCE DEBUG for user:', userId);
+    console.log('🔍 User object:', JSON.stringify(user, null, 2));
+    console.log('🔍 Balance value:', user.balance);
+    console.log('🔍 Balance type:', typeof user.balance);
+    console.log('🔍 Parsed balance:', parseFloat(user.balance || 0));
+
+    res.json({
+      userId: user.id,
+      username: user.username,
+      rawBalance: user.balance,
+      balanceType: typeof user.balance,
+      parsedBalance: parseFloat(user.balance || 0),
+      allUserData: user
+    });
+  } catch (error) {
+    console.error('❌ Balance debug error:', error);
+    res.status(500).json({ error: 'Debug failed' });
+  }
+});
+
+// FORCE BALANCE SYNC ENDPOINT
+app.post('/api/admin/force-balance-sync', async (req, res) => {
+  try {
+    console.log('🔄 FORCE BALANCE SYNC: Starting...');
+
+    // Clear any caches
+    usersCache = null;
+
+    // Get fresh user data
+    const users = await getUsers();
+    console.log('🔄 FORCE BALANCE SYNC: Loaded', users.length, 'users');
+
+    // Log all user balances
+    users.forEach(user => {
+      console.log(`🔄 User ${user.username} (${user.id}): Balance = ${user.balance} (${typeof user.balance})`);
+    });
+
+    res.json({
+      success: true,
+      message: 'Balance sync forced',
+      userCount: users.length,
+      users: users.map(u => ({
+        id: u.id,
+        username: u.username,
+        balance: u.balance,
+        balanceType: typeof u.balance,
+        parsedBalance: parseFloat(u.balance || 0)
+      }))
+    });
+  } catch (error) {
+    console.error('❌ Force balance sync error:', error);
+    res.status(500).json({ error: 'Force sync failed' });
+  }
+});
+
+// MOBILE NOTIFICATION TEST ENDPOINT
+app.get('/api/test/mobile-notification', (req, res) => {
+  res.json({
+    testTrade: {
+      id: 'test-mobile-' + Date.now(),
+      direction: 'up',
+      amount: 100,
+      entryPrice: 50000,
+      finalPrice: 51000,
+      status: 'won',
+      payout: 110,
+      profitPercentage: 10
+    },
+    message: 'Use this test trade data to trigger mobile notification'
+  });
+});
+
 app.post('/api/admin/users', async (req, res) => {
   console.log('👤 Creating new user:', req.body);
   const { username, email, password, balance, role, trading_mode } = req.body;
