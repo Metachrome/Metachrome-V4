@@ -384,3 +384,71 @@ button {
     opacity: 1 !important;
   }
 }
+
+/* Ultra-small screen optimization for 250px and below */
+@media (max-width: 250px) {
+  [data-mobile-notification="true"] {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-notification-card-250px {
+    width: calc(100vw - 16px) !important;
+    max-width: 234px !important;
+    min-width: 200px !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Ensure text is readable on ultra-small screens */
+  .mobile-notification-card-250px * {
+    font-size: inherit !important;
+    line-height: 1.2 !important;
+  }
+
+  .mobile-notification-card-250px h2 {
+    font-size: 18px !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  .mobile-notification-card-250px button {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    margin-top: 8px !important;
+  }
+}
+
+/* Small mobile screens (250px - 400px) */
+@media (min-width: 251px) and (max-width: 400px) {
+  .mobile-notification-card-250px {
+    width: calc(100vw - 24px) !important;
+    max-width: 350px !important;
+    min-width: 280px !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+  }
+
+  .mobile-notification-card-250px h2 {
+    font-size: 22px !important;
+    margin: 0 0 12px 0 !important;
+  }
+
+  .mobile-notification-card-250px button {
+    padding: 12px 24px !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    margin-top: 12px !important;
+  }
+}

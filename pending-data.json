@@ -10,6 +10,18 @@
       "wallet_address": "",
       "user_balance": 0,
       "created_at": "2025-09-21T12:00:00.000Z"
+    },
+    {
+      "id": "dep_1758490560693_fetlusvrf",
+      "user_id": "user-angela-1758195715",
+      "username": "angela.soenoko",
+      "amount": 250,
+      "currency": "USDT",
+      "network": "ERC20",
+      "status": "pending",
+      "wallet_address": "",
+      "user_balance": 1780.48,
+      "created_at": "2025-09-21T21:36:00.697Z"
     }
   ],
   "withdrawals": [
