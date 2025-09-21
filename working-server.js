@@ -2908,6 +2908,34 @@ app.post('/api/transactions/deposit-request', async (req, res) => {
   pendingData.deposits = pendingDeposits;
   savePendingData();
 
+  // REAL-TIME SYNC: Also save to Supabase database for admin dashboard
+  if (supabase) {
+    try {
+      const supabaseDeposit = {
+        id: depositId,
+        user_id: currentUser.id,
+        username: currentUser.username,
+        amount: parseFloat(amount),
+        currency: currency,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('deposits')
+        .insert([supabaseDeposit]);
+
+      if (error) {
+        console.error('⚠️ Failed to save deposit to Supabase:', error);
+      } else {
+        console.log('✅ Deposit saved to Supabase database for real-time admin sync');
+      }
+    } catch (dbError) {
+      console.error('⚠️ Supabase deposit sync error:', dbError);
+    }
+  }
+
   console.log('💰 Deposit request created:', depositId, 'for user:', currentUser.username);
 
   res.json({
@@ -3001,6 +3029,36 @@ app.post('/api/deposits', upload.single('receipt'), async (req, res) => {
     pendingData.deposits = pendingDeposits;
     savePendingData();
 
+    // REAL-TIME SYNC: Also save to Supabase database for admin dashboard
+    if (supabase) {
+      try {
+        const supabaseDeposit = {
+          id: depositId,
+          user_id: user.id,
+          username: user.username,
+          amount: parseFloat(amount),
+          currency: currency,
+          status: 'verifying',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          receipt_uploaded: !!req.file,
+          receipt_filename: req.file ? req.file.filename : null
+        };
+
+        const { error } = await supabase
+          .from('deposits')
+          .insert([supabaseDeposit]);
+
+        if (error) {
+          console.error('⚠️ Failed to save wallet deposit to Supabase:', error);
+        } else {
+          console.log('✅ Wallet deposit saved to Supabase database for real-time admin sync');
+        }
+      } catch (dbError) {
+        console.error('⚠️ Supabase wallet deposit sync error:', dbError);
+      }
+    }
+
     console.log('💰 Wallet deposit request created:', depositId, 'for user:', user.username);
 
     res.json({
@@ -3020,7 +3078,7 @@ app.post('/api/deposits', upload.single('receipt'), async (req, res) => {
 });
 
 // ===== SUBMIT PROOF ENDPOINT =====
-app.post('/api/transactions/submit-proof', upload.single('receipt'), (req, res) => {
+app.post('/api/transactions/submit-proof', upload.single('receipt'), async (req, res) => {
   console.log('📄 Submitting proof');
   console.log('📄 Request body:', req.body);
   console.log('📄 Request file:', req.file);
@@ -3066,6 +3124,29 @@ app.post('/api/transactions/submit-proof', upload.single('receipt'), (req, res) 
   // Save updated data
   pendingData.deposits = pendingDeposits;
   savePendingData();
+
+  // REAL-TIME SYNC: Update Supabase database
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('deposits')
+        .update({
+          status: 'verifying',
+          receipt_uploaded: true,
+          receipt_filename: req.file ? req.file.filename : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', depositId);
+
+      if (error) {
+        console.error('⚠️ Failed to update deposit proof in Supabase:', error);
+      } else {
+        console.log('✅ Deposit proof updated in Supabase database for real-time admin sync');
+      }
+    } catch (dbError) {
+      console.error('⚠️ Supabase proof update sync error:', dbError);
+    }
+  }
 
   console.log('📄 Proof submitted for deposit:', depositId);
 
@@ -3344,6 +3425,24 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       savePendingData();
       console.log('🗑️ Deposit removed from pending list');
 
+      // REAL-TIME SYNC: Remove from Supabase database
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('deposits')
+            .delete()
+            .eq('id', depositId);
+
+          if (error) {
+            console.error('⚠️ Failed to remove approved deposit from Supabase:', error);
+          } else {
+            console.log('✅ Approved deposit removed from Supabase database');
+          }
+        } catch (dbError) {
+          console.error('⚠️ Supabase deposit removal sync error:', dbError);
+        }
+      }
+
       res.json({
         success: true,
         message: 'Deposit approved successfully',
@@ -3374,6 +3473,24 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
     pendingData.deposits = pendingDeposits;
     savePendingData();
     console.log('🗑️ Deposit removed from pending list');
+
+    // REAL-TIME SYNC: Remove from Supabase database
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('deposits')
+          .delete()
+          .eq('id', depositId);
+
+        if (error) {
+          console.error('⚠️ Failed to remove rejected deposit from Supabase:', error);
+        } else {
+          console.log('✅ Rejected deposit removed from Supabase database');
+        }
+      } catch (dbError) {
+        console.error('⚠️ Supabase deposit removal sync error:', dbError);
+      }
+    }
 
     res.json({
       success: true,
