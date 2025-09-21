@@ -71,6 +71,15 @@ const calculateTotalBalance = (users: any[]): number => {
   }, 0);
 };
 
+// Helper function to calculate total portfolio value (USDT only with auto-conversion)
+const calculateTotalPortfolioValue = (users: any[]): number => {
+  return users.reduce((sum, user) => {
+    const usdtBalance = parseBalance(user.balance);
+    // All crypto is auto-converted to USDT, so total = USDT balance
+    return sum + usdtBalance;
+  }, 0);
+};
+
 interface User {
   id: string;
   username: string;
@@ -1585,11 +1594,19 @@ export default function WorkingAdminDashboard() {
               <Card className="bg-gray-800 border-gray-700">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-400 text-sm">Total Balance</p>
-                      <p className="text-2xl font-bold text-white">
-                        {calculateTotalBalance(users).toLocaleString()} USDT
-                      </p>
+                    <div className="space-y-2">
+                      <p className="text-gray-400 text-sm">Total Platform Balance</p>
+                      <div className="space-y-1">
+                        <p className="text-2xl font-bold text-green-400">
+                          {calculateTotalBalance(users).toLocaleString()} USDT
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          All crypto auto-converted to USDT
+                        </p>
+                      </div>
+                      <div className="text-xs text-blue-400 bg-blue-900/20 px-2 py-1 rounded">
+                        💱 Unified USDT balance system
+                      </div>
                     </div>
                     <Wallet className="w-8 h-8 text-purple-500" />
                   </div>
@@ -1719,7 +1736,16 @@ export default function WorkingAdminDashboard() {
                               {user.email.length > 30 ? `${user.email.slice(0, 30)}...` : user.email}
                             </div>
                           </TableCell>
-                          <TableCell className="text-white font-medium">{formatBalance(user.balance)} USDT</TableCell>
+                          <TableCell className="text-white">
+                            <div className="space-y-1">
+                              <div className="font-medium text-green-400">
+                                {formatBalance(user.balance)} USDT
+                              </div>
+                              <div className="text-xs text-blue-400 bg-blue-900/20 px-2 py-1 rounded border border-blue-700">
+                                💱 Auto-converts all crypto deposits to USDT
+                              </div>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge variant={user.role === 'super_admin' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
                               {user.role}
@@ -2372,7 +2398,12 @@ export default function WorkingAdminDashboard() {
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="text-white font-medium">{withdrawal.username}</p>
-                              <p className="text-sm text-gray-400">Balance: {withdrawal.user_balance} USDT</p>
+                              <div className="text-sm space-y-1">
+                                <p className="text-green-400 font-medium">Balance: {withdrawal.user_balance} USDT</p>
+                                <p className="text-blue-400 text-xs">
+                                  💱 Unified USDT balance (auto-converted)
+                                </p>
+                              </div>
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-red-400">
@@ -2390,6 +2421,17 @@ export default function WorkingAdminDashboard() {
                           <div className="text-sm text-gray-400">
                             <p>Requested: {new Date(withdrawal.created_at).toLocaleString()}</p>
                             <p>Status: <span className="text-yellow-400">{withdrawal.status}</span></p>
+                          </div>
+
+                          <div className="bg-green-900/20 border border-green-700 rounded p-3 my-3">
+                            <div className="text-green-400 text-xs font-medium flex items-center mb-1">
+                              <span className="mr-2">✅</span>
+                              Withdrawal Processing
+                            </div>
+                            <div className="text-green-300 text-xs">
+                              Approving this withdrawal will deduct <span className="font-bold text-red-400">{withdrawal.amount} USDT</span> from the user's unified USDT balance.
+                              Simple and instant processing with auto-conversion system.
+                            </div>
                           </div>
 
                           <div className="flex space-x-2">
@@ -2723,9 +2765,37 @@ export default function WorkingAdminDashboard() {
                 <span className="text-gray-400">Email:</span>
                 <span className="text-white">{selectedUser.email}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Balance:</span>
-                <span className="text-white font-medium">{formatBalance(selectedUser.balance)} USDT</span>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Balance Details:</span>
+                </div>
+                <div className="bg-gray-700 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-400 font-medium">USDT Balance</span>
+                    <span className="text-white font-bold">{formatBalance(selectedUser.balance)} USDT</span>
+                  </div>
+                  <div className="bg-blue-900/20 border border-blue-700 rounded p-3">
+                    <div className="text-blue-400 text-xs font-medium flex items-center mb-2">
+                      <span className="mr-2">💱</span>
+                      Auto-Conversion System
+                    </div>
+                    <div className="text-blue-300 text-xs space-y-1">
+                      <div>• All cryptocurrency deposits (BTC, ETH, SOL, etc.) are automatically converted to USDT</div>
+                      <div>• Real-time conversion rates with minimal fees (0.1-0.2%)</div>
+                      <div>• Unified balance system - only USDT is stored</div>
+                      <div>• Withdrawals are processed directly from USDT balance</div>
+                    </div>
+                  </div>
+                  <div className="bg-green-900/20 border border-green-700 rounded p-2">
+                    <div className="text-green-400 text-xs font-medium flex items-center">
+                      <span className="mr-2">✅</span>
+                      Benefits
+                    </div>
+                    <div className="text-green-300 text-xs mt-1">
+                      • Simplified balance management • No conversion delays • Instant withdrawals
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Role:</span>

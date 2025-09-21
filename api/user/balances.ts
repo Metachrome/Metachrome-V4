@@ -60,25 +60,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .single();
 
           if (user) {
+            // SIMPLIFIED BALANCE SYSTEM: Only USDT balance (auto-conversion enabled)
             balanceData = [
               {
                 symbol: 'USDT',
                 available: user.balance.toString(),
-                locked: '0'
-              },
-              {
-                symbol: 'BTC',
-                available: '0.5', // Default BTC balance for testing
-                locked: '0'
-              },
-              {
-                symbol: 'ETH',
-                available: '2.0', // Default ETH balance for testing
-                locked: '0'
-              },
-              {
-                symbol: 'SOL',
-                available: '10.0', // Default SOL balance for testing
                 locked: '0'
               }
             ];
@@ -91,25 +77,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Fallback to in-memory balance
       if (!balanceData) {
         const userBalance = userBalances.get(targetUserId) || { balance: 0, currency: 'USDT' };
+        // SIMPLIFIED BALANCE SYSTEM: Only USDT balance (auto-conversion enabled)
         balanceData = [
           {
             symbol: 'USDT',
             available: userBalance.balance.toString(),
-            locked: '0'
-          },
-          {
-            symbol: 'BTC',
-            available: '0.5', // Default BTC balance for testing
-            locked: '0'
-          },
-          {
-            symbol: 'ETH',
-            available: '2.0', // Default ETH balance for testing
-            locked: '0'
-          },
-          {
-            symbol: 'SOL',
-            available: '10.0', // Default SOL balance for testing
             locked: '0'
           }
         ];

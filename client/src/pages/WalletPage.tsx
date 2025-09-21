@@ -250,17 +250,11 @@ export default function WalletPage() {
     return marketItem ? parseFloat(marketItem.price) : 0;
   };
 
-  // Get individual balances and calculate total
+  // Get USDT balance (simplified system with auto-conversion)
   const usdtBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'USDT')?.available || '0');
-  const btcBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'BTC')?.available || '0');
-  const ethBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'ETH')?.available || '0');
-  const solBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'SOL')?.available || '0');
 
-  // Calculate total balance in USDT (for display purposes)
-  const totalBalanceUSDT = userBalances?.reduce((sum: number, balance: any) => {
-    const price = getMarketPrice(balance.symbol);
-    return sum + parseFloat(balance.available || '0') * price;
-  }, 0) || 0;
+  // Total balance is just USDT balance (all crypto auto-converted)
+  const totalBalanceUSDT = usdtBalance;
 
   // Withdraw mutation
   const withdrawMutation = useMutation({
@@ -271,7 +265,7 @@ export default function WalletPage() {
         throw new Error('Please login first to make a withdrawal');
       }
 
-      const response = await fetch('/api/transactions/withdrawal-request', {
+      const response = await fetch('/api/withdrawals', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -431,48 +425,31 @@ export default function WalletPage() {
                 <div className="text-4xl font-bold text-white">
                   {balancesLoading ? (
                     <span className="animate-pulse">Loading...</span>
-                  ) : showDetailedBalance ? (
-                    `${totalBalanceUSDT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`
                   ) : (
-                    `${usdtBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`
+                    `${totalBalanceUSDT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`
                   )}
                 </div>
 
-                {/* Individual Balance Breakdown - Only show in detailed view */}
-                {showDetailedBalance && (
-                  <div className="mt-6 grid grid-cols-2 gap-4">
-                    <div className="bg-gray-800 rounded-lg p-4">
-                      <div className="text-gray-400 text-sm">USDT</div>
-                      <div className="text-white text-xl font-bold">{usdtBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                      <div className="text-gray-500 text-xs">≈ ${usdtBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    </div>
-                    <div className="bg-gray-800 rounded-lg p-4">
-                      <div className="text-gray-400 text-sm">BTC</div>
-                      <div className="text-white text-xl font-bold">{btcBalance.toFixed(6)}</div>
-                      <div className="text-gray-500 text-xs">≈ ${(btcBalance * getMarketPrice('BTC')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    </div>
-                    <div className="bg-gray-800 rounded-lg p-4">
-                      <div className="text-gray-400 text-sm">ETH</div>
-                      <div className="text-white text-xl font-bold">{ethBalance.toFixed(4)}</div>
-                      <div className="text-gray-500 text-xs">≈ ${(ethBalance * getMarketPrice('ETH')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    </div>
-                    <div className="bg-gray-800 rounded-lg p-4">
-                      <div className="text-gray-400 text-sm">SOL</div>
-                      <div className="text-white text-xl font-bold">{solBalance.toFixed(2)}</div>
-                      <div className="text-gray-500 text-xs">≈ ${(solBalance * getMarketPrice('SOL')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    </div>
+                {/* Auto-Conversion Info */}
+                <div className="mt-4 bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+                  <div className="text-blue-400 text-sm font-medium flex items-center mb-2">
+                    <span className="mr-2">💱</span>
+                    Auto-Conversion System Active
                   </div>
-                )}
+                  <div className="text-blue-300 text-xs space-y-1">
+                    <div>• All cryptocurrency deposits are automatically converted to USDT</div>
+                    <div>• Real-time conversion with competitive rates</div>
+                    <div>• Unified balance for easy management and instant withdrawals</div>
+                  </div>
+                </div>
 
                 {/* DEBUG: Balance Debug Info */}
                 <div className="mt-4 p-4 bg-gray-800 rounded-lg">
                   <div className="text-sm text-gray-400 mb-2">🔧 Debug Info:</div>
                   <div className="text-xs text-gray-300 space-y-1">
-                    <div>USDT: {usdtBalance} (${usdtBalance.toFixed(2)})</div>
-                    <div>BTC: {btcBalance} (${(btcBalance * getMarketPrice('BTC')).toFixed(2)})</div>
-                    <div>ETH: {ethBalance} (${(ethBalance * getMarketPrice('ETH')).toFixed(2)})</div>
-                    <div>SOL: {solBalance} (${(solBalance * getMarketPrice('SOL')).toFixed(2)})</div>
-                    <div>Total: ${totalBalanceUSDT.toFixed(2)}</div>
+                    <div>USDT Balance: {usdtBalance} USDT</div>
+                    <div>Total Balance: ${totalBalanceUSDT.toFixed(2)}</div>
+                    <div>Auto-Conversion: Enabled</div>
                     <div>Loading: {balancesLoading ? 'Yes' : 'No'}</div>
                   </div>
                   <button
@@ -529,10 +506,12 @@ export default function WalletPage() {
 
                     {/* Deposit Amount */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label htmlFor="depositAmount" className="block text-sm font-medium text-gray-300 mb-2">
                         Deposit amount <span className="text-red-400">*</span>
                       </label>
                       <input
+                        id="depositAmount"
+                        name="depositAmount"
                         type="number"
                         placeholder="Please enter the recharge amount"
                         value={depositAmount}
@@ -662,6 +641,8 @@ export default function WalletPage() {
                         )}
                       </div>
                       <input
+                        id="receiptUpload"
+                        name="receiptUpload"
                         ref={fileInputRef}
                         type="file"
                         accept="image/jpeg,image/png,image/jpg,application/pdf"
@@ -762,6 +743,8 @@ export default function WalletPage() {
                           <Label className="text-gray-300 text-sm font-medium">Withdrawal Amount</Label>
                           <div className="relative mt-2">
                             <Input
+                              id="withdrawAmount"
+                              name="withdrawAmount"
                               type="number"
                               placeholder="0.00"
                               value={withdrawAmount}
@@ -787,6 +770,8 @@ export default function WalletPage() {
                         <div>
                           <Label className="text-gray-300 text-sm font-medium">Withdrawal Address</Label>
                           <Input
+                            id="withdrawAddress"
+                            name="withdrawAddress"
                             type="text"
                             placeholder={`Enter ${selectedCrypto} address`}
                             value={withdrawAddress}
@@ -802,6 +787,8 @@ export default function WalletPage() {
                         <div>
                           <Label className="text-gray-300 text-sm font-medium">Fund Password</Label>
                           <Input
+                            id="fundPassword"
+                            name="fundPassword"
                             type="password"
                             placeholder="Enter your fund password"
                             value={fundPassword}
