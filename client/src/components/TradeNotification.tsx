@@ -103,29 +103,31 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
 
   const priceChange = trade.finalPrice - trade.entryPrice;
 
-  // MOBILE NOTIFICATION: Force display on mobile with improved detection
-  if (isMobile || window.innerWidth < 768) {
-    console.log('🎯 MOBILE NOTIFICATION: Rendering mobile notification');
-    console.log('🎯 MOBILE NOTIFICATION: Screen width:', window.innerWidth);
-    console.log('🎯 MOBILE NOTIFICATION: isMobile hook:', isMobile);
-    console.log('🎯 MOBILE NOTIFICATION: isVisible state:', isVisible);
+  // UNIVERSAL NOTIFICATION: Always render enhanced notification for all devices
+  const isMobileDevice = isMobile || window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Force body to not scroll during modal
-    useEffect(() => {
-      const originalOverflow = document.body.style.overflow;
-      const originalDocumentOverflow = document.documentElement.style.overflow;
+  console.log('🎯 UNIVERSAL NOTIFICATION: Rendering notification for all devices');
+  console.log('🎯 UNIVERSAL NOTIFICATION: Screen width:', window.innerWidth);
+  console.log('🎯 UNIVERSAL NOTIFICATION: isMobile hook:', isMobile);
+  console.log('🎯 UNIVERSAL NOTIFICATION: isMobileDevice calculated:', isMobileDevice);
+  console.log('🎯 UNIVERSAL NOTIFICATION: isVisible state:', isVisible);
 
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
+  // Force body to not scroll during modal
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalDocumentOverflow = document.documentElement.style.overflow;
 
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        document.documentElement.style.overflow = originalDocumentOverflow;
-      };
-    }, []);
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
 
-    // Use createPortal to ensure modal renders at document body level with MAXIMUM visibility
-    return createPortal(
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.documentElement.style.overflow = originalDocumentOverflow;
+    };
+  }, []);
+
+  // Use createPortal to ensure modal renders at document body level with MAXIMUM visibility
+  return createPortal(
       <div
         className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-5"
         style={{
@@ -237,8 +239,8 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       </div>,
       document.body
     );
-  }
 
+  // Note: Removed mobile-only condition - now renders for all devices
   // Mobile-specific modal design (old complex version - keeping as fallback)
   if (false) {
     console.log('🎯 TRADE NOTIFICATION: Rendering mobile modal, isVisible:', isVisible);

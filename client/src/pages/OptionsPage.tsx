@@ -306,16 +306,16 @@ export default function OptionsPage() {
     },
   });
 
-  // Get current USDT balance - Simplified for standardized array format
+  // Get current USDT balance - Only when user is authenticated
   let balance = 0;
 
-  if (userBalances && Array.isArray(userBalances)) {
+  if (user && userBalances && Array.isArray(userBalances)) {
     console.log('🔍 RAW userBalances (array):', userBalances);
     // Format: [{ symbol: "USDT", available: "1400" }, ...]
     const usdtBalance = userBalances.find((b: any) => b.symbol === 'USDT');
     balance = Number(usdtBalance?.available || 0);
     console.log('🔍 Using standardized array format:', balance, usdtBalance);
-  } else {
+  } else if (user) {
     console.log('🔍 userBalances is not in expected array format:', typeof userBalances, userBalances);
   }
 
@@ -325,17 +325,21 @@ export default function OptionsPage() {
     balance = 0;
   }
 
-  // ENHANCED Debug logging for balance sync
-  console.log('🔍 OPTIONS PAGE BALANCE DEBUG:', {
-    user: user?.id,
-    userBalances,
-    finalBalance: balance,
-    'userBalances?.USDT?.available': userBalances?.USDT?.available,
-    'Array.isArray(userBalances)': Array.isArray(userBalances),
-    'Array.isArray(userBalances?.balances)': Array.isArray(userBalances?.balances),
-    'typeof userBalances': typeof userBalances,
-    'userBalances keys': userBalances ? Object.keys(userBalances) : 'null'
-  });
+  // ENHANCED Debug logging for balance sync - Only log when user is available
+  if (user) {
+    console.log('🔍 OPTIONS PAGE BALANCE DEBUG:', {
+      user: user?.id,
+      userBalances,
+      finalBalance: balance,
+      'userBalances?.USDT?.available': userBalances?.USDT?.available,
+      'Array.isArray(userBalances)': Array.isArray(userBalances),
+      'Array.isArray(userBalances?.balances)': Array.isArray(userBalances?.balances),
+      'typeof userBalances': typeof userBalances,
+      'userBalances keys': userBalances ? Object.keys(userBalances) : 'null'
+    });
+  } else {
+    console.log('🔍 OPTIONS PAGE: User not authenticated, skipping balance debug');
+  }
 
   // ALERT: Show balance on screen for debugging
   if (typeof window !== 'undefined') {
