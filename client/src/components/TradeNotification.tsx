@@ -78,12 +78,21 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
   const priceChange = trade.finalPrice - trade.entryPrice;
 
-  // MOBILE NOTIFICATION: Use React Portal for guaranteed display
+  // MOBILE NOTIFICATION: Force display on mobile
   if (isMobile) {
-    console.log('🎯 MOBILE NOTIFICATION: Rendering mobile notification via portal');
+    console.log('🎯 MOBILE NOTIFICATION: Rendering mobile notification');
 
-    const mobileModal = (
+    // Force body to not scroll during modal
+    useEffect(() => {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }, []);
+
+    return (
       <div
+        className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center p-5 z-[999999]"
         style={{
           position: 'fixed',
           top: 0,
@@ -91,59 +100,59 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.95)',
-          zIndex: 2147483647, // Maximum z-index value
+          zIndex: 999999,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '20px',
-          fontFamily: 'Arial, sans-serif'
+          fontFamily: 'system-ui, -apple-system, sans-serif'
         }}
-        onClick={onClose}
+        onClick={handleClose}
       >
         <div
+          className="bg-green-600 text-white p-8 rounded-2xl text-center max-w-sm w-full border-4 border-white shadow-2xl"
           style={{
-            backgroundColor: isWin ? '#10b981' : '#ef4444',
+            backgroundColor: isWin ? '#059669' : '#dc2626',
             color: 'white',
-            padding: '40px 30px',
-            borderRadius: '20px',
+            padding: '32px',
+            borderRadius: '16px',
             textAlign: 'center',
-            maxWidth: '380px',
+            maxWidth: '350px',
             width: '100%',
             border: '4px solid white',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
-            animation: 'slideIn 0.3s ease-out'
+            boxShadow: '0 25px 50px rgba(0, 0, 0, 0.8)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '20px' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
             {isWin ? '🎉 TRADE WON!' : '💔 TRADE LOST'}
           </div>
 
-          <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '20px' }}>
+          <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '16px' }}>
             {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT
           </div>
 
-          <div style={{ fontSize: '18px', marginBottom: '12px', opacity: 0.9 }}>
+          <div style={{ fontSize: '16px', marginBottom: '8px', opacity: 0.9 }}>
             Direction: {trade.direction.toUpperCase()}
           </div>
 
-          <div style={{ fontSize: '18px', marginBottom: '12px', opacity: 0.9 }}>
+          <div style={{ fontSize: '16px', marginBottom: '8px', opacity: 0.9 }}>
             Amount: ${trade.amount}
           </div>
 
-          <div style={{ fontSize: '18px', marginBottom: '25px', opacity: 0.9 }}>
+          <div style={{ fontSize: '16px', marginBottom: '20px', opacity: 0.9 }}>
             Entry: ${trade.entryPrice} → Final: ${trade.finalPrice}
           </div>
 
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               backgroundColor: 'white',
-              color: isWin ? '#10b981' : '#ef4444',
+              color: isWin ? '#059669' : '#dc2626',
               border: 'none',
-              padding: '15px 30px',
-              borderRadius: '10px',
-              fontSize: '18px',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '16px',
               fontWeight: 'bold',
               cursor: 'pointer',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
@@ -152,24 +161,8 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
             Close
           </button>
         </div>
-
-        <style>{`
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: scale(0.8) translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1) translateY(0);
-            }
-          }
-        `}</style>
       </div>
     );
-
-    // Use React Portal to render outside the normal DOM tree
-    return createPortal(mobileModal, document.body);
   }
 
   // Mobile-specific modal design (old complex version - keeping as fallback)

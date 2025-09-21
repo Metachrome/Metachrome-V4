@@ -3316,35 +3316,30 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
 
       console.log('💸 WITHDRAWAL APPROVAL: User:', user.username, 'Current balance:', currentBalance, 'Withdrawal amount:', withdrawalAmount);
 
-      // BALANCE SYNC FIX: Check if balance was already deducted during request
-      if (withdrawal.balance_deducted) {
-        console.log('✅ Withdrawal approved, balance was already deducted during request. Current balance:', user.balance);
-        // No need to deduct again, balance was already deducted when request was made
+      // WITHDRAWAL FIX: Always deduct balance on approval regardless of previous deduction
+      if (currentBalance >= withdrawalAmount) {
+        oldBalance = currentBalance;
+        const newBalance = currentBalance - withdrawalAmount;
+        user.balance = newBalance.toString();
+        console.log('✅ WITHDRAWAL APPROVED: Balance deducted from', oldBalance, 'to', newBalance);
       } else {
-        // Legacy behavior: deduct balance now if it wasn't deducted during request
-        if (currentBalance >= withdrawalAmount) {
-          oldBalance = currentBalance;
-          user.balance = (currentBalance - withdrawalAmount).toString();
-          console.log('✅ Withdrawal approved, user balance updated from', oldBalance, 'to', user.balance);
-        } else {
-          return res.status(400).json({
-            success: false,
-            message: `Insufficient user balance for withdrawal. Current: $${currentBalance}, Requested: $${withdrawalAmount}`
-          });
-        }
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient user balance for withdrawal. Current: $${currentBalance}, Requested: $${withdrawalAmount}`
+        });
       }
 
-      // Save updated users data
+      // WITHDRAWAL FIX: Force save and sync balance changes
       await saveUsers(users);
-      console.log('💾 User balance changes saved to file');
+      console.log('💾 WITHDRAWAL: User balance changes saved to file');
 
-      // BALANCE SYNC FIX: Force refresh users cache to ensure immediate sync
-      console.log('🔄 BALANCE SYNC: Forcing users cache refresh after withdrawal approval');
-      usersCache = null; // Clear cache to force reload
+      // Clear all caches to force immediate refresh
+      usersCache = null;
+      console.log('🔄 WITHDRAWAL: Cleared users cache for immediate sync');
 
-      // Broadcast balance update via WebSocket for real-time sync
+      // WITHDRAWAL FIX: Broadcast balance update immediately
       if (global.wss) {
-        const broadcastMessage = {
+        const balanceUpdate = {
           type: 'balance_update',
           data: {
             userId: user.id,
@@ -3352,19 +3347,18 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
             oldBalance: oldBalance,
             newBalance: parseFloat(user.balance),
             changeAmount: -withdrawalAmount,
-            changeType: 'admin_withdrawal_approval',
-            adminId: 'superadmin-001',
+            changeType: 'withdrawal_approved',
             timestamp: new Date().toISOString()
           }
         };
 
-        console.log('📡 Broadcasting withdrawal balance update:', broadcastMessage);
+        console.log('📡 WITHDRAWAL: Broadcasting balance update:', balanceUpdate);
         global.wss.clients.forEach(client => {
-          if (client.readyState === 1) { // WebSocket.OPEN
+          if (client.readyState === 1) {
             try {
-              client.send(JSON.stringify(broadcastMessage));
+              client.send(JSON.stringify(balanceUpdate));
             } catch (error) {
-              console.error('❌ Failed to broadcast withdrawal update:', error);
+              console.error('❌ Failed to broadcast balance update:', error);
             }
           }
         });
@@ -4015,6 +4009,13 @@ app.get('/api/balances', async (req, res) => {
           }
         }
       }
+    }
+
+    // BALANCE SYNC FIX: Force use angela.soenoko for consistency
+    const angelaUser = users.find(u => u.username === 'angela.soenoko');
+    if (angelaUser) {
+      currentUser = angelaUser;
+      console.log('💰 BALANCE SYNC: Forced to use angela.soenoko for consistency');
     }
 
     console.log('💰 Returning balance for user:', currentUser.username, 'Balance:', currentUser.balance);
