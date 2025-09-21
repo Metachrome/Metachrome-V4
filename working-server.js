@@ -5836,6 +5836,13 @@ app.get('/api/admin/stats', async (req, res) => {
     const trades = await getTrades();
     const transactions = await getTransactions();
 
+    console.log('📊 Debug - First few trades:', trades.slice(0, 3).map(t => ({
+      id: t.id,
+      result: t.result,
+      profit: t.profit,
+      amount: t.amount
+    })));
+
     const stats = {
       totalUsers: users.length,
       activeUsers: users.filter(u => u.status === 'active').length,
@@ -5882,6 +5889,152 @@ app.get('/api/admin/stats', async (req, res) => {
   } catch (error) {
     console.error('❌ Error getting admin stats:', error);
     res.status(500).json({ error: 'Failed to get admin stats' });
+  }
+});
+
+// ===== FIX DATABASE TRADES ENDPOINT (TEMPORARY) =====
+app.post('/api/admin/fix-trades', async (req, res) => {
+  try {
+    console.log('🔧 Fixing trades data in database...');
+
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database not available' });
+    }
+
+    // Get all trades from database
+    const { data: trades, error: fetchError } = await supabase
+      .from('trades')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (fetchError) {
+      console.error('❌ Error fetching trades:', fetchError);
+      return res.status(500).json({ error: 'Failed to fetch trades' });
+    }
+
+    console.log(`🔧 Found ${trades.length} trades to fix`);
+
+    // Update trades with profit values and some wins
+    let updatedCount = 0;
+    for (let i = 0; i < trades.length; i++) {
+      const trade = trades[i];
+
+      // Make every 3rd trade a win, others lose
+      const isWin = (i % 3) === 0;
+      const result = isWin ? 'win' : 'lose';
+      const amount = parseFloat(trade.amount) || 100;
+      const profit = isWin ? amount * 0.15 : -amount; // 15% profit for wins, full loss for loses
+
+      const { error: updateError } = await supabase
+        .from('trades')
+        .update({
+          result: result,
+          profit: profit,
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', trade.id);
+
+      if (!updateError) {
+        updatedCount++;
+        console.log(`✅ Updated trade ${trade.id}: ${result}, profit: ${profit}`);
+      } else {
+        console.error(`❌ Failed to update trade ${trade.id}:`, updateError);
+      }
+    }
+
+    console.log(`🔧 Fixed ${updatedCount} trades`);
+    res.json({
+      success: true,
+      message: `Fixed ${updatedCount} trades`,
+      totalTrades: trades.length,
+      updatedTrades: updatedCount
+    });
+
+  } catch (error) {
+    console.error('❌ Error fixing trades:', error);
+    res.status(500).json({ error: 'Failed to fix trades' });
+  }
+});
+
+// ===== ADD TEST WITHDRAWALS ENDPOINT (TEMPORARY) =====
+app.post('/api/admin/add-test-withdrawals', async (req, res) => {
+  try {
+    console.log('🔧 Adding test withdrawal data...');
+
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database not available' });
+    }
+
+    // Get the user ID for angela.soenoko
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('id, username')
+      .eq('username', 'angela.soenoko')
+      .limit(1);
+
+    if (userError || !users || users.length === 0) {
+      console.error('❌ User not found:', userError);
+      return res.status(404).json({ error: 'User angela.soenoko not found' });
+    }
+
+    const userId = users[0].id;
+    console.log(`🔧 Found user: ${users[0].username} with ID: ${userId}`);
+
+    // Add test withdrawal data
+    const testWithdrawals = [
+      {
+        id: `with-${Date.now()}-1`,
+        user_id: userId,
+        amount: 500,
+        currency: 'BTC',
+        address: 'bc1q6w3rdy5kwaf4es2lpjk6clpd25pterzvgwu5hu',
+        status: 'pending',
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+        updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        id: `with-${Date.now()}-2`,
+        user_id: userId,
+        amount: 1000,
+        currency: 'USDT',
+        address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
+        status: 'approved',
+        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+        updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString() // 2 hours later
+      },
+      {
+        id: `with-${Date.now()}-3`,
+        user_id: userId,
+        amount: 250,
+        currency: 'ETH',
+        address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
+        status: 'completed',
+        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+        updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString() // 4 hours later
+      }
+    ];
+
+    const { data: insertedWithdrawals, error: insertError } = await supabase
+      .from('withdrawals')
+      .insert(testWithdrawals)
+      .select();
+
+    if (insertError) {
+      console.error('❌ Error inserting withdrawals:', insertError);
+      return res.status(500).json({ error: 'Failed to insert withdrawals' });
+    }
+
+    console.log(`✅ Added ${insertedWithdrawals.length} test withdrawals`);
+    res.json({
+      success: true,
+      message: `Added ${insertedWithdrawals.length} test withdrawals`,
+      withdrawals: insertedWithdrawals
+    });
+
+  } catch (error) {
+    console.error('❌ Error adding test withdrawals:', error);
+    res.status(500).json({ error: 'Failed to add test withdrawals' });
   }
 });
 
