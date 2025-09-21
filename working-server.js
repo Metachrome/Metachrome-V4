@@ -3998,6 +3998,265 @@ app.delete('/api/admin/transactions/:transactionId', async (req, res) => {
   }
 });
 
+// ===== USER WITHDRAWAL REQUEST ENDPOINT =====
+app.post('/api/withdrawals', async (req, res) => {
+  try {
+    console.log('💸 User withdrawal request received:', req.body);
+
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { amount, currency, address } = req.body;
+
+    // Validate input
+    if (!amount || !currency || !address) {
+      return res.status(400).json({ error: 'Amount, currency, and address are required' });
+    }
+
+    const withdrawalAmount = parseFloat(amount);
+    if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
+      return res.status(400).json({ error: 'Invalid withdrawal amount' });
+    }
+
+    // Get user from token
+    const users = await getUsers();
+    const user = users.find(u => u.role === 'user') || users.find(u => u.username === 'angela.soenoko');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check balance
+    const userBalance = parseFloat(user.balance || 0);
+    if (userBalance < withdrawalAmount) {
+      return res.status(400).json({
+        error: 'Insufficient balance',
+        available: userBalance,
+        requested: withdrawalAmount
+      });
+    }
+
+    // Create withdrawal request
+    const withdrawalRequest = {
+      id: `withdrawal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user_id: user.id,
+      username: user.username,
+      amount: withdrawalAmount,
+      currency: currency.toUpperCase(),
+      wallet_address: address,
+      status: 'pending',
+      user_balance: userBalance,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Store withdrawal request using the same storage as other endpoints
+    pendingWithdrawals.push(withdrawalRequest);
+    pendingData.withdrawals = pendingWithdrawals;
+    savePendingData();
+
+    console.log('✅ Withdrawal request created:', withdrawalRequest.id);
+
+    // Broadcast to admin dashboard for real-time updates
+    if (global.wss) {
+      const adminUpdate = {
+        type: 'new_withdrawal_request',
+        data: withdrawalRequest
+      };
+
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(adminUpdate));
+          } catch (error) {
+            console.error('❌ Failed to broadcast withdrawal request:', error);
+          }
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Withdrawal request submitted successfully',
+      withdrawalId: withdrawalRequest.id,
+      amount: withdrawalAmount,
+      currency: currency.toUpperCase(),
+      status: 'pending'
+    });
+
+  } catch (error) {
+    console.error('❌ Error processing withdrawal request:', error);
+    res.status(500).json({ error: 'Failed to process withdrawal request' });
+  }
+});
+
+// ===== ADMIN PENDING REQUESTS ENDPOINT =====
+app.get('/api/admin/pending-requests', async (req, res) => {
+  try {
+    console.log('📋 Admin fetching pending requests');
+
+    // Use the same storage as other endpoints
+    const pendingWithdrawalsFiltered = pendingWithdrawals.filter(w => w.status === 'pending');
+    const pendingDepositsFiltered = pendingDeposits.filter(d => d.status === 'pending');
+
+    console.log(`📋 Found ${pendingWithdrawalsFiltered.length} pending withdrawals, ${pendingDepositsFiltered.length} pending deposits`);
+
+    res.json({
+      success: true,
+      withdrawals: pendingWithdrawalsFiltered,
+      deposits: pendingDepositsFiltered,
+      total: pendingWithdrawalsFiltered.length + pendingDepositsFiltered.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching pending requests:', error);
+    res.status(500).json({ error: 'Failed to fetch pending requests' });
+  }
+});
+
+// ===== ADMIN WITHDRAWAL APPROVAL ENDPOINT =====
+app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
+  try {
+    const { withdrawalId } = req.params;
+    const { action } = req.body; // 'approve' or 'reject'
+
+    console.log(`💸 Admin ${action} withdrawal:`, withdrawalId);
+
+    // Find withdrawal request using the same storage as other endpoints
+    const withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
+    if (withdrawalIndex === -1) {
+      return res.status(404).json({ error: 'Withdrawal request not found' });
+    }
+
+    const withdrawal = pendingWithdrawals[withdrawalIndex];
+
+    if (withdrawal.status !== 'pending') {
+      return res.status(400).json({ error: 'Withdrawal already processed' });
+    }
+
+    if (action === 'approve') {
+      // Get user and update balance
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === withdrawal.user_id);
+
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = users[userIndex];
+      const currentBalance = parseFloat(user.balance || 0);
+      const withdrawalAmount = parseFloat(withdrawal.amount);
+
+      // Check if user still has sufficient balance
+      if (currentBalance < withdrawalAmount) {
+        withdrawal.status = 'rejected';
+        withdrawal.rejection_reason = 'Insufficient balance';
+        withdrawal.updated_at = new Date().toISOString();
+
+        return res.status(400).json({
+          error: 'Insufficient balance',
+          available: currentBalance,
+          requested: withdrawalAmount
+        });
+      }
+
+      // Deduct balance
+      const newBalance = currentBalance - withdrawalAmount;
+      user.balance = newBalance.toString();
+
+      // Update withdrawal status
+      withdrawal.status = 'approved';
+      withdrawal.approved_at = new Date().toISOString();
+      withdrawal.updated_at = new Date().toISOString();
+
+      // Remove from pending list and save
+      pendingWithdrawals.splice(withdrawalIndex, 1);
+      pendingData.withdrawals = pendingWithdrawals;
+      savePendingData();
+
+      // Save user data
+      if (isProduction && supabase) {
+        try {
+          console.log('🔄 Updating balance in Supabase for withdrawal approval:', user.id, user.balance);
+          const { data: updateData, error: updateError } = await supabase
+            .from('users')
+            .update({
+              balance: parseFloat(user.balance),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .select();
+
+          if (updateError) {
+            console.error('❌ Error updating user balance in Supabase:', updateError);
+            throw updateError;
+          } else {
+            console.log('✅ User balance updated in Supabase for withdrawal:', user.balance);
+          }
+        } catch (dbError) {
+          console.error('❌ Database balance update failed:', dbError);
+          await saveUsers(users);
+        }
+      } else {
+        await saveUsers(users);
+      }
+
+      console.log(`✅ Withdrawal approved: ${withdrawalAmount} USDT deducted from ${user.username}`);
+
+      // Broadcast balance update
+      if (global.wss) {
+        const balanceUpdate = {
+          type: 'balance_update',
+          data: {
+            userId: user.id,
+            newBalance: parseFloat(user.balance),
+            reason: 'withdrawal_approved',
+            amount: withdrawalAmount
+          }
+        };
+
+        global.wss.clients.forEach(client => {
+          if (client.readyState === 1) {
+            try {
+              client.send(JSON.stringify(balanceUpdate));
+            } catch (error) {
+              console.error('❌ Failed to broadcast balance update:', error);
+            }
+          }
+        });
+      }
+
+    } else if (action === 'reject') {
+      withdrawal.status = 'rejected';
+      withdrawal.rejection_reason = req.body.reason || 'Rejected by admin';
+      withdrawal.rejected_at = new Date().toISOString();
+      withdrawal.updated_at = new Date().toISOString();
+
+      // Remove from pending list and save
+      pendingWithdrawals.splice(withdrawalIndex, 1);
+      pendingData.withdrawals = pendingWithdrawals;
+      savePendingData();
+
+      console.log(`❌ Withdrawal rejected: ${withdrawal.id}`);
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Use "approve" or "reject"' });
+    }
+
+    res.json({
+      success: true,
+      message: `Withdrawal ${action}d successfully`,
+      withdrawal: withdrawal
+    });
+
+  } catch (error) {
+    console.error('❌ Error processing withdrawal action:', error);
+    res.status(500).json({ error: 'Failed to process withdrawal action' });
+  }
+});
+
 // User balance endpoint
 app.get('/api/users/:userId/balance', async (req, res) => {
   try {

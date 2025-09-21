@@ -650,26 +650,10 @@ export default function OptionsPage() {
       console.log('📱 MOBILE CHECK: Width check:', isMobileWidth, 'UserAgent check:', isMobileUserAgent, 'Hook check:', isMobile);
       console.log('📱 MOBILE CHECK: Final decision - should show mobile modal:', shouldShowMobileModal);
 
-      if (shouldShowMobileModal) {
-        console.log('📱 MOBILE MODAL: Triggering mobile modal in 1 second...');
-        setTimeout(() => {
-          const result = won ? 'WON' : 'LOST';
-          const pnl = won ? (trade.payout! - trade.amount) : -trade.amount;
-          console.log('📱 MOBILE MODAL: Calling showMobileTradeModal with result:', result, 'pnl:', pnl);
-          showMobileTradeModal({
-            symbol: 'BTC/USDT',
-            pnl: pnl,
-            won: won,
-            currentPrice: trade.finalPrice,
-            duration: selectedDuration,
-            side: trade.direction === 'up' ? 'Buy Up' : 'Buy Down',
-            amount: trade.amount,
-            price: trade.entryPrice
-          });
-        }, 1000);
-      } else {
-        console.log('📱 MOBILE CHECK: Not mobile, skipping mobile modal');
-      }
+      // DISABLE OLD MOBILE MODAL - Use TradeNotification component instead
+      console.log('📱 MOBILE CHECK: Using TradeNotification component for all devices');
+
+      // Don't trigger the old mobile modal anymore - let TradeNotification handle it
 
       // Auto-hide notification after 45 seconds (sticky notification)
       setTimeout(() => {
@@ -2046,8 +2030,10 @@ export default function OptionsPage() {
           entryPrice: completedTrade.entryPrice,
           finalPrice: completedTrade.currentPrice || completedTrade.entryPrice,
           status: completedTrade.status as 'won' | 'lost',
-          payout: completedTrade.payout,
-          profitPercentage: completedTrade.profitPercentage
+          payout: completedTrade.payout || (completedTrade.status === 'won' ?
+            completedTrade.amount + (completedTrade.amount * (completedTrade.profitPercentage || 10) / 100) :
+            0),
+          profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15)
         } : null}
         onClose={() => {
           setCompletedTrade(null);

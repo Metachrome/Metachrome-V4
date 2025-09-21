@@ -75,18 +75,48 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   console.log('🎯 TRADE NOTIFICATION: About to render, isMobile:', isMobile, 'isVisible:', isVisible);
 
   const isWin = trade.status === 'won';
-  const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
+
+  // FIX: Calculate PnL properly, handling undefined payout
+  let pnl = 0;
+  if (isWin) {
+    if (trade.payout && !isNaN(trade.payout)) {
+      pnl = trade.payout - trade.amount;
+    } else {
+      // Calculate profit based on profit percentage if payout is not available
+      const profitAmount = trade.amount * (trade.profitPercentage / 100);
+      pnl = profitAmount;
+    }
+  } else {
+    pnl = -trade.amount;
+  }
+
+  console.log('🎯 PNL CALCULATION:', {
+    isWin,
+    payout: trade.payout,
+    amount: trade.amount,
+    profitPercentage: trade.profitPercentage,
+    calculatedPnl: pnl
+  });
+
   const priceChange = trade.finalPrice - trade.entryPrice;
 
-  // MOBILE NOTIFICATION: Force display on mobile
-  if (isMobile) {
+  // MOBILE NOTIFICATION: Force display on mobile with improved detection
+  if (isMobile || window.innerWidth < 768) {
     console.log('🎯 MOBILE NOTIFICATION: Rendering mobile notification');
+    console.log('🎯 MOBILE NOTIFICATION: Screen width:', window.innerWidth);
+    console.log('🎯 MOBILE NOTIFICATION: isMobile hook:', isMobile);
 
     // Force body to not scroll during modal
     useEffect(() => {
+      const originalOverflow = document.body.style.overflow;
+      const originalDocumentOverflow = document.documentElement.style.overflow;
+
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
       return () => {
-        document.body.style.overflow = '';
+        document.body.style.overflow = originalOverflow;
+        document.documentElement.style.overflow = originalDocumentOverflow;
       };
     }, []);
 
@@ -129,7 +159,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           </div>
 
           <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '16px' }}>
-            {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT
+            {isNaN(pnl) ? '0.00' : (pnl >= 0 ? '+' : '')}{isNaN(pnl) ? '0.00' : pnl.toFixed(2)} USDT
           </div>
 
           <div style={{ fontSize: '16px', marginBottom: '8px', opacity: 0.9 }}>
@@ -137,11 +167,11 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           </div>
 
           <div style={{ fontSize: '16px', marginBottom: '8px', opacity: 0.9 }}>
-            Amount: ${trade.amount}
+            Amount: {trade.amount} USDT
           </div>
 
           <div style={{ fontSize: '16px', marginBottom: '20px', opacity: 0.9 }}>
-            Entry: ${trade.entryPrice} → Final: ${trade.finalPrice}
+            Entry: {trade.entryPrice.toFixed(2)} → Final: {trade.finalPrice.toFixed(2)}
           </div>
 
           <button
