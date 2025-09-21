@@ -1591,7 +1591,7 @@ export default function WorkingAdminDashboard() {
                         {calculateTotalBalance(users).toLocaleString()} USDT
                       </p>
                     </div>
-                    <DollarSign className="w-8 h-8 text-purple-500" />
+                    <Wallet className="w-8 h-8 text-purple-500" />
                   </div>
                 </CardContent>
               </Card>

@@ -77,6 +77,7 @@ export default function OptionsPage() {
 
   // Mobile trade modal function
   const showMobileTradeModal = (data: any) => {
+    console.log('📱 MOBILE MODAL: Showing mobile trade modal with data:', data);
     setMobileTradeData(data);
     setIsMobileModalOpen(true);
   };
@@ -649,10 +650,13 @@ export default function OptionsPage() {
       console.log('🎯 COMPLETE TRADE: isMobile hook value:', isMobile);
 
       // MOBILE FIX: Show custom modal with exact design
+      console.log('📱 MOBILE CHECK: Window width:', window.innerWidth, 'Is mobile:', window.innerWidth < 768);
       if (window.innerWidth < 768) {
+        console.log('📱 MOBILE MODAL: Triggering mobile modal in 1 second...');
         setTimeout(() => {
           const result = won ? 'WON' : 'LOST';
           const pnl = won ? (trade.payout! - trade.amount) : -trade.amount;
+          console.log('📱 MOBILE MODAL: Calling showMobileTradeModal with result:', result, 'pnl:', pnl);
           showMobileTradeModal({
             symbol: 'BTC/USDT',
             pnl: pnl,
@@ -664,6 +668,8 @@ export default function OptionsPage() {
             price: trade.entryPrice
           });
         }, 1000);
+      } else {
+        console.log('📱 MOBILE CHECK: Not mobile, skipping mobile modal');
       }
 
       // Auto-hide notification after 45 seconds (sticky notification)
@@ -966,7 +972,7 @@ export default function OptionsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-white font-bold text-lg">BTC/USDT</div>
-                <div className="text-white text-xl font-bold">${realTimePrice || safeCurrentPrice.toFixed(2)}</div>
+                <div className="text-white text-xl font-bold">{realTimePrice || safeCurrentPrice.toFixed(2)} USDT</div>
                 <div className={`text-sm font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {priceChange || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
@@ -1037,7 +1043,7 @@ export default function OptionsPage() {
               ].map((market, index) => (
                 <div key={index} className="bg-gray-800 rounded-lg p-3">
                   <div className="text-white text-sm font-medium">{market.symbol}</div>
-                  <div className="text-white text-lg font-bold">${market.price}</div>
+                  <div className="text-white text-lg font-bold">{market.price} USDT</div>
                   <div className={`text-xs font-medium ${market.change.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                     {market.change}
                   </div>
@@ -1191,17 +1197,17 @@ export default function OptionsPage() {
                     <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
                       <div className="flex justify-between items-center mb-2">
                         <span className={`text-sm font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                          {trade.direction.toUpperCase()} ${trade.amount}
+                          {trade.direction.toUpperCase()} {trade.amount} USDT
                         </span>
                         <span className="text-yellow-400 font-bold text-sm">{timeRemaining}s</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-400">
-                        <span>Entry: ${trade.entryPrice.toFixed(2)}</span>
-                        <span>Current: ${currentPrice.toFixed(2)}</span>
+                        <span>Entry: {trade.entryPrice.toFixed(2)} USDT</span>
+                        <span>Current: {currentPrice.toFixed(2)} USDT</span>
                       </div>
                       <div className="mt-1">
                         <span className={`text-xs font-medium ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                          {isWinning ? `+$${(potentialPayout - trade.amount).toFixed(2)}` : `-$${trade.amount.toFixed(2)}`}
+                          {isWinning ? `+${(potentialPayout - trade.amount).toFixed(2)} USDT` : `-${trade.amount.toFixed(2)} USDT`}
                         </span>
                       </div>
                     </div>
@@ -1220,10 +1226,10 @@ export default function OptionsPage() {
                   <div className="flex justify-between items-center">
                     <div>
                       <span className={`text-sm font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.direction.toUpperCase()} ${trade.amount}
+                        {trade.direction.toUpperCase()} {trade.amount} USDT
                       </span>
                       <div className="text-xs text-gray-400">
-                        ${trade.entryPrice.toFixed(2)} → ${trade.currentPrice?.toFixed(2)}
+                        {trade.entryPrice.toFixed(2)} → {trade.currentPrice?.toFixed(2)} USDT
                       </div>
                     </div>
                     <div className="text-right">
@@ -1233,7 +1239,7 @@ export default function OptionsPage() {
                         {trade.status === 'won' ? 'WON' : 'LOST'}
                       </div>
                       <div className={`text-xs ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.status === 'won' ? `+$${(trade.payout! - trade.amount).toFixed(2)}` : `-$${trade.amount.toFixed(2)}`}
+                        {trade.status === 'won' ? `+${(trade.payout! - trade.amount).toFixed(2)} USDT` : `-${trade.amount.toFixed(2)} USDT`}
                       </div>
                     </div>
                   </div>
@@ -1258,7 +1264,7 @@ export default function OptionsPage() {
           <div>
             <div className="text-white font-bold text-lg">BTC/USDT</div>
             <div className="text-white text-2xl font-bold">{safeCurrentPrice.toFixed(2)}</div>
-            <div className="text-gray-400 text-sm">$ {safeCurrentPrice.toFixed(2)}</div>
+            <div className="text-gray-400 text-sm">{safeCurrentPrice.toFixed(2)} USDT</div>
           </div>
           <div className={`text-lg font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
             {btcMarketData?.priceChangePercent24h || '+0.00%'}
@@ -1350,7 +1356,7 @@ export default function OptionsPage() {
                 <span className={`${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {btcMarketData?.priceChangePercent24h?.startsWith('-') ? '↓' : '↑'}
                 </span>
-                <span className="text-gray-400 text-sm">${currentPrice.toFixed(2)}</span>
+                <span className="text-gray-400 text-sm">{currentPrice.toFixed(2)} USDT</span>
               </div>
             </div>
 
@@ -1422,7 +1428,7 @@ export default function OptionsPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-white font-bold text-lg">
-                    ${safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...'}
+                    {safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...'} USDT
                   </span>
                 </div>
               </div>
@@ -1461,16 +1467,16 @@ export default function OptionsPage() {
                       <div key={trade.id} className="p-2 bg-gray-700 rounded text-sm">
                         <div className="flex justify-between items-center">
                           <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.direction.toUpperCase()} ${trade.amount}
+                            {trade.direction.toUpperCase()} {trade.amount} USDT
                           </span>
                           <span className="text-yellow-400 font-bold">{timeRemaining}s</span>
                         </div>
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-gray-400">
-                            Entry: ${trade.entryPrice.toFixed(2)}
+                            Entry: {trade.entryPrice.toFixed(2)} USDT
                           </span>
                           <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                            {priceChange > 0 ? '+' : ''}${priceChange.toFixed(2)}
+                            {priceChange > 0 ? '+' : ''}{priceChange.toFixed(2)} USDT
                           </span>
                         </div>
                         <div className="text-center mt-1">
@@ -1554,7 +1560,7 @@ export default function OptionsPage() {
                   }`}
                   disabled={isTrading}
                 >
-                  Max (${Math.floor(balance || 0)} USDT)
+                  Max ({Math.floor(balance || 0)} USDT)
                 </button>
               </div>
 
@@ -1934,12 +1940,12 @@ export default function OptionsPage() {
                       <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                         {trade.direction.toUpperCase()}
                       </span>
-                      <span className="text-gray-300">${trade.entryPrice.toFixed(2)}</span>
-                      <span className="text-white">${currentPrice.toFixed(2)}</span>
+                      <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
+                      <span className="text-white">{currentPrice.toFixed(2)} USDT</span>
                       <span className="text-gray-300">{trade.amount} USDT</span>
                       <span className="text-gray-300">{trade.profitPercentage}%</span>
                       <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                        {potentialPayout > 0 ? '+' : ''}{potentialPayout.toFixed(2)}
+                        {potentialPayout > 0 ? '+' : ''}{potentialPayout.toFixed(2)} USDT
                       </span>
                       <span className="text-yellow-400 font-bold">{timeRemaining}s</span>
                       <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
@@ -1983,12 +1989,12 @@ export default function OptionsPage() {
                       <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                         {trade.direction.toUpperCase()}
                       </span>
-                      <span className="text-gray-300">${trade.entryPrice.toFixed(2)}</span>
-                      <span className="text-gray-300">${trade.currentPrice?.toFixed(2) || 'N/A'}</span>
+                      <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
+                      <span className="text-gray-300">{trade.currentPrice?.toFixed(2) || 'N/A'} USDT</span>
                       <span className="text-gray-300">{trade.amount} USDT</span>
                       <span className="text-gray-300">{profitPercentage}%</span>
                       <span className={`font-bold ${pnl > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {pnl > 0 ? '+' : ''}{pnl.toFixed(2)}
+                        {pnl > 0 ? '+' : ''}{pnl.toFixed(2)} USDT
                       </span>
                       <span className="text-gray-400">{endTime}</span>
                       <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
