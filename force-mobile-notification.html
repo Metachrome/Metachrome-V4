@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Mobile Notification Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            margin: 0;
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+            max-width: 400px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .info {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        /* FORCE MOBILE NOTIFICATION STYLES */
+        .force-notification {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.95) !important;
+            z-index: 2147483647 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        .notification-content {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+            color: white !important;
+            padding: 40px 30px !important;
+            border-radius: 20px !important;
+            text-align: center !important;
+            max-width: 350px !important;
+            width: 90% !important;
+            border: 4px solid white !important;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8) !important;
+            position: relative !important;
+            z-index: 2147483647 !important;
+            animation: slideInBounce 0.6s ease-out !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        .notification-content.lose {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%) !important;
+        }
+        @keyframes slideInBounce {
+            0% {
+                transform: translateY(-100px) scale(0.8);
+                opacity: 0;
+            }
+            60% {
+                transform: translateY(10px) scale(1.05);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        .close-btn {
+            position: absolute !important;
+            top: 10px !important;
+            right: 15px !important;
+            background: rgba(255, 255, 255, 0.3) !important;
+            border: none !important;
+            color: white !important;
+            width: 35px !important;
+            height: 35px !important;
+            border-radius: 50% !important;
+            cursor: pointer !important;
+            font-size: 20px !important;
+            font-weight: bold !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .notification-title {
+            font-size: 28px !important;
+            font-weight: bold !important;
+            margin-bottom: 15px !important;
+        }
+        .notification-message {
+            font-size: 18px !important;
+            margin-bottom: 20px !important;
+            line-height: 1.4 !important;
+        }
+        .notification-details {
+            background: rgba(255, 255, 255, 0.2) !important;
+            padding: 15px !important;
+            border-radius: 10px !important;
+            margin: 15px 0 !important;
+            font-size: 16px !important;
+        }
+        .notification-button {
+            background: white !important;
+            color: #333 !important;
+            border: none !important;
+            padding: 12px 25px !important;
+            border-radius: 8px !important;
+            margin-top: 20px !important;
+            cursor: pointer !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            width: 100% !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Force Mobile Notification Test</h1>
+    
+    <div class="info">
+        <h3>Device Info:</h3>
+        <p><strong>Screen:</strong> <span id="screenSize"></span></p>
+        <p><strong>Viewport:</strong> <span id="viewport"></span></p>
+        <p><strong>Mobile:</strong> <span id="isMobile"></span></p>
+        <p><strong>User Agent:</strong> <span id="userAgent" style="font-size: 12px; word-break: break-all;"></span></p>
+    </div>
+
+    <button class="test-button" onclick="forceWinNotification()">🎉 FORCE Win Notification</button>
+    <button class="test-button" onclick="forceLoseNotification()">❌ FORCE Lose Notification</button>
+    <button class="test-button" onclick="testMultipleNotifications()">🚀 Test Multiple Notifications</button>
+    <button class="test-button" onclick="simulateTradeComplete()">📱 Simulate Trade Complete</button>
+
+    <script>
+        // Update device info
+        document.getElementById('screenSize').textContent = `${screen.width}x${screen.height}`;
+        document.getElementById('viewport').textContent = `${window.innerWidth}x${window.innerHeight}`;
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        
+        const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        document.getElementById('isMobile').textContent = isMobile ? 'YES' : 'NO';
+
+        function forceWinNotification() {
+            console.log('🎉 FORCING WIN NOTIFICATION');
+            createForceNotification({
+                type: 'win',
+                title: '🎉 TRADE WON!',
+                message: 'Congratulations! Your trade was successful!',
+                amount: 100,
+                payout: 115,
+                profit: 15
+            });
+        }
+
+        function forceLoseNotification() {
+            console.log('❌ FORCING LOSE NOTIFICATION');
+            createForceNotification({
+                type: 'lose',
+                title: '❌ TRADE LOST',
+                message: 'Better luck next time!',
+                amount: 100,
+                payout: 0,
+                profit: -100
+            });
+        }
+
+        function testMultipleNotifications() {
+            console.log('🚀 TESTING MULTIPLE NOTIFICATIONS');
+            
+            // Show win notification first
+            createForceNotification({
+                type: 'win',
+                title: '🎉 FIRST WIN!',
+                message: 'First notification test',
+                amount: 50,
+                payout: 57.5,
+                profit: 7.5
+            });
+            
+            // Show lose notification after 3 seconds
+            setTimeout(() => {
+                createForceNotification({
+                    type: 'lose',
+                    title: '❌ SECOND LOSE',
+                    message: 'Second notification test',
+                    amount: 75,
+                    payout: 0,
+                    profit: -75
+                });
+            }, 3000);
+        }
+
+        function simulateTradeComplete() {
+            console.log('📱 SIMULATING TRADE COMPLETE');
+            
+            // Simulate the exact scenario from the logs
+            const tradeData = {
+                id: 'test-mobile-trade-' + Date.now(),
+                direction: 'up',
+                amount: 100,
+                entryPrice: 65000,
+                finalPrice: 66000,
+                status: 'won',
+                payout: 115,
+                profitPercentage: 15
+            };
+            
+            console.log('🎯 TRADE NOTIFICATION: Showing notification for trade:', tradeData);
+            console.log('🎯 TRADE NOTIFICATION: Mobile detected:', isMobile);
+            
+            createForceNotification({
+                type: 'win',
+                title: '🎉 TRADE COMPLETED!',
+                message: 'Your BTC/USDT trade finished successfully!',
+                amount: tradeData.amount,
+                payout: tradeData.payout,
+                profit: tradeData.payout - tradeData.amount,
+                entryPrice: tradeData.entryPrice,
+                finalPrice: tradeData.finalPrice
+            });
+        }
+
+        function createForceNotification(data) {
+            console.log('📱 CREATING FORCE NOTIFICATION:', data);
+            
+            // Force body overflow hidden
+            const originalOverflow = document.body.style.overflow;
+            const originalDocumentOverflow = document.documentElement.style.overflow;
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            
+            // Remove any existing notifications
+            const existing = document.querySelectorAll('.force-notification');
+            existing.forEach(el => el.remove());
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'force-notification';
+            
+            const isWin = data.type === 'win';
+            const contentClass = isWin ? 'notification-content' : 'notification-content lose';
+            
+            overlay.innerHTML = `
+                <div class="${contentClass}">
+                    <button class="close-btn" onclick="closeForceNotification(this)">&times;</button>
+                    <div class="notification-title">${data.title}</div>
+                    <div class="notification-message">${data.message}</div>
+                    <div class="notification-details">
+                        <div><strong>Amount:</strong> $${data.amount}</div>
+                        <div><strong>Payout:</strong> $${data.payout}</div>
+                        <div><strong>P&L:</strong> <span style="color: ${isWin ? '#90EE90' : '#FFB6C1'}">${data.profit >= 0 ? '+' : ''}$${data.profit}</span></div>
+                        ${data.entryPrice ? `<div><strong>Entry:</strong> $${data.entryPrice.toLocaleString()}</div>` : ''}
+                        ${data.finalPrice ? `<div><strong>Final:</strong> $${data.finalPrice.toLocaleString()}</div>` : ''}
+                    </div>
+                    <button class="notification-button" onclick="closeForceNotification(this)">Close</button>
+                </div>
+            `;
+            
+            // Append to body for maximum visibility
+            document.body.appendChild(overlay);
+            
+            // Store original overflow for restoration
+            overlay.originalOverflow = originalOverflow;
+            overlay.originalDocumentOverflow = originalDocumentOverflow;
+            
+            console.log('✅ FORCE NOTIFICATION CREATED');
+            console.log('📱 Overlay z-index:', window.getComputedStyle(overlay).zIndex);
+            console.log('📱 Overlay position:', window.getComputedStyle(overlay).position);
+            console.log('📱 Body overflow:', document.body.style.overflow);
+            
+            // Auto-close after 15 seconds
+            setTimeout(() => {
+                if (overlay.parentElement) {
+                    closeForceNotification(overlay.querySelector('.close-btn'));
+                }
+            }, 15000);
+        }
+
+        function closeForceNotification(button) {
+            const overlay = button.closest('.force-notification');
+            if (overlay) {
+                // Restore original overflow
+                document.body.style.overflow = overlay.originalOverflow || '';
+                document.documentElement.style.overflow = overlay.originalDocumentOverflow || '';
+                overlay.remove();
+                console.log('✅ FORCE NOTIFICATION CLOSED');
+            }
+        }
+
+        // Log device info for debugging
+        console.log('📱 FORCE MOBILE TEST - Device Info:', {
+            screenSize: `${screen.width}x${screen.height}`,
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+            isMobile: isMobile,
+            userAgent: navigator.userAgent,
+            pixelRatio: window.devicePixelRatio
+        });
+        
+        // Test notification on page load for immediate verification
+        setTimeout(() => {
+            console.log('🚀 AUTO-TESTING NOTIFICATION ON LOAD');
+            createForceNotification({
+                type: 'win',
+                title: '🎯 AUTO TEST',
+                message: 'This notification appeared automatically to test mobile display',
+                amount: 50,
+                payout: 57.5,
+                profit: 7.5
+            });
+        }, 2000);
+    </script>
+</body>
+</html>
