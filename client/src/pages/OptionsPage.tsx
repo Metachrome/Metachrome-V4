@@ -70,8 +70,16 @@ export default function OptionsPage() {
     const stored = localStorage.getItem('currentTradingMode');
     return (stored === 'win' || stored === 'lose' || stored === 'normal') ? stored : 'normal';
   });
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+  const [mobileTradeData, setMobileTradeData] = useState<any>(null);
   const priceHistoryRef = useRef<number[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Mobile trade modal function
+  const showMobileTradeModal = (data: any) => {
+    setMobileTradeData(data);
+    setIsMobileModalOpen(true);
+  };
 
   // Load trade history from server on component mount and persist locally
   useEffect(() => {
@@ -640,12 +648,21 @@ export default function OptionsPage() {
       console.log('🎯 COMPLETE TRADE: Mobile detected:', window.innerWidth < 768);
       console.log('🎯 COMPLETE TRADE: isMobile hook value:', isMobile);
 
-      // MOBILE FIX: Force show notification on mobile with alert
+      // MOBILE FIX: Show custom modal with exact design
       if (window.innerWidth < 768) {
         setTimeout(() => {
           const result = won ? 'WON' : 'LOST';
           const pnl = won ? (trade.payout! - trade.amount) : -trade.amount;
-          alert(`🎯 TRADE ${result}!\n\nProfit/Loss: ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} USDT\nDirection: ${trade.direction.toUpperCase()}\nAmount: $${trade.amount}\nEntry: $${trade.entryPrice} → Final: $${trade.finalPrice}`);
+          showMobileTradeModal({
+            symbol: 'BTC/USDT',
+            pnl: pnl,
+            won: won,
+            currentPrice: trade.finalPrice,
+            duration: selectedDuration,
+            side: trade.direction === 'up' ? 'Buy Up' : 'Buy Down',
+            amount: trade.amount,
+            price: trade.entryPrice
+          });
         }, 1000);
       }
 
@@ -2010,6 +2027,104 @@ export default function OptionsPage() {
           localStorage.removeItem('completedTrade');
         }}
       />
+
+      {/* Mobile Trade Modal */}
+      {isMobileModalOpen && mobileTradeData && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}
+          onClick={() => setIsMobileModalOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#1a1a1a',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '350px',
+              width: '100%',
+              color: 'white',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{mobileTradeData.symbol}</div>
+              <button
+                onClick={() => setIsMobileModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  padding: '0',
+                  width: '24px',
+                  height: '24px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* PnL */}
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{
+                fontSize: '36px',
+                fontWeight: 'bold',
+                color: mobileTradeData.pnl >= 0 ? '#10b981' : '#ef4444',
+                marginBottom: '8px'
+              }}>
+                {mobileTradeData.pnl >= 0 ? '+' : ''}{mobileTradeData.pnl.toFixed(0)} USDT
+              </div>
+              <div style={{ color: '#888', fontSize: '16px' }}>Settlement completed</div>
+            </div>
+
+            {/* Details */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#888' }}>Current price :</span>
+                <span>{mobileTradeData.currentPrice}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#888' }}>Time :</span>
+                <span>{mobileTradeData.duration}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#888' }}>Side :</span>
+                <span style={{ color: mobileTradeData.side === 'Buy Up' ? '#10b981' : '#ef4444' }}>
+                  {mobileTradeData.side}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#888' }}>Amount :</span>
+                <span>{mobileTradeData.amount} USDT</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#888' }}>Price :</span>
+                <span>{mobileTradeData.price.toFixed(2)} USDT</span>
+              </div>
+            </div>
+
+            {/* Footer text */}
+            <div style={{ color: '#888', fontSize: '14px', lineHeight: '1.4' }}>
+              The ultimate price for each option contract is determined by the system's settlement process.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
   } catch (error) {

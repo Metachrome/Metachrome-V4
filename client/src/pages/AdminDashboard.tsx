@@ -1507,7 +1507,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-orange-100 text-sm">Total Balance</p>
                       <p className="text-3xl font-bold text-white">
-                        ${calculateTotalBalance(users).toLocaleString()}
+                        {calculateTotalBalance(users).toLocaleString()} USDT
                       </p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-orange-200" />
@@ -1588,7 +1588,7 @@ export default function WorkingAdminDashboard() {
                     <div>
                       <p className="text-gray-400 text-sm">Total Balance</p>
                       <p className="text-2xl font-bold text-white">
-                        ${calculateTotalBalance(users).toLocaleString()}
+                        {calculateTotalBalance(users).toLocaleString()} USDT
                       </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-purple-500" />
@@ -1719,7 +1719,7 @@ export default function WorkingAdminDashboard() {
                               {user.email.length > 30 ? `${user.email.slice(0, 30)}...` : user.email}
                             </div>
                           </TableCell>
-                          <TableCell className="text-white font-medium">${formatBalance(user.balance)}</TableCell>
+                          <TableCell className="text-white font-medium">{formatBalance(user.balance)} USDT</TableCell>
                           <TableCell>
                             <Badge variant={user.role === 'super_admin' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
                               {user.role}
@@ -2228,7 +2228,7 @@ export default function WorkingAdminDashboard() {
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="text-white font-medium">{deposit.username}</p>
-                              <p className="text-sm text-gray-400">Balance: ${deposit.user_balance}</p>
+                              <p className="text-sm text-gray-400">Balance: {deposit.user_balance} USDT</p>
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-green-400">
@@ -2372,7 +2372,7 @@ export default function WorkingAdminDashboard() {
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="text-white font-medium">{withdrawal.username}</p>
-                              <p className="text-sm text-gray-400">Balance: ${withdrawal.user_balance}</p>
+                              <p className="text-sm text-gray-400">Balance: {withdrawal.user_balance} USDT</p>
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-red-400">
@@ -2725,7 +2725,7 @@ export default function WorkingAdminDashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Balance:</span>
-                <span className="text-white font-medium">${formatBalance(selectedUser.balance)}</span>
+                <span className="text-white font-medium">{formatBalance(selectedUser.balance)} USDT</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Role:</span>
@@ -2990,7 +2990,7 @@ export default function WorkingAdminDashboard() {
                     />
                   </div>
                   <div className="text-sm text-gray-400">
-                    Current Balance: ${formatBalance(selectedUserForAction.balance)}
+                    Current Balance: {formatBalance(selectedUserForAction.balance)} USDT
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-2">
@@ -3022,7 +3022,7 @@ export default function WorkingAdminDashboard() {
                     />
                   </div>
                   <div className="text-sm text-gray-400">
-                    Current Balance: ${formatBalance(selectedUserForAction.balance)}
+                    Current Balance: {formatBalance(selectedUserForAction.balance)} USDT
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-2">

@@ -4125,7 +4125,10 @@ app.get('/api/balances', async (req, res) => {
       }
     ];
 
-    console.log('💰 Returning balances:', balances);
+    console.log('💰 BALANCE ENDPOINT: Final response for', currentUser.username);
+    console.log('💰 BALANCE ENDPOINT: User balance:', userBalance);
+    console.log('💰 BALANCE ENDPOINT: USDT available:', balances[0].available);
+    console.log('💰 BALANCE ENDPOINT: Full response:', JSON.stringify(balances, null, 2));
     res.json(balances);
   } catch (error) {
     console.error('❌ Error getting balances:', error);
