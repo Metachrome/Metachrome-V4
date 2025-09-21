@@ -6157,46 +6157,6 @@ app.post('/api/admin/fix-all-data', async (req, res) => {
     res.status(500).json({ error: 'Failed to fix database', details: error.message });
   }
 });
-    console.log(`🔧 Found user: ${users[0].username} with ID: ${userId}`);
-
-    // Add test withdrawal data
-    const testWithdrawals = [
-      {
-        id: `with-${Date.now()}-1`,
-        user_id: userId,
-        amount: 500,
-        currency: 'BTC',
-        address: 'bc1q6w3rdy5kwaf4es2lpjk6clpd25pterzvgwu5hu',
-        status: 'pending',
-        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-        updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: `with-${Date.now()}-2`,
-        user_id: userId,
-        amount: 1000,
-        currency: 'USDT',
-        address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
-        status: 'approved',
-        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-        updated_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString() // 2 hours later
-      },
-      {
-        id: `with-${Date.now()}-3`,
-        user_id: userId,
-        amount: 250,
-        currency: 'ETH',
-        address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
-        status: 'completed',
-        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-        updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString() // 4 hours later
-      }
-    ];
-
-    const { data: insertedWithdrawals, error: insertError } = await supabase
-      .from('withdrawals')
-      .insert(testWithdrawals)
-      .select();
 
 
 
