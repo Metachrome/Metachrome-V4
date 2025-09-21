@@ -34,14 +34,7 @@ export default function OptionsPage() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
-  // MOBILE DEBUG: Show alert when page loads on mobile
-  useEffect(() => {
-    if (isMobile) {
-      setTimeout(() => {
-        alert(`🎯 MOBILE DEBUG: OptionsPage loaded on mobile device! Width: ${window.innerWidth}px`);
-      }, 2000);
-    }
-  }, [isMobile]);
+
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("open");
@@ -646,13 +639,6 @@ export default function OptionsPage() {
       console.log('🎯 COMPLETE TRADE: Set completedTrade state:', tradeWithTimestamp);
       console.log('🎯 COMPLETE TRADE: Mobile detected:', window.innerWidth < 768);
       console.log('🎯 COMPLETE TRADE: isMobile hook value:', isMobile);
-
-      // MOBILE DEBUG: Show alert when trade completes on mobile
-      if (window.innerWidth < 768) {
-        setTimeout(() => {
-          alert(`🎯 MOBILE DEBUG: Trade completed! ${won ? 'WON' : 'LOST'} - ${trade.direction} $${trade.amount}`);
-        }, 1000);
-      }
 
       // Auto-hide notification after 45 seconds (sticky notification)
       setTimeout(() => {
@@ -1996,42 +1982,7 @@ export default function OptionsPage() {
       {/* Mobile Debug Component */}
       <MobileDebug />
 
-      {/* SIMPLIFIED MOBILE TEST BUTTON */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '10px',
-          left: '10px',
-          zIndex: 999999,
-          backgroundColor: '#ff0000',
-          color: 'white',
-          padding: '10px 15px',
-          borderRadius: '5px',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          border: '2px solid white'
-        }}
-        onClick={() => {
-          console.log('🎯 MOBILE DEBUG: Test button clicked');
-          alert('Test button clicked! Creating test trade...');
-          const testTrade = {
-            id: 'test-123',
-            direction: 'up' as const,
-            amount: 100,
-            entryPrice: 50000,
-            currentPrice: 51000,
-            status: 'won' as const,
-            payout: 110,
-            profitPercentage: 10,
-            completedAt: new Date().toISOString()
-          };
-          setCompletedTrade(testTrade);
-          console.log('🎯 MOBILE DEBUG: Test trade set:', testTrade);
-        }}
-      >
-        TEST NOTIF
-      </div>
+
 
       {/* Trade Notification */}
       <TradeNotification

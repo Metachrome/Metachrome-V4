@@ -70,19 +70,25 @@
     </div>
 
     <div class="test-section">
-        <h2>3. Force Balance Sync</h2>
+        <h2>3. Balance Comparison Test</h2>
+        <button onclick="testBalanceComparison()">Compare Balance Sources</button>
+        <div id="comparison-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Force Balance Sync</h2>
         <button onclick="forceBalanceSync()">Force Balance Sync</button>
         <div id="sync-result" class="result"></div>
     </div>
 
     <div class="test-section">
-        <h2>4. Mobile Notification Test</h2>
+        <h2>5. Mobile Notification Test</h2>
         <button onclick="testMobileNotification()">Test Mobile Notification</button>
         <div id="notification-result" class="result"></div>
     </div>
 
     <div class="test-section">
-        <h2>5. Direct Mobile Modal Test</h2>
+        <h2>6. Direct Mobile Modal Test</h2>
         <button onclick="showDirectModal()">Show Direct Modal</button>
     </div>
 
@@ -114,6 +120,25 @@
             const result = document.getElementById('balance-result');
             try {
                 const response = await fetch(`/api/debug/balance/${userId}`);
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+                result.style.background = '#004400';
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+                result.style.background = '#440000';
+            }
+        }
+
+        async function testBalanceComparison() {
+            const result = document.getElementById('comparison-result');
+            try {
+                const token = localStorage.getItem('token') || 'no-token';
+                const response = await fetch('/api/debug/balance-comparison', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 const data = await response.json();
                 result.textContent = JSON.stringify(data, null, 2);
                 result.style.background = '#004400';

@@ -2133,6 +2133,57 @@ app.post('/api/admin/force-balance-sync', async (req, res) => {
   }
 });
 
+// BALANCE COMPARISON ENDPOINT
+app.get('/api/debug/balance-comparison', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    console.log('🔍 BALANCE COMPARISON: Auth token:', authToken?.substring(0, 30) + '...');
+
+    const users = await getUsers();
+
+    // Get user from balance endpoint logic
+    let balanceUser = users.find(u => u.role === 'user') || users[0];
+    if (authToken && authToken.startsWith('user-session-')) {
+      const tokenParts = authToken.replace('user-session-', '').split('-');
+      const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+      const foundUser = users.find(u => u.id === userId);
+      if (foundUser) {
+        balanceUser = foundUser;
+      }
+    }
+
+    // Get angela.soenoko specifically
+    const angelaUser = users.find(u => u.username === 'angela.soenoko');
+
+    res.json({
+      authToken: authToken?.substring(0, 30) + '...',
+      balanceEndpointUser: {
+        id: balanceUser.id,
+        username: balanceUser.username,
+        email: balanceUser.email,
+        balance: balanceUser.balance,
+        balanceType: typeof balanceUser.balance
+      },
+      angelaUser: angelaUser ? {
+        id: angelaUser.id,
+        username: angelaUser.username,
+        email: angelaUser.email,
+        balance: angelaUser.balance,
+        balanceType: typeof angelaUser.balance
+      } : null,
+      allUsers: users.map(u => ({
+        id: u.id,
+        username: u.username,
+        balance: u.balance,
+        role: u.role
+      }))
+    });
+  } catch (error) {
+    console.error('❌ Balance comparison error:', error);
+    res.status(500).json({ error: 'Comparison failed' });
+  }
+});
+
 // MOBILE NOTIFICATION TEST ENDPOINT
 app.get('/api/test/mobile-notification', (req, res) => {
   res.json({
@@ -3216,11 +3267,22 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     const withdrawalId = req.params.id;
     const { action, reason } = req.body;
 
-    console.log('💸 Withdrawal action:', withdrawalId, action, reason);
+    console.log('💸 WITHDRAWAL ACTION DEBUG: Starting withdrawal action');
+    console.log('💸 Withdrawal ID:', withdrawalId);
+    console.log('💸 Action:', action);
+    console.log('💸 Reason:', reason);
+    console.log('💸 Request body:', req.body);
 
     // Find the withdrawal request
+    console.log('💸 DEBUG: Searching for withdrawal in pending list');
+    console.log('💸 DEBUG: Pending withdrawals count:', pendingWithdrawals.length);
+    console.log('💸 DEBUG: Pending withdrawals:', pendingWithdrawals.map(w => ({ id: w.id, username: w.username, amount: w.amount })));
+
     const withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
+    console.log('💸 DEBUG: Withdrawal index found:', withdrawalIndex);
+
     if (withdrawalIndex === -1) {
+      console.log('💸 ERROR: Withdrawal request not found');
       return res.status(404).json({
         success: false,
         message: 'Withdrawal request not found'
@@ -3228,19 +3290,32 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     }
 
     const withdrawal = pendingWithdrawals[withdrawalIndex];
+    console.log('💸 DEBUG: Found withdrawal:', withdrawal);
 
     // Get users and transactions for both approve and reject actions
+    console.log('💸 DEBUG: Getting users and transactions');
     const users = await getUsers();
+    console.log('💸 DEBUG: Users loaded:', users.length);
     const transactions = await getTransactions();
+    console.log('💸 DEBUG: Transactions loaded:', transactions.length);
 
     if (action === 'approve') {
 
       // Find the user and update their balance
       const user = users.find(u => u.username === withdrawal.username);
-      const currentBalance = parseFloat(user?.balance || '0');
-      const withdrawalAmount = parseFloat(withdrawal.amount || '0');
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
 
-    if (user) {
+      const currentBalance = parseFloat(user.balance || '0');
+      const withdrawalAmount = parseFloat(withdrawal.amount || '0');
+      let oldBalance = currentBalance; // Initialize oldBalance
+
+      console.log('💸 WITHDRAWAL APPROVAL: User:', user.username, 'Current balance:', currentBalance, 'Withdrawal amount:', withdrawalAmount);
+
       // BALANCE SYNC FIX: Check if balance was already deducted during request
       if (withdrawal.balance_deducted) {
         console.log('✅ Withdrawal approved, balance was already deducted during request. Current balance:', user.balance);
@@ -3248,9 +3323,9 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
       } else {
         // Legacy behavior: deduct balance now if it wasn't deducted during request
         if (currentBalance >= withdrawalAmount) {
-          const oldBalance = currentBalance;
+          oldBalance = currentBalance;
           user.balance = (currentBalance - withdrawalAmount).toString();
-          console.log('✅ Withdrawal approved, user balance updated:', user.balance);
+          console.log('✅ Withdrawal approved, user balance updated from', oldBalance, 'to', user.balance);
         } else {
           return res.status(400).json({
             success: false,
@@ -3317,6 +3392,7 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
       }
 
       // Add approved transaction record
+      console.log('💸 DEBUG: Creating transaction record for approved withdrawal');
       const transaction = {
         id: `txn-${Date.now()}`,
         user_id: user.id,
@@ -3327,31 +3403,35 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
         created_at: new Date().toISOString(),
         users: { username: user.username }
       };
-      await createTransaction(transaction);
-      console.log('📝 Approved withdrawal transaction recorded');
-    } else if (user && currentBalance < withdrawalAmount) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient user balance for withdrawal. Current: $${currentBalance}, Requested: $${withdrawalAmount}`
+      console.log('💸 DEBUG: Transaction data:', transaction);
+
+      try {
+        await createTransaction(transaction);
+        console.log('📝 Approved withdrawal transaction recorded successfully');
+      } catch (transactionError) {
+        console.error('❌ Error creating transaction:', transactionError);
+        // Don't fail the whole operation if transaction recording fails
+      }
+
+      // Remove from pending withdrawals
+      pendingWithdrawals.splice(withdrawalIndex, 1);
+      pendingData.withdrawals = pendingWithdrawals;
+      savePendingData();
+      console.log('🗑️ Withdrawal removed from pending list');
+
+      res.json({
+        success: true,
+        message: 'Withdrawal approved successfully',
+        action: 'approve'
       });
-    }
-
-    // Remove from pending withdrawals
-    pendingWithdrawals.splice(withdrawalIndex, 1);
-    pendingData.withdrawals = pendingWithdrawals;
-    savePendingData();
-    console.log('🗑️ Withdrawal removed from pending list');
-
-    res.json({
-      success: true,
-      message: 'Withdrawal approved successfully',
-      action: 'approve'
-    });
   } else if (action === 'reject') {
+    console.log('💸 DEBUG: Processing withdrawal rejection');
     console.log('❌ Withdrawal rejected:', reason);
 
     // Find the user for transaction record
+    console.log('💸 DEBUG: Finding user for rejection:', withdrawal.username);
     const user = users.find(u => u.username === withdrawal.username);
+    console.log('💸 DEBUG: User found for rejection:', !!user);
 
     // BALANCE SYNC FIX: Restore balance if it was deducted during request
     if (user && withdrawal.balance_deducted) {
@@ -3425,8 +3505,15 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     });
   }
   } catch (error) {
-    console.error('❌ Error processing withdrawal action:', error);
-    res.status(500).json({ error: 'Failed to process withdrawal action' });
+    console.error('❌ WITHDRAWAL ACTION ERROR: Full error details:');
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error object:', error);
+    res.status(500).json({
+      error: 'Failed to process withdrawal action',
+      details: error.message,
+      stack: error.stack
+    });
   }
 });
 
@@ -3931,6 +4018,14 @@ app.get('/api/balances', async (req, res) => {
     }
 
     console.log('💰 Returning balance for user:', currentUser.username, 'Balance:', currentUser.balance);
+
+    // BALANCE SYNC DEBUG: Log detailed user info
+    console.log('💰 BALANCE SYNC DEBUG:');
+    console.log('💰 - User ID:', currentUser.id);
+    console.log('💰 - Username:', currentUser.username);
+    console.log('💰 - Email:', currentUser.email);
+    console.log('💰 - Raw balance:', currentUser.balance);
+    console.log('💰 - Balance type:', typeof currentUser.balance);
 
     // BALANCE SYNC FIX: Ensure we're using the most up-to-date balance
     const userBalance = parseFloat(currentUser.balance || 0);

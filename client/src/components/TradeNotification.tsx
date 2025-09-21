@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useIsMobile } from '../hooks/use-mobile';
 
 interface TradeNotificationProps {
@@ -19,20 +20,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(100);
   const timersRef = useRef<{ timer?: NodeJS.Timeout; progressInterval?: NodeJS.Timeout }>({});
-  const renderCountRef = useRef(0);
   const isMobile = useIsMobile();
-
-  renderCountRef.current += 1;
-  console.log('🎯 TRADE NOTIFICATION: Component render #', renderCountRef.current, 'trade:', !!trade, 'isMobile:', isMobile);
-
-  // MOBILE DEBUG: Log every render on mobile
-  if (isMobile) {
-    console.log('🎯 MOBILE RENDER #', renderCountRef.current, '- Trade data:', trade);
-  }
-
-  // FORCE MOBILE NOTIFICATION: Always show notification on mobile if trade exists
-  const shouldShow = trade !== null;
-  const forceVisible = isMobile && shouldShow;
 
   const handleClose = () => {
     // Clear all timers
@@ -52,20 +40,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       console.log('🎯 TRADE NOTIFICATION: Document body overflow:', document.body.style.overflow);
       console.log('🎯 TRADE NOTIFICATION: Document documentElement overflow:', document.documentElement.style.overflow);
 
-      // MOBILE DEBUG: Force show notification on mobile
-      if (isMobile) {
-        console.log('🎯 MOBILE DEBUG: Forcing notification visibility on mobile');
-        // Add a temporary visual indicator to the body
-        document.body.style.border = '5px solid red';
-        setTimeout(() => {
-          document.body.style.border = '';
-        }, 3000);
 
-        // MOBILE DEBUG: Show alert to confirm notification is triggered
-        setTimeout(() => {
-          alert(`🎯 MOBILE DEBUG: Trade notification triggered! Status: ${trade.status}, Amount: ${trade.amount}`);
-        }, 500);
-      }
 
       setIsVisible(true);
       setProgress(100);
@@ -103,11 +78,11 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
   const priceChange = trade.finalPrice - trade.entryPrice;
 
-  // SIMPLIFIED MOBILE NOTIFICATION: Use simple overlay approach
+  // MOBILE NOTIFICATION: Use React Portal for guaranteed display
   if (isMobile) {
-    console.log('🎯 MOBILE NOTIFICATION: Rendering simplified mobile notification');
+    console.log('🎯 MOBILE NOTIFICATION: Rendering mobile notification via portal');
 
-    return (
+    const mobileModal = (
       <div
         style={{
           position: 'fixed',
@@ -115,46 +90,48 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          zIndex: 999999,
+          backgroundColor: 'rgba(0, 0, 0, 0.95)',
+          zIndex: 2147483647, // Maximum z-index value
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px'
+          padding: '20px',
+          fontFamily: 'Arial, sans-serif'
         }}
         onClick={onClose}
       >
         <div
           style={{
-            backgroundColor: isWin ? '#059669' : '#dc2626',
+            backgroundColor: isWin ? '#10b981' : '#ef4444',
             color: 'white',
-            padding: '30px',
-            borderRadius: '15px',
+            padding: '40px 30px',
+            borderRadius: '20px',
             textAlign: 'center',
-            maxWidth: '350px',
+            maxWidth: '380px',
             width: '100%',
-            border: '3px solid white',
-            boxShadow: '0 0 30px rgba(255, 255, 255, 0.3)'
+            border: '4px solid white',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+            animation: 'slideIn 0.3s ease-out'
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '20px' }}>
             {isWin ? '🎉 TRADE WON!' : '💔 TRADE LOST'}
           </div>
 
-          <div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '15px' }}>
+          <div style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '20px' }}>
             {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT
           </div>
 
-          <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+          <div style={{ fontSize: '18px', marginBottom: '12px', opacity: 0.9 }}>
             Direction: {trade.direction.toUpperCase()}
           </div>
 
-          <div style={{ fontSize: '16px', marginBottom: '10px' }}>
+          <div style={{ fontSize: '18px', marginBottom: '12px', opacity: 0.9 }}>
             Amount: ${trade.amount}
           </div>
 
-          <div style={{ fontSize: '16px', marginBottom: '20px' }}>
+          <div style={{ fontSize: '18px', marginBottom: '25px', opacity: 0.9 }}>
             Entry: ${trade.entryPrice} → Final: ${trade.finalPrice}
           </div>
 
@@ -162,20 +139,37 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
             onClick={onClose}
             style={{
               backgroundColor: 'white',
-              color: isWin ? '#059669' : '#dc2626',
+              color: isWin ? '#10b981' : '#ef4444',
               border: 'none',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              fontSize: '16px',
+              padding: '15px 30px',
+              borderRadius: '10px',
+              fontSize: '18px',
               fontWeight: 'bold',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
             }}
           >
             Close
           </button>
         </div>
+
+        <style>{`
+          @keyframes slideIn {
+            from {
+              opacity: 0;
+              transform: scale(0.8) translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1) translateY(0);
+            }
+          }
+        `}</style>
       </div>
     );
+
+    // Use React Portal to render outside the normal DOM tree
+    return createPortal(mobileModal, document.body);
   }
 
   // Mobile-specific modal design (old complex version - keeping as fallback)
