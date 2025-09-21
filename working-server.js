@@ -2037,6 +2037,12 @@ app.get('/api/admin/users', async (req, res) => {
     }
 
     console.log('👥 Getting users list - Total:', users.length, 'Filtered:', filteredUsers.length);
+
+    // Ensure balance consistency - log current balances for debugging
+    filteredUsers.forEach(user => {
+      console.log(`💰 User ${user.username} balance: ${user.balance}`);
+    });
+
     res.json(filteredUsers);
   } catch (error) {
     console.error('❌ Error getting users:', error);

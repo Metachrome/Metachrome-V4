@@ -113,6 +113,7 @@ interface Transaction {
   amount: number;
   symbol?: string;
   currency?: string;
+  description?: string;
   status: string;
   created_at: string;
   users?: { username: string };
@@ -126,6 +127,27 @@ interface SystemStats {
   totalVolume: number;
   totalBalance: number;
 }
+
+// Helper function to extract currency from transaction description
+const extractCurrencyFromDescription = (transaction: Transaction): string => {
+  if (transaction.symbol) return transaction.symbol;
+  if (transaction.currency) return transaction.currency;
+
+  // Parse currency from description for withdrawals
+  if (transaction.type === 'withdrawal' && transaction.description) {
+    const match = transaction.description.match(/- (BTC|ETH|USDT|SOL|USDT-ERC20|USDT-TRC20|USDT-BEP20)/);
+    if (match) return match[1];
+  }
+
+  // Default to USDT for other transactions
+  return 'USDT';
+};
+
+// Helper function to format transaction amount with currency
+const formatTransactionAmount = (transaction: Transaction): string => {
+  const currency = extractCurrencyFromDescription(transaction);
+  return `${transaction.amount.toLocaleString()} ${currency}`;
+};
 
 export default function WorkingAdminDashboard() {
   const { user } = useAuth();
@@ -2076,10 +2098,7 @@ export default function WorkingAdminDashboard() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-white font-medium">
-                            {transaction.symbol || transaction.currency ?
-                              `${transaction.amount.toLocaleString()} ${transaction.symbol || transaction.currency}` :
-                              `$${transaction.amount.toLocaleString()}`
-                            }
+                            {formatTransactionAmount(transaction)}
                           </TableCell>
                           <TableCell>
                             <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>

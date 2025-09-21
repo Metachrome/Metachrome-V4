@@ -21,6 +21,8 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const timersRef = useRef<{ timer?: NodeJS.Timeout; progressInterval?: NodeJS.Timeout }>({});
   const isMobile = useIsMobile();
 
+  console.log('🎯 TRADE NOTIFICATION: Component render, trade:', !!trade, 'isMobile:', isMobile);
+
   const handleClose = () => {
     // Clear all timers
     if (timersRef.current.timer) clearTimeout(timersRef.current.timer);
@@ -34,6 +36,8 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     if (trade) {
       console.log('🎯 TRADE NOTIFICATION: Showing notification for trade:', trade);
       console.log('🎯 TRADE NOTIFICATION: Mobile detected:', isMobile);
+      console.log('🎯 TRADE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
+      console.log('🎯 TRADE NOTIFICATION: User agent:', navigator.userAgent);
       setIsVisible(true);
       setProgress(100);
 
@@ -59,7 +63,12 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     }
   }, [trade, onClose, isMobile]);
 
-  if (!trade) return null;
+  if (!trade) {
+    console.log('🎯 TRADE NOTIFICATION: No trade data, not rendering');
+    return null;
+  }
+
+  console.log('🎯 TRADE NOTIFICATION: About to render, isMobile:', isMobile, 'isVisible:', isVisible);
 
   const isWin = trade.status === 'won';
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
@@ -68,17 +77,40 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   // Mobile-specific modal design
   if (isMobile) {
     console.log('🎯 TRADE NOTIFICATION: Rendering mobile modal, isVisible:', isVisible);
+    console.log('🎯 TRADE NOTIFICATION: Trade data for mobile:', trade);
     return (
-      <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-500 ${
-        isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}>
+      <div
+        className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-500 ${
+          isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999
+        }}
+      >
         {/* Backdrop */}
         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose} />
 
         {/* Modal */}
-        <div className={`relative bg-gray-800 rounded-2xl p-6 w-full max-w-sm mx-auto transform transition-all duration-500 ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
-        }`}>
+        <div
+          className={`relative bg-gray-800 rounded-2xl p-6 w-full max-w-sm mx-auto transform transition-all duration-500 ${
+            isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+          }`}
+          style={{
+            backgroundColor: '#1f2937',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            width: '100%',
+            maxWidth: '24rem',
+            margin: '0 auto',
+            position: 'relative',
+            zIndex: 10000
+          }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-white text-lg font-bold">BTC/USDT</h2>

@@ -633,6 +633,9 @@ export default function OptionsPage() {
       setCompletedTrade(tradeWithTimestamp);
       localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
 
+      console.log('🎯 COMPLETE TRADE: Set completedTrade state:', tradeWithTimestamp);
+      console.log('🎯 COMPLETE TRADE: Mobile detected:', window.innerWidth < 768);
+
       // Auto-hide notification after 45 seconds (sticky notification)
       setTimeout(() => {
         console.log('🎯 COMPLETE TRADE: Auto-hiding notification after 45s');
