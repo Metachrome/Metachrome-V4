@@ -170,17 +170,16 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       console.log('🎯 MOBILE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
       console.log('🎯 MOBILE NOTIFICATION: Is mobile:', window.innerWidth <= 768);
 
-      // For mobile devices, use native overlay instead of React component
-      if (window.innerWidth <= 768) {
-        console.log('📱 MOBILE DETECTED: Using native overlay approach');
-        createNativeOverlay(trade);
-        return; // Don't use React component on mobile
-      }
-
-      // Desktop: Use React component
-      console.log('🖥️ DESKTOP: Using React component');
+      // ALWAYS use React component for ALL devices
+      console.log('🎯 UNIVERSAL: Using React component for all devices');
       setIsVisible(true);
       setProgress(100);
+
+      // ALSO create native overlay for mobile as backup
+      if (window.innerWidth <= 768) {
+        console.log('📱 MOBILE DETECTED: Creating additional native overlay as backup');
+        setTimeout(() => createNativeOverlay(trade), 100);
+      }
 
       // Add debug info to window
       if (typeof window !== 'undefined') {

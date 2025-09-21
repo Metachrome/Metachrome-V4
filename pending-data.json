@@ -2,17 +2,6 @@
   "deposits": [],
   "withdrawals": [
     {
-      "id": "with-001",
-      "user_id": "demo-user-1757756401422",
-      "username": "angela.soenoko",
-      "amount": 500,
-      "currency": "BTC",
-      "address": "bc1q6w3rdy5kwaf4es2lpjk6clpd25pterzvgwu5hu",
-      "status": "pending",
-      "created_at": "2025-09-18T08:30:00.000Z",
-      "updated_at": "2025-09-18T08:30:00.000Z"
-    },
-    {
       "id": "with-002",
       "user_id": "demo-user-1757756401422",
       "username": "angela.soenoko",
