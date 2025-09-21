@@ -2898,6 +2898,7 @@ app.post('/api/transactions/deposit-request', async (req, res) => {
     network: currencyNetworkMap[currency] || 'Unknown', // FIXED: Use original currency for mapping
     status: 'pending',
     wallet_address: '', // Will be filled when proof is submitted
+    user_balance: parseFloat(currentUser.balance || 0), // Add user balance for admin display
     created_at: new Date().toISOString()
   };
 
@@ -3115,6 +3116,14 @@ app.get('/api/admin/pending-requests', async (req, res) => {
     console.log('📊 Local pending data check:');
     console.log('- Local withdrawals:', pendingWithdrawals.length);
     console.log('- Local deposits:', pendingDeposits.length);
+
+    // DEBUG: Log deposit details
+    if (pendingDeposits.length > 0) {
+      console.log('📊 Local deposit details:');
+      pendingDeposits.forEach((deposit, index) => {
+        console.log(`  ${index + 1}. ID: ${deposit.id}, User: ${deposit.username}, Amount: ${deposit.amount} ${deposit.currency}, Status: ${deposit.status}`);
+      });
+    }
 
     // Combine real database data with local pending data
     const localWithdrawals = pendingWithdrawals.filter(w => w.status === 'pending');
@@ -3453,20 +3462,24 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
       withdrawal.processed_at = new Date().toISOString();
       withdrawal.updated_at = new Date().toISOString();
 
-      // If approving, update user balance
+      // BALANCE FIX: Don't deduct balance again on approval - it was already deducted when requested
       if (action === 'approve') {
-        console.log('💰 Deducting balance for approved withdrawal');
+        console.log('✅ Withdrawal approved - balance was already deducted when requested');
+        console.log(`✅ Withdrawal ${withdrawal.id} for ${withdrawal.username}: ${withdrawal.amount} ${withdrawal.currency}`);
+      } else if (action === 'reject') {
+        // If rejecting, we need to refund the balance that was deducted when requested
+        console.log('💰 Refunding balance for rejected withdrawal');
         const users = await getUsers();
         const userIndex = users.findIndex(u => u.id === withdrawal.user_id || u.username === withdrawal.username);
 
         if (userIndex !== -1) {
           const currentBalance = parseFloat(users[userIndex].balance || 0);
-          const newBalance = currentBalance - withdrawal.amount;
-          users[userIndex].balance = newBalance.toString();
+          const refundedBalance = currentBalance + withdrawal.amount;
+          users[userIndex].balance = refundedBalance.toString();
 
           // Save updated users
           await saveUsers(users);
-          console.log(`💰 User ${withdrawal.username} balance updated: ${currentBalance} -> ${newBalance}`);
+          console.log(`💰 User ${withdrawal.username} balance refunded: ${currentBalance} -> ${refundedBalance}`);
         }
       }
 
@@ -8148,22 +8161,25 @@ app.post('/api/user/withdraw', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: amount, currency, walletAddress' });
     }
 
-    // Extract user ID from token
-    const userId = authToken.includes('user-session-') ?
-      authToken.split('user-session-')[1].split('-')[0] + '-' + authToken.split('user-session-')[1].split('-')[1] + '-' + authToken.split('user-session-')[1].split('-')[2] :
-      authToken;
-
-    console.log('💸 Processing withdrawal for user:', userId);
-
-    // Get user data
-    const users = await getUsers();
-    const user = users.find(u => u.id === userId);
-
+    // Use the same getUserFromToken function as other endpoints for consistency
+    const user = await getUserFromToken(authToken);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
+      return res.status(401).json({ error: 'Invalid authentication' });
     }
 
-    const userBalance = parseFloat(user.balance || '0');
+    console.log('💸 Processing withdrawal for user:', user.username, '(ID:', user.id, ')');
+
+    // Get fresh user data
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.id === user.id);
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found in database' });
+    }
+
+    // Use the fresh user data for balance calculations
+    const freshUser = users[userIndex];
+    const userBalance = parseFloat(freshUser.balance || '0');
     const withdrawalAmount = parseFloat(amount);
 
     if (withdrawalAmount > userBalance) {
@@ -8176,7 +8192,7 @@ app.post('/api/user/withdraw', async (req, res) => {
     const newBalance = userBalance - withdrawalAmount;
 
     // Update user balance immediately
-    user.balance = newBalance.toString();
+    freshUser.balance = newBalance.toString();
     await saveUsers(users);
 
     console.log('💸 IMMEDIATE DEDUCTION: User balance updated from', oldBalance, 'to', newBalance);
@@ -8211,7 +8227,7 @@ app.post('/api/user/withdraw', async (req, res) => {
     // Create withdrawal request
     const withdrawal = {
       id: `with-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      user_id: userId,
+      user_id: user.id,
       username: user.username,
       amount: withdrawalAmount,
       currency,
@@ -8262,22 +8278,25 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: amount, currency, address' });
     }
 
-    // Extract user ID from token
-    const userId = authToken.includes('user-session-') ?
-      authToken.split('user-session-')[1].split('-')[0] + '-' + authToken.split('user-session-')[1].split('-')[1] + '-' + authToken.split('user-session-')[1].split('-')[2] :
-      authToken;
-
-    console.log('💸 Processing withdrawal for user:', userId);
-
-    // Get user data
-    const users = await getUsers();
-    const user = users.find(u => u.id === userId);
-
+    // Use the same getUserFromToken function as other endpoints for consistency
+    const user = await getUserFromToken(authToken);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
+      return res.status(401).json({ error: 'Invalid authentication' });
     }
 
-    const userBalance = parseFloat(user.balance || '0');
+    console.log('💸 Processing withdrawal (transactions endpoint) for user:', user.username, '(ID:', user.id, ')');
+
+    // Get fresh user data
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.id === user.id);
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found in database' });
+    }
+
+    // Use the fresh user data for balance calculations
+    const freshUser = users[userIndex];
+    const userBalance = parseFloat(freshUser.balance || '0');
     const withdrawalAmount = parseFloat(amount);
 
     if (withdrawalAmount > userBalance) {
@@ -8290,7 +8309,7 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
     const newBalance = userBalance - withdrawalAmount;
 
     // Update user balance immediately
-    user.balance = newBalance.toString();
+    freshUser.balance = newBalance.toString();
     await saveUsers(users);
 
     console.log('💸 IMMEDIATE DEDUCTION (alt endpoint): User balance updated from', oldBalance, 'to', newBalance);
@@ -8325,7 +8344,7 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
     // Create withdrawal request
     const withdrawal = {
       id: `with-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      user_id: userId,
+      user_id: user.id,
       username: user.username,
       amount: withdrawalAmount,
       currency,

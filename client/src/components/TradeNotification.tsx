@@ -200,9 +200,14 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       setIsVisible(true);
       setProgress(100);
 
-      // ALWAYS create native overlay for ALL devices (mobile AND desktop)
-      console.log('📱 CREATING NATIVE OVERLAY: For ALL devices');
-      createNativeOverlay(trade);
+      // MOBILE FIX: Only create native overlay for mobile devices to avoid conflicts
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        console.log('📱 CREATING NATIVE OVERLAY: For mobile devices only');
+        createNativeOverlay(trade);
+      } else {
+        console.log('🖥️ DESKTOP: Using React component only');
+      }
 
       // Add debug info to window
       if (typeof window !== 'undefined') {
@@ -297,7 +302,14 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
         padding: '20px',
         visibility: 'visible',
         opacity: 1,
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
+        // Mobile-specific fixes
+        transform: 'translateZ(0)', // Force hardware acceleration
+        WebkitTransform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+        // Ensure it's above everything
+        isolation: 'isolate'
       }}
       onClick={handleClose}
     >
