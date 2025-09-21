@@ -65,6 +65,10 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       justify-content: center !important;
       padding: 20px !important;
       font-family: Arial, sans-serif !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      box-sizing: border-box !important;
     `;
 
     overlay.innerHTML = `
@@ -162,24 +166,43 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     }, 45000);
   };
 
+  // Debug function accessible from console
+  useEffect(() => {
+    (window as any).debugTradeNotification = (mockTrade = null) => {
+      const testTrade = mockTrade || {
+        id: 'debug-' + Date.now(),
+        direction: 'up',
+        amount: 100,
+        entryPrice: 45000,
+        currentPrice: 45750,
+        status: 'won',
+        payout: 115,
+        profitPercentage: 15
+      };
+      console.log('🔧 DEBUG: Forcing trade notification with:', testTrade);
+      setIsVisible(true);
+      setProgress(100);
+      createNativeOverlay(testTrade);
+    };
+    console.log('🔧 DEBUG: debugTradeNotification() function available in console');
+  }, []);
+
   useEffect(() => {
     console.log('🎯 NOTIFICATION EFFECT: Running with trade:', trade);
 
     if (trade) {
-      console.log('🎯 MOBILE NOTIFICATION: Showing notification for trade:', trade);
-      console.log('🎯 MOBILE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
-      console.log('🎯 MOBILE NOTIFICATION: Is mobile:', window.innerWidth <= 768);
+      console.log('🎯 REAL TRADE NOTIFICATION: Showing notification for trade:', trade);
+      console.log('🎯 REAL TRADE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
+      console.log('🎯 REAL TRADE NOTIFICATION: Is mobile:', window.innerWidth <= 768);
 
-      // ALWAYS use React component for ALL devices
-      console.log('🎯 UNIVERSAL: Using React component for all devices');
+      // FORCE SHOW NOTIFICATION - ALWAYS VISIBLE
+      console.log('🎯 FORCE SHOW: Making notification visible immediately');
       setIsVisible(true);
       setProgress(100);
 
-      // ALSO create native overlay for mobile as backup
-      if (window.innerWidth <= 768) {
-        console.log('📱 MOBILE DETECTED: Creating additional native overlay as backup');
-        setTimeout(() => createNativeOverlay(trade), 100);
-      }
+      // ALWAYS create native overlay for ALL devices (mobile AND desktop)
+      console.log('📱 CREATING NATIVE OVERLAY: For ALL devices');
+      createNativeOverlay(trade);
 
       // Add debug info to window
       if (typeof window !== 'undefined') {
@@ -240,15 +263,19 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     pnl = -trade.amount;
   }
 
-  // DIRECT RENDER: No portal, render directly in page
-  console.log('🎯 DIRECT NOTIFICATION: Rendering directly in page');
-  console.log('🎯 DIRECT NOTIFICATION: Screen width:', window.innerWidth);
-  console.log('🎯 DIRECT NOTIFICATION: isVisible:', isVisible);
-  console.log('🎯 DIRECT NOTIFICATION: trade data:', trade);
+  // FORCE RENDER: Always render when trade exists
+  console.log('🎯 FORCE NOTIFICATION: Rendering notification');
+  console.log('🎯 FORCE NOTIFICATION: Screen width:', window.innerWidth);
+  console.log('🎯 FORCE NOTIFICATION: isVisible:', isVisible);
+  console.log('🎯 FORCE NOTIFICATION: trade data:', trade);
 
-  if (!isVisible) {
+  // ALWAYS RENDER IF TRADE EXISTS - IGNORE isVisible
+  if (!trade) {
+    console.log('🎯 NO TRADE: Not rendering notification');
     return null;
   }
+
+  console.log('🎯 RENDERING: Trade notification with data:', trade);
 
   // Render directly without portal for maximum compatibility
   return (
