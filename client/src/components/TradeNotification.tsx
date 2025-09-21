@@ -22,7 +22,144 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const handleClose = () => {
     console.log('🎯 MOBILE NOTIFICATION: Closing notification');
     setIsVisible(false);
+    // Remove native overlay if it exists
+    const nativeOverlay = document.getElementById('native-trade-notification');
+    if (nativeOverlay) {
+      nativeOverlay.remove();
+    }
     setTimeout(() => onClose(), 300);
+  };
+
+  // Native HTML overlay function for mobile
+  const createNativeOverlay = (tradeData: any) => {
+    console.log('🎯 NATIVE OVERLAY: Creating native HTML overlay for mobile');
+
+    // Remove any existing overlay
+    const existing = document.getElementById('native-trade-notification');
+    if (existing) {
+      existing.remove();
+    }
+
+    const isWin = tradeData.status === 'won';
+    let pnl = 0;
+    if (isWin) {
+      pnl = tradeData.payout ? tradeData.payout - tradeData.amount : tradeData.amount * (tradeData.profitPercentage / 100);
+    } else {
+      pnl = -tradeData.amount;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'native-trade-notification';
+    overlay.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2147483647 !important;
+      background-color: rgba(0, 0, 0, 0.95) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 20px !important;
+      font-family: Arial, sans-serif !important;
+    `;
+
+    overlay.innerHTML = `
+      <div style="
+        background-color: #1f2937 !important;
+        border-radius: 16px !important;
+        padding: 24px !important;
+        width: 100% !important;
+        max-width: 400px !important;
+        border: 3px solid ${isWin ? '#10b981' : '#ef4444'} !important;
+        box-shadow: 0 0 30px ${isWin ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'} !important;
+        color: white !important;
+        text-align: center !important;
+      ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h2 style="font-size: 18px; font-weight: bold; margin: 0; color: white;">BTC/USDT</h2>
+          <button onclick="document.getElementById('native-trade-notification').remove()" style="
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            width: 32px;
+            height: 32px;
+          ">✕</button>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <div style="font-size: 24px; font-weight: bold; margin-bottom: 12px; color: ${isWin ? '#10b981' : '#ef4444'};">
+            ${isWin ? '🎉 TRADE WON!' : '💔 TRADE LOST'}
+          </div>
+          <div style="font-size: 36px; font-weight: bold; margin-bottom: 12px; color: ${isWin ? '#10b981' : '#ef4444'};">
+            ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} <span style="color: #9ca3af; font-size: 18px;">USDT</span>
+          </div>
+          <div style="color: #9ca3af; font-size: 14px;">Settlement completed</div>
+        </div>
+
+        <div style="margin-bottom: 24px; text-align: left;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+            <span style="color: #9ca3af;">Amount:</span>
+            <span style="color: white; font-weight: 500;">${tradeData.amount} USDT</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+            <span style="color: #9ca3af;">Side:</span>
+            <span style="color: ${tradeData.direction === 'up' ? '#10b981' : '#ef4444'}; font-weight: 500;">
+              ${tradeData.direction === 'up' ? 'Buy Up' : 'Sell Down'}
+            </span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+            <span style="color: #9ca3af;">Entry Price:</span>
+            <span style="color: white; font-weight: 500;">${tradeData.entryPrice.toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+            <span style="color: #9ca3af;">Final Price:</span>
+            <span style="color: white; font-weight: 500;">${tradeData.finalPrice.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div style="padding: 12px; background-color: rgba(55, 65, 81, 0.5); border-radius: 8px; margin-bottom: 16px;">
+          <p style="color: #d1d5db; font-size: 12px; line-height: 1.5; margin: 0;">
+            The ultimate price for each option contract is determined by the system's settlement process.
+          </p>
+        </div>
+
+        <button onclick="document.getElementById('native-trade-notification').remove()" style="
+          background-color: ${isWin ? '#10b981' : '#ef4444'};
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 8px;
+          font-size: 16px;
+          cursor: pointer;
+          width: 100%;
+        ">Close</button>
+      </div>
+    `;
+
+    // Add click to close
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
+
+    document.body.appendChild(overlay);
+    console.log('🎯 NATIVE OVERLAY: Added to DOM');
+
+    // Auto-remove after 45 seconds
+    setTimeout(() => {
+      if (document.getElementById('native-trade-notification')) {
+        overlay.remove();
+        console.log('🎯 NATIVE OVERLAY: Auto-removed after 45 seconds');
+      }
+    }, 45000);
   };
 
   useEffect(() => {
@@ -33,16 +170,17 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
       console.log('🎯 MOBILE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
       console.log('🎯 MOBILE NOTIFICATION: Is mobile:', window.innerWidth <= 768);
 
-      // Show notification immediately
-      console.log('🎯 MOBILE NOTIFICATION: Setting isVisible to true');
+      // For mobile devices, use native overlay instead of React component
+      if (window.innerWidth <= 768) {
+        console.log('📱 MOBILE DETECTED: Using native overlay approach');
+        createNativeOverlay(trade);
+        return; // Don't use React component on mobile
+      }
+
+      // Desktop: Use React component
+      console.log('🖥️ DESKTOP: Using React component');
       setIsVisible(true);
       setProgress(100);
-
-      // Force a re-render to ensure visibility
-      setTimeout(() => {
-        console.log('🎯 MOBILE NOTIFICATION: Force re-render check, isVisible should be true');
-        setIsVisible(true);
-      }, 50);
 
       // Add debug info to window
       if (typeof window !== 'undefined') {
@@ -52,22 +190,9 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
           console.log('- Trade:', trade);
           console.log('- isVisible:', isVisible);
           console.log('- Window size:', window.innerWidth, 'x', window.innerHeight);
-          console.log('- Notification elements:', document.querySelectorAll('[data-mobile-notification]').length);
-          console.log('- Body children:', document.body.children.length);
+          console.log('- Native overlay:', document.getElementById('native-trade-notification') !== null);
+          console.log('- React notification elements:', document.querySelectorAll('[data-mobile-notification]').length);
         };
-
-        // Auto-trigger debug after 1 second
-        setTimeout(() => {
-          (window as any).debugMobileNotification();
-
-          // Fallback alert for testing
-          if (window.innerWidth <= 768) {
-            console.log('📱 MOBILE FALLBACK: Showing alert as backup');
-            setTimeout(() => {
-              alert(`🎯 TRADE ${trade.status.toUpperCase()}!\n\nAmount: ${trade.amount} USDT\nP&L: ${trade.status === 'won' ? '+' : '-'}${Math.abs(trade.status === 'won' ? (trade.payout || 0) - trade.amount : trade.amount).toFixed(2)} USDT\n\nThis is a fallback notification.`);
-            }, 500);
-          }
-        }, 1000);
       }
 
       // Auto-close after 45 seconds

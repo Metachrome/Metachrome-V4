@@ -3111,12 +3111,36 @@ app.get('/api/admin/pending-requests', async (req, res) => {
       }
     }
 
-    // If no real data found, fall back to mock data for development
-    if (realWithdrawals.length === 0 && realDeposits.length === 0) {
-      console.log('⚠️ No real pending requests found, using mock data for development');
-      realWithdrawals = pendingWithdrawals.filter(w => w.status === 'pending');
-      realDeposits = pendingDeposits.filter(d => d.status === 'pending');
-    }
+    // ALWAYS include local pending data (for development/testing)
+    console.log('📊 Local pending data check:');
+    console.log('- Local withdrawals:', pendingWithdrawals.length);
+    console.log('- Local deposits:', pendingDeposits.length);
+
+    // Combine real database data with local pending data
+    const localWithdrawals = pendingWithdrawals.filter(w => w.status === 'pending');
+    const localDeposits = pendingDeposits.filter(d => d.status === 'pending');
+
+    // Merge arrays, avoiding duplicates by ID
+    const allWithdrawals = [...realWithdrawals];
+    localWithdrawals.forEach(local => {
+      if (!allWithdrawals.find(real => real.id === local.id)) {
+        allWithdrawals.push(local);
+      }
+    });
+
+    const allDeposits = [...realDeposits];
+    localDeposits.forEach(local => {
+      if (!allDeposits.find(real => real.id === local.id)) {
+        allDeposits.push(local);
+      }
+    });
+
+    realWithdrawals = allWithdrawals;
+    realDeposits = allDeposits;
+
+    console.log('📊 Final counts:');
+    console.log('- Total withdrawals:', realWithdrawals.length);
+    console.log('- Total deposits:', realDeposits.length);
 
     const users = await getUsers();
 
@@ -3373,12 +3397,16 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     console.log('💸 Action:', action);
     console.log('💸 Reason:', reason);
 
+    // Try database first, then fallback to local storage
+    let withdrawalUpdated = false;
+    let updatedWithdrawal = null;
+
     // REAL DATABASE UPDATE - Update withdrawal status in Supabase
     if (supabase) {
       try {
         const newStatus = action === 'approve' ? 'approved' : 'rejected';
 
-        const { data: updatedWithdrawal, error: updateError } = await supabase
+        const { data: dbWithdrawal, error: updateError } = await supabase
           .from('withdrawals')
           .update({
             status: newStatus,
@@ -3390,35 +3418,78 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
           .select()
           .single();
 
-        if (updateError) {
-          console.error('❌ Error updating withdrawal in database:', updateError);
-          return res.status(500).json({
-            success: false,
-            message: 'Failed to update withdrawal status'
-          });
+        if (!updateError && dbWithdrawal) {
+          console.log('✅ Withdrawal updated in database:', dbWithdrawal);
+          withdrawalUpdated = true;
+          updatedWithdrawal = dbWithdrawal;
+        } else {
+          console.log('⚠️ Withdrawal not found in database, checking local storage');
         }
 
-        console.log('✅ Withdrawal updated in database:', updatedWithdrawal);
-
-        return res.json({
-          success: true,
-          message: `Withdrawal ${action}d successfully`,
-          withdrawal: updatedWithdrawal
-        });
-
       } catch (error) {
-        console.error('❌ Database error:', error);
-        return res.status(500).json({
+        console.log('⚠️ Database error, falling back to local storage:', error.message);
+      }
+    }
+
+    // LOCAL STORAGE UPDATE - Update withdrawal in local pendingWithdrawals array
+    if (!withdrawalUpdated) {
+      console.log('💾 Updating withdrawal in local storage');
+      const withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
+
+      if (withdrawalIndex === -1) {
+        console.error('❌ Withdrawal not found in local storage either');
+        return res.status(404).json({
           success: false,
-          message: 'Database error occurred'
+          message: 'Withdrawal request not found'
         });
       }
-    } else {
-      // Fallback for development mode
-      console.log('⚠️ No database connection, using fallback mode');
+
+      const withdrawal = pendingWithdrawals[withdrawalIndex];
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+
+      // Update withdrawal status
+      withdrawal.status = newStatus;
+      withdrawal.admin_notes = reason || `Withdrawal ${action}d by admin`;
+      withdrawal.processed_at = new Date().toISOString();
+      withdrawal.updated_at = new Date().toISOString();
+
+      // If approving, update user balance
+      if (action === 'approve') {
+        console.log('💰 Deducting balance for approved withdrawal');
+        const users = await getUsers();
+        const userIndex = users.findIndex(u => u.id === withdrawal.user_id || u.username === withdrawal.username);
+
+        if (userIndex !== -1) {
+          const currentBalance = parseFloat(users[userIndex].balance || 0);
+          const newBalance = currentBalance - withdrawal.amount;
+          users[userIndex].balance = newBalance.toString();
+
+          // Save updated users
+          await saveUsers(users);
+          console.log(`💰 User ${withdrawal.username} balance updated: ${currentBalance} -> ${newBalance}`);
+        }
+      }
+
+      // Remove from pending withdrawals
+      pendingWithdrawals.splice(withdrawalIndex, 1);
+      pendingData.withdrawals = pendingWithdrawals;
+      savePendingData();
+
+      console.log('✅ Withdrawal updated in local storage');
+      withdrawalUpdated = true;
+      updatedWithdrawal = withdrawal;
+    }
+
+    if (withdrawalUpdated) {
       return res.json({
         success: true,
-        message: `Withdrawal ${action}d successfully (development mode)`
+        message: `Withdrawal ${action}d successfully`,
+        withdrawal: updatedWithdrawal
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update withdrawal status'
       });
     }
 
