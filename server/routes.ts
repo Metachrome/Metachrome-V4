@@ -1343,15 +1343,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/users", requireSessionAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      
+
       // Enrich users with their USDT balance information
       const usersWithBalances = await Promise.all(
         users.map(async (user) => {
           try {
-            const usdtBalance = await storage.getBalance(user.id, 'USDT');
+            // Get all user balances to ensure consistency with user dashboard
+            const userBalances = await storage.getUserBalances(user.id);
+            const usdtBalance = userBalances.find(b => b.symbol === 'USDT');
+
+            // If no USDT balance exists, create default one
+            if (!usdtBalance) {
+              await storage.createBalance({
+                userId: user.id,
+                symbol: 'USDT',
+                available: '0.00',
+                locked: '0.00'
+              });
+
+              return {
+                ...user,
+                balance: 0
+              };
+            }
+
             return {
               ...user,
-              balance: usdtBalance ? parseFloat(usdtBalance.available) : 0
+              balance: parseFloat(usdtBalance.available)
             };
           } catch (error) {
             console.warn(`Failed to get balance for user ${user.id}:`, error);
@@ -1362,7 +1380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         })
       );
-      
+
       res.json(usersWithBalances);
     } catch (error) {
       console.error("Error fetching users:", error);

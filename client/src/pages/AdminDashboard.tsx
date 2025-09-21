@@ -111,6 +111,8 @@ interface Transaction {
   user_id: string;
   type: string;
   amount: number;
+  symbol?: string;
+  currency?: string;
   status: string;
   created_at: string;
   users?: { username: string };
@@ -2074,7 +2076,10 @@ export default function WorkingAdminDashboard() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-white font-medium">
-                            ${transaction.amount.toLocaleString()}
+                            {transaction.symbol || transaction.currency ?
+                              `${transaction.amount.toLocaleString()} ${transaction.symbol || transaction.currency}` :
+                              `$${transaction.amount.toLocaleString()}`
+                            }
                           </TableCell>
                           <TableCell>
                             <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
@@ -2207,8 +2212,10 @@ export default function WorkingAdminDashboard() {
                               <p className="text-sm text-gray-400">Balance: ${deposit.user_balance}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-green-400">${deposit.amount}</p>
-                              <p className="text-sm text-gray-400">{deposit.currency}</p>
+                              <p className="text-lg font-bold text-green-400">
+                                {deposit.amount} {deposit.currency}
+                              </p>
+                              <p className="text-sm text-gray-400">{deposit.currency} Network</p>
                             </div>
                           </div>
 
@@ -2349,8 +2356,10 @@ export default function WorkingAdminDashboard() {
                               <p className="text-sm text-gray-400">Balance: ${withdrawal.user_balance}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-lg font-bold text-red-400">${withdrawal.amount}</p>
-                              <p className="text-sm text-gray-400">{withdrawal.currency}</p>
+                              <p className="text-lg font-bold text-red-400">
+                                {withdrawal.amount} {withdrawal.currency}
+                              </p>
+                              <p className="text-sm text-gray-400">{withdrawal.currency} Network</p>
                             </div>
                           </div>
 

@@ -1202,10 +1202,25 @@ async function registerRoutes(app) {
             // Enrich users with their USDT balance information
             const usersWithBalances = await Promise.all(users.map(async (user) => {
                 try {
-                    const usdtBalance = await storage_1.storage.getBalance(user.id, 'USDT');
+                    // Get all user balances to ensure consistency with user dashboard
+                    const userBalances = await storage_1.storage.getUserBalances(user.id);
+                    const usdtBalance = userBalances.find(b => b.symbol === 'USDT');
+                    // If no USDT balance exists, create default one
+                    if (!usdtBalance) {
+                        await storage_1.storage.createBalance({
+                            userId: user.id,
+                            symbol: 'USDT',
+                            available: '0.00',
+                            locked: '0.00'
+                        });
+                        return {
+                            ...user,
+                            balance: 0
+                        };
+                    }
                     return {
                         ...user,
-                        balance: usdtBalance ? parseFloat(usdtBalance.available) : 0
+                        balance: parseFloat(usdtBalance.available)
                     };
                 }
                 catch (error) {

@@ -22,6 +22,8 @@ export default function WalletPage() {
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedCrypto, setSelectedCrypto] = useState('BTC');
+  const [selectedNetwork, setSelectedNetwork] = useState('BTC');
+  const [fundPassword, setFundPassword] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -634,74 +636,199 @@ export default function WalletPage() {
             <div>
               <h1 className="text-4xl font-bold text-white mb-8">Withdraw</h1>
 
-              <Card className="bg-gray-800 border-gray-700">
-                <CardContent className="p-8">
-                  <div className="max-w-md mx-auto space-y-6">
-                    <div>
-                      <Label className="text-gray-300">Select Cryptocurrency</Label>
-                      <select
-                        value={selectedCrypto}
-                        onChange={(e) => setSelectedCrypto(e.target.value)}
-                        className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                      >
-                        <option value="BTC">BTC</option>
-                        <option value="ETH">ETH</option>
-                        <option value="SOL">SOL</option>
-                        <option value="USDT-ERC20">USDT ERC20</option>
-                        <option value="USDT-TRC20">USDT TRC20</option>
-                        <option value="USDT-BEP20">USDT BEP20</option>
-                      </select>
-                    </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Withdrawal Form */}
+                <div className="lg:col-span-2">
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardContent className="p-8">
+                      <div className="space-y-6">
+                        {/* Currency Selection */}
+                        <div>
+                          <Label className="text-gray-300 text-sm font-medium">Select Cryptocurrency</Label>
+                          <select
+                            value={selectedCrypto}
+                            onChange={(e) => {
+                              setSelectedCrypto(e.target.value);
+                              setSelectedNetwork(e.target.value); // Default network to same as crypto
+                            }}
+                            className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                          >
+                            <option value="BTC">Bitcoin (BTC)</option>
+                            <option value="ETH">Ethereum (ETH)</option>
+                            <option value="USDT">Tether (USDT)</option>
+                            <option value="SOL">Solana (SOL)</option>
+                          </select>
+                        </div>
 
-                    <div>
-                      <Label className="text-gray-300">Withdrawal Address</Label>
-                      <Input
-                        type="text"
-                        placeholder="Enter wallet address"
-                        value={withdrawAddress}
-                        onChange={(e) => setWithdrawAddress(e.target.value)}
-                        className="mt-2 bg-gray-700 border-gray-600 text-white"
-                      />
-                    </div>
+                        {/* Network Selection */}
+                        <div>
+                          <Label className="text-gray-300 text-sm font-medium">Withdrawal Network</Label>
+                          <select
+                            value={selectedNetwork}
+                            onChange={(e) => setSelectedNetwork(e.target.value)}
+                            className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                          >
+                            {selectedCrypto === 'USDT' && (
+                              <>
+                                <option value="TRC20">TRC20 (Tron)</option>
+                                <option value="ERC20">ERC20 (Ethereum)</option>
+                                <option value="BEP20">BEP20 (BSC)</option>
+                              </>
+                            )}
+                            {selectedCrypto === 'BTC' && (
+                              <option value="BTC">Bitcoin Network</option>
+                            )}
+                            {selectedCrypto === 'ETH' && (
+                              <option value="ERC20">ERC20 (Ethereum)</option>
+                            )}
+                            {selectedCrypto === 'SOL' && (
+                              <option value="SOL">Solana Network</option>
+                            )}
+                          </select>
+                          <div className="text-xs text-gray-400 mt-1">
+                            Please ensure you select the correct network to avoid loss of funds
+                          </div>
+                        </div>
 
-                    <div>
-                      <Label className="text-gray-300">Amount</Label>
-                      <Input
-                        type="number"
-                        placeholder="0.00"
-                        value={withdrawAmount}
-                        onChange={(e) => setWithdrawAmount(e.target.value)}
-                        className="mt-2 bg-gray-700 border-gray-600 text-white"
-                      />
-                      <div className="text-sm text-gray-400 mt-1">
-                        Available: {balances.find(b => b.symbol === selectedCrypto)?.available || '0'} {selectedCrypto}
+                        {/* Amount Input */}
+                        <div>
+                          <Label className="text-gray-300 text-sm font-medium">Withdrawal Amount</Label>
+                          <div className="relative mt-2">
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={withdrawAmount}
+                              onChange={(e) => setWithdrawAmount(e.target.value)}
+                              className="bg-gray-700 border-gray-600 text-white pr-16 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                            />
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                              {selectedCrypto}
+                            </div>
+                          </div>
+                          <div className="flex justify-between text-sm text-gray-400 mt-1">
+                            <span>Available: {balances.find(b => b.symbol === selectedCrypto)?.available || '0'} {selectedCrypto}</span>
+                            <button
+                              onClick={() => setWithdrawAmount(balances.find(b => b.symbol === selectedCrypto)?.available || '0')}
+                              className="text-purple-400 hover:text-purple-300"
+                            >
+                              Max
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Withdrawal Address */}
+                        <div>
+                          <Label className="text-gray-300 text-sm font-medium">Withdrawal Address</Label>
+                          <Input
+                            type="text"
+                            placeholder={`Enter ${selectedCrypto} address`}
+                            value={withdrawAddress}
+                            onChange={(e) => setWithdrawAddress(e.target.value)}
+                            className="mt-2 bg-gray-700 border-gray-600 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                          />
+                          <div className="text-xs text-gray-400 mt-1">
+                            Double-check the address. Transactions cannot be reversed.
+                          </div>
+                        </div>
+
+                        {/* Fund Password */}
+                        <div>
+                          <Label className="text-gray-300 text-sm font-medium">Fund Password</Label>
+                          <Input
+                            type="password"
+                            placeholder="Enter your fund password"
+                            value={fundPassword}
+                            onChange={(e) => setFundPassword(e.target.value)}
+                            className="mt-2 bg-gray-700 border-gray-600 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                          />
+                          <div className="text-xs text-gray-400 mt-1">
+                            Fund password is required for security verification
+                          </div>
+                        </div>
+
+                        {/* Withdrawal Button */}
+                        <Button
+                          onClick={() => {
+                            if (!withdrawAddress || !withdrawAmount || !fundPassword || parseFloat(withdrawAmount) <= 0) {
+                              toast({
+                                title: 'Invalid Input',
+                                description: 'Please fill in all required fields',
+                                variant: 'destructive',
+                              });
+                              return;
+                            }
+                            withdrawMutation.mutate({
+                              address: withdrawAddress,
+                              amount: withdrawAmount,
+                              currency: selectedCrypto
+                            });
+                          }}
+                          disabled={!withdrawAddress || !withdrawAmount || !fundPassword || withdrawMutation.isPending}
+                          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 py-3"
+                        >
+                          {withdrawMutation.isPending ? 'Processing Withdrawal...' : `Confirm Withdrawal`}
+                        </Button>
                       </div>
-                    </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                    <Button
-                      onClick={() => {
-                        if (!withdrawAddress || !withdrawAmount || parseFloat(withdrawAmount) <= 0) {
-                          toast({
-                            title: 'Invalid Input',
-                            description: 'Please enter valid address and amount',
-                            variant: 'destructive',
-                          });
-                          return;
-                        }
-                        withdrawMutation.mutate({
-                          address: withdrawAddress,
-                          amount: withdrawAmount,
-                          currency: selectedCrypto
-                        });
-                      }}
-                      disabled={!withdrawAddress || !withdrawAmount || withdrawMutation.isPending}
-                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                    >
-                      {withdrawMutation.isPending ? 'Processing...' : `Withdraw ${selectedCrypto}`}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* Withdrawal History */}
+                <div className="lg:col-span-1">
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardContent className="p-6">
+                      <h3 className="text-white text-lg font-semibold mb-4">Recent Withdrawals</h3>
+                      <div className="space-y-4">
+                        {/* Mock withdrawal history - replace with real data */}
+                        <div className="border-b border-gray-700 pb-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="text-white text-sm font-medium">0.5 BTC</div>
+                              <div className="text-gray-400 text-xs">Bitcoin Network</div>
+                              <div className="text-gray-400 text-xs">2024-01-20 14:30</div>
+                            </div>
+                            <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">
+                              Pending
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="border-b border-gray-700 pb-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="text-white text-sm font-medium">1000 USDT</div>
+                              <div className="text-gray-400 text-xs">TRC20</div>
+                              <div className="text-gray-400 text-xs">2024-01-19 09:15</div>
+                            </div>
+                            <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">
+                              Completed
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="border-b border-gray-700 pb-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="text-white text-sm font-medium">2.5 ETH</div>
+                              <div className="text-gray-400 text-xs">ERC20</div>
+                              <div className="text-gray-400 text-xs">2024-01-18 16:45</div>
+                            </div>
+                            <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">
+                              Completed
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-center">
+                          <button className="text-purple-400 hover:text-purple-300 text-sm">
+                            View All History
+                          </button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         )}

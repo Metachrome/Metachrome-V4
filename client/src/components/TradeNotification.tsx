@@ -33,6 +33,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   useEffect(() => {
     if (trade) {
       console.log('🎯 TRADE NOTIFICATION: Showing notification for trade:', trade);
+      console.log('🎯 TRADE NOTIFICATION: Mobile detected:', isMobile);
       setIsVisible(true);
       setProgress(100);
 
@@ -56,7 +57,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     } else {
       console.log('🎯 TRADE NOTIFICATION: No trade to show');
     }
-  }, [trade, onClose]);
+  }, [trade, onClose, isMobile]);
 
   if (!trade) return null;
 
@@ -66,6 +67,7 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
 
   // Mobile-specific modal design
   if (isMobile) {
+    console.log('🎯 TRADE NOTIFICATION: Rendering mobile modal, isVisible:', isVisible);
     return (
       <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-500 ${
         isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
