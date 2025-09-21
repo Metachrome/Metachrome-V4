@@ -640,6 +640,15 @@ export default function OptionsPage() {
       console.log('🎯 COMPLETE TRADE: Mobile detected:', window.innerWidth < 768);
       console.log('🎯 COMPLETE TRADE: isMobile hook value:', isMobile);
 
+      // MOBILE FIX: Force show notification on mobile with alert
+      if (window.innerWidth < 768) {
+        setTimeout(() => {
+          const result = won ? 'WON' : 'LOST';
+          const pnl = won ? (trade.payout! - trade.amount) : -trade.amount;
+          alert(`🎯 TRADE ${result}!\n\nProfit/Loss: ${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} USDT\nDirection: ${trade.direction.toUpperCase()}\nAmount: $${trade.amount}\nEntry: $${trade.entryPrice} → Final: $${trade.finalPrice}`);
+        }, 1000);
+      }
+
       // Auto-hide notification after 45 seconds (sticky notification)
       setTimeout(() => {
         console.log('🎯 COMPLETE TRADE: Auto-hiding notification after 45s');

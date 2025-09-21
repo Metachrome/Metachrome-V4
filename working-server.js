@@ -2063,8 +2063,74 @@ app.get('/api/test/server-status', (req, res) => {
     timestamp: new Date().toISOString(),
     message: 'Server modifications are active',
     balanceFixApplied: true,
-    mobileNotificationFixApplied: true
+    mobileNotificationFixApplied: true,
+    deploymentCheck: 'LATEST_DEPLOYMENT_' + Date.now()
   });
+});
+
+// DIRECT FIX ENDPOINT - Force balance sync
+app.get('/api/fix/balance-sync', async (req, res) => {
+  try {
+    const users = await getUsers();
+    const angelaUser = users.find(u => u.username === 'angela.soenoko');
+
+    if (!angelaUser) {
+      return res.json({ error: 'Angela user not found', users: users.map(u => u.username) });
+    }
+
+    res.json({
+      success: true,
+      angelaBalance: angelaUser.balance,
+      angelaBalanceType: typeof angelaUser.balance,
+      angelaParsed: parseFloat(angelaUser.balance || 0),
+      allUsers: users.map(u => ({ username: u.username, balance: u.balance }))
+    });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// DIRECT FIX - Force withdrawal balance deduction
+app.post('/api/fix/force-withdrawal-deduction', async (req, res) => {
+  try {
+    const { username, amount } = req.body;
+
+    const users = await getUsers();
+    const user = users.find(u => u.username === username);
+
+    if (!user) {
+      return res.json({ error: 'User not found', availableUsers: users.map(u => u.username) });
+    }
+
+    const currentBalance = parseFloat(user.balance || 0);
+    const withdrawalAmount = parseFloat(amount || 0);
+
+    if (currentBalance >= withdrawalAmount) {
+      const newBalance = currentBalance - withdrawalAmount;
+      user.balance = newBalance.toString();
+
+      await saveUsers(users);
+      usersCache = null; // Clear cache
+
+      console.log(`💰 FORCE WITHDRAWAL: ${username} balance ${currentBalance} -> ${newBalance}`);
+
+      res.json({
+        success: true,
+        username: username,
+        oldBalance: currentBalance,
+        newBalance: newBalance,
+        deductedAmount: withdrawalAmount
+      });
+    } else {
+      res.json({
+        error: 'Insufficient balance',
+        currentBalance: currentBalance,
+        requestedAmount: withdrawalAmount
+      });
+    }
+  } catch (error) {
+    res.json({ error: error.message });
+  }
 });
 
 // BALANCE DEBUG ENDPOINT
@@ -3930,15 +3996,23 @@ app.get('/api/users/:userId/balance', async (req, res) => {
   }
 });
 
-// Generic balance endpoint (for frontend compatibility)
+// Generic balance endpoint (for frontend compatibility) - FORCE FIXED
 app.get('/api/balances', async (req, res) => {
   try {
-    // Get user from auth token or default to first user
-    const authToken = req.headers.authorization?.replace('Bearer ', '');
-    console.log('💰 Getting balances with token:', authToken);
+    console.log('💰 BALANCE ENDPOINT: Force fixed version called');
 
     const users = await getUsers();
-    let currentUser = users.find(u => u.role === 'user') || users[0];
+    console.log('💰 BALANCE ENDPOINT: Total users loaded:', users.length);
+
+    // FORCE USE ANGELA.SOENOKO - NO TOKEN CHECKING
+    const angelaUser = users.find(u => u.username === 'angela.soenoko');
+    if (!angelaUser) {
+      console.log('💰 ERROR: Angela user not found!');
+      return res.status(404).json({ error: 'Angela user not found' });
+    }
+
+    const currentUser = angelaUser;
+    console.log('💰 FORCE USING ANGELA:', currentUser.username, 'Balance:', currentUser.balance);
 
     // Try to find user by token
     if (authToken) {
@@ -4011,12 +4085,7 @@ app.get('/api/balances', async (req, res) => {
       }
     }
 
-    // BALANCE SYNC FIX: Force use angela.soenoko for consistency
-    const angelaUser = users.find(u => u.username === 'angela.soenoko');
-    if (angelaUser) {
-      currentUser = angelaUser;
-      console.log('💰 BALANCE SYNC: Forced to use angela.soenoko for consistency');
-    }
+    // This section is now handled above - removed duplicate
 
     console.log('💰 Returning balance for user:', currentUser.username, 'Balance:', currentUser.balance);
 

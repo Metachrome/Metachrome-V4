@@ -63,6 +63,20 @@
     </div>
 
     <div class="test-section">
+        <h2>1.5. Direct Balance Fix Test</h2>
+        <button onclick="testBalanceFix()">Test Balance Fix</button>
+        <div id="balance-fix-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>1.6. Force Withdrawal Deduction</h2>
+        <input type="text" id="withdrawUser" placeholder="Username (e.g., angela.soenoko)" style="padding: 8px; margin-right: 10px;">
+        <input type="number" id="withdrawAmount" placeholder="Amount" style="padding: 8px; margin-right: 10px;">
+        <button onclick="forceWithdrawalDeduction()">Force Deduct</button>
+        <div id="withdrawal-fix-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
         <h2>2. Balance Debug Test</h2>
         <input type="text" id="userId" placeholder="Enter user ID (e.g., angela.soenoko)" style="padding: 8px; margin-right: 10px;">
         <button onclick="testBalanceDebug()">Debug Balance</button>
@@ -106,6 +120,39 @@
             const result = document.getElementById('server-result');
             try {
                 const response = await fetch('/api/test/server-status');
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+                result.style.background = '#004400';
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+                result.style.background = '#440000';
+            }
+        }
+
+        async function testBalanceFix() {
+            const result = document.getElementById('balance-fix-result');
+            try {
+                const response = await fetch('/api/fix/balance-sync');
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+                result.style.background = '#004400';
+            } catch (error) {
+                result.textContent = 'Error: ' + error.message;
+                result.style.background = '#440000';
+            }
+        }
+
+        async function forceWithdrawalDeduction() {
+            const result = document.getElementById('withdrawal-fix-result');
+            const username = document.getElementById('withdrawUser').value || 'angela.soenoko';
+            const amount = document.getElementById('withdrawAmount').value || '100';
+
+            try {
+                const response = await fetch('/api/fix/force-withdrawal-deduction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, amount })
+                });
                 const data = await response.json();
                 result.textContent = JSON.stringify(data, null, 2);
                 result.style.background = '#004400';
