@@ -34,7 +34,9 @@ if (supabaseUrl && supabaseKey) {
   console.error('❌ SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
   console.error('❌ SUPABASE_SERVICE_ROLE_KEY:', supabaseKey ? 'SET' : 'MISSING');
   if (isProduction) {
-    process.exit(1);
+    console.log('⚠️ PRODUCTION MODE: Supabase not configured, falling back to file storage');
+    console.log('⚠️ This is not recommended for production, but allows server to start');
+    console.log('⚠️ Please configure Supabase environment variables for full functionality');
   } else {
     console.log('⚠️ Continuing in development mode without Supabase');
   }
