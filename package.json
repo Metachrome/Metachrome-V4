@@ -10,6 +10,7 @@
   "scripts": {
     "build": "vite build",
     "start": "node railway-simple-server.js",
+    "start:production": "node railway-simple-server.js",
     "dev": "node working-server.js"
   },
   "keywords": [

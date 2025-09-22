@@ -1,8 +1,8 @@
 [phases.install]
 cmds = ["npm install --only=production --legacy-peer-deps"]
 
-[phases.start]
-cmd = "npm start"
+[start]
+cmd = "node railway-simple-server.js"
 
 [variables]
 NODE_ENV = "production"
