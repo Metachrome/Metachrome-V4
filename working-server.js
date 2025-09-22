@@ -1017,6 +1017,19 @@ async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown')
   }
 }
 
+// ===== HEALTH CHECK ENDPOINT =====
+
+// Health check endpoint for Railway deployment
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT,
+    supabase: supabase ? 'connected' : 'not configured'
+  });
+});
+
 // ===== AUTHENTICATION ENDPOINTS =====
 
 // GET /api/auth - Verify authentication and return user data
@@ -8938,9 +8951,10 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('🎉 ===================================');
   console.log('🚀 METACHROME V2 WORKING SERVER READY!');
   console.log(`🌍 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  console.log('🌐 Server running on: http://localhost:' + PORT);
-  console.log('🔌 WebSocket server: ws://localhost:' + PORT + '/ws');
-  console.log('🔧 Admin Dashboard: http://localhost:' + PORT + '/admin');
+  console.log(`🌐 Server running on: http://0.0.0.0:${PORT}`);
+  console.log(`🔌 WebSocket server: ws://0.0.0.0:${PORT}/ws`);
+  console.log(`🔧 Admin Dashboard: http://0.0.0.0:${PORT}/admin`);
+  console.log(`🏥 Health check: http://0.0.0.0:${PORT}/api/health`);
   console.log('🔐 Login: superadmin / superadmin123');
   console.log('📊 All endpoints are FULLY FUNCTIONAL!');
   console.log('🎉 ===================================');

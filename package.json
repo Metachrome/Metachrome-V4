@@ -9,12 +9,12 @@
   },
   "scripts": {
     "build": "vite build",
-    "start": "node working-server.js",
-    "start:production": "node working-server.js",
+    "start": "node railway-start.js",
+    "start:production": "node railway-start.js",
     "dev": "node working-server.js",
     "prod": "npm run build && npm run start",
     "railway-build": "npm run build",
-    "railway-start": "node working-server.js",
+    "railway-start": "node railway-start.js",
     "setup-production": "node setup-production-env.js",
     "check-env": "node setup-production-env.js"
   },

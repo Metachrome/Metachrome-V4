@@ -3,7 +3,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "node working-server.js"
+startCommand = "node railway-start.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
@@ -12,7 +12,6 @@ restartPolicyMaxRetries = 10
 [environments.production]
 variables = {
   NODE_ENV = "production",
-  PORT = "3000",
   JWT_SECRET = "your-production-jwt-secret-change-this",
   SESSION_SECRET = "your-production-session-secret-change-this"
 }
