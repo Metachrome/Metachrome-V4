@@ -3183,7 +3183,7 @@ app.get('/api/admin/pending-requests', async (req, res) => {
         const { data: depositsData, error: depositsError } = await supabase
           .from('deposits')
           .select('*')
-          .eq('status', 'pending')
+          .in('status', ['pending', 'verifying'])
           .order('created_at', { ascending: false });
 
         if (!depositsError && depositsData) {
@@ -3210,7 +3210,7 @@ app.get('/api/admin/pending-requests', async (req, res) => {
 
     // Combine real database data with local pending data
     const localWithdrawals = pendingWithdrawals.filter(w => w.status === 'pending');
-    const localDeposits = pendingDeposits.filter(d => d.status === 'pending');
+    const localDeposits = pendingDeposits.filter(d => d.status === 'pending' || d.status === 'verifying');
 
     // Merge arrays, avoiding duplicates by ID
     const allWithdrawals = [...realWithdrawals];
