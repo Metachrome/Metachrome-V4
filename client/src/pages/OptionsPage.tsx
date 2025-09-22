@@ -11,8 +11,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/use-mobile';
 import { apiRequest } from '../lib/queryClient';
-import { MobileDebug } from '../components/ui/mobile-debug';
+
 import type { MarketData } from '../../../shared/schema';
+import '../utils/mobile-notification-debug';
 
 interface ActiveTrade {
   id: string;
@@ -979,27 +980,7 @@ export default function OptionsPage() {
               </div>
             </div>
 
-            {/* DEBUG: Test Mobile Modal Button */}
-            <div className="mt-3">
-              <button
-                onClick={() => {
-                  console.log('🧪 TEST: Manually triggering mobile modal');
-                  showMobileTradeModal({
-                    symbol: 'BTC/USDT',
-                    pnl: -100,
-                    won: false,
-                    currentPrice: 166805.05,
-                    duration: '30s',
-                    side: 'Buy Up',
-                    amount: 100,
-                    price: 166805.05
-                  });
-                }}
-                className="bg-yellow-600 text-white px-4 py-2 rounded text-sm w-full"
-              >
-                🧪 Test Mobile Modal
-              </button>
-            </div>
+
 
             {/* Mobile Market Stats */}
             <div className="grid grid-cols-4 gap-2 mt-3 text-xs">
@@ -2027,63 +2008,9 @@ export default function OptionsPage() {
 
       <Footer />
 
-      {/* Mobile Debug Component */}
-      <MobileDebug />
 
-      {/* Mobile Test Button - Always show for testing */}
-      <button
-        onClick={() => {
-          console.log('🧪 MOBILE TEST: Triggering test notification');
-          console.log('🧪 MOBILE TEST: Screen width:', window.innerWidth);
-          console.log('🧪 MOBILE TEST: Is mobile detected:', window.innerWidth <= 768);
 
-          const testTrade = {
-            id: 'mobile-test-' + Date.now(),
-            direction: 'up' as const,
-            amount: 100,
-            entryPrice: 65000,
-            currentPrice: 66500,
-            status: 'won' as const,
-            payout: 115,
-            profitPercentage: 15,
-            completedAt: new Date().toISOString()
-          };
 
-          console.log('🧪 MOBILE TEST: Setting completed trade:', testTrade);
-          setCompletedTrade(testTrade);
-          localStorage.setItem('completedTrade', JSON.stringify(testTrade));
-
-          // Check for notification elements after a delay
-          setTimeout(() => {
-            const mobileElements = document.querySelectorAll('[data-mobile-notification="true"]');
-            console.log('🧪 MOBILE TEST: Found notification elements:', mobileElements.length);
-            mobileElements.forEach((el, index) => {
-              const styles = window.getComputedStyle(el);
-              console.log(`🧪 MOBILE TEST: Element ${index + 1} display:`, styles.display);
-              console.log(`🧪 MOBILE TEST: Element ${index + 1} visibility:`, styles.visibility);
-              console.log(`🧪 MOBILE TEST: Element ${index + 1} opacity:`, styles.opacity);
-              console.log(`🧪 MOBILE TEST: Element ${index + 1} z-index:`, styles.zIndex);
-            });
-          }, 200);
-        }}
-        style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          zIndex: 999998,
-          backgroundColor: '#10b981',
-          color: 'white',
-          border: 'none',
-          padding: '12px 16px',
-          borderRadius: '6px',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-        }}
-      >
-        📱 Test Mobile Notification
-      </button>
 
 
 

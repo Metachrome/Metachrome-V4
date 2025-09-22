@@ -371,17 +371,25 @@ button {
 
 /* Ensure mobile notifications work on all screen sizes */
 @media (max-width: 768px) {
+  .metachrome-mobile-notification,
   [data-mobile-notification="true"] {
     position: fixed !important;
-    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
     min-height: 100vh !important;
     max-height: 100vh !important;
-    z-index: 999999999 !important;
+    z-index: 2147483647 !important;
     display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     visibility: visible !important;
     opacity: 1 !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    pointer-events: auto !important;
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 interface TradeNotificationProps {
   trade: {
@@ -14,31 +14,33 @@ interface TradeNotificationProps {
   onClose: () => void;
 }
 
-// ULTRA-SMALL SCREEN NOTIFICATION SYSTEM - Optimized for 250px screens
+// MOBILE NOTIFICATION SYSTEM - Optimized for all mobile devices
 const createMobileNotification = (trade: any, onClose: () => void) => {
-  console.log('📱 CREATING 250PX OPTIMIZED MOBILE NOTIFICATION:', trade.id);
+  console.log('📱 CREATING MOBILE NOTIFICATION:', trade.id);
   console.log('📱 Window dimensions:', window.innerWidth, 'x', window.innerHeight);
   console.log('📱 User agent:', navigator.userAgent);
-  console.log('📱 Device pixel ratio:', window.devicePixelRatio);
 
-  // Detect ultra-small screens (250px and below)
-  const isUltraSmall = window.innerWidth <= 250;
+  // Detect mobile screen sizes
+  const isMobile = window.innerWidth <= 768;
   const isSmallMobile = window.innerWidth <= 400;
-  console.log('📱 Ultra-small screen (≤250px):', isUltraSmall);
-  console.log('📱 Small mobile (≤400px):', isSmallMobile);
+  console.log('📱 Is mobile (≤768px):', isMobile);
+  console.log('📱 Is small mobile (≤400px):', isSmallMobile);
 
-  // Remove any existing notifications aggressively
+  // Remove any existing notifications
   const existing = document.querySelectorAll('.metachrome-mobile-notification, [data-mobile-notification], [id*="notification"]');
   existing.forEach(el => {
     console.log('📱 Removing existing notification:', el.className);
     el.remove();
   });
 
-  // Create notification container with ultra-small screen optimization
+  // Prevent body scrolling
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+
+  // Create notification container
   const notification = document.createElement('div');
   notification.className = 'metachrome-mobile-notification';
   notification.setAttribute('data-mobile-notification', 'true');
-  notification.setAttribute('data-test-notification', 'mobile-trade-250px');
   notification.setAttribute('data-screen-width', window.innerWidth.toString());
 
   // ULTRA-SMALL SCREEN OPTIMIZED STYLES - Perfect for 250px screens
@@ -77,10 +79,8 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
     '-moz-osx-font-smoothing: grayscale'
   ];
 
-  // Ultra-small screen specific padding
-  if (isUltraSmall) {
-    baseStyles.push('padding: 8px'); // Minimal padding for 250px screens
-  } else if (isSmallMobile) {
+  // Mobile-specific padding
+  if (isSmallMobile) {
     baseStyles.push('padding: 12px'); // Small padding for mobile
   } else {
     baseStyles.push('padding: 20px'); // Normal padding for larger screens
@@ -89,7 +89,7 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
   const mobileStyles = baseStyles.map(style => style + ' !important').join('; ');
   notification.style.cssText = mobileStyles;
 
-  console.log('📱 Applied ultra-small screen styles for', window.innerWidth + 'px screen');
+  console.log('📱 Applied mobile styles for', window.innerWidth + 'px screen');
 
   // Create content card optimized for ultra-small screens (250px)
   const card = document.createElement('div');
@@ -107,8 +107,8 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
     'visibility: visible',
     'opacity: 1',
     'z-index: 2147483647',
-    `border: ${isUltraSmall ? '2px' : '3px'} solid ${trade.status === 'won' ? '#10b981' : '#ef4444'}`,
-    `box-shadow: 0 0 ${isUltraSmall ? '20px' : '30px'} ${trade.status === 'won' ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`,
+    `border: ${isSmallMobile ? '2px' : '3px'} solid ${trade.status === 'won' ? '#10b981' : '#ef4444'}`,
+    `box-shadow: 0 0 ${isSmallMobile ? '20px' : '30px'} ${trade.status === 'won' ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`,
     // Mobile-specific card optimizations
     'transform: translateZ(0)',
     '-webkit-transform: translateZ(0)',
@@ -117,18 +117,8 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
   ];
 
   // Screen-size specific dimensions and spacing
-  if (isUltraSmall) {
-    // Optimized for 250px screens
-    baseCardStyles.push(
-      'width: calc(100vw - 16px)', // Almost full width with minimal margin
-      'max-width: 234px', // 250px - 16px padding
-      'min-width: 200px',
-      'border-radius: 8px', // Smaller radius for tiny screens
-      'padding: 12px', // Compact padding
-      'font-size: 12px' // Smaller base font
-    );
-  } else if (isSmallMobile) {
-    // Optimized for small mobile (250px - 400px)
+  if (isSmallMobile) {
+    // Optimized for small mobile (≤400px)
     baseCardStyles.push(
       'width: calc(100vw - 24px)',
       'max-width: 350px',
@@ -152,7 +142,7 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
   const cardStyles = baseCardStyles.map(style => style + ' !important').join('; ');
   card.style.cssText = cardStyles;
 
-  console.log('📱 Card created for', window.innerWidth + 'px screen with optimized styling');
+  console.log('📱 Card created for', window.innerWidth + 'px screen with mobile-optimized styling');
 
   // Add animation styles
   if (!document.getElementById('mobile-notification-styles')) {
@@ -178,38 +168,38 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
   // Screen-size specific content styling
   const contentStyles = {
     title: {
-      fontSize: isUltraSmall ? '18px' : isSmallMobile ? '22px' : '28px',
-      margin: isUltraSmall ? '0 0 8px 0' : isSmallMobile ? '0 0 12px 0' : '0 0 20px 0'
+      fontSize: isSmallMobile ? '22px' : '28px',
+      margin: isSmallMobile ? '0 0 12px 0' : '0 0 20px 0'
     },
     container: {
-      margin: isUltraSmall ? '8px 0' : isSmallMobile ? '12px 0' : '20px 0',
-      padding: isUltraSmall ? '8px' : isSmallMobile ? '12px' : '16px',
-      borderRadius: isUltraSmall ? '4px' : '8px'
+      margin: isSmallMobile ? '12px 0' : '20px 0',
+      padding: isSmallMobile ? '12px' : '16px',
+      borderRadius: '8px'
     },
     row: {
-      margin: isUltraSmall ? '6px 0' : isSmallMobile ? '8px 0' : '12px 0',
-      fontSize: isUltraSmall ? '11px' : isSmallMobile ? '13px' : '16px'
+      margin: isSmallMobile ? '8px 0' : '12px 0',
+      fontSize: isSmallMobile ? '13px' : '16px'
     },
     profit: {
-      fontSize: isUltraSmall ? '12px' : isSmallMobile ? '14px' : '18px'
+      fontSize: isSmallMobile ? '14px' : '18px'
     },
     payout: {
-      fontSize: isUltraSmall ? '13px' : isSmallMobile ? '16px' : '20px'
+      fontSize: isSmallMobile ? '16px' : '20px'
     },
     button: {
-      padding: isUltraSmall ? '8px 16px' : isSmallMobile ? '12px 24px' : '16px 32px',
-      fontSize: isUltraSmall ? '12px' : isSmallMobile ? '14px' : '18px',
-      borderRadius: isUltraSmall ? '6px' : isSmallMobile ? '8px' : '12px',
-      marginTop: isUltraSmall ? '8px' : isSmallMobile ? '12px' : '20px'
+      padding: isSmallMobile ? '12px 24px' : '16px 32px',
+      fontSize: isSmallMobile ? '14px' : '18px',
+      borderRadius: isSmallMobile ? '8px' : '12px',
+      marginTop: isSmallMobile ? '12px' : '20px'
     },
     footer: {
-      fontSize: isUltraSmall ? '10px' : isSmallMobile ? '12px' : '14px',
-      margin: isUltraSmall ? '8px 0 0 0' : isSmallMobile ? '12px 0 0 0' : '16px 0 0 0'
+      fontSize: isSmallMobile ? '12px' : '14px',
+      margin: isSmallMobile ? '12px 0 0 0' : '16px 0 0 0'
     }
   };
 
   card.innerHTML = `
-    <div style="margin-bottom: ${isUltraSmall ? '8px' : '20px'};">
+    <div style="margin-bottom: ${isSmallMobile ? '12px' : '20px'};">
       <h2 style="color: ${isWin ? '#10b981' : '#ef4444'}; margin: ${contentStyles.title.margin}; font-size: ${contentStyles.title.fontSize}; font-weight: bold; line-height: 1.2;">
         ${isWin ? '🎉 Trade Won!' : '💔 Trade Lost'}
       </h2>
@@ -230,7 +220,7 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
           <span><strong>Final:</strong></span>
           <span>$${trade.finalPrice?.toLocaleString()}</span>
         </div>
-        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: ${isUltraSmall ? '8px 0' : '16px 0'};">
+        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: ${isSmallMobile ? '8px 0' : '16px 0'};">
         ${isWin ? `
           <div style="margin: ${contentStyles.row.margin}; font-size: ${contentStyles.profit.fontSize}; display: flex; justify-content: space-between; color: #10b981; font-weight: bold; align-items: center;">
             <span><strong>Profit:</strong></span>
@@ -272,6 +262,10 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
 
   // Event handlers
   const closeNotification = () => {
+    // Restore body scrolling
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+
     card.style.animation = 'slideOutMobile 0.3s ease-in forwards';
     setTimeout(() => {
       notification.remove();
@@ -359,20 +353,27 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
 };
 
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
-  // Use the mobile-first notification system
   useEffect(() => {
     if (!trade) return;
 
-    console.log('📱 TRADE NOTIFICATION: Creating mobile notification for trade:', trade.id);
+    console.log('📱 TRADE NOTIFICATION: Creating notification for trade:', trade.id);
     console.log('📱 Screen width:', window.innerWidth);
-    
-    // Always use the mobile notification system
+    console.log('📱 User agent:', navigator.userAgent);
+    console.log('📱 Is mobile device:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+
+    // Always use the mobile notification system for consistency
     createMobileNotification(trade, onClose);
 
     // Cleanup function
     return () => {
-      const notifications = document.querySelectorAll('.metachrome-mobile-notification');
-      notifications.forEach(el => el.remove());
+      const notifications = document.querySelectorAll('.metachrome-mobile-notification, [data-mobile-notification]');
+      notifications.forEach(el => {
+        console.log('📱 Cleaning up notification:', el.className);
+        el.remove();
+      });
+      // Restore body scrolling
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
   }, [trade, onClose]);
 
@@ -380,71 +381,4 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   return null;
 }
 
-// 250PX OPTIMIZED test function for ultra-small screen notifications
-(window as any).testMobileNotification = () => {
-  console.log('🧪 250PX OPTIMIZED MOBILE NOTIFICATION TEST...');
-  console.log('🧪 Screen size:', window.innerWidth, 'x', window.innerHeight);
-  console.log('🧪 User agent:', navigator.userAgent);
-  console.log('🧪 Document ready state:', document.readyState);
-  console.log('🧪 Device pixel ratio:', window.devicePixelRatio);
-  console.log('🧪 Viewport meta tag:', document.querySelector('meta[name="viewport"]')?.getAttribute('content'));
 
-  // Test different screen size scenarios
-  const isUltraSmall = window.innerWidth <= 250;
-  const isSmallMobile = window.innerWidth <= 400;
-
-  console.log('🧪 Ultra-small screen (≤250px):', isUltraSmall);
-  console.log('🧪 Small mobile (≤400px):', isSmallMobile);
-
-  // Force mobile notification with 250px optimization
-  const testTrade = {
-    id: '250px-test-' + Date.now(),
-    direction: 'up' as const,
-    status: Math.random() > 0.5 ? 'won' as const : 'lost' as const,
-    amount: 100,
-    entryPrice: 66000,
-    finalPrice: 66500,
-    payout: 115,
-    profitPercentage: 15
-  };
-
-  console.log('🧪 Creating 250px optimized test trade:', testTrade);
-
-  // Add a small delay to ensure DOM is ready
-  setTimeout(() => {
-    createMobileNotification(testTrade, () => {
-      console.log('🧪 250PX optimized test notification closed');
-    });
-  }, 100);
-};
-
-// Test function specifically for 250px screens
-(window as any).test250px = () => {
-  console.log('🧪 TESTING SPECIFICALLY FOR 250PX SCREENS...');
-
-  // Temporarily override window.innerWidth for testing
-  const originalWidth = window.innerWidth;
-  Object.defineProperty(window, 'innerWidth', {
-    writable: true,
-    configurable: true,
-    value: 250
-  });
-
-  console.log('🧪 Simulated screen width set to:', window.innerWidth);
-
-  (window as any).testMobileNotification();
-
-  // Restore original width after test
-  setTimeout(() => {
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: originalWidth
-    });
-    console.log('🧪 Screen width restored to:', window.innerWidth);
-  }, 15000); // Restore after 15 seconds
-};
-
-// Also add to window for easy testing
-(window as any).forceMobileNotif = (window as any).testMobileNotification;
-(window as any).force250px = (window as any).test250px;
