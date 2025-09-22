@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TradeNotificationProps {
   trade: {
@@ -13,6 +13,95 @@ interface TradeNotificationProps {
   } | null;
   onClose: () => void;
 }
+
+// DESKTOP NOTIFICATION SYSTEM - Traditional React component for desktop
+const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 300); // Allow animation to complete
+  };
+
+  if (!trade || !isVisible) return null;
+
+  const isWin = trade.status === 'won';
+  const profit = isWin ? (trade.payout || 0) - trade.amount : -trade.amount;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-300"
+      onClick={handleClose}
+    >
+      <div
+        className={`bg-gray-800 text-white p-6 rounded-lg max-w-md w-full mx-4 border-2 ${
+          isWin ? 'border-green-500' : 'border-red-500'
+        } shadow-2xl animate-in slide-in-from-bottom-4 duration-300`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-center">
+          <h2 className={`text-2xl font-bold mb-4 ${isWin ? 'text-green-500' : 'text-red-500'}`}>
+            {isWin ? '🎉 Trade Won!' : '💔 Trade Lost'}
+          </h2>
+
+          <div className="bg-gray-700 p-4 rounded-lg mb-4 text-left">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold">Direction:</span>
+              <span>{trade.direction.toUpperCase()} {trade.direction === 'up' ? '⬆️' : '⬇️'}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold">Amount:</span>
+              <span>${trade.amount}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold">Entry:</span>
+              <span>${trade.entryPrice?.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold">Final:</span>
+              <span>${trade.finalPrice?.toLocaleString()}</span>
+            </div>
+
+            <hr className="border-gray-600 my-3" />
+
+            {isWin ? (
+              <>
+                <div className="flex justify-between items-center mb-2 text-green-500 font-bold">
+                  <span>Profit:</span>
+                  <span>+${profit.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-green-500 font-bold">
+                  <span>Payout:</span>
+                  <span>${trade.payout}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between items-center text-red-500 font-bold">
+                <span>Loss:</span>
+                <span>-${trade.amount}</span>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleClose}
+            className={`w-full py-3 px-6 rounded-lg font-bold text-white transition-colors ${
+              isWin
+                ? 'bg-green-500 hover:bg-green-600'
+                : 'bg-red-500 hover:bg-red-600'
+            }`}
+          >
+            Close Notification
+          </button>
+
+          <p className="text-gray-400 text-sm mt-3">
+            Click anywhere outside to close
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // MOBILE NOTIFICATION SYSTEM - Optimized for all mobile devices
 const createMobileNotification = (trade: any, onClose: () => void) => {
@@ -353,32 +442,60 @@ const createMobileNotification = (trade: any, onClose: () => void) => {
 };
 
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Detect if this is a mobile device
+    const checkMobile = () => {
+      const isMobileWidth = window.innerWidth <= 768;
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      return isMobileWidth || isMobileDevice;
+    };
+
+    setIsMobile(checkMobile());
+
+    // Listen for resize events to update mobile detection
+    const handleResize = () => {
+      setIsMobile(checkMobile());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (!trade) return;
 
     console.log('📱 TRADE NOTIFICATION: Creating notification for trade:', trade.id);
     console.log('📱 Screen width:', window.innerWidth);
-    console.log('📱 User agent:', navigator.userAgent);
-    console.log('📱 Is mobile device:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    console.log('📱 Is mobile:', isMobile);
 
-    // Always use the mobile notification system for consistency
-    createMobileNotification(trade, onClose);
+    // Use mobile notification system only for mobile devices
+    if (isMobile) {
+      createMobileNotification(trade, onClose);
 
-    // Cleanup function
-    return () => {
-      const notifications = document.querySelectorAll('.metachrome-mobile-notification, [data-mobile-notification]');
-      notifications.forEach(el => {
-        console.log('📱 Cleaning up notification:', el.className);
-        el.remove();
-      });
-      // Restore body scrolling
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    };
-  }, [trade, onClose]);
+      // Cleanup function for mobile notifications
+      return () => {
+        const notifications = document.querySelectorAll('.metachrome-mobile-notification, [data-mobile-notification]');
+        notifications.forEach(el => {
+          console.log('📱 Cleaning up mobile notification:', el.className);
+          el.remove();
+        });
+        // Restore body scrolling
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      };
+    }
+    // For desktop, we'll use the React component (no cleanup needed)
+  }, [trade, onClose, isMobile]);
 
-  // Don't render any React component - we use the native mobile notification
-  return null;
+  // For mobile devices, don't render React component (use native mobile notification)
+  if (isMobile) {
+    return null;
+  }
+
+  // For desktop devices, use the React component
+  return <DesktopTradeNotification trade={trade} onClose={onClose} />;
 }
 
 

@@ -1,14 +1,20 @@
-// Mobile Notification Debug Utility
-// Use this to test mobile notifications in the browser console
+// Notification Debug Utility
+// Use this to test both desktop and mobile notifications in the browser console
 
-export const debugMobileNotification = () => {
-  console.log('🔍 MOBILE NOTIFICATION DEBUG');
+export const debugNotification = () => {
+  console.log('🔍 NOTIFICATION SYSTEM DEBUG');
   console.log('📱 Screen dimensions:', window.innerWidth, 'x', window.innerHeight);
   console.log('📱 User agent:', navigator.userAgent);
   console.log('📱 Device pixel ratio:', window.devicePixelRatio);
-  console.log('📱 Is mobile device:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-  console.log('📱 Is mobile width (≤768px):', window.innerWidth <= 768);
-  console.log('📱 Is small mobile (≤400px):', window.innerWidth <= 400);
+
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isMobileWidth = window.innerWidth <= 768;
+  const shouldUseMobile = isMobileDevice || isMobileWidth;
+
+  console.log('📱 Is mobile device:', isMobileDevice);
+  console.log('📱 Is mobile width (≤768px):', isMobileWidth);
+  console.log('📱 Should use mobile notification:', shouldUseMobile);
+  console.log('🖥️ Should use desktop notification:', !shouldUseMobile);
   
   // Check for existing notifications
   const existing = document.querySelectorAll('.metachrome-mobile-notification, [data-mobile-notification]');
@@ -23,8 +29,9 @@ export const debugMobileNotification = () => {
   console.log('📱 Document overflow:', document.documentElement.style.overflow);
   
   // Test notification creation
-  console.log('📱 Creating test notification...');
-  
+  const shouldUseMobile = isMobileDevice || isMobileWidth;
+  console.log(shouldUseMobile ? '📱 Creating mobile test notification...' : '🖥️ Creating desktop test notification...');
+
   const testTrade = {
     id: 'debug-test-' + Date.now(),
     direction: 'up' as const,
@@ -35,8 +42,14 @@ export const debugMobileNotification = () => {
     payout: 115,
     profitPercentage: 15
   };
+
+  if (!shouldUseMobile) {
+    console.log('🖥️ Desktop notification will be handled by React component');
+    console.log('🖥️ To test desktop notification, trigger a real trade or use React DevTools');
+    return;
+  }
   
-  // Import and use the notification system
+  // Import and use the mobile notification system
   import('../components/TradeNotification').then(module => {
     // We need to access the createMobileNotification function
     // Since it's not exported, we'll create a simple test notification
@@ -131,7 +144,9 @@ export const debugMobileNotification = () => {
 };
 
 // Add to window for easy access in browser console
-(window as any).debugMobileNotification = debugMobileNotification;
-(window as any).testMobileNotif = debugMobileNotification;
+(window as any).debugNotification = debugNotification;
+(window as any).debugMobileNotification = debugNotification; // Keep old name for compatibility
+(window as any).testMobileNotif = debugNotification;
+(window as any).testNotif = debugNotification;
 
-console.log('📱 Mobile notification debug utility loaded. Use debugMobileNotification() or testMobileNotif() in console to test.');
+console.log('🔍 Notification debug utility loaded. Use debugNotification() or testNotif() in console to test.');

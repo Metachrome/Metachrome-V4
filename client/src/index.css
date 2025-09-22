@@ -369,7 +369,7 @@ button {
   -webkit-backface-visibility: hidden !important;
 }
 
-/* Ensure mobile notifications work on all screen sizes */
+/* Mobile notifications - only apply to mobile devices */
 @media (max-width: 768px) {
   .metachrome-mobile-notification,
   [data-mobile-notification="true"] {
@@ -390,6 +390,14 @@ button {
     opacity: 1 !important;
     background: rgba(0, 0, 0, 0.95) !important;
     pointer-events: auto !important;
+  }
+}
+
+/* Desktop notifications - ensure they don't interfere with mobile */
+@media (min-width: 769px) {
+  .metachrome-mobile-notification,
+  [data-mobile-notification="true"] {
+    display: none !important;
   }
 }
 
