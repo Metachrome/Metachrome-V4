@@ -503,18 +503,13 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    // Detect if this is a mobile device
-    const checkMobile = () => {
-      const isMobileWidth = window.innerWidth <= 768;
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      return isMobileWidth || isMobileDevice;
-    };
+    // FORCE DESKTOP NOTIFICATIONS - Always use the original top-right corner design
+    setIsMobile(false);
 
-    setIsMobile(checkMobile());
-
-    // Listen for resize events to update mobile detection
+    // Listen for resize events but keep desktop mode
     const handleResize = () => {
-      setIsMobile(checkMobile());
+      // Only use mobile for very small screens (actual mobile devices)
+      setIsMobile(window.innerWidth <= 480);
     };
 
     window.addEventListener('resize', handleResize);
