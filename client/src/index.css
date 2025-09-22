@@ -401,6 +401,20 @@ button {
   }
 }
 
+/* Original desktop notification animations */
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
 /* Ultra-small screen optimization for 250px and below */
 @media (max-width: 250px) {
   [data-mobile-notification="true"] {

@@ -14,89 +14,147 @@ interface TradeNotificationProps {
   onClose: () => void;
 }
 
-// DESKTOP NOTIFICATION SYSTEM - Traditional React component for desktop
+// ORIGINAL DESKTOP NOTIFICATION SYSTEM - Top-right corner notification
 const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [progress, setProgress] = useState(100);
 
   const handleClose = () => {
     setIsVisible(false);
     setTimeout(onClose, 300); // Allow animation to complete
   };
 
+  useEffect(() => {
+    if (trade) {
+      setProgress(100);
+
+      // Progress bar countdown - 15 seconds
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev - (100 / 150); // 15 seconds = 150 intervals of 100ms
+          return newProgress <= 0 ? 0 : newProgress;
+        });
+      }, 100);
+
+      // Auto close timer - 15 seconds
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 15000);
+
+      return () => {
+        clearTimeout(timer);
+        clearInterval(progressInterval);
+      };
+    }
+  }, [trade]);
+
   if (!trade || !isVisible) return null;
 
   const isWin = trade.status === 'won';
-  const profit = isWin ? (trade.payout || 0) - trade.amount : -trade.amount;
+  const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
+  const priceChange = trade.finalPrice - trade.entryPrice;
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-300"
-      onClick={handleClose}
-    >
-      <div
-        className={`bg-gray-800 text-white p-6 rounded-lg max-w-md w-full mx-4 border-2 ${
-          isWin ? 'border-green-500' : 'border-red-500'
-        } shadow-2xl animate-in slide-in-from-bottom-4 duration-300`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="text-center">
-          <h2 className={`text-2xl font-bold mb-4 ${isWin ? 'text-green-500' : 'text-red-500'}`}>
-            {isWin ? '🎉 Trade Won!' : '💔 Trade Lost'}
-          </h2>
-
-          <div className="bg-gray-700 p-4 rounded-lg mb-4 text-left">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold">Direction:</span>
-              <span>{trade.direction.toUpperCase()} {trade.direction === 'up' ? '⬆️' : '⬇️'}</span>
+    <div className={`fixed top-4 right-4 z-50 transition-all duration-500 transform ${
+      isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
+    }`}>
+      <div className={`p-6 rounded-xl shadow-2xl border-l-8 ${
+        isWin
+          ? 'bg-gradient-to-r from-green-900/95 to-green-800/95 border-green-400 text-green-100 shadow-green-500/20'
+          : 'bg-gradient-to-r from-red-900/95 to-red-800/95 border-red-400 text-red-100 shadow-red-500/20'
+      } backdrop-blur-md min-w-[380px] max-w-[420px] ring-2 ${
+        isWin ? 'ring-green-400/30' : 'ring-red-400/30'
+      } animate-pulse-subtle`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className={`w-5 h-5 rounded-full ${
+              isWin ? 'bg-green-400 animate-pulse' : 'bg-red-400 animate-pulse'
+            } shadow-lg ${isWin ? 'shadow-green-400/50' : 'shadow-red-400/50'}`} />
+            <span className="font-bold text-xl tracking-wide">
+              {isWin ? '🎉 TRADE WON!' : '💔 TRADE LOST'}
+            </span>
+            <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+              isWin ? 'bg-green-400/20 text-green-300' : 'bg-red-400/20 text-red-300'
+            }`}>
+              {isWin ? 'PROFIT' : 'LOSS'}
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold">Amount:</span>
-              <span>${trade.amount}</span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold">Entry:</span>
-              <span>${trade.entryPrice?.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold">Final:</span>
-              <span>${trade.finalPrice?.toLocaleString()}</span>
-            </div>
-
-            <hr className="border-gray-600 my-3" />
-
-            {isWin ? (
-              <>
-                <div className="flex justify-between items-center mb-2 text-green-500 font-bold">
-                  <span>Profit:</span>
-                  <span>+${profit.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-green-500 font-bold">
-                  <span>Payout:</span>
-                  <span>${trade.payout}</span>
-                </div>
-              </>
-            ) : (
-              <div className="flex justify-between items-center text-red-500 font-bold">
-                <span>Loss:</span>
-                <span>-${trade.amount}</span>
-              </div>
-            )}
           </div>
-
           <button
             onClick={handleClose}
-            className={`w-full py-3 px-6 rounded-lg font-bold text-white transition-colors ${
-              isWin
-                ? 'bg-green-500 hover:bg-green-600'
-                : 'bg-red-500 hover:bg-red-600'
-            }`}
+            className="text-gray-300 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold"
+            title="Close notification"
           >
-            Close Notification
+            ✕
           </button>
+        </div>
 
-          <p className="text-gray-400 text-sm mt-3">
-            Click anywhere outside to close
-          </p>
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between items-center py-2 px-3 bg-black/20 rounded-lg">
+            <span className="text-gray-300">Direction:</span>
+            <span className={`font-bold text-lg ${trade.direction === 'up' ? 'text-green-300' : 'text-red-300'}`}>
+              {trade.direction === 'up' ? '📈 UP' : '📉 DOWN'}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center py-2 px-3 bg-black/20 rounded-lg">
+            <span className="text-gray-300">Amount:</span>
+            <span className="font-bold text-lg text-yellow-300">{trade.amount} USDT</span>
+          </div>
+
+          <div className="flex justify-between items-center py-2 px-3 bg-black/20 rounded-lg">
+            <span className="text-gray-300">Entry Price:</span>
+            <span className="font-mono text-lg">${trade.entryPrice.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between items-center py-2 px-3 bg-black/20 rounded-lg">
+            <span className="text-gray-300">Final Price:</span>
+            <span className="font-mono text-lg">${trade.finalPrice.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between items-center py-2 px-3 bg-black/20 rounded-lg">
+            <span className="text-gray-300">Price Change:</span>
+            <span className={`font-bold text-lg ${priceChange >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+              {priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}
+            </span>
+          </div>
+
+          <div className={`border-2 ${isWin ? 'border-green-400/50' : 'border-red-400/50'} rounded-xl p-4 mt-4 ${
+            isWin ? 'bg-green-900/30' : 'bg-red-900/30'
+          }`}>
+            <div className="flex justify-between items-center font-bold text-xl">
+              <span className="text-gray-200">Final P&L:</span>
+              <span className={`${isWin ? 'text-green-300' : 'text-red-300'} text-2xl font-black`}>
+                {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT
+              </span>
+            </div>
+
+            {isWin && (
+              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-green-400/30">
+                <span className="text-green-200">Profit Rate:</span>
+                <span className="text-green-300 font-bold">{trade.profitPercentage}%</span>
+              </div>
+            )}
+
+            <div className="text-center mt-3">
+              <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold ${
+                isWin
+                  ? 'bg-green-400/20 text-green-300 border border-green-400/30'
+                  : 'bg-red-400/20 text-red-300 border border-red-400/30'
+              }`}>
+                {isWin ? '🎊 Congratulations! 🎊' : '😔 Better luck next time'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress bar for auto-close */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20 rounded-b-lg overflow-hidden">
+          <div
+            className={`h-full transition-all duration-100 ease-linear ${
+              isWin ? 'bg-green-400' : 'bg-red-400'
+            }`}
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
     </div>
