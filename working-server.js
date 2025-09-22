@@ -3246,10 +3246,28 @@ app.get('/api/admin/pending-requests', async (req, res) => {
         username: user ? user.username : (deposit.username || 'Unknown User')
       };
 
-    // Add receipt file URL if receipt exists
+    // Add receipt file URL if receipt exists - HANDLE BOTH LOCAL AND SUPABASE FORMATS
+    let receiptFilename = null;
+
+    // Check for local format (receiptFile.filename)
     if (deposit.receiptFile && deposit.receiptFile.filename) {
-      depositWithBalance.receiptUrl = `/api/admin/receipt/${deposit.receiptFile.filename}`;
-      depositWithBalance.receiptViewUrl = `http://127.0.0.1:${PORT}/api/admin/receipt/${deposit.receiptFile.filename}`;
+      receiptFilename = deposit.receiptFile.filename;
+    }
+    // Check for Supabase format (receipt_filename)
+    else if (deposit.receipt_filename) {
+      receiptFilename = deposit.receipt_filename;
+    }
+    // Check for receipt_uploaded flag and generate a placeholder
+    else if (deposit.receipt_uploaded || deposit.receiptUploaded) {
+      receiptFilename = `receipt_${deposit.id}.jpg`; // Fallback filename
+    }
+
+    if (receiptFilename) {
+      depositWithBalance.receiptUrl = `/api/admin/receipt/${receiptFilename}`;
+      depositWithBalance.receiptViewUrl = `https://metachrome-v2-production.up.railway.app/api/admin/receipt/${receiptFilename}`;
+      depositWithBalance.hasReceipt = true;
+    } else {
+      depositWithBalance.hasReceipt = false;
     }
 
     return depositWithBalance;
@@ -3302,23 +3320,51 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       });
     }
 
-    // Find the deposit request
-    console.log('🔍 Searching for deposit in pending list...');
-    console.log('🔍 Total pending deposits:', pendingDeposits.length);
-    console.log('🔍 Pending deposit IDs:', pendingDeposits.map(d => d.id));
+    // Find the deposit request - CHECK BOTH SUPABASE AND LOCAL
+    console.log('🔍 Searching for deposit in both Supabase and local list...');
+    console.log('🔍 Total local pending deposits:', pendingDeposits.length);
+    console.log('🔍 Local pending deposit IDs:', pendingDeposits.map(d => d.id));
 
-    const depositIndex = pendingDeposits.findIndex(d => d.id === depositId);
-    if (depositIndex === -1) {
-      console.log('❌ Deposit not found in pending list');
+    let deposit = null;
+    let depositIndex = -1;
+    let isFromSupabase = false;
+
+    // First, try to find in Supabase database
+    if (supabase) {
+      try {
+        const { data: supabaseDeposit, error } = await supabase
+          .from('deposits')
+          .select('*')
+          .eq('id', depositId)
+          .in('status', ['pending', 'verifying'])
+          .single();
+
+        if (!error && supabaseDeposit) {
+          deposit = supabaseDeposit;
+          isFromSupabase = true;
+          console.log('✅ Deposit found in Supabase database');
+        }
+      } catch (dbError) {
+        console.log('⚠️ Supabase lookup failed:', dbError.message);
+      }
+    }
+
+    // If not found in Supabase, try local array
+    if (!deposit) {
+      depositIndex = pendingDeposits.findIndex(d => d.id === depositId);
+      if (depositIndex !== -1) {
+        deposit = pendingDeposits[depositIndex];
+        console.log('✅ Deposit found in local array at index:', depositIndex);
+      }
+    }
+
+    if (!deposit) {
+      console.log('❌ Deposit not found in either Supabase or local list');
       return res.status(404).json({
         success: false,
         message: 'Deposit request not found'
       });
     }
-
-    console.log('✅ Deposit found at index:', depositIndex);
-
-    const deposit = pendingDeposits[depositIndex];
     console.log('📋 Processing deposit:', JSON.stringify(deposit, null, 2));
 
     // Get users and transactions for both approve and reject actions
@@ -3419,27 +3465,48 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       console.log('📝 Approved deposit transaction recorded');
       console.log('📝 Transaction details:', transaction);
 
-      // Remove from pending deposits
-      pendingDeposits.splice(depositIndex, 1);
-      pendingData.deposits = pendingDeposits;
-      savePendingData();
-      console.log('🗑️ Deposit removed from pending list');
+      // Remove from pending deposits - HANDLE BOTH SOURCES
+      if (isFromSupabase) {
+        // Remove from Supabase database
+        if (supabase) {
+          try {
+            const { error } = await supabase
+              .from('deposits')
+              .delete()
+              .eq('id', depositId);
 
-      // REAL-TIME SYNC: Remove from Supabase database
-      if (supabase) {
-        try {
-          const { error } = await supabase
-            .from('deposits')
-            .delete()
-            .eq('id', depositId);
-
-          if (error) {
-            console.error('⚠️ Failed to remove approved deposit from Supabase:', error);
-          } else {
-            console.log('✅ Approved deposit removed from Supabase database');
+            if (error) {
+              console.error('⚠️ Failed to remove approved deposit from Supabase:', error);
+            } else {
+              console.log('✅ Approved deposit removed from Supabase database');
+            }
+          } catch (dbError) {
+            console.error('⚠️ Supabase deposit removal sync error:', dbError);
           }
-        } catch (dbError) {
-          console.error('⚠️ Supabase deposit removal sync error:', dbError);
+        }
+      } else {
+        // Remove from local array
+        if (depositIndex !== -1) {
+          pendingDeposits.splice(depositIndex, 1);
+          pendingData.deposits = pendingDeposits;
+          savePendingData();
+          console.log('🗑️ Deposit removed from local pending list');
+        }
+
+        // Also try to remove from Supabase (in case it exists there too)
+        if (supabase) {
+          try {
+            const { error } = await supabase
+              .from('deposits')
+              .delete()
+              .eq('id', depositId);
+
+            if (!error) {
+              console.log('✅ Deposit also removed from Supabase database');
+            }
+          } catch (dbError) {
+            console.log('⚠️ Supabase cleanup attempt failed:', dbError.message);
+          }
         }
       }
 
@@ -3468,27 +3535,48 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
     console.log('📝 Rejected deposit transaction recorded');
     console.log('📝 Transaction details:', transaction);
 
-    // Remove from pending deposits
-    pendingDeposits.splice(depositIndex, 1);
-    pendingData.deposits = pendingDeposits;
-    savePendingData();
-    console.log('🗑️ Deposit removed from pending list');
+    // Remove from pending deposits - HANDLE BOTH SOURCES
+    if (isFromSupabase) {
+      // Remove from Supabase database
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('deposits')
+            .delete()
+            .eq('id', depositId);
 
-    // REAL-TIME SYNC: Remove from Supabase database
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('deposits')
-          .delete()
-          .eq('id', depositId);
-
-        if (error) {
-          console.error('⚠️ Failed to remove rejected deposit from Supabase:', error);
-        } else {
-          console.log('✅ Rejected deposit removed from Supabase database');
+          if (error) {
+            console.error('⚠️ Failed to remove rejected deposit from Supabase:', error);
+          } else {
+            console.log('✅ Rejected deposit removed from Supabase database');
+          }
+        } catch (dbError) {
+          console.error('⚠️ Supabase deposit removal sync error:', dbError);
         }
-      } catch (dbError) {
-        console.error('⚠️ Supabase deposit removal sync error:', dbError);
+      }
+    } else {
+      // Remove from local array
+      if (depositIndex !== -1) {
+        pendingDeposits.splice(depositIndex, 1);
+        pendingData.deposits = pendingDeposits;
+        savePendingData();
+        console.log('🗑️ Deposit removed from local pending list');
+      }
+
+      // Also try to remove from Supabase (in case it exists there too)
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('deposits')
+            .delete()
+            .eq('id', depositId);
+
+          if (!error) {
+            console.log('✅ Deposit also removed from Supabase database');
+          }
+        } catch (dbError) {
+          console.log('⚠️ Supabase cleanup attempt failed:', dbError.message);
+        }
       }
     }
 
