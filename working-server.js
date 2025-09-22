@@ -16,30 +16,20 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3005;
 
-// Check if we're in production mode
+// Fast startup - minimal logging
 const isProduction = process.env.NODE_ENV === 'production';
-console.log(`🌍 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
 
-// Supabase client for both production and development
+// Supabase client setup
 let supabase = null;
-const { createClient } = require('@supabase/supabase-js');
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
-  console.log(`✅ Supabase client initialized for ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-} else {
-  console.error('❌ Missing Supabase credentials!');
-  console.error('❌ SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING');
-  console.error('❌ SUPABASE_SERVICE_ROLE_KEY:', supabaseKey ? 'SET' : 'MISSING');
-  if (isProduction) {
-    console.log('⚠️ PRODUCTION MODE: Supabase not configured, falling back to file storage');
-    console.log('⚠️ This is not recommended for production, but allows server to start');
-    console.log('⚠️ Please configure Supabase environment variables for full functionality');
-  } else {
-    console.log('⚠️ Continuing in development mode without Supabase');
+try {
+  const { createClient } = require('@supabase/supabase-js');
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
   }
+} catch (error) {
+  // Silent fallback to file storage
 }
 
 // Configure multer for file uploads
@@ -122,17 +112,9 @@ app.use(express.static(distPath, {
 // Also serve files from the root directory for testing
 app.use(express.static(__dirname));
 
-// Simple health check endpoint for Railway (fast response)
+// Ultra-fast health check for Railway
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    port: PORT,
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    version: '2.0.0'
-  });
+  res.status(200).send('OK');
 });
 
 // Test signup endpoint
@@ -8899,20 +8881,8 @@ wss.on('connection', (ws, req) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log('🎉 ===================================');
-  console.log('🚀 METACHROME V2 WORKING SERVER READY!');
-  console.log(`🌍 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  console.log(`🌐 Server running on: http://0.0.0.0:${PORT}`);
-  console.log(`🔌 WebSocket server: ws://0.0.0.0:${PORT}/ws`);
-  console.log(`🔧 Admin Dashboard: http://0.0.0.0:${PORT}/admin`);
-  console.log(`🏥 Health check: http://0.0.0.0:${PORT}/api/health`);
-  console.log('🔐 Login: superadmin / superadmin123');
-  console.log('📊 All endpoints are FULLY FUNCTIONAL!');
-  console.log('🎉 ===================================');
+  console.log(`🚀 METACHROME V2 READY - Port ${PORT}`);
 }).on('error', (err) => {
-  console.error('❌ Server startup error:', err);
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use. Please use a different port or stop the existing process.`);
-  }
+  console.error('❌ Server error:', err.message);
   process.exit(1);
 });

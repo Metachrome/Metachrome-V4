@@ -25,17 +25,10 @@ COPY package.json ./
 # Install only production deps
 RUN npm install --only=production --legacy-peer-deps
 
-# Copy all files from builder and create defaults for missing ones
-COPY --from=builder /app/ /tmp/source/
-RUN cp /tmp/source/dist ./dist -r && \
-    cp /tmp/source/working-server.js ./ && \
-    cp /tmp/source/railway-start.js ./ && \
-    (cp /tmp/source/pending-data.json ./ || echo '{"deposits":[],"withdrawals":[]}' > pending-data.json) && \
-    (cp /tmp/source/admin-data.json ./ || echo '[]' > admin-data.json) && \
-    (cp /tmp/source/users-data.json ./ || echo '[]' > users-data.json) && \
-    (cp /tmp/source/trades-data.json ./ || echo '[]' > trades-data.json) && \
-    (cp /tmp/source/transactions-data.json ./ || echo '[]' > transactions-data.json) && \
-    rm -rf /tmp/source
+# Copy essential files only
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/railway-simple-server.js ./
+COPY --from=builder /app/package.json ./
 
 # Create uploads directory for file uploads
 RUN mkdir -p uploads
@@ -50,5 +43,5 @@ EXPOSE $PORT
 
 ENV NODE_ENV=production
 
-# Start server with Railway startup script
-CMD ["node", "railway-start.js"]
+# Start simple server
+CMD ["node", "railway-simple-server.js"]
