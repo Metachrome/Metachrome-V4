@@ -29,7 +29,6 @@ export const debugNotification = () => {
   console.log('📱 Document overflow:', document.documentElement.style.overflow);
   
   // Test notification creation
-  const shouldUseMobile = isMobileDevice || isMobileWidth;
   console.log(shouldUseMobile ? '📱 Creating mobile test notification...' : '🖥️ Creating desktop test notification...');
 
   const testTrade = {
