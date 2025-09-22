@@ -2,7 +2,7 @@
 cmds = ["npm install --only=production --legacy-peer-deps"]
 
 [start]
-cmd = "node railway-simple-server.js"
+cmd = "node working-server.js"
 
 [variables]
 NODE_ENV = "production"

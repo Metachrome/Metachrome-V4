@@ -2,15 +2,15 @@
   "name": "metachrome-trading-platform",
   "version": "2.0.0",
   "description": "METACHROME Advanced Trading Platform",
-  "main": "railway-simple-server.js",
+  "main": "working-server.js",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "scripts": {
     "build": "vite build",
-    "start": "node railway-simple-server.js",
-    "start:production": "node railway-simple-server.js",
+    "start": "node working-server.js",
+    "start:production": "node working-server.js",
     "dev": "node working-server.js"
   },
   "keywords": [
