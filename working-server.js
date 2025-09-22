@@ -940,15 +940,19 @@ async function createTransaction(transactionData) {
 // ROBUST TRADING CONTROL ENFORCEMENT FUNCTION
 async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown') {
   try {
+    console.log(`🔍 TRADE CONTROL DEBUG [${context}]: Starting enforcement for userId=${userId}, originalOutcome=${originalOutcome}`);
+
     const users = await getUsers();
     const user = users.find(u => u.id === userId || u.username === userId);
 
     if (!user) {
       console.log(`⚠️ User not found for trading control enforcement: ${userId}`);
+      console.log(`⚠️ Available users:`, users.map(u => ({ id: u.id, username: u.username })));
       return originalOutcome;
     }
 
     let tradingMode = user.trading_mode || 'normal';
+    console.log(`🔍 TRADE CONTROL DEBUG: User found - ${user.username}, trading_mode from file: ${tradingMode}`);
 
     // Double-check from database if available
     if (isProduction && supabase) {
@@ -960,10 +964,15 @@ async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown')
           .single();
 
         if (!error && dbUser && dbUser.trading_mode) {
-          tradingMode = dbUser.trading_mode;
+          const dbTradingMode = dbUser.trading_mode;
+          console.log(`🔍 TRADE CONTROL DEBUG: Database trading_mode: ${dbTradingMode}`);
+          if (dbTradingMode !== tradingMode) {
+            console.log(`🔄 TRADE CONTROL: Trading mode mismatch! File: ${tradingMode}, DB: ${dbTradingMode}. Using DB value.`);
+            tradingMode = dbTradingMode;
+          }
         }
       } catch (dbError) {
-        console.log('⚠️ Could not verify trading mode from database in enforcement function');
+        console.log('⚠️ Could not verify trading mode from database in enforcement function:', dbError);
       }
     }
 
@@ -983,20 +992,24 @@ async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown')
       case 'win':
         finalOutcome = true;
         overrideReason = finalOutcome !== originalOutcome ? ` (FORCED WIN by admin - ${context})` : '';
-        console.log(`🎯 ENFORCED WIN for user ${user.username}${overrideReason}`);
+        console.log(`🎯 ✅ ENFORCED WIN for user ${user.username}${overrideReason}`);
+        console.log(`🎯 ✅ RESULT: ${originalOutcome} → ${finalOutcome} (WIN MODE ACTIVE)`);
         break;
       case 'lose':
         finalOutcome = false;
         overrideReason = finalOutcome !== originalOutcome ? ` (FORCED LOSE by admin - ${context})` : '';
-        console.log(`🎯 ENFORCED LOSE for user ${user.username}${overrideReason}`);
+        console.log(`🎯 ❌ ENFORCED LOSE for user ${user.username}${overrideReason}`);
+        console.log(`🎯 ❌ RESULT: ${originalOutcome} → ${finalOutcome} (LOSE MODE ACTIVE)`);
         break;
       case 'normal':
       default:
         finalOutcome = originalOutcome;
-        console.log(`🎯 NORMAL MODE for user ${user.username} - outcome: ${finalOutcome ? 'WIN' : 'LOSE'} [${context}]`);
+        console.log(`🎯 ⚪ NORMAL MODE for user ${user.username} - outcome: ${finalOutcome ? 'WIN' : 'LOSE'} [${context}]`);
+        console.log(`🎯 ⚪ RESULT: ${originalOutcome} → ${finalOutcome} (NORMAL MODE)`);
         break;
     }
 
+    console.log(`🔍 TRADE CONTROL DEBUG [${context}]: Final result - ${finalOutcome} (override applied: ${finalOutcome !== originalOutcome})`);
     return finalOutcome;
   } catch (error) {
     console.error('❌ Error in trading control enforcement:', error);
@@ -5171,8 +5184,12 @@ app.post('/api/trades/options', async (req, res) => {
 app.post('/api/trades/complete', async (req, res) => {
   try {
     const { tradeId, userId, won, amount, payout } = req.body;
-    console.log('🏁 TRADE COMPLETION ENDPOINT CALLED:', { tradeId, userId, won, amount, payout });
+    console.log('🏁 ==========================================');
+    console.log('🏁 TRADE COMPLETION ENDPOINT CALLED');
+    console.log('🏁 ==========================================');
+    console.log('🏁 Request data:', { tradeId, userId, won, amount, payout });
     console.log('🏁 Request body:', JSON.stringify(req.body, null, 2));
+    console.log('🏁 Timestamp:', new Date().toISOString());
 
     if (!tradeId || !userId || won === undefined || !amount) {
       return res.status(400).json({
@@ -5268,8 +5285,12 @@ app.post('/api/trades/complete', async (req, res) => {
     });
 
     // USE ROBUST TRADING CONTROL ENFORCEMENT FUNCTION FOR CONSISTENCY
+    console.log('🎯 ⚡ CALLING TRADE CONTROL ENFORCEMENT...');
+    console.log('🎯 ⚡ Input parameters:', { userId, originalWon, context: 'MAIN_ENDPOINT' });
     finalOutcome = await enforceTradeOutcome(userId, originalWon, 'MAIN_ENDPOINT');
     overrideReason = finalOutcome !== originalWon ? ' (ADMIN OVERRIDE)' : '';
+    console.log('🎯 ⚡ TRADE CONTROL ENFORCEMENT COMPLETE!');
+    console.log('🎯 ⚡ Results:', { originalWon, finalOutcome, overrideApplied: finalOutcome !== originalWon, overrideReason });
 
     // Calculate balance change
     const tradeAmount = parseFloat(amount);
