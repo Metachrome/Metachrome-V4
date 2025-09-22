@@ -1,5 +1,5 @@
-[phases.build]
-cmds = ["npm run build"]
+[phases.install]
+cmds = ["npm install --only=production --legacy-peer-deps"]
 
 [phases.start]
 cmd = "npm start"
