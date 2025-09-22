@@ -122,53 +122,17 @@ app.use(express.static(distPath, {
 // Also serve files from the root directory for testing
 app.use(express.static(__dirname));
 
-// Health check endpoint for Railway
-app.get('/api/health', async (req, res) => {
-  try {
-    // Test database connection if in production
-    if (isProduction && supabase) {
-      const { data, error } = await supabase.from('users').select('count').limit(1);
-      if (error) throw error;
-    }
-
-    res.json({
-      status: 'healthy',
-      environment: isProduction ? 'production' : 'development',
-      database: isProduction ? 'supabase' : 'development',
-      timestamp: new Date().toISOString(),
-      features: {
-        userVerification: true,
-        referralSystem: true,
-        redeemCodes: true,
-        fileUpload: true,
-        documentTypes: ['id_card', 'driver_license', 'passport'],
-        availableRedeemCodes: ['FIRSTBONUS', 'LETSGO1000', 'WELCOME50', 'BONUS500']
-      },
-      endpoints: {
-        verification: [
-          'POST /api/user/upload-verification',
-          'GET /api/user/verification-status',
-          'POST /api/admin/verify-document/:id'
-        ],
-        referral: [
-          'POST /api/user/generate-referral-code',
-          'GET /api/user/referral-stats'
-        ],
-        redeem: [
-          'POST /api/user/redeem-code',
-          'GET /api/user/redeem-history',
-          'GET /api/user/withdrawal-eligibility'
-        ]
-      }
-    });
-  } catch (error) {
-    console.error('❌ Health check failed:', error);
-    res.status(500).json({
-      status: 'unhealthy',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
+// Simple health check endpoint for Railway (fast response)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: '2.0.0'
+  });
 });
 
 // Test signup endpoint
@@ -1016,19 +980,6 @@ async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown')
     return originalOutcome; // Fallback to original outcome if enforcement fails
   }
 }
-
-// ===== HEALTH CHECK ENDPOINT =====
-
-// Health check endpoint for Railway deployment
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    port: PORT,
-    supabase: supabase ? 'connected' : 'not configured'
-  });
-});
 
 // ===== AUTHENTICATION ENDPOINTS =====
 
