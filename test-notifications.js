@@ -64,26 +64,26 @@ function testDesktopNotification() {
 // Function to simulate mobile device
 function simulateMobile() {
   console.log('📱 Simulating mobile device...');
-  
-  // Override user agent
-  Object.defineProperty(navigator, 'userAgent', {
-    value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1',
-    writable: false
-  });
-  
-  // Resize window to mobile size
-  window.resizeTo(375, 812);
-  
-  // Add touch support
-  Object.defineProperty(navigator, 'maxTouchPoints', {
-    value: 5,
-    writable: false
-  });
-  
+
+  // Resize window to mobile size first
+  if (window.resizeTo) {
+    window.resizeTo(375, 812);
+  }
+
+  // Force mobile detection by triggering resize event
+  window.dispatchEvent(new Event('resize'));
+
   console.log('✅ Mobile simulation active');
   console.log('📱 Window size:', window.innerWidth, 'x', window.innerHeight);
   console.log('📱 User agent:', navigator.userAgent);
-  console.log('📱 Touch points:', navigator.maxTouchPoints);
+  console.log('📱 Touch points:', navigator.maxTouchPoints || 0);
+
+  // Check if mobile hook detects mobile
+  setTimeout(() => {
+    console.log('📱 Mobile detection check after resize...');
+    console.log('📱 Current window width:', window.innerWidth);
+    console.log('📱 Should be mobile (width < 768):', window.innerWidth < 768);
+  }, 500);
 }
 
 // Function to simulate desktop device
@@ -109,6 +109,51 @@ function simulateDesktop() {
   console.log('🖥️ Window size:', window.innerWidth, 'x', window.innerHeight);
   console.log('🖥️ User agent:', navigator.userAgent);
   console.log('🖥️ Touch points:', navigator.maxTouchPoints);
+}
+
+// Function to force mobile notification (bypass detection)
+function forceMobileNotification() {
+  console.log('🔧 Force testing mobile notification...');
+
+  // Create a test trade
+  const testTrade = {
+    id: 'force-mobile-' + Date.now(),
+    direction: 'up',
+    amount: 1600,
+    entryPrice: 116944.00,
+    finalPrice: 116946.98,
+    status: 'won',
+    payout: 1760,
+    profitPercentage: 10
+  };
+
+  // Store in localStorage
+  localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+
+  // Force page refresh to trigger notification
+  console.log('🔄 Refreshing page to trigger mobile notification...');
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
+}
+
+// Function to check current mobile detection status
+function checkMobileDetection() {
+  console.log('🔍 Current Mobile Detection Status:');
+  console.log('📱 Window width:', window.innerWidth);
+  console.log('📱 Window height:', window.innerHeight);
+  console.log('📱 User agent:', navigator.userAgent);
+  console.log('📱 Max touch points:', navigator.maxTouchPoints || 0);
+  console.log('📱 Touch start support:', 'ontouchstart' in window);
+  console.log('📱 Should be mobile (width < 768):', window.innerWidth < 768);
+
+  // Check if mobile elements exist
+  const mobileElements = document.querySelectorAll('[class*="mobile"]');
+  console.log('📱 Mobile elements found:', mobileElements.length);
+
+  // Check for mobile layout
+  const mobileLayout = document.querySelector('.mobile-layout, [class*="mobile-layout"]');
+  console.log('📱 Mobile layout detected:', !!mobileLayout);
 }
 
 // Main test function
@@ -150,6 +195,8 @@ window.testDesktopNotification = testDesktopNotification;
 window.simulateMobile = simulateMobile;
 window.simulateDesktop = simulateDesktop;
 window.runNotificationTests = runNotificationTests;
+window.forceMobileNotification = forceMobileNotification;
+window.checkMobileDetection = checkMobileDetection;
 
 console.log('');
 console.log('🛠️ Manual test functions available:');
@@ -158,3 +205,5 @@ console.log('   testDesktopNotification() - Test desktop notification');
 console.log('   simulateMobile() - Switch to mobile mode');
 console.log('   simulateDesktop() - Switch to desktop mode');
 console.log('   runNotificationTests() - Run all tests');
+console.log('   forceMobileNotification() - Force mobile notification');
+console.log('   checkMobileDetection() - Check current mobile detection status');

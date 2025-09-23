@@ -19,46 +19,78 @@ interface TradeNotificationProps {
 const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
+  // EXTENSIVE DEBUG LOGGING
+  console.log('🔍 MobileTradeNotification RENDER:', {
+    trade: trade ? 'Present' : 'Null',
+    isVisible,
+    tradeData: trade ? {
+      id: trade.id,
+      status: trade.status,
+      amount: trade.amount,
+      direction: trade.direction
+    } : 'No trade data'
+  });
+
   const handleClose = () => {
+    console.log('📱 MobileTradeNotification: handleClose called');
     setIsVisible(false);
-    setTimeout(onClose, 300);
+    setTimeout(() => {
+      console.log('📱 MobileTradeNotification: onClose callback executed');
+      onClose();
+    }, 300);
   };
 
   useEffect(() => {
+    console.log('📱 MobileTradeNotification: useEffect triggered', { trade: !!trade });
     if (trade) {
+      console.log('📱 MobileTradeNotification: Setting 25s auto-close timer');
       // Auto close after 25 seconds for mobile (longer, stickier)
       const timer = setTimeout(() => {
+        console.log('📱 MobileTradeNotification: Auto-close timer triggered');
         handleClose();
       }, 25000);
 
-      return () => clearTimeout(timer);
+      return () => {
+        console.log('📱 MobileTradeNotification: Cleanup timer');
+        clearTimeout(timer);
+      };
     }
   }, [trade]);
 
-  if (!trade || !isVisible) return null;
+  if (!trade) {
+    console.log('📱 MobileTradeNotification: No trade data - returning null');
+    return null;
+  }
+
+  if (!isVisible) {
+    console.log('📱 MobileTradeNotification: Not visible - returning null');
+    return null;
+  }
+
+  console.log('📱 MobileTradeNotification: RENDERING MOBILE NOTIFICATION');
 
   const isWin = trade.status === 'won';
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
 
   return (
-    <div className={`fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm transition-all duration-300 ${
+    <div className={`fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm transition-all duration-300 ${
       isVisible ? 'opacity-100' : 'opacity-0'
     }`}>
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className={`bg-gray-800 rounded-2xl shadow-2xl border ${
-          isWin ? 'border-green-500/30' : 'border-red-500/30'
+        <div className={`bg-gray-900 rounded-xl shadow-2xl border ${
+          isWin ? 'border-green-500/20' : 'border-red-500/20'
         } w-full max-w-sm mx-auto transform transition-all duration-500 ${
           isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
-        }`}>
+        } overflow-hidden`}>
 
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h3 className="text-white font-bold text-lg">BTC/USDT</h3>
+          <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
+            <h3 className="text-white font-semibold text-lg">BTC/USDT</h3>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700"
+              className="text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700/50 text-xl"
             >
-              ✕
+              ×
             </button>
           </div>
 
@@ -66,31 +98,31 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
           <div className="p-6 space-y-6">
             {/* P&L Display */}
             <div className="text-center">
-              <div className={`text-4xl font-bold mb-2 ${
+              <div className={`text-5xl font-bold mb-2 ${
                 isWin ? 'text-green-400' : 'text-red-400'
               }`}>
-                {isWin ? '+' : ''}{pnl.toFixed(0)} <span className="text-gray-400 text-2xl">USDT</span>
+                {isWin ? '+' : ''}{pnl.toFixed(0)} <span className="text-gray-400 text-3xl font-normal">USDT</span>
               </div>
-              <div className="text-gray-400 text-sm">
+              <div className="text-gray-400 text-sm font-medium">
                 Settlement completed
               </div>
             </div>
 
             {/* Trade Details */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Current price:</span>
-                <span className="text-white font-mono">{trade.finalPrice.toFixed(2)}</span>
+                <span className="text-gray-400 text-sm">Current price :</span>
+                <span className="text-white font-mono text-sm">{trade.finalPrice.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Time:</span>
-                <span className="text-white">30s</span>
+                <span className="text-gray-400 text-sm">Time :</span>
+                <span className="text-white text-sm">30s</span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Side:</span>
-                <span className={`font-medium ${
+                <span className="text-gray-400 text-sm">Side :</span>
+                <span className={`font-medium text-sm ${
                   trade.direction === 'up' ? 'text-green-400' : 'text-red-400'
                 }`}>
                   {trade.direction === 'up' ? 'Buy Up' : 'Sell Down'}
@@ -98,18 +130,18 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Amount:</span>
-                <span className="text-white">{trade.amount.toFixed(0)} USDT</span>
+                <span className="text-gray-400 text-sm">Amount :</span>
+                <span className="text-white text-sm">{trade.amount.toFixed(0)} USDT</span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Price:</span>
-                <span className="text-white font-mono">{trade.entryPrice.toFixed(2)} USDT</span>
+                <span className="text-gray-400 text-sm">Price :</span>
+                <span className="text-white font-mono text-sm">{trade.entryPrice.toFixed(2)} USDT</span>
               </div>
             </div>
 
             {/* Footer Text */}
-            <div className="text-gray-500 text-xs leading-relaxed">
+            <div className="text-gray-500 text-xs leading-relaxed pt-2 border-t border-gray-700/30">
               The ultimate price for each option contract is determined by the system's settlement process.
             </div>
           </div>
@@ -347,11 +379,35 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
   const isMobile = useIsMobile();
 
+  // EXTENSIVE DEBUG LOGGING
+  console.log('🔍 TradeNotification MAIN COMPONENT RENDER:', {
+    isMobile,
+    windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'N/A',
+    windowHeight: typeof window !== 'undefined' ? window.innerHeight : 'N/A',
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 50) + '...' : 'N/A',
+    maxTouchPoints: typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 'N/A',
+    touchSupport: typeof window !== 'undefined' ? 'ontouchstart' in window : 'N/A',
+    trade: trade ? {
+      id: trade.id,
+      status: trade.status,
+      amount: trade.amount,
+      direction: trade.direction,
+      entryPrice: trade.entryPrice,
+      finalPrice: trade.finalPrice
+    } : 'NULL'
+  });
+
+  // Force mobile detection for debugging
+  const forceMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  console.log('🔍 Force mobile detection (width < 768):', forceMobile);
+
   // Use mobile notification for mobile devices, desktop notification for desktop
-  if (isMobile) {
+  if (isMobile || forceMobile) {
+    console.log('📱 DECISION: Rendering MobileTradeNotification', { isMobile, forceMobile });
     return <MobileTradeNotification trade={trade} onClose={onClose} />;
   }
 
+  console.log('🖥️ DECISION: Rendering DesktopTradeNotification', { isMobile, forceMobile });
   return <DesktopTradeNotification trade={trade} onClose={onClose} />;
 }
 

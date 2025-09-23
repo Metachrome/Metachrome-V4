@@ -5,6 +5,8 @@ import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import TradingViewWidget from "../components/TradingViewWidget";
 import TradeNotification from "../components/TradeNotification";
 import TradeOverlay from "../components/TradeOverlay";
+import { NotificationDebug } from "../components/NotificationDebug";
+import { ForceNotificationTest } from "../components/ForceNotificationTest";
 import { playTradeSound } from "../utils/sounds";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
@@ -2015,6 +2017,20 @@ export default function OptionsPage() {
 
 
       {/* Trade Notification */}
+      {(() => {
+        console.log('🔍 OptionsPage: TradeNotification render check:', {
+          completedTrade: completedTrade ? 'Present' : 'Null',
+          completedTradeData: completedTrade ? {
+            id: completedTrade.id,
+            status: completedTrade.status,
+            amount: completedTrade.amount,
+            direction: completedTrade.direction
+          } : 'No data',
+          isMobile,
+          windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'N/A'
+        });
+        return null;
+      })()}
       <TradeNotification
         trade={completedTrade ? {
           id: completedTrade.id,
@@ -2029,6 +2045,7 @@ export default function OptionsPage() {
           profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15)
         } : null}
         onClose={() => {
+          console.log('🔍 OptionsPage: TradeNotification onClose called');
           setCompletedTrade(null);
           localStorage.removeItem('completedTrade');
         }}
@@ -2104,6 +2121,12 @@ export default function OptionsPage() {
           </div>
         </div>
       )}
+
+      {/* Debug Component - Remove in production */}
+      <NotificationDebug />
+
+      {/* Force Notification Test - Remove in production */}
+      <ForceNotificationTest />
     </div>
   );
   } catch (error) {

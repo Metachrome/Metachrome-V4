@@ -147,6 +147,39 @@ test-notifications.js            # Test script for both notifications
 - 20-second duration with progress bar
 - Enhanced visual effects
 
+## Troubleshooting Mobile Issues
+
+### Issue: Mobile notification not showing
+**Possible causes:**
+1. **Duplicate mobile detection hooks** - Fixed by removing duplicate `use-mobile.ts` file
+2. **Mobile detection not working** - Added debug component to check detection
+3. **CSS conflicts** - Cleaned up mobile-specific CSS rules
+4. **Z-index issues** - Using z-[9999] for mobile notifications
+
+### Debug Tools Added
+1. **NotificationDebug component** - Shows real-time mobile detection status
+2. **Enhanced test script** - `test-notifications.js` with mobile debugging
+3. **Console logging** - Added debug logs to TradeNotification component
+
+### Testing Instructions
+1. **Open browser console**
+2. **Load test script**: Copy `test-notifications.js` content and paste in console
+3. **Check mobile detection**: Run `checkMobileDetection()`
+4. **Force mobile test**: Run `forceMobileNotification()`
+5. **Simulate mobile**: Run `simulateMobile()` then test notification
+
+### Mobile Detection Logic
+```typescript
+// Uses existing hook from use-mobile.tsx
+const isMobile = useIsMobile(); // Detects width < 768px
+
+// Debug component shows:
+// - Hook result (Mobile/Desktop)
+// - Window dimensions
+// - Touch support
+// - User agent detection
+```
+
 ## Success Criteria ✅
 - [x] Separated mobile and desktop notifications
 - [x] Mobile notification matches provided design exactly
@@ -157,3 +190,4 @@ test-notifications.js            # Test script for both notifications
 - [x] Real-time responsiveness to device changes
 - [x] Comprehensive testing capabilities
 - [x] Clean code architecture with reusable components
+- [x] Debug tools for troubleshooting mobile issues
