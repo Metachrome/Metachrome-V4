@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useIsMobile } from '../hooks/use-mobile';
 
 interface TradeNotificationProps {
   trade: {
@@ -14,8 +15,112 @@ interface TradeNotificationProps {
   onClose: () => void;
 }
 
-// ENHANCED GRADIENT NOTIFICATION SYSTEM - Works for all devices with beautiful gradients
-const GradientTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
+// MOBILE NOTIFICATION COMPONENT - Matches the provided design exactly
+const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 300);
+  };
+
+  useEffect(() => {
+    if (trade) {
+      // Auto close after 25 seconds for mobile (longer, stickier)
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 25000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [trade]);
+
+  if (!trade || !isVisible) return null;
+
+  const isWin = trade.status === 'won';
+  const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
+
+  return (
+    <div className={`fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm transition-all duration-300 ${
+      isVisible ? 'opacity-100' : 'opacity-0'
+    }`}>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className={`bg-gray-800 rounded-2xl shadow-2xl border ${
+          isWin ? 'border-green-500/30' : 'border-red-500/30'
+        } w-full max-w-sm mx-auto transform transition-all duration-500 ${
+          isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+        }`}>
+
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 className="text-white font-bold text-lg">BTC/USDT</h3>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Main Content */}
+          <div className="p-6 space-y-6">
+            {/* P&L Display */}
+            <div className="text-center">
+              <div className={`text-4xl font-bold mb-2 ${
+                isWin ? 'text-green-400' : 'text-red-400'
+              }`}>
+                {isWin ? '+' : ''}{pnl.toFixed(0)} <span className="text-gray-400 text-2xl">USDT</span>
+              </div>
+              <div className="text-gray-400 text-sm">
+                Settlement completed
+              </div>
+            </div>
+
+            {/* Trade Details */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Current price:</span>
+                <span className="text-white font-mono">{trade.finalPrice.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Time:</span>
+                <span className="text-white">30s</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Side:</span>
+                <span className={`font-medium ${
+                  trade.direction === 'up' ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {trade.direction === 'up' ? 'Buy Up' : 'Sell Down'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Amount:</span>
+                <span className="text-white">{trade.amount.toFixed(0)} USDT</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Price:</span>
+                <span className="text-white font-mono">{trade.entryPrice.toFixed(2)} USDT</span>
+              </div>
+            </div>
+
+            {/* Footer Text */}
+            <div className="text-gray-500 text-xs leading-relaxed">
+              The ultimate price for each option contract is determined by the system's settlement process.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// DESKTOP GRADIENT NOTIFICATION SYSTEM - Beautiful gradient notification for desktop
+const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const [progress, setProgress] = useState(100);
 
@@ -238,10 +343,16 @@ const GradientTradeNotification = ({ trade, onClose }: TradeNotificationProps) =
   );
 };
 
-// MAIN TRADE NOTIFICATION COMPONENT - Beautiful gradient notification for all devices
+// MAIN TRADE NOTIFICATION COMPONENT - Switches between mobile and desktop notifications
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
-  // Always use the beautiful gradient notification for all devices
-  return <GradientTradeNotification trade={trade} onClose={onClose} />;
+  const isMobile = useIsMobile();
+
+  // Use mobile notification for mobile devices, desktop notification for desktop
+  if (isMobile) {
+    return <MobileTradeNotification trade={trade} onClose={onClose} />;
+  }
+
+  return <DesktopTradeNotification trade={trade} onClose={onClose} />;
 }
 
 
