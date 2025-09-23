@@ -369,50 +369,90 @@ button {
   -webkit-backface-visibility: hidden !important;
 }
 
-/* Mobile notifications - only apply to mobile devices */
-@media (max-width: 768px) {
-  .metachrome-mobile-notification,
-  [data-mobile-notification="true"] {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-    max-height: 100vh !important;
-    z-index: 2147483647 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    background: rgba(0, 0, 0, 0.95) !important;
-    pointer-events: auto !important;
+/* Enhanced gradient notification - responsive design for all devices */
+.trade-notification {
+  /* Ensure proper positioning on all screen sizes */
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+}
+
+@media (max-width: 640px) {
+  .trade-notification {
+    /* Adjust positioning for mobile devices */
+    top: 0.5rem;
+    right: 0.5rem;
+    left: 0.5rem;
+    max-width: calc(100vw - 1rem);
   }
 }
 
-/* Desktop notifications - ensure they don't interfere with mobile */
-@media (min-width: 769px) {
-  .metachrome-mobile-notification,
-  [data-mobile-notification="true"] {
-    display: none !important;
-  }
-}
-
-/* Original desktop notification animations */
+/* Enhanced gradient notification animations */
 .animate-pulse-subtle {
-  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes pulse-subtle {
   0%, 100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
     opacity: 0.95;
+    transform: scale(1.01);
   }
+}
+
+/* Gradient shimmer effect */
+@keyframes gradient-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-gradient-shimmer {
+  background-size: 200% 100%;
+  animation: gradient-shimmer 3s ease-in-out infinite;
+}
+
+/* Enhanced bounce animation */
+@keyframes enhanced-bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+.animate-enhanced-bounce {
+  animation: enhanced-bounce 2s infinite;
+}
+
+/* Floating sparkle animation */
+@keyframes float-sparkle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-10px) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+.animate-float-sparkle {
+  animation: float-sparkle 4s ease-in-out infinite;
 }
 
 /* Ultra-small screen optimization for 250px and below */
