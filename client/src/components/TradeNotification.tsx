@@ -73,37 +73,35 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
 
   return (
-    <div className={`fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm transition-all duration-300 ${
+    <div className={`fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm transition-all duration-300 ${
       isVisible ? 'opacity-100' : 'opacity-0'
     }`}>
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <div className={`bg-gray-900 rounded-xl shadow-2xl border ${
-          isWin ? 'border-green-500/20' : 'border-red-500/20'
-        } w-full max-w-sm mx-auto transform transition-all duration-500 ${
+      <div className="flex items-center justify-center min-h-screen p-6">
+        <div className={`bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xs mx-auto transform transition-all duration-500 ${
           isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
         } overflow-hidden`}>
 
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
-            <h3 className="text-white font-semibold text-lg">BTC/USDT</h3>
+          <div className="flex items-center justify-between p-5 pb-4">
+            <h3 className="text-white font-bold text-lg">BTC/USDT</h3>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700/50 text-xl"
+              className="text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center text-2xl font-light"
             >
               ×
             </button>
           </div>
 
           {/* Main Content */}
-          <div className="p-6 space-y-6">
+          <div className="px-5 pb-5 space-y-5">
             {/* P&L Display */}
-            <div className="text-center">
-              <div className={`text-5xl font-bold mb-2 ${
+            <div className="text-center py-2">
+              <div className={`text-4xl font-bold mb-1 ${
                 isWin ? 'text-green-400' : 'text-red-400'
               }`}>
-                {isWin ? '+' : ''}{pnl.toFixed(0)} <span className="text-gray-400 text-3xl font-normal">USDT</span>
+                {isWin ? '+' : ''}{pnl.toFixed(0)} <span className="text-gray-400 text-lg font-normal">USDT</span>
               </div>
-              <div className="text-gray-400 text-sm font-medium">
+              <div className="text-gray-400 text-base">
                 Settlement completed
               </div>
             </div>
@@ -112,12 +110,12 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Current price :</span>
-                <span className="text-white font-mono text-sm">{trade.finalPrice.toFixed(2)}</span>
+                <span className="text-white font-medium text-sm">{trade.finalPrice.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Time :</span>
-                <span className="text-white text-sm">30s</span>
+                <span className="text-white font-medium text-sm">30s</span>
               </div>
 
               <div className="flex justify-between items-center">
@@ -131,17 +129,17 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Amount :</span>
-                <span className="text-white text-sm">{trade.amount.toFixed(0)} USDT</span>
+                <span className="text-white font-medium text-sm">{trade.amount.toFixed(0)} USDT</span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Price :</span>
-                <span className="text-white font-mono text-sm">{trade.entryPrice.toFixed(2)} USDT</span>
+                <span className="text-white font-medium text-sm">{trade.entryPrice.toFixed(2)} USDT</span>
               </div>
             </div>
 
             {/* Footer Text */}
-            <div className="text-gray-500 text-xs leading-relaxed pt-2 border-t border-gray-700/30">
+            <div className="text-gray-400 text-xs leading-relaxed pt-3">
               The ultimate price for each option contract is determined by the system's settlement process.
             </div>
           </div>
