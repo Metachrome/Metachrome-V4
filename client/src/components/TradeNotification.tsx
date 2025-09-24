@@ -31,6 +31,28 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
     } : 'No trade data'
   });
 
+  // FORCE VISUAL INDICATOR WHEN TRADE IS PRESENT
+  useEffect(() => {
+    if (trade) {
+      console.log('🚨 TRADE NOTIFICATION: Trade data received!', trade);
+      const indicator = document.createElement('div');
+      indicator.style.cssText = `
+        position: fixed;
+        top: 50px;
+        right: 20px;
+        background: green;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 999999;
+        font-weight: bold;
+      `;
+      indicator.textContent = `NOTIFICATION COMPONENT RECEIVED TRADE: ${trade.status}`;
+      document.body.appendChild(indicator);
+      setTimeout(() => indicator.remove(), 3000);
+    }
+  }, [trade]);
+
   const handleClose = () => {
     console.log('📱 MobileTradeNotification: handleClose called');
     setIsVisible(false);

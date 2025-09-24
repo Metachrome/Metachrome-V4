@@ -651,6 +651,24 @@ export default function OptionsPage() {
       console.log('🎯 COMPLETE TRADE: Mobile detected:', window.innerWidth < 768);
       console.log('🎯 COMPLETE TRADE: isMobile hook value:', isMobile);
 
+      // FORCE NOTIFICATION TEST - Add immediate visual feedback
+      console.log('🚨 FORCING NOTIFICATION TEST - Creating immediate visual indicator');
+      const testIndicator = document.createElement('div');
+      testIndicator.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: red;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 999999;
+        font-weight: bold;
+      `;
+      testIndicator.textContent = `TRADE COMPLETED: ${tradeWithTimestamp.status.toUpperCase()} - ${tradeWithTimestamp.amount} USDT`;
+      document.body.appendChild(testIndicator);
+      setTimeout(() => testIndicator.remove(), 5000);
+
       // MOBILE FIX: Show custom modal with exact design
       console.log('📱 MOBILE CHECK: Window width:', window.innerWidth, 'Is mobile:', window.innerWidth < 768);
       console.log('📱 MOBILE CHECK: User agent:', navigator.userAgent);
