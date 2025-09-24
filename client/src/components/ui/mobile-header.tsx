@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "./button";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "../../hooks/useAuth";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { Menu, X, UserCircle } from "lucide-react";
@@ -60,7 +60,7 @@ export function MobileHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={logout}
+                onClick={() => logout()}
                 className="text-gray-300 hover:text-white"
               >
                 Logout
@@ -116,12 +116,62 @@ export function MobileHeader() {
               >
                 Market
               </button>
-              <button
-                onClick={() => handleNavigation("/trade")}
-                className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded"
-              >
-                Trade
-              </button>
+              <div className="w-full">
+                <div className="text-gray-300 py-2 px-3 text-base font-medium">
+                  Trade
+                </div>
+                <div className="mx-3 mb-2 space-y-2">
+                  {/* SPOT Trading Option - Mobile Header */}
+                  <Link href="/trade/spot">
+                    <div
+                      className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
+                          <p className="text-xs text-black/80 leading-tight">
+                            Buy and sell crypto instantly at<br />
+                            real-time market prices.
+                          </p>
+                        </div>
+                        <div className="ml-3 flex-shrink-0">
+                          <img
+                            src="/asset/trade-spot_icon.png"
+                            alt="Spot Trading"
+                            className="w-10 h-10 object-contain"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* OPTION Trading Option - Mobile Header */}
+                  <Link href="/trade/options">
+                    <div
+                      className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
+                          <p className="text-xs text-black/80 leading-tight">
+                            Maximize gains by predicting<br />
+                            market moves in seconds.
+                          </p>
+                        </div>
+                        <div className="ml-3 flex-shrink-0">
+                          <img
+                            src="/asset/trade-option_icon.png"
+                            alt="Options Trading"
+                            className="w-10 h-10 object-contain"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </div>
               <button
                 onClick={() => handleNavigation("/wallet")}
                 className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded"

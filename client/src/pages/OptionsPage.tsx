@@ -640,28 +640,10 @@ export default function OptionsPage() {
             let won = (trade.direction === 'up' && priceChange > 0) ||
                      (trade.direction === 'down' && priceChange < 0);
 
-            // 🎯 DYNAMIC TRADING CONTROL SYSTEM - FETCH FROM SERVER
-            const userId = user?.id || 'superadmin-001';
-            const username = user?.username || 'superadmin';
+            // Trading control will be applied on the server side
 
-            // Use real-time trading mode from multiple sources for maximum reliability
-            const storedTradingMode = localStorage.getItem('currentTradingMode') || 'normal';
-            const tradingMode = currentTradingMode || storedTradingMode;
-
-            // Apply admin control immediately - no server delay!
-            if (tradingMode === 'lose') {
-              won = false;
-            } else if (tradingMode === 'win') {
-              won = true;
-            }
-
-            // Complete the trade asynchronously with forced result
-            console.log('🎯 CALLING completeTrade with:', { trade: trade.id, won, finalPrice });
-            completeTrade(trade, won, finalPrice).then(() => {
-              console.log('🎯 completeTrade FINISHED for trade:', trade.id);
-            }).catch(error => {
-              console.error('🎯 completeTrade ERROR for trade:', trade.id, error);
-            });
+            // Complete the trade asynchronously
+            completeTrade(trade, won, finalPrice);
             hasCompletedTrades = true;
 
             // Play sound effect safely
@@ -673,7 +655,7 @@ export default function OptionsPage() {
               console.error('Sound play error:', soundError);
             }
 
-            console.log(`🎯 Trade completed: ${won ? 'WON' : 'LOST'} - ${trade.direction.toUpperCase()} $${trade.amount}`);
+
             // Don't add completed trades to active trades
           } else {
             // Keep active trades

@@ -85,14 +85,50 @@ export function Navigation() {
                       <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                     {isTradeOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-[60]">
-                        {item.dropdownItems?.map((dropdownItem) => (
-                          <Link key={dropdownItem.path} href={dropdownItem.path}>
-                            <div className="px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer">
-                              {dropdownItem.label}
+                      <div className="absolute top-full left-0 mt-1 w-80 bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-xl shadow-2xl z-[60] overflow-hidden">
+                        {/* SPOT Trading Option */}
+                        <Link href="/trade/spot">
+                          <div className="relative p-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-300 cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-bold text-black mb-1">SPOT</h3>
+                                <p className="text-sm text-black/80 leading-tight">
+                                  Buy and sell crypto instantly at<br />
+                                  real-time market prices.
+                                </p>
+                              </div>
+                              <div className="ml-4 flex-shrink-0">
+                                <img
+                                  src="/asset/trade-spot_icon.png"
+                                  alt="Spot Trading"
+                                  className="w-12 h-12 object-contain"
+                                />
+                              </div>
                             </div>
-                          </Link>
-                        ))}
+                          </div>
+                        </Link>
+
+                        {/* OPTION Trading Option */}
+                        <Link href="/trade/options">
+                          <div className="relative p-4 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-bold text-black mb-1">OPTION</h3>
+                                <p className="text-sm text-black/80 leading-tight">
+                                  Maximize gains by predicting<br />
+                                  market moves in seconds.
+                                </p>
+                              </div>
+                              <div className="ml-4 flex-shrink-0">
+                                <img
+                                  src="/asset/trade-option_icon.png"
+                                  alt="Options Trading"
+                                  className="w-12 h-12 object-contain"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -198,16 +234,57 @@ export function Navigation() {
                       <div className="text-gray-300 block px-3 py-2 text-base font-medium">
                         {item.label}
                       </div>
-                      {item.dropdownItems?.map((dropdownItem) => (
-                        <Link key={dropdownItem.path} href={dropdownItem.path}>
+                      <div className="mx-3 mb-2 space-y-2">
+                        {/* SPOT Trading Option - Mobile */}
+                        <Link href="/trade/spot">
                           <div
-                            className="text-gray-400 block px-6 py-2 text-sm hover:text-white hover:bg-gray-800"
+                            className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer"
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
-                            {dropdownItem.label}
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
+                                <p className="text-xs text-black/80 leading-tight">
+                                  Buy and sell crypto instantly at<br />
+                                  real-time market prices.
+                                </p>
+                              </div>
+                              <div className="ml-3 flex-shrink-0">
+                                <img
+                                  src="/asset/trade-spot_icon.png"
+                                  alt="Spot Trading"
+                                  className="w-10 h-10 object-contain"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </Link>
-                      ))}
+
+                        {/* OPTION Trading Option - Mobile */}
+                        <Link href="/trade/options">
+                          <div
+                            className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
+                                <p className="text-xs text-black/80 leading-tight">
+                                  Maximize gains by predicting<br />
+                                  market moves in seconds.
+                                </p>
+                              </div>
+                              <div className="ml-3 flex-shrink-0">
+                                <img
+                                  src="/asset/trade-option_icon.png"
+                                  alt="Options Trading"
+                                  className="w-10 h-10 object-contain"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
                     </div>
                   ) : (
                     <Link href={item.path}>

@@ -106,7 +106,7 @@ export function MobileBottomNav() {
       {/* Trade Menu Overlay */}
       {showTradeMenu && (
         <div
-          className="fixed left-0 right-0 z-[9998] bg-[#1A1B3A] border-t border-gray-700/50 backdrop-blur-lg"
+          className="fixed left-0 right-0 z-[9998] bg-gray-900/95 backdrop-blur-sm border-t border-gray-700/50"
           style={{
             bottom: '80px', // Position above the bottom nav
             position: 'fixed',
@@ -117,20 +117,52 @@ export function MobileBottomNav() {
             overflow: 'hidden' // Prevent any overflow
           }}
         >
-          <div className="py-3 px-4"> {/* Reduced padding for smaller screens */}
-            <h3 className="text-white font-semibold mb-2 text-sm">Trading Options</h3> {/* Smaller text */}
-            <div className="space-y-1"> {/* Reduced spacing */}
+          <div className="py-4 px-4">
+            <div className="space-y-3">
+              {/* SPOT Trading Option - Mobile Bottom Nav */}
               <button
                 onClick={() => handleTradeOptionClick("/trade/spot")}
-                className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded text-sm" // Smaller text
+                className="w-full relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 rounded-lg cursor-pointer transition-all duration-300"
               >
-                Spot Trading
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 text-left">
+                    <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
+                    <p className="text-xs text-black/80 leading-tight">
+                      Buy and sell crypto instantly at<br />
+                      real-time market prices.
+                    </p>
+                  </div>
+                  <div className="ml-3 flex-shrink-0">
+                    <img
+                      src="/asset/trade-spot_icon.png"
+                      alt="Spot Trading"
+                      className="w-10 h-10 object-contain"
+                    />
+                  </div>
+                </div>
               </button>
+
+              {/* OPTION Trading Option - Mobile Bottom Nav */}
               <button
                 onClick={() => handleTradeOptionClick("/trade/options")}
-                className="w-full text-left py-2 px-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded text-sm" // Smaller text
+                className="w-full relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 rounded-lg cursor-pointer transition-all duration-300"
               >
-                Options Trading
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 text-left">
+                    <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
+                    <p className="text-xs text-black/80 leading-tight">
+                      Maximize gains by predicting<br />
+                      market moves in seconds.
+                    </p>
+                  </div>
+                  <div className="ml-3 flex-shrink-0">
+                    <img
+                      src="/asset/trade-option_icon.png"
+                      alt="Options Trading"
+                      className="w-10 h-10 object-contain"
+                    />
+                  </div>
+                </div>
               </button>
             </div>
           </div>

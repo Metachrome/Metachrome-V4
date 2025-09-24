@@ -72,14 +72,50 @@ export default function Layout({ children }: LayoutProps) {
                           <ChevronDown className="w-3 h-3" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-dark-200 border-dark-100 z-[60]">
-                        {item.submenu.map((subItem) => (
-                          <DropdownMenuItem key={subItem.name} asChild>
-                            <Link href={subItem.href} className="text-foreground hover:text-primary">
-                              {subItem.name}
-                            </Link>
-                          </DropdownMenuItem>
-                        ))}
+                      <DropdownMenuContent className="bg-gray-900/95 backdrop-blur-sm border-gray-700/50 rounded-xl shadow-2xl z-[60] overflow-hidden p-0 w-80">
+                        {/* SPOT Trading Option */}
+                        <Link href="/trade/spot">
+                          <div className="relative p-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 transition-all duration-300 cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-bold text-black mb-1">SPOT</h3>
+                                <p className="text-sm text-black/80 leading-tight">
+                                  Buy and sell crypto instantly at<br />
+                                  real-time market prices.
+                                </p>
+                              </div>
+                              <div className="ml-4 flex-shrink-0">
+                                <img
+                                  src="/asset/trade-spot_icon.png"
+                                  alt="Spot Trading"
+                                  className="w-12 h-12 object-contain"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+
+                        {/* OPTION Trading Option */}
+                        <Link href="/trade/options">
+                          <div className="relative p-4 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 transition-all duration-300 cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-bold text-black mb-1">OPTION</h3>
+                                <p className="text-sm text-black/80 leading-tight">
+                                  Maximize gains by predicting<br />
+                                  market moves in seconds.
+                                </p>
+                              </div>
+                              <div className="ml-4 flex-shrink-0">
+                                <img
+                                  src="/asset/trade-option_icon.png"
+                                  alt="Options Trading"
+                                  className="w-12 h-12 object-contain"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   ) : (
@@ -164,28 +200,73 @@ export default function Layout({ children }: LayoutProps) {
               <div className="space-y-2">
                 {navigation.map((item) => (
                   <div key={item.name}>
-                    <Link 
-                      href={item.href}
-                      className={`block px-3 py-2 rounded-md text-base font-medium ${
-                        isActivePath(item.href) ? "text-primary bg-dark-100" : "text-muted-foreground"
-                      }`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                    {item.submenu && (
-                      <div className="ml-4 space-y-1">
-                        {item.submenu.map((subItem) => (
-                          <Link
-                            key={subItem.name}
-                            href={subItem.href}
-                            className="block px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-primary"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            {subItem.name}
+                    {item.submenu ? (
+                      <div>
+                        <div className="text-gray-300 block px-3 py-2 text-base font-medium">
+                          {item.name}
+                        </div>
+                        <div className="mx-3 mb-2 space-y-2">
+                          {/* SPOT Trading Option - Mobile Layout */}
+                          <Link href="/trade/spot">
+                            <div
+                              className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
+                                  <p className="text-xs text-black/80 leading-tight">
+                                    Buy and sell crypto instantly at<br />
+                                    real-time market prices.
+                                  </p>
+                                </div>
+                                <div className="ml-3 flex-shrink-0">
+                                  <img
+                                    src="/asset/trade-spot_icon.png"
+                                    alt="Spot Trading"
+                                    className="w-10 h-10 object-contain"
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           </Link>
-                        ))}
+
+                          {/* OPTION Trading Option - Mobile Layout */}
+                          <Link href="/trade/options">
+                            <div
+                              className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
+                                  <p className="text-xs text-black/80 leading-tight">
+                                    Maximize gains by predicting<br />
+                                    market moves in seconds.
+                                  </p>
+                                </div>
+                                <div className="ml-3 flex-shrink-0">
+                                  <img
+                                    src="/asset/trade-option_icon.png"
+                                    alt="Options Trading"
+                                    className="w-10 h-10 object-contain"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </div>
                       </div>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={`block px-3 py-2 rounded-md text-base font-medium ${
+                          isActivePath(item.href) ? "text-primary bg-dark-100" : "text-muted-foreground"
+                        }`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {item.name}
+                      </Link>
                     )}
                   </div>
                 ))}
