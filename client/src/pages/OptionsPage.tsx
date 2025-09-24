@@ -517,53 +517,14 @@ export default function OptionsPage() {
         console.log(`🎯 IMMEDIATE EFFECT: Trading mode changed to ${finalControlType.toUpperCase()} for current user!`);
         setCurrentTradingMode(finalControlType);
 
-        // Show enhanced notification to user
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: linear-gradient(135deg, ${finalControlType === 'win' ? '#10b981, #059669' : finalControlType === 'lose' ? '#ef4444, #dc2626' : '#6b7280, #4b5563'});
-          color: white;
-          padding: 16px 24px;
-          border-radius: 12px;
-          font-weight: bold;
-          z-index: 10000;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-          border: 2px solid ${finalControlType === 'win' ? '#34d399' : finalControlType === 'lose' ? '#f87171' : '#9ca3af'};
-          animation: pulse 2s infinite;
-          min-width: 300px;
-        `;
-
-        notification.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="font-size: 24px;">${finalControlType === 'win' ? '🎯' : finalControlType === 'lose' ? '⚠️' : '⚖️'}</div>
-            <div>
-              <div style="font-size: 16px; margin-bottom: 4px;">Trading Mode Updated!</div>
-              <div style="font-size: 14px; opacity: 0.9;">${finalControlType.toUpperCase()} mode is now active</div>
-            </div>
-            <div style="font-size: 20px; animation: bounce 1s infinite;">${finalControlType === 'win' ? '✨' : finalControlType === 'lose' ? '🔥' : '⚡'}</div>
-          </div>
-        `;
-        document.body.appendChild(notification);
-
-        // Remove notification after 8 seconds (longer for better visibility)
-        setTimeout(() => {
-          if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-          }
-        }, 8000);
-
         // Store the current trading mode for immediate use in trades
         localStorage.setItem('currentTradingMode', finalControlType || 'normal');
-        console.log(`💾 Stored trading mode: ${finalControlType} for immediate application`);
       }
     }
   }, [lastMessage, user]);
 
   // Helper function to complete a trade and update balance
   const completeTrade = async (trade: ActiveTrade, won: boolean, finalPrice: number) => {
-    console.log('🎯 COMPLETE TRADE: Starting trade completion', { trade, won, finalPrice });
 
     const updatedTrade: ActiveTrade = {
       ...trade,
@@ -1952,43 +1913,6 @@ export default function OptionsPage() {
 
 
       {/* Trade Notification */}
-      {(() => {
-        console.log('🔍 OptionsPage: TradeNotification render check:', {
-          completedTrade: completedTrade ? 'Present' : 'Null',
-          completedTradeData: completedTrade ? {
-            id: completedTrade.id,
-            status: completedTrade.status,
-            amount: completedTrade.amount,
-            direction: completedTrade.direction,
-            completedAt: completedTrade.completedAt
-          } : 'No data',
-          isMobile,
-          windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'N/A'
-        });
-
-        // FORCE VISUAL INDICATOR WHEN COMPLETEDTRADE IS PRESENT
-        if (completedTrade) {
-          console.log('🚨 COMPLETEDTRADE DETECTED! Creating visual indicator...');
-          const indicator = document.createElement('div');
-          indicator.style.cssText = `
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: orange;
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            z-index: 999999;
-            font-weight: bold;
-            max-width: 300px;
-          `;
-          indicator.textContent = `COMPLETEDTRADE FOUND: ${completedTrade.status} - ${completedTrade.amount} USDT`;
-          document.body.appendChild(indicator);
-          setTimeout(() => indicator.remove(), 10000);
-        }
-
-        return null;
-      })()}
       <TradeNotification
         trade={completedTrade ? {
           id: completedTrade.id,
@@ -2003,7 +1927,6 @@ export default function OptionsPage() {
           profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15)
         } : null}
         onClose={() => {
-          console.log('🔍 OptionsPage: TradeNotification onClose called');
           setCompletedTrade(null);
           localStorage.removeItem('completedTrade');
         }}
