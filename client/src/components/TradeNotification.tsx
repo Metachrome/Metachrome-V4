@@ -433,9 +433,43 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
   const isMobile = useIsMobile();
 
+  // FORCE REAL-TIME MOBILE DETECTION - Don't rely on hook alone
+  const [currentWidth, setCurrentWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      const newWidth = window.innerWidth;
+      setCurrentWidth(newWidth);
+      console.log('🔄 RESIZE EVENT: New width:', newWidth, 'Mobile:', newWidth < 768);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      handleResize(); // Set initial value
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  // MULTIPLE MOBILE DETECTION METHODS
+  const hookMobile = isMobile;
+  const widthMobile = currentWidth < 768;
+  const forceMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const userAgentMobile = typeof navigator !== 'undefined' &&
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  // Use ANY mobile detection method
+  const shouldUseMobile = hookMobile || widthMobile || forceMobile || userAgentMobile;
+
   // EXTENSIVE DEBUG LOGGING
   console.log('🔍 TradeNotification MAIN COMPONENT RENDER:', {
-    isMobile,
+    hookMobile,
+    widthMobile,
+    forceMobile,
+    userAgentMobile,
+    shouldUseMobile,
+    currentWidth,
     windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'N/A',
     windowHeight: typeof window !== 'undefined' ? window.innerHeight : 'N/A',
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 50) + '...' : 'N/A',
@@ -451,17 +485,17 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     } : 'NULL'
   });
 
-  // Force mobile detection for debugging
-  const forceMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  console.log('🔍 Force mobile detection (width < 768):', forceMobile);
-
   // Use mobile notification for mobile devices, desktop notification for desktop
-  if (isMobile || forceMobile) {
-    console.log('📱 DECISION: Rendering MobileTradeNotification', { isMobile, forceMobile });
+  if (shouldUseMobile) {
+    console.log('📱 DECISION: Rendering MobileTradeNotification', {
+      hookMobile, widthMobile, forceMobile, userAgentMobile, shouldUseMobile
+    });
     return <MobileTradeNotification trade={trade} onClose={onClose} />;
   }
 
-  console.log('🖥️ DECISION: Rendering DesktopTradeNotification', { isMobile, forceMobile });
+  console.log('🖥️ DECISION: Rendering DesktopTradeNotification', {
+    hookMobile, widthMobile, forceMobile, userAgentMobile, shouldUseMobile
+  });
   return <DesktopTradeNotification trade={trade} onClose={onClose} />;
 }
 
