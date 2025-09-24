@@ -49,7 +49,7 @@ function forceMobileDetection() {
 // Step 3: Create test notification data
 function createTestNotification() {
   console.log('🎯 CREATING TEST NOTIFICATION:');
-  
+
   const testTrade = {
     id: 'simple-test-' + Date.now(),
     direction: 'up',
@@ -59,15 +59,16 @@ function createTestNotification() {
     finalPrice: 116946.98,
     status: 'won',
     payout: 1760,
-    profitPercentage: 10
+    profitPercentage: 10,
+    completedAt: new Date().toISOString() // ADD TIMESTAMP!
   };
-  
+
   console.log('Test trade created:', testTrade);
-  
+
   // Store in localStorage
   localStorage.setItem('completedTrade', JSON.stringify(testTrade));
-  console.log('✅ Stored in localStorage');
-  
+  console.log('✅ Stored in localStorage with timestamp:', testTrade.completedAt);
+
   return testTrade;
 }
 
@@ -162,9 +163,11 @@ window.testMobileNotification = function() {
     finalPrice: 116946.98,
     status: 'won',
     payout: 1760,
-    profitPercentage: 10
+    profitPercentage: 10,
+    completedAt: new Date().toISOString() // ADD TIMESTAMP!
   };
   localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+  console.log('✅ Test trade stored with timestamp:', testTrade.completedAt);
   window.location.reload();
 };
 
@@ -179,15 +182,30 @@ window.testLoseNotification = function() {
     finalPrice: 116941.50,
     status: 'lost',
     payout: 0,
-    profitPercentage: 10
+    profitPercentage: 10,
+    completedAt: new Date().toISOString() // ADD TIMESTAMP!
   };
   localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+  console.log('✅ Test trade stored with timestamp:', testTrade.completedAt);
   window.location.reload();
 };
 
 window.forceRefreshTest = function() {
   console.log('🔄 Force refresh with test data');
-  createTestNotification();
+  const testTrade = {
+    id: 'force-refresh-' + Date.now(),
+    direction: 'up',
+    amount: 1600,
+    entryPrice: 116944.00,
+    currentPrice: 116946.98,
+    finalPrice: 116946.98,
+    status: 'won',
+    payout: 1760,
+    profitPercentage: 10,
+    completedAt: new Date().toISOString() // ADD TIMESTAMP!
+  };
+  localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+  console.log('✅ Force refresh test trade stored with timestamp:', testTrade.completedAt);
   setTimeout(() => window.location.reload(), 1000);
 };
 
