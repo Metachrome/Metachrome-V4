@@ -52,16 +52,31 @@ export default function OptionsPage() {
     // Load completed trade from localStorage on mount
     try {
       const stored = localStorage.getItem('completedTrade');
+      console.log('🔍 LOCALSTORAGE CHECK: Raw stored data:', stored);
       if (stored) {
         const parsed = JSON.parse(stored);
+        console.log('🔍 LOCALSTORAGE CHECK: Parsed data:', parsed);
+
+        // TEMPORARILY DISABLE 45-second timeout for testing
+        console.log('🔍 LOCALSTORAGE CHECK: Returning parsed data (timeout disabled)');
+        return parsed;
+
+        // Original timeout logic (commented out for testing)
+        /*
         // Check if notification is still valid (within 45 seconds)
         const notificationTime = new Date(parsed.completedAt).getTime();
         const now = Date.now();
+        console.log('🔍 LOCALSTORAGE CHECK: Time diff:', now - notificationTime, 'ms');
         if (now - notificationTime < 45000) {
+          console.log('🔍 LOCALSTORAGE CHECK: Within 45s, returning data');
           return parsed;
         } else {
+          console.log('🔍 LOCALSTORAGE CHECK: Expired, removing data');
           localStorage.removeItem('completedTrade');
         }
+        */
+      } else {
+        console.log('🔍 LOCALSTORAGE CHECK: No stored data found');
       }
     } catch (error) {
       console.error('Error loading completed trade from localStorage:', error);
@@ -2087,11 +2102,34 @@ export default function OptionsPage() {
             id: completedTrade.id,
             status: completedTrade.status,
             amount: completedTrade.amount,
-            direction: completedTrade.direction
+            direction: completedTrade.direction,
+            completedAt: completedTrade.completedAt
           } : 'No data',
           isMobile,
           windowWidth: typeof window !== 'undefined' ? window.innerWidth : 'N/A'
         });
+
+        // FORCE VISUAL INDICATOR WHEN COMPLETEDTRADE IS PRESENT
+        if (completedTrade) {
+          console.log('🚨 COMPLETEDTRADE DETECTED! Creating visual indicator...');
+          const indicator = document.createElement('div');
+          indicator.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: orange;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 999999;
+            font-weight: bold;
+            max-width: 300px;
+          `;
+          indicator.textContent = `COMPLETEDTRADE FOUND: ${completedTrade.status} - ${completedTrade.amount} USDT`;
+          document.body.appendChild(indicator);
+          setTimeout(() => indicator.remove(), 10000);
+        }
+
         return null;
       })()}
       <TradeNotification
