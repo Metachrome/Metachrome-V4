@@ -176,6 +176,40 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
   const [isVisible, setIsVisible] = useState(true);
   const [progress, setProgress] = useState(100);
 
+  // EXTENSIVE DEBUG LOGGING FOR DESKTOP
+  console.log('🖥️ DesktopTradeNotification RENDER:', {
+    trade: trade ? 'Present' : 'Null',
+    isVisible,
+    tradeData: trade ? {
+      id: trade.id,
+      status: trade.status,
+      amount: trade.amount,
+      direction: trade.direction
+    } : 'No trade data'
+  });
+
+  // FORCE VISUAL INDICATOR WHEN TRADE IS PRESENT
+  useEffect(() => {
+    if (trade) {
+      console.log('🚨 DESKTOP NOTIFICATION: Trade data received!', trade);
+      const indicator = document.createElement('div');
+      indicator.style.cssText = `
+        position: fixed;
+        top: 150px;
+        right: 20px;
+        background: purple;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 999999;
+        font-weight: bold;
+      `;
+      indicator.textContent = `DESKTOP NOTIFICATION COMPONENT RECEIVED TRADE: ${trade.status}`;
+      document.body.appendChild(indicator);
+      setTimeout(() => indicator.remove(), 5000);
+    }
+  }, [trade]);
+
   const handleClose = () => {
     setIsVisible(false);
     setTimeout(onClose, 300); // Allow animation to complete
