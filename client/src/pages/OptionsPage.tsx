@@ -669,6 +669,22 @@ export default function OptionsPage() {
       document.body.appendChild(testIndicator);
       setTimeout(() => testIndicator.remove(), 5000);
 
+      // FORCE REACT STATE UPDATE - Try multiple approaches
+      console.log('🔄 FORCING REACT STATE UPDATE');
+
+      // Approach 1: Force re-render with setTimeout
+      setTimeout(() => {
+        console.log('🔄 DELAYED STATE UPDATE - Setting completedTrade again');
+        setCompletedTrade({ ...tradeWithTimestamp });
+      }, 100);
+
+      // Approach 2: Force component update
+      setTimeout(() => {
+        console.log('🔄 FORCING COMPONENT UPDATE');
+        // Force a state change that will trigger re-render
+        setActiveTrades(prev => [...prev]);
+      }, 200);
+
       // MOBILE FIX: Show custom modal with exact design
       console.log('📱 MOBILE CHECK: Window width:', window.innerWidth, 'Is mobile:', window.innerWidth < 768);
       console.log('📱 MOBILE CHECK: User agent:', navigator.userAgent);
@@ -1066,6 +1082,35 @@ export default function OptionsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* DEBUG: Manual Test Button */}
+          <div className="px-4 py-2">
+            <div className="bg-red-900 border border-red-500 rounded-lg p-3 mb-2">
+              <h3 className="text-red-300 font-bold text-sm mb-2">🔧 DEBUG: Manual Notification Test</h3>
+              <button
+                onClick={() => {
+                  console.log('🧪 MANUAL TEST: Creating test notification');
+                  const testTrade = {
+                    id: 'test-' + Date.now(),
+                    direction: 'up' as const,
+                    amount: 100,
+                    entryPrice: 50000,
+                    currentPrice: 51000,
+                    status: 'won' as const,
+                    payout: 110,
+                    profitPercentage: 10,
+                    completedAt: new Date().toISOString()
+                  };
+                  console.log('🧪 MANUAL TEST: Setting test trade:', testTrade);
+                  setCompletedTrade(testTrade);
+                  localStorage.setItem('completedTrade', JSON.stringify(testTrade));
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-bold w-full"
+              >
+                🧪 Force Test Notification
+              </button>
             </div>
           </div>
 
