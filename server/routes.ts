@@ -2123,17 +2123,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user balances (real data)
   app.get("/api/balances", async (req, res) => {
     try {
+      console.log('💰 [/api/balances] Request received');
+      console.log('💰 [/api/balances] Session:', req.session);
+      console.log('💰 [/api/balances] Session user:', req.session?.user);
+      console.log('💰 [/api/balances] Headers:', req.headers);
+
       // Get user from session
       const user = req.session.user;
       if (!user) {
+        console.log('❌ [/api/balances] No user in session - authentication required');
         return res.status(401).json({ message: "Authentication required" });
       }
 
+      console.log('💰 [/api/balances] User authenticated:', user.id, user.username);
+
       // Get real user balances from database
       const balances = await storage.getUserBalances(user.id);
+      console.log('💰 [/api/balances] Balances from DB:', balances);
 
       // If user has no balances, create default ones
       if (!balances || balances.length === 0) {
+        console.log('⚠️ [/api/balances] No balances found, creating defaults');
         const defaultBalances = [
           { userId: user.id, symbol: 'USDT', available: '1000.00', locked: '0.00' },
           { userId: user.id, symbol: 'BTC', available: '0.0', locked: '0.0' },
@@ -2145,12 +2155,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const newBalances = await storage.getUserBalances(user.id);
+        console.log('✅ [/api/balances] Created default balances:', newBalances);
         return res.json(newBalances);
       }
 
+      console.log('✅ [/api/balances] Returning balances:', balances);
       res.json(balances);
     } catch (error) {
-      console.error("Error fetching balances:", error);
+      console.error("❌ [/api/balances] Error fetching balances:", error);
       res.status(500).json({ message: "Failed to fetch balances" });
     }
   });

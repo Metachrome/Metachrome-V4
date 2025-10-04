@@ -246,13 +246,36 @@ export default function WalletPage() {
     return `METACHROME DEPOSIT ADDRESS\n${network.network}\n${address}\n\nCOPY THIS ADDRESS TO YOUR WALLET`;
   };
 
-  // Fetch real user balances
+  // Fetch real user balances - Railway uses Express.js session-based endpoint
   const { data: userBalances, isLoading: balancesLoading } = useQuery({
     queryKey: ["/api/balances"],
     enabled: !!user,
     refetchInterval: 5000, // Refresh every 5 seconds
     staleTime: 0, // Always consider data stale
     cacheTime: 0, // Don't cache data
+    queryFn: async () => {
+      console.log('🔍 WALLET: Fetching balance from /api/balances for user:', user?.id, user?.username);
+      console.log('🔍 WALLET: Auth token:', localStorage.getItem('authToken')?.substring(0, 30) + '...');
+
+      const response = await fetch('/api/balances', {
+        credentials: 'include', // Important: send session cookies
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      console.log('🔍 WALLET: Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ WALLET: Balance API failed:', response.status, errorText);
+        throw new Error(`Failed to fetch balance: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('🔍 WALLET: Balance API response:', data);
+      return data;
+    },
   });
 
   // Fetch real market data for price calculations
