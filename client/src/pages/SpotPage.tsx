@@ -182,7 +182,7 @@ export default function SpotPage() {
     }
   }, [lastMessage, queryClient, user?.id]);
 
-  // Fetch Binance price data - ONLY FOR 24h STATS (NOT FOR CURRENT PRICE)
+  // Fetch Binance price data - PRIMARY SOURCE (TradingView widget can't provide real prices due to CORS)
   const fetchBinancePrice = async () => {
     try {
       const response = await fetch('/api/market-data');
@@ -192,15 +192,18 @@ export default function SpotPage() {
       if (Array.isArray(data)) {
         const btcData = data.find((item: any) => item.symbol === selectedSymbol);
         if (btcData) {
-          // ONLY update price change percentage, NOT the current price
-          // Current price comes from TradingView only!
-          setPriceChange(btcData.priceChange24h);
+          const price = parseFloat(btcData.price);
 
-          // DO NOT update currentPrice here - TradingView is the only source
-          // setRealTimePrice(btcData.price); // DISABLED
-          // setCurrentPrice(parseFloat(btcData.price)); // DISABLED
-          // if (!buyPrice) setBuyPrice(btcData.price); // DISABLED
-          // if (!sellPrice) setSellPrice(btcData.price); // DISABLED
+          // Update ALL price states from Binance API (single source of truth)
+          setRealTimePrice(btcData.price);
+          setPriceChange(btcData.priceChange24h);
+          setCurrentPrice(price);
+
+          // Update form prices if not manually set
+          if (!buyPrice) setBuyPrice(btcData.price);
+          if (!sellPrice) setSellPrice(btcData.price);
+
+          console.log('📊 Binance price update (PRIMARY SOURCE):', price.toFixed(2));
         }
       } else {
         console.warn('Market data is not an array:', data);
@@ -333,19 +336,12 @@ export default function SpotPage() {
     return (price * amount).toFixed(2);
   };
 
-  // Handle price updates from TradingView widget - PRIMARY PRICE SOURCE
+  // Handle price updates from TradingView widget - DISABLED (uses mock data, not real prices)
   const handlePriceUpdate = (price: number) => {
-    console.log('📊 TradingView price update (PRIMARY SOURCE):', price);
-
-    // Set current price for all panels
-    setCurrentPrice(price);
-
-    // Update real-time price display (used in panels)
-    setRealTimePrice(price.toFixed(2));
-
-    // Update form prices if not manually set
-    if (!buyPrice) setBuyPrice(price.toFixed(2));
-    if (!sellPrice) setSellPrice(price.toFixed(2));
+    // TradingView widget can't provide real prices due to CORS restrictions
+    // It only provides mock/simulated prices
+    // Real prices come from Binance API instead
+    console.log('📊 TradingView price update ignored (mock data):', price);
   };
 
   // Sync turnover with price/amount changes
@@ -465,12 +461,11 @@ export default function SpotPage() {
     return () => clearInterval(interval);
   }, [selectedSymbol]);
 
-  // Update current price from real market data - DISABLED (TradingView is the only source)
+  // Update current price from real market data - RE-ENABLED (Binance is the primary source)
   useEffect(() => {
     if (realPrice > 0 && !realTimePrice) {
-      // DO NOT update currentPrice from market data - TradingView is the only source
-      // setCurrentPrice(realPrice); // DISABLED
-      console.log('📈 Market data price ignored - using TradingView only');
+      setCurrentPrice(realPrice);
+      console.log('📈 Real Price Update:', realPrice.toFixed(2));
     }
   }, [realPrice, realTimePrice]);
 

@@ -210,20 +210,32 @@ export default function OptionsPage() {
   const [orderBookPrice, setOrderBookPrice] = useState<number>(166373.87); // Separate state for slower order book updates
   const [orderBookData, setOrderBookData] = useState<{sellOrders: any[], buyOrders: any[]}>({sellOrders: [], buyOrders: []}); // Cache order book data
 
-  // Fetch Binance price data - ONLY FOR 24h STATS (NOT FOR CURRENT PRICE)
+  // Fetch Binance price data - PRIMARY SOURCE (TradingView widget can't provide real prices due to CORS)
   const fetchBinancePrice = async () => {
     try {
       const response = await fetch('/api/market-data');
       const data = await response.json();
       const btcData = data.find((item: any) => item.symbol === 'BTCUSDT');
       if (btcData) {
-        // ONLY update price change percentage, NOT the current price
-        // Current price comes from TradingView only!
-        setPriceChange(btcData.priceChange24h);
+        const price = parseFloat(btcData.price);
 
-        // DO NOT update currentPrice here - TradingView is the only source
-        // setCurrentPrice(parseFloat(btcData.price)); // DISABLED
-        // setRealTimePrice(btcData.price); // DISABLED
+        // Update ALL price states from Binance API (single source of truth)
+        setCurrentPrice(price);
+        setRealTimePrice(btcData.price);
+        setPriceChange(btcData.priceChange24h);
+        setOrderBookPrice(price);
+
+        // Update price history for trade calculations
+        priceHistoryRef.current.push(price);
+        if (priceHistoryRef.current.length > 1000) {
+          priceHistoryRef.current = priceHistoryRef.current.slice(-1000);
+        }
+
+        // Generate new order book data based on current price
+        const newOrderBookData = generateOrderBookData(price);
+        setOrderBookData(newOrderBookData);
+
+        console.log('📊 Binance price update (PRIMARY SOURCE):', price.toFixed(2));
       }
     } catch (error) {
       console.error('Error fetching Binance price:', error);
@@ -244,28 +256,12 @@ export default function OptionsPage() {
     }
   };
 
-  // Handle price updates from TradingView widget - PRIMARY PRICE SOURCE
+  // Handle price updates from TradingView widget - DISABLED (uses mock data, not real prices)
   const handlePriceUpdate = (price: number) => {
-    console.log('📊 TradingView price update (PRIMARY SOURCE):', price);
-
-    // Set current price for all panels
-    setCurrentPrice(price);
-
-    // Update real-time price display (used in panels)
-    setRealTimePrice(price.toFixed(2));
-
-    // Update order book price (for left panel)
-    setOrderBookPrice(price);
-
-    // Update price history for trade calculations
-    priceHistoryRef.current.push(price);
-    if (priceHistoryRef.current.length > 1000) {
-      priceHistoryRef.current = priceHistoryRef.current.slice(-1000);
-    }
-
-    // Generate new order book data based on TradingView price
-    const newOrderBookData = generateOrderBookData(price);
-    setOrderBookData(newOrderBookData);
+    // TradingView widget can't provide real prices due to CORS restrictions
+    // It only provides mock/simulated prices
+    // Real prices come from Binance API instead
+    console.log('📊 TradingView price update ignored (mock data):', price);
   };
 
   // Generate dynamic order book data based on current price
@@ -403,12 +399,23 @@ export default function OptionsPage() {
     updatePriceDisplay();
   }, [realTimePrice, priceChange]);
 
-  // Update current price from real market data - DISABLED (TradingView is the only source)
+  // Update current price from real market data - RE-ENABLED (Binance is the primary source)
   useEffect(() => {
     if (realPrice > 0 && !realTimePrice) {
-      // DO NOT update currentPrice from market data - TradingView is the only source
-      // setCurrentPrice(realPrice); // DISABLED
-      console.log('📈 Market data price ignored - using TradingView only');
+      setCurrentPrice(realPrice);
+      setOrderBookPrice(realPrice);
+
+      // Keep price history for trade calculations
+      priceHistoryRef.current.push(realPrice);
+      if (priceHistoryRef.current.length > 1000) {
+        priceHistoryRef.current = priceHistoryRef.current.slice(-1000);
+      }
+
+      // Generate new order book data
+      const newOrderBookData = generateOrderBookData(realPrice);
+      setOrderBookData(newOrderBookData);
+
+      console.log('📈 Real Price Update:', realPrice.toFixed(2));
     }
   }, [realPrice, realTimePrice]);
 
@@ -427,49 +434,42 @@ export default function OptionsPage() {
     }
   }, [connected, subscribe, sendMessage, user?.id]);
 
-  // Fallback polling for Vercel deployment - DISABLED (TradingView is the only source)
+  // Fallback polling for Vercel deployment (re-enabled with Binance as primary source)
   useEffect(() => {
     const isVercel = window.location.hostname.includes('vercel.app');
 
     if (isVercel || !connected) {
-      console.log('🔄 Polling disabled - TradingView is the only price source');
-
-      const fetchPriceData = async () => {
-        try {
-          const response = await fetch('/api/market-data');
-          const data = await response.json();
-          const btcData = data.find((item: any) => item.symbol === 'BTCUSDT');
-          if (btcData) {
-            // ONLY update 24h stats, NOT current price
-            // Current price comes from TradingView only!
-            setPriceChange(btcData.priceChange24h);
-
-            // DO NOT update currentPrice - TradingView is the only source
-            // const price = parseFloat(btcData.price);
-            // setCurrentPrice(price); // DISABLED
-            console.log('📈 Stats Update (price from TradingView only)');
-          }
-        } catch (error) {
-          console.error('Error fetching price data:', error);
-        }
-      };
+      console.log('🔄 Using Binance API polling for price updates');
 
       // Initial fetch
-      fetchPriceData();
+      fetchBinancePrice();
 
-      // Set up polling interval for stats only
-      const interval = setInterval(fetchPriceData, 3000);
+      // Set up polling interval
+      const interval = setInterval(fetchBinancePrice, 3000);
       return () => clearInterval(interval);
     }
   }, [connected]);
 
-  // Handle WebSocket price updates - DISABLED (TradingView is the only source)
+  // Handle WebSocket price updates - RE-ENABLED (Binance is the primary source)
   useEffect(() => {
     if (lastMessage?.type === 'price_update' && lastMessage.data?.symbol === 'BTCUSDT') {
-      // DO NOT update currentPrice from WebSocket - TradingView is the only source
-      // const price = parseFloat(lastMessage.data.price);
-      // setCurrentPrice(price); // DISABLED
-      console.log('📈 WebSocket price update ignored - using TradingView only');
+      const price = parseFloat(lastMessage.data.price);
+      if (price > 0) {
+        setCurrentPrice(price);
+        setRealTimePrice(price.toFixed(2));
+        setOrderBookPrice(price);
+
+        priceHistoryRef.current.push(price);
+        if (priceHistoryRef.current.length > 1000) {
+          priceHistoryRef.current = priceHistoryRef.current.slice(-1000);
+        }
+
+        // Generate new order book data
+        const newOrderBookData = generateOrderBookData(price);
+        setOrderBookData(newOrderBookData);
+
+        console.log('📈 WebSocket Price Update:', price.toFixed(2));
+      }
     }
   }, [lastMessage]);
 
