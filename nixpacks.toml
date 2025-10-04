@@ -2,7 +2,9 @@
 nixPkgs = ["nodejs-20_x"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = [
+  "npm install --legacy-peer-deps --include=optional"
+]
 
 [phases.build]
 cmds = ["npm run build"]

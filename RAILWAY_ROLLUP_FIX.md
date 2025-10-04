@@ -19,34 +19,34 @@ The issue occurs because:
 
 **The fix is simple: Add Rollup and its Linux binary as direct dependencies instead of relying on optional dependencies.**
 
-### 1. Updated `package.json` - Added Rollup as Direct Dependencies
+### 1. Updated `package.json` - Added Rollup Linux Binary as Optional Dependency
 
-Added these two packages to the `dependencies` section:
+Added the Linux-specific Rollup binary to `optionalDependencies`:
 
 ```json
-"dependencies": {
-  ...
-  "@rollup/rollup-linux-x64-gnu": "^4.9.0",
-  "rollup": "^4.9.0",
-  ...
+"optionalDependencies": {
+  "@rollup/rollup-linux-x64-gnu": "^4.9.0"
 }
 ```
 
 **Why this works:**
-- Instead of relying on npm's buggy optional dependency resolution
-- We explicitly install the Linux-specific Rollup binary
-- This ensures the binary is always available during the build process on Railway's Linux containers
+- The Linux binary is marked as optional, so it won't fail on Windows/Mac during local development
+- Railway's Linux environment will install it automatically
+- This ensures the binary is available during the build process on Railway's Linux containers
+- Vite already includes Rollup as a dependency, so we don't need to add it separately
 
 ### 2. Updated `nixpacks.toml`
 
-Simplified the Railway build configuration:
+Updated the Railway build configuration to explicitly install optional dependencies:
 
 ```toml
 [phases.setup]
 nixPkgs = ["nodejs-20_x"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = [
+  "npm install --legacy-peer-deps --include=optional"
+]
 
 [phases.build]
 cmds = ["npm run build"]
@@ -59,8 +59,8 @@ NODE_ENV = "production"
 ```
 
 **Changes:**
-- Removed complex install flags
-- Use simple `npm install` which now installs Rollup correctly
+- Added `--include=optional` flag to ensure optional dependencies are installed
+- Kept `--legacy-peer-deps` for compatibility
 - Explicit build phase to run Vite
 
 ### 3. Updated `.npmrc`
@@ -86,32 +86,35 @@ registry=https://registry.npmjs.org/
 
 1. **Setup Phase**: Ensures Node.js 20.x is available
 2. **Install Phase**:
-   - `npm install` - Installs all dependencies including the explicit Rollup binaries
-   - Rollup and `@rollup/rollup-linux-x64-gnu` are now direct dependencies, so they're always installed
+   - `npm install --legacy-peer-deps --include=optional` - Installs all dependencies
+   - The `--include=optional` flag ensures `@rollup/rollup-linux-x64-gnu` is installed on Linux
+   - On Windows/Mac, the Linux binary is skipped (won't cause errors)
 3. **Build Phase**:
    - Runs `npm run build` which executes `vite build`
-   - Vite can now find Rollup and its Linux binaries
+   - Vite can now find Rollup and its Linux binaries on Railway's Linux environment
 4. **Start Phase**: Runs the production server with `node working-server.js`
 
 ## Why This Solution Works
 
-- **No reliance on optional dependencies**: We explicitly declare what we need
-- **Platform-specific binary included**: The Linux x64 binary is guaranteed to be present
-- **Avoids npm bug**: We don't rely on npm's optional dependency resolution
-- **Simple and reliable**: Standard npm install with explicit dependencies
+- **Optional dependency approach**: The Linux binary is optional, so it doesn't break local development on Windows/Mac
+- **Explicit installation on Railway**: The `--include=optional` flag ensures it's installed on Linux
+- **Platform-specific binary included**: The Linux x64 binary is guaranteed to be present on Railway
+- **Works across platforms**: Developers on any OS can work on the project
+- **Simple and reliable**: Standard npm install with explicit optional dependency handling
 
 ## Deployment Steps
 
 1. **Commit the changes:**
    ```bash
-   git add package.json nixpacks.toml .npmrc RAILWAY_ROLLUP_FIX.md
-   git commit -m "Fix Railway deployment - Add Rollup as direct dependency"
+   git add package.json package-lock.json nixpacks.toml .npmrc RAILWAY_ROLLUP_FIX.md
+   git commit -m "Fix Railway deployment - Add Rollup Linux binary as optional dependency"
    git push
    ```
 
 2. **Railway will automatically:**
    - Detect the `nixpacks.toml` configuration
-   - Run `npm install` which now includes Rollup and its Linux binary
+   - Run `npm install --legacy-peer-deps --include=optional`
+   - Install the `@rollup/rollup-linux-x64-gnu` binary on Linux
    - Run the Vite build process successfully
    - Start the production server
 
@@ -167,28 +170,35 @@ If you still encounter issues:
 
 ## Files Modified
 
-- ✅ `package.json` - Added Rollup and Linux binary as direct dependencies
-- ✅ `nixpacks.toml` - Simplified build configuration
+- ✅ `package.json` - Added Rollup Linux binary as optional dependency
+- ✅ `package-lock.json` - Regenerated to include optional dependency
+- ✅ `nixpacks.toml` - Updated to install optional dependencies
 - ✅ `.npmrc` - Cleaned up deprecated flags
 
 ## Key Changes Summary
 
 **package.json:**
 ```diff
-"dependencies": {
-+  "@rollup/rollup-linux-x64-gnu": "^4.9.0",
-+  "rollup": "^4.9.0",
-}
++ "optionalDependencies": {
++   "@rollup/rollup-linux-x64-gnu": "^4.9.0"
++ }
 ```
 
 **nixpacks.toml:**
 ```diff
 [phases.install]
 - cmds = ["npm install --only=production --legacy-peer-deps"]
-+ cmds = ["npm install"]
++ cmds = [
++   "npm install --legacy-peer-deps --include=optional"
++ ]
 
 + [phases.build]
 + cmds = ["npm run build"]
+```
+
+**package-lock.json:**
+```
+Regenerated to include the optional dependency
 ```
 
 ## Status
