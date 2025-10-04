@@ -4,7 +4,8 @@ import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import { Button } from "../components/ui/button";
-import TradingViewWidget from "../components/TradingViewWidget";
+import LightweightChart from "../components/LightweightChart";
+import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useToast } from "../hooks/use-toast";
@@ -24,21 +25,28 @@ interface SpotOrder {
   createdAt: string;
 }
 
-export default function SpotPage() {
+// Inner component that uses price context
+function SpotPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
   const isMobile = useIsMobile();
 
+  // Use price context for synchronized price data
+  const { priceData } = usePrice();
+  const { changeText, changeColor, isPositive } = usePriceChange();
+  const { high, low, volume } = use24hStats();
+
   // Debug logging
   useEffect(() => {
     console.log('🔍 SpotPage mounted');
     console.log('🔍 User:', user);
+    console.log('💰 SpotPage - Price from context:', priceData?.price);
     return () => {
       console.log('🔍 SpotPage unmounted');
     };
-  }, [user]);
+  }, [user, priceData]);
 
   // UI State
   const [searchTerm, setSearchTerm] = useState("");
@@ -568,18 +576,11 @@ export default function SpotPage() {
         {/* Mobile Chart - Vertical/Tall Layout */}
         <div className="bg-[#10121E] relative w-full" style={{ height: '65vh', minHeight: '550px' }}>
           <div className="w-full h-full">
-            <TradingViewWidget
-              type="chart"
-              symbol="BINANCE:BTCUSDT"
+            <LightweightChart
+              symbol="BTCUSDT"
+              interval="1m"
               height="100%"
-              interval="1"
-              theme="dark"
-              style="1"
-              locale="en"
-              timezone="Etc/UTC"
-              allow_symbol_change={true}
-              container_id="spot_mobile_chart"
-              onPriceUpdate={handlePriceUpdate}
+              containerId="spot_mobile_chart"
             />
           </div>
         </div>
@@ -913,19 +914,13 @@ export default function SpotPage() {
             </div>
           </div>
 
-          {/* Chart Area - TradingView Widget */}
+          {/* Chart Area - Lightweight Charts with Binance Data */}
           <div className="min-h-[500px] flex-1 bg-[#10121E] p-2">
-            <TradingViewWidget
-              type="chart"
-              symbol="BINANCE:BTCUSDT"
-              height="100%"
-              interval="1"
-              theme="dark"
-              style="1"
-              locale="en"
-              timezone="Etc/UTC"
-              allow_symbol_change={true}
-              container_id="spot_tradingview_widget"
+            <LightweightChart
+              symbol="BTCUSDT"
+              interval="1m"
+              height={500}
+              containerId="spot_desktop_chart"
             />
           </div>
 
@@ -1469,5 +1464,14 @@ export default function SpotPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Wrapper component with PriceProvider for synchronized price data
+export default function SpotPage() {
+  return (
+    <PriceProvider symbol="BTCUSDT" updateInterval={2000}>
+      <SpotPageContent />
+    </PriceProvider>
   );
 }

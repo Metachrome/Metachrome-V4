@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
-import TradingViewWidget from "../components/TradingViewWidget";
+import LightweightChart from "../components/LightweightChart";
+import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import TradeNotification from "../components/TradeNotification";
 import TradeOverlay from "../components/TradeOverlay";
 import { playTradeSound } from "../utils/sounds";
@@ -28,11 +29,17 @@ interface ActiveTrade {
   payout?: number;
 }
 
-export default function OptionsPage() {
+// Inner component that uses price context
+function OptionsPageContent() {
   const { user } = useAuth();
   const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+
+  // Use price context for synchronized price data
+  const { priceData } = usePrice();
+  const { changeText, changeColor, isPositive } = usePriceChange();
+  const { high, low, volume } = use24hStats();
 
   // Debug user data
   console.log('🔍 OPTIONS PAGE - User data:', {
@@ -41,6 +48,9 @@ export default function OptionsPage() {
     verificationStatus: user?.verificationStatus,
     username: user?.username
   });
+
+  // Debug price data from context
+  console.log('💰 OPTIONS PAGE - Price from context:', priceData?.price);
 
 
 
@@ -913,21 +923,14 @@ export default function OptionsPage() {
           <div className="bg-[#10121E] relative w-full" style={{ height: '65vh', minHeight: '550px' }}>
             <TradeOverlay
               trades={activeTrades}
-              currentPrice={currentPrice}
+              currentPrice={priceData?.price || currentPrice}
             />
             <div className="w-full h-full">
-              <TradingViewWidget
-                type="chart"
-                symbol="BINANCE:BTCUSDT"
+              <LightweightChart
+                symbol="BTCUSDT"
+                interval="1m"
                 height="100%"
-                interval="1"
-                theme="dark"
-                style="1"
-                locale="en"
-                timezone="Etc/UTC"
-                allow_symbol_change={true}
-                container_id="options_mobile_chart"
-                onPriceUpdate={handlePriceUpdate}
+                containerId="options_mobile_chart"
               />
             </div>
           </div>
@@ -1345,27 +1348,17 @@ export default function OptionsPage() {
             </div>
           </div>
 
-          {/* Chart Area - TradingView Widget */}
+          {/* Chart Area - Lightweight Charts with Binance Data */}
           <div className="h-[400px] relative bg-[#10121E] p-2">
             <TradeOverlay
               trades={activeTrades}
-              currentPrice={currentPrice}
+              currentPrice={priceData?.price || currentPrice}
             />
-            <TradingViewWidget
-              type="chart"
-              symbol="BINANCE:BTCUSDT"
-              height="100%"
-              interval="1"
-              theme="dark"
-              style="1"
-              locale="en"
-              timezone="Etc/UTC"
-              allow_symbol_change={true}
-              container_id="options_tradingview_widget"
-              onPriceUpdate={handlePriceUpdate}
-              onSymbolChange={(newSymbol) => {
-                console.log('Symbol changed to:', newSymbol);
-              }}
+            <LightweightChart
+              symbol="BTCUSDT"
+              interval="1m"
+              height={400}
+              containerId="options_desktop_chart"
             />
           </div>
 
@@ -2078,4 +2071,13 @@ export default function OptionsPage() {
       </div>
     );
   }
+}
+
+// Wrapper component with PriceProvider for synchronized price data
+export default function OptionsPage() {
+  return (
+    <PriceProvider symbol="BTCUSDT" updateInterval={2000}>
+      <OptionsPageContent />
+    </PriceProvider>
+  );
 }

@@ -6877,7 +6877,110 @@ app.post('/api/auth/refresh', async (req, res) => {
   }
 });
 
-// ===== MARKET DATA ENDPOINTS =====
+// ===== BINANCE DATA ENDPOINTS (SINGLE SOURCE OF TRUTH) =====
+
+// Get Binance Klines (Candlestick Data) - For Chart
+app.get('/api/binance/klines', async (req, res) => {
+  try {
+    const symbol = req.query.symbol || 'BTCUSDT';
+    const interval = req.query.interval || '1m';
+    const limit = parseInt(req.query.limit || '500');
+
+    console.log('📊 [Binance Klines] Request:', { symbol, interval, limit });
+
+    // Validate parameters
+    const validIntervals = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'];
+    if (!validIntervals.includes(interval)) {
+      return res.status(400).json({ error: 'Invalid interval' });
+    }
+
+    if (limit < 1 || limit > 1000) {
+      return res.status(400).json({ error: 'Limit must be between 1 and 1000' });
+    }
+
+    // Fetch from Binance API
+    const binanceUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+    const response = await fetch(binanceUrl);
+
+    if (!response.ok) {
+      console.error('❌ [Binance Klines] Binance API error:', response.status);
+      return res.status(response.status).json({ error: 'Binance API error' });
+    }
+
+    const data = await response.json();
+
+    // Transform to Lightweight Charts format
+    const klines = data.map(candle => ({
+      time: Math.floor(candle[0] / 1000), // Convert ms to seconds
+      open: parseFloat(candle[1]),
+      high: parseFloat(candle[2]),
+      low: parseFloat(candle[3]),
+      close: parseFloat(candle[4]),
+      volume: parseFloat(candle[5])
+    }));
+
+    console.log('✅ [Binance Klines] Fetched', klines.length, 'candles');
+    console.log('📊 [Binance Klines] Latest:', klines[klines.length - 1]);
+
+    res.json({
+      success: true,
+      symbol,
+      interval,
+      data: klines
+    });
+
+  } catch (error) {
+    console.error('❌ [Binance Klines] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch klines data' });
+  }
+});
+
+// Get Binance Real-Time Price - SINGLE SOURCE OF TRUTH
+app.get('/api/binance/price', async (req, res) => {
+  try {
+    const symbol = req.query.symbol || 'BTCUSDT';
+
+    console.log('💰 [Binance Price] Request for:', symbol);
+
+    // Fetch from Binance 24hr Ticker API
+    const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`;
+    const response = await fetch(binanceUrl);
+
+    if (!response.ok) {
+      console.error('❌ [Binance Price] Binance API error:', response.status);
+      return res.status(response.status).json({ error: 'Binance API error' });
+    }
+
+    const data = await response.json();
+
+    // Transform to our format
+    const priceData = {
+      symbol: data.symbol,
+      price: parseFloat(data.lastPrice),
+      priceChange24h: parseFloat(data.priceChange),
+      priceChangePercent24h: parseFloat(data.priceChangePercent),
+      high24h: parseFloat(data.highPrice),
+      low24h: parseFloat(data.lowPrice),
+      volume24h: parseFloat(data.volume),
+      quoteVolume24h: parseFloat(data.quoteVolume),
+      openPrice: parseFloat(data.openPrice),
+      timestamp: Date.now()
+    };
+
+    console.log('✅ [Binance Price] Current:', priceData.price, 'Change:', priceData.priceChangePercent24h + '%');
+
+    res.json({
+      success: true,
+      data: priceData
+    });
+
+  } catch (error) {
+    console.error('❌ [Binance Price] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch price data' });
+  }
+});
+
+// ===== MARKET DATA ENDPOINTS (LEGACY - WILL BE DEPRECATED) =====
 
 // Get all market data
 app.get('/api/market-data', async (req, res) => {
