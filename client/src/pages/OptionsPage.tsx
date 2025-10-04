@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
-import LightweightChart from "../components/LightweightChart";
+import TradingViewWidget from "../components/TradingViewWidget";
 import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import TradeNotification from "../components/TradeNotification";
 import TradeOverlay from "../components/TradeOverlay";
@@ -222,65 +222,42 @@ function OptionsPageContent() {
     };
   }, []);
 
-  // Real-time price state
-  const [realTimePrice, setRealTimePrice] = useState<string>('0.00');
-  const [priceChange, setPriceChange] = useState<string>('0.00%');
-  const [orderBookPrice, setOrderBookPrice] = useState<number>(166373.87); // Separate state for slower order book updates
+  // Real-time price state - NOW USING PRICE CONTEXT (SINGLE SOURCE OF TRUTH)
+  // REMOVED local state - using priceData from context instead
+  // const [realTimePrice, setRealTimePrice] = useState<string>('0.00');
+  // const [priceChange, setPriceChange] = useState<string>('0.00%');
+  // const [orderBookPrice, setOrderBookPrice] = useState<number>(166373.87);
+
+  // Use price from context - ALL components will show SAME price
+  const realTimePrice = priceData?.price.toFixed(2) || '0.00';
+  const orderBookPrice = priceData?.price || 166373.87;
+
   const [orderBookData, setOrderBookData] = useState<{sellOrders: any[], buyOrders: any[]}>({sellOrders: [], buyOrders: []}); // Cache order book data
 
-  // Fetch Binance price data - PRIMARY SOURCE (TradingView widget can't provide real prices due to CORS)
-  const fetchBinancePrice = async () => {
-    try {
-      const response = await fetch('/api/market-data');
-      const data = await response.json();
-      const btcData = data.find((item: any) => item.symbol === 'BTCUSDT');
-      if (btcData) {
-        const price = parseFloat(btcData.price);
+  // REMOVED: fetchBinancePrice - Now using PriceContext instead
+  // Price updates are handled by PriceContext automatically
 
-        // Update ALL price states from Binance API (single source of truth)
-        setCurrentPrice(price);
-        setRealTimePrice(btcData.price);
-        setPriceChange(btcData.priceChange24h);
-        setOrderBookPrice(price);
+  // Update order book and price history when price changes from context
+  useEffect(() => {
+    if (priceData?.price) {
+      const price = priceData.price;
 
-        // Update price history for trade calculations
-        priceHistoryRef.current.push(price);
-        if (priceHistoryRef.current.length > 1000) {
-          priceHistoryRef.current = priceHistoryRef.current.slice(-1000);
-        }
-
-        // Generate new order book data based on current price
-        const newOrderBookData = generateOrderBookData(price);
-        setOrderBookData(newOrderBookData);
-
-        console.log('📊 Binance price update (PRIMARY SOURCE):', price.toFixed(2));
+      // Update price history for trade calculations
+      priceHistoryRef.current.push(price);
+      if (priceHistoryRef.current.length > 1000) {
+        priceHistoryRef.current = priceHistoryRef.current.slice(-1000);
       }
-    } catch (error) {
-      console.error('Error fetching Binance price:', error);
-    }
-  };
 
-  // Update price display in left panel
-  const updatePriceDisplay = () => {
-    const priceElement = document.querySelector('.price-display');
-    const changeElement = document.querySelector('.price-change');
+      // Generate new order book data based on current price
+      const newOrderBookData = generateOrderBookData(price);
+      setOrderBookData(newOrderBookData);
 
-    if (priceElement) {
-      priceElement.textContent = `$${realTimePrice}`;
+      console.log('📊 Price update from context:', price.toFixed(2));
     }
-    if (changeElement) {
-      changeElement.textContent = priceChange;
-      changeElement.className = `price-change ${priceChange.startsWith('+') ? 'text-green-500' : 'text-red-500'}`;
-    }
-  };
+  }, [priceData?.price]); // Re-run when price changes
 
-  // Handle price updates from TradingView widget - DISABLED (uses mock data, not real prices)
-  const handlePriceUpdate = (price: number) => {
-    // TradingView widget can't provide real prices due to CORS restrictions
-    // It only provides mock/simulated prices
-    // Real prices come from Binance API instead
-    console.log('📊 TradingView price update ignored (mock data):', price);
-  };
+  // REMOVED: updatePriceDisplay - Price display is now handled by React rendering with priceData from context
+  // REMOVED: handlePriceUpdate - Not needed anymore, price comes from PriceContext
 
   // Generate dynamic order book data based on current price
   const generateOrderBookData = (basePrice: number) => {

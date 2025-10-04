@@ -24,6 +24,7 @@ import ProfilePage from "./pages/ProfilePage";
 import TransactionHistory from "./pages/TransactionHistory";
 import AdminTransactionsPage from "./pages/AdminTransactionsPage";
 import SuperAdminTestPage from "./pages/SuperAdminTestPage";
+import TestPriceSyncPage from "./pages/TestPriceSyncPage";
 import NotFound from "./pages/not-found";
 import { ProtectedAdminRoute } from "./components/ProtectedAdminRoute";
 import { ProtectedUserRoute } from "./components/ProtectedUserRoute";
@@ -75,6 +76,7 @@ function Router() {
           </ProtectedUserRoute>
         </Route>
         <Route path="/support" component={SupportPage} />
+        <Route path="/test-price-sync" component={TestPriceSyncPage} />
         <Route path="/login" component={UserLogin} />
         <Route path="/signup" component={SignupPage} />
         <Route path="/admin/login" component={AdminLogin} />
