@@ -3,6 +3,7 @@ import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import TradingViewWidget from "../components/TradingViewWidget";
+import LightweightChart from "../components/LightweightChart";
 import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import TradeNotification from "../components/TradeNotification";
 import TradeOverlay from "../components/TradeOverlay";
@@ -372,7 +373,7 @@ function OptionsPageContent() {
   useEffect(() => {
     const updateOrderBook = () => {
       const latestPrice = safeCurrentPrice || parseFloat(realTimePrice) || 166373.87;
-      setOrderBookPrice(latestPrice);
+      // REMOVED: setOrderBookPrice - now using orderBookPrice from priceData
 
       // Generate new order book data
       const newOrderBookData = generateOrderBookData(latestPrice);
@@ -394,7 +395,7 @@ function OptionsPageContent() {
   useEffect(() => {
     if (realPrice > 0 && !realTimePrice) {
       setCurrentPrice(realPrice);
-      setOrderBookPrice(realPrice);
+      // REMOVED: setOrderBookPrice - now using orderBookPrice from priceData
 
       // Keep price history for trade calculations
       priceHistoryRef.current.push(realPrice);
