@@ -525,13 +525,15 @@ button {
 
 /* Mobile Chart Vertical Layout - Force vertical aspect ratio */
 @media (max-width: 768px) {
-  #options_mobile_chart {
+  #options_mobile_chart,
+  #spot_mobile_chart {
     width: 100% !important;
     height: 100% !important;
     min-height: 500px !important;
   }
 
-  #options_mobile_chart iframe {
+  #options_mobile_chart iframe,
+  #spot_mobile_chart iframe {
     width: 100% !important;
     height: 100% !important;
     min-height: 500px !important;

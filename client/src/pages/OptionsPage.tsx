@@ -924,7 +924,7 @@ export default function OptionsPage() {
           </div>
 
           {/* My Order Section */}
-          <div className="px-4 py-3 bg-[#10121E]">
+          <div className="px-4 py-3 bg-[#10121E] border-b border-gray-700">
             <h3 className="text-blue-400 font-bold text-lg mb-3">My Order</h3>
             {activeTrades.length > 0 ? (
               <div className="space-y-2">
@@ -963,33 +963,125 @@ export default function OptionsPage() {
             )}
           </div>
 
+          {/* Mobile Order Book */}
+          <div className="px-4 py-3 bg-[#10121E] border-b border-gray-700">
+            <h3 className="text-white font-bold text-base mb-3">Order Book</h3>
+
+            {/* Order Book Headers */}
+            <div className="grid grid-cols-3 gap-2 text-xs text-gray-400 mb-2">
+              <span>Price (USDT)</span>
+              <span>Volume (BTC)</span>
+              <span>Turnover</span>
+            </div>
+
+            {/* Sell Orders (Red) - Show top 5 */}
+            <div className="space-y-0 mb-2">
+              {orderBookData.sellOrders.slice(0, 5).map((order, index) => (
+                <div key={index} className="grid grid-cols-3 gap-2 py-1 text-xs">
+                  <span className="text-red-400">{order.price}</span>
+                  <span className="text-gray-300">{order.volume}</span>
+                  <span className="text-gray-300">{order.turnover}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Current Price */}
+            <div className={`p-2 my-2 rounded ${priceChange?.startsWith('-') ? 'bg-red-900/20' : 'bg-green-900/20'}`}>
+              <div className="flex items-center justify-between">
+                <span className={`font-bold text-base ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                  {currentPrice.toFixed(2)}
+                </span>
+                <span className={`${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                  {priceChange?.startsWith('-') ? '↓' : '↑'}
+                </span>
+                <span className="text-gray-400 text-xs">{currentPrice.toFixed(2)} USDT</span>
+              </div>
+            </div>
+
+            {/* Buy Orders (Green) - Show top 5 */}
+            <div className="space-y-0">
+              {orderBookData.buyOrders.slice(0, 5).map((order, index) => (
+                <div key={index} className="grid grid-cols-3 gap-2 py-1 text-xs">
+                  <span className="text-green-400">{order.price}</span>
+                  <span className="text-gray-300">{order.volume}</span>
+                  <span className="text-gray-300">{order.turnover}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Mobile Options Trading Interface */}
           <div className="px-4 py-3 space-y-3 bg-[#10121E]">
-            {/* Duration Selection - Compact */}
+            {/* Balance Display */}
+            <div className="bg-gray-800 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-400 text-sm">Current Price:</span>
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+                    <span className="text-xs text-gray-500">
+                      {connected ? 'Live' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-white font-bold text-base">
+                  {safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...'} USDT
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-gray-400 text-sm">Balance:</span>
+                {user ? (
+                  <span className="text-green-400 font-bold text-base">{balance.toFixed(2)} USDT</span>
+                ) : (
+                  <span className="text-yellow-400 font-bold text-sm">Sign in required</span>
+                )}
+              </div>
+            </div>
+
+            {/* Duration Selection - All 8 options with profit percentages */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Duration</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">Duration & Profit</label>
               <div className="grid grid-cols-4 gap-1.5">
-                {["30s", "60s", "90s", "120s"].map((duration) => (
+                {[
+                  { duration: '30s', profit: '10%' },
+                  { duration: '60s', profit: '15%' },
+                  { duration: '90s', profit: '20%' },
+                  { duration: '120s', profit: '25%' },
+                  { duration: '180s', profit: '30%' },
+                  { duration: '240s', profit: '50%' },
+                  { duration: '300s', profit: '75%' },
+                  { duration: '600s', profit: '100%' }
+                ].map((option) => (
                   <button
-                    key={duration}
-                    onClick={() => setSelectedDuration(duration)}
-                    className={`py-1.5 px-2 rounded text-xs font-medium transition-colors ${
-                      selectedDuration === duration
-                        ? 'bg-purple-600 text-white'
+                    key={option.duration}
+                    onClick={() => {
+                      setSelectedDuration(option.duration);
+                      const minAmount = getMinimumAmount(option.duration);
+                      if (selectedAmount < minAmount) {
+                        setSelectedAmount(minAmount);
+                      }
+                    }}
+                    className={`py-1.5 px-1 rounded text-center transition-colors ${
+                      selectedDuration === option.duration
+                        ? 'bg-blue-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white'
                     }`}
+                    disabled={isTrading}
                   >
-                    {duration}
+                    <div className="text-xs font-medium">{option.duration}</div>
+                    <div className="text-[10px] text-green-400">{option.profit}</div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Amount Selection - Compact */}
+            {/* Amount Selection - More options */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Amount (USDT)</label>
-              <div className="grid grid-cols-4 gap-1.5">
-                {[100, 500, 1000, 2000].map((amount) => (
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                Amount (USDT) - Min: {getMinimumAmount(selectedDuration).toLocaleString()}
+              </label>
+              <div className="grid grid-cols-3 gap-1.5 mb-2">
+                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
@@ -998,11 +1090,42 @@ export default function OptionsPage() {
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white'
                     }`}
+                    disabled={isTrading}
                   >
                     {amount}
                   </button>
                 ))}
               </div>
+
+              {/* Max Button */}
+              <button
+                onClick={() => {
+                  const maxAmount = Math.floor(balance) || 0;
+                  setSelectedAmount(maxAmount);
+                }}
+                className={`w-full py-1.5 px-2 rounded text-xs font-medium transition-colors mb-2 ${
+                  selectedAmount === Math.floor(balance || 0)
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:text-white'
+                }`}
+                disabled={isTrading}
+              >
+                Max ({Math.floor(balance || 0)} USDT)
+              </button>
+
+              {/* Custom Amount Input */}
+              <input
+                type="number"
+                min={getMinimumAmount(selectedDuration)}
+                value={selectedAmount}
+                onChange={(e) => {
+                  const minAmount = getMinimumAmount(selectedDuration);
+                  setSelectedAmount(Math.max(minAmount, parseInt(e.target.value) || minAmount));
+                }}
+                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
+                placeholder={`Enter amount (min ${getMinimumAmount(selectedDuration)})`}
+                disabled={isTrading}
+              />
             </div>
 
             {/* Login to Trade Message for Non-Logged Users */}

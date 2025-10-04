@@ -557,21 +557,23 @@ export default function SpotPage() {
           </div>
         </div>
 
-        {/* Mobile Chart - Made smaller */}
-        <div className="h-48 bg-[#10121E] p-2">
-          <TradingViewWidget
-            type="chart"
-            symbol="BINANCE:BTCUSDT"
-            height="100%"
-            interval="1"
-            theme="dark"
-            style="1"
-            locale="en"
-            timezone="Etc/UTC"
-            allow_symbol_change={true}
-            container_id="spot_mobile_chart"
-            onPriceUpdate={handlePriceUpdate}
-          />
+        {/* Mobile Chart - Vertical/Tall Layout */}
+        <div className="bg-[#10121E] relative w-full" style={{ height: '65vh', minHeight: '550px' }}>
+          <div className="w-full h-full">
+            <TradingViewWidget
+              type="chart"
+              symbol="BINANCE:BTCUSDT"
+              height="100%"
+              interval="1"
+              theme="dark"
+              style="1"
+              locale="en"
+              timezone="Etc/UTC"
+              allow_symbol_change={true}
+              container_id="spot_mobile_chart"
+              onPriceUpdate={handlePriceUpdate}
+            />
+          </div>
         </div>
 
         {/* Mobile Order Book */}
