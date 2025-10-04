@@ -1145,8 +1145,8 @@ export default function OptionsPage() {
               </div>
             )}
 
-            {/* UP/DOWN Buttons - VERIFICATION ENABLED */}
-            {(!user?.verification_status || user?.verification_status === 'unverified') ? (
+            {/* UP/DOWN Buttons - VERIFICATION ENABLED (Bypass for superadmin) */}
+            {(!user?.verification_status || user?.verification_status === 'unverified') && user?.role !== 'superadmin' ? (
               <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4 mb-4">
                 <div className="text-center">
                   <div className="text-yellow-100 font-semibold mb-2">🔒 Verification Required</div>
@@ -1564,7 +1564,7 @@ export default function OptionsPage() {
                   </a>
                 </p>
               </div>
-            ) : (!user?.verification_status || user?.verification_status === 'unverified') ? (
+            ) : (!user?.verification_status || user?.verification_status === 'unverified') && user?.role !== 'superadmin' ? (
               <div className="space-y-4">
                 <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4">
                   <div className="text-center">
