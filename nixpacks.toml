@@ -1,8 +1,18 @@
+[phases.setup]
+nixPkgs = ["nodejs-20_x", "npm-9_x"]
+
 [phases.install]
-cmds = ["npm install --only=production --legacy-peer-deps"]
+cmds = [
+  "npm ci --include=dev",
+  "npm rebuild"
+]
+
+[phases.build]
+cmds = ["npm run build"]
 
 [start]
 cmd = "node working-server.js"
 
 [variables]
 NODE_ENV = "production"
+NPM_CONFIG_PRODUCTION = "false"
