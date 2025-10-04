@@ -34,6 +34,14 @@ export default function OptionsPage() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
+  // Debug user data
+  console.log('🔍 OPTIONS PAGE - User data:', {
+    id: user?.id,
+    role: user?.role,
+    verificationStatus: user?.verificationStatus,
+    username: user?.username
+  });
+
 
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -1146,7 +1154,7 @@ export default function OptionsPage() {
             )}
 
             {/* UP/DOWN Buttons - VERIFICATION ENABLED (Bypass for superadmin) */}
-            {(!user?.verification_status || user?.verification_status === 'unverified') && user?.role !== 'superadmin' ? (
+            {(!user?.verificationStatus || user?.verificationStatus === 'unverified') && user?.role !== 'super_admin' ? (
               <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4 mb-4">
                 <div className="text-center">
                   <div className="text-yellow-100 font-semibold mb-2">🔒 Verification Required</div>
@@ -1158,7 +1166,7 @@ export default function OptionsPage() {
                   </a>
                 </div>
               </div>
-            ) : user?.verification_status === 'pending' ? (
+            ) : user?.verificationStatus === 'pending' ? (
               <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4 mb-4">
                 <div className="text-center">
                   <div className="text-blue-100 font-semibold mb-2">⏳ Verification Pending</div>

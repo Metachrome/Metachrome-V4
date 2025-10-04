@@ -279,6 +279,14 @@ export default function WalletPage() {
   // Get USDT balance (simplified system with auto-conversion)
   const usdtBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'USDT')?.available || '0');
 
+  // Debug balance data
+  console.log('🔍 WALLET PAGE - Balance data:', {
+    userId: user?.id,
+    userBalances,
+    usdtBalance,
+    balancesLoading
+  });
+
   // Total balance is just USDT balance (all crypto auto-converted)
   const totalBalanceUSDT = usdtBalance;
 

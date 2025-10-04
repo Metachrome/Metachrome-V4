@@ -17,6 +17,9 @@ export const users = sqliteTable("users", {
   isActive: integer("is_active", { mode: 'boolean' }).default(true),
   status: text("status", { enum: ['active', 'inactive', 'suspended', 'paused'] }).default('active'),
   adminNotes: text("admin_notes"), // Internal notes for admins
+  verificationStatus: text("verification_status", { enum: ['unverified', 'pending', 'verified', 'rejected'] }).default('unverified'),
+  hasUploadedDocuments: integer("has_uploaded_documents", { mode: 'boolean' }).default(false),
+  verifiedAt: integer("verified_at", { mode: 'timestamp' }),
   lastLogin: integer("last_login", { mode: 'timestamp' }),
   createdAt: integer("created_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
