@@ -1065,14 +1065,14 @@ export default function SpotPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1 text-xs text-gray-400">
+                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
                   {user ? (
                     <>
                       <div className="flex items-center justify-between">
-                        <span>Available {usdtBalance.toFixed(2)} USDT</span>
+                        <span className="font-medium">Available {usdtBalance.toFixed(2)} USDT</span>
                         <span className="text-blue-400">≈</span>
                       </div>
-                      <div>Can buy ≈ {(usdtBalance / currentPrice).toFixed(6)} BTC</div>
+                      <div className="text-green-400 font-medium">Can buy ≈ {(usdtBalance / currentPrice).toFixed(6)} BTC</div>
                     </>
                   ) : (
                     <div className="text-center text-yellow-400">
@@ -1214,14 +1214,14 @@ export default function SpotPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1 text-xs text-gray-400">
+                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
                   {user ? (
                     <>
                       <div className="flex items-center justify-between">
-                        <span>Available {btcBalance.toFixed(6)} BTC</span>
+                        <span className="font-medium">Available {btcBalance.toFixed(6)} BTC</span>
                         <span className="text-blue-400">≈</span>
                       </div>
-                      <div>Available ≈ {(btcBalance * currentPrice).toFixed(2)} USDT</div>
+                      <div className="text-red-400 font-medium">Available ≈ {(btcBalance * currentPrice).toFixed(2)} USDT</div>
                     </>
                   ) : (
                     <div className="text-center text-yellow-400">
