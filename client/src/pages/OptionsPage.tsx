@@ -392,7 +392,7 @@ function OptionsPageContent() {
   // Update price display when realTimePrice changes
   useEffect(() => {
     updatePriceDisplay();
-  }, [realTimePrice, priceChange]);
+  }, [realTimePrice, changeText]);
 
   // Update current price from real market data - RE-ENABLED (Binance is the primary source)
   useEffect(() => {
@@ -857,8 +857,8 @@ function OptionsPageContent() {
               <div>
                 <div className="text-white font-bold text-lg">BTC/USDT</div>
                 <div className="text-white text-xl font-bold">{currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || safeCurrentPrice.toFixed(2))} USDT</div>
-                <div className={`text-sm font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {priceChange || btcMarketData?.priceChangePercent24h || '+0.00%'}
+                <div className={`text-sm font-semibold ${changeColor}`}>
+                  {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
               </div>
               <div className="text-right">
@@ -975,13 +975,13 @@ function OptionsPageContent() {
             </div>
 
             {/* Current Price */}
-            <div className={`p-2 my-2 rounded ${priceChange?.startsWith('-') ? 'bg-red-900/20' : 'bg-green-900/20'}`}>
+            <div className={`p-2 my-2 rounded ${isPositive ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
               <div className="flex items-center justify-between">
-                <span className={`font-bold text-base ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                <span className={`font-bold text-base ${changeColor}`}>
                   {currentPrice.toFixed(2)}
                 </span>
-                <span className={`${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {priceChange?.startsWith('-') ? '↓' : '↑'}
+                <span className={changeColor}>
+                  {isPositive ? '↑' : '↓'}
                 </span>
                 <span className="text-gray-400 text-xs">{currentPrice.toFixed(2)} USDT</span>
               </div>
@@ -1240,11 +1240,11 @@ function OptionsPageContent() {
             <div className="flex items-center justify-between mb-2">
               <div className="text-white font-bold">BTC/USDT</div>
               <div className="text-right">
-                <div className={`font-bold price-display ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                <div className={`font-bold price-display ${changeColor}`}>
                   {currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || safeCurrentPrice.toFixed(2))}
                 </div>
-                <div className={`text-sm price-change ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {priceChange || btcMarketData?.priceChangePercent24h || '+0.00%'}
+                <div className={`text-sm price-change ${changeColor}`}>
+                  {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
                 <div className={`text-sm ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {btcMarketData?.priceChange24h || '0.00'} {btcMarketData?.priceChangePercent24h || '0.00%'}
@@ -1626,7 +1626,7 @@ function OptionsPageContent() {
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto">
             {[
-              { symbol: 'BTCUSDT', price: currentPrice.toString(), priceChangePercent24h: priceChange || '+1.44%' },
+              { symbol: 'BTCUSDT', price: currentPrice.toString(), priceChangePercent24h: changeText || '+1.44%' },
               { symbol: 'ETHUSDT', price: '3550.21', priceChangePercent24h: '+1.06%' },
               { symbol: 'BNBUSDT', price: '698.45', priceChangePercent24h: '+2.15%' },
               { symbol: 'SOLUSDT', price: '245.67', priceChangePercent24h: '+3.42%' },
