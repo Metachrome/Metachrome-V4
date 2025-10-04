@@ -365,12 +365,8 @@ function OptionsPageContent() {
   // Ensure currentPrice is always a valid number
   const safeCurrentPrice = Number(currentPrice) || Number(realPrice) || 166373.87;
 
-  // Initialize real-time price fetching
-  useEffect(() => {
-    fetchBinancePrice(); // Initial fetch
-    const interval = setInterval(fetchBinancePrice, 6000); // Update every 6 seconds (slower)
-    return () => clearInterval(interval);
-  }, []);
+  // REMOVED: Initialize real-time price fetching - Now handled by PriceContext
+  // Price updates are automatically managed by PriceContext provider
 
   // Throttled order book updates (much slower than real-time price)
   useEffect(() => {
@@ -429,30 +425,16 @@ function OptionsPageContent() {
     }
   }, [connected, subscribe, sendMessage, user?.id]);
 
-  // Fallback polling for Vercel deployment (re-enabled with Binance as primary source)
-  useEffect(() => {
-    const isVercel = window.location.hostname.includes('vercel.app');
+  // REMOVED: Fallback polling - Now handled by PriceContext
+  // PriceContext automatically fetches from Binance API and provides real-time updates
 
-    if (isVercel || !connected) {
-      console.log('🔄 Using Binance API polling for price updates');
-
-      // Initial fetch
-      fetchBinancePrice();
-
-      // Set up polling interval
-      const interval = setInterval(fetchBinancePrice, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [connected]);
-
-  // Handle WebSocket price updates - RE-ENABLED (Binance is the primary source)
+  // Handle WebSocket price updates - Now using PriceContext as primary source
   useEffect(() => {
     if (lastMessage?.type === 'price_update' && lastMessage.data?.symbol === 'BTCUSDT') {
       const price = parseFloat(lastMessage.data.price);
       if (price > 0) {
         setCurrentPrice(price);
-        setRealTimePrice(price.toFixed(2));
-        setOrderBookPrice(price);
+        // REMOVED: setRealTimePrice and setOrderBookPrice - now using PriceContext
 
         priceHistoryRef.current.push(price);
         if (priceHistoryRef.current.length > 1000) {
