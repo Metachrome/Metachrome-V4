@@ -386,10 +386,8 @@ function OptionsPageContent() {
     return () => clearInterval(interval);
   }, [safeCurrentPrice, realTimePrice]);
 
-  // Update price display when realTimePrice changes
-  useEffect(() => {
-    updatePriceDisplay();
-  }, [realTimePrice, changeText]);
+  // REMOVED: Update price display - Now handled automatically by React rendering with PriceContext
+  // Price updates are reactive through priceData, changeText, and other context values
 
   // Update current price from real market data - RE-ENABLED (Binance is the primary source)
   useEffect(() => {
