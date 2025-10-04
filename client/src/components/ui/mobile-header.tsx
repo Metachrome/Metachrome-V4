@@ -55,7 +55,7 @@ export function MobileHeader() {
                 className="text-gray-300 hover:text-white"
               >
                 <UserCircle className="w-4 h-4 mr-1" />
-                {user?.username}
+                Account
               </Button>
               <Button
                 variant="ghost"

@@ -900,61 +900,80 @@ export default function OptionsPage() {
             </div>
           </div>
 
-          {/* Mobile Chart - Made smaller */}
-          <div className="h-48 bg-[#10121E] p-2 relative">
+          {/* Mobile Chart - Vertical/Tall Layout */}
+          <div className="bg-[#10121E] relative w-full" style={{ height: '65vh', minHeight: '550px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={currentPrice}
             />
-            <TradingViewWidget
-              type="chart"
-              symbol="BINANCE:BTCUSDT"
-              height="100%"
-              interval="1"
-              theme="dark"
-              style="1"
-              locale="en"
-              timezone="Etc/UTC"
-              allow_symbol_change={true}
-              container_id="options_mobile_chart"
-              onPriceUpdate={handlePriceUpdate}
-            />
-          </div>
-
-          {/* Mobile Market Overview */}
-          <div className="px-4 py-3 border-b border-gray-700">
-            <h3 className="text-white font-bold mb-3">Market Overview</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { symbol: 'BTC/USDT', price: safeCurrentPrice.toFixed(2), change: priceChange || '+0.00%' },
-                { symbol: 'ETH/USDT', price: '3,456.78', change: '+1.23%' },
-                { symbol: 'BNB/USDT', price: '712.45', change: '-0.45%' },
-                { symbol: 'ADA/USDT', price: '0.8272', change: '+0.60%' }
-              ].map((market, index) => (
-                <div key={index} className="bg-gray-800 rounded-lg p-3">
-                  <div className="text-white text-sm font-medium">{market.symbol}</div>
-                  <div className="text-white text-lg font-bold">{market.price} USDT</div>
-                  <div className={`text-xs font-medium ${market.change.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                    {market.change}
-                  </div>
-                </div>
-              ))}
+            <div className="w-full h-full">
+              <TradingViewWidget
+                type="chart"
+                symbol="BINANCE:BTCUSDT"
+                height="100%"
+                interval="1"
+                theme="dark"
+                style="1"
+                locale="en"
+                timezone="Etc/UTC"
+                allow_symbol_change={true}
+                container_id="options_mobile_chart"
+                onPriceUpdate={handlePriceUpdate}
+              />
             </div>
           </div>
 
+          {/* My Order Section */}
+          <div className="px-4 py-3 bg-[#10121E]">
+            <h3 className="text-blue-400 font-bold text-lg mb-3">My Order</h3>
+            {activeTrades.length > 0 ? (
+              <div className="space-y-2">
+                {activeTrades.map((trade) => {
+                  const timeRemaining = Math.max(0, trade.duration - Math.floor((Date.now() - trade.startTime) / 1000));
+                  const priceChange = currentPrice - trade.entryPrice;
+                  const isWinning = (trade.direction === 'up' && priceChange > 0) ||
+                                   (trade.direction === 'down' && priceChange < 0);
+                  const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) : 0;
 
+                  return (
+                    <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className={`text-sm font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                          {trade.direction.toUpperCase()} {trade.amount} USDT
+                        </span>
+                        <span className="text-yellow-400 font-bold text-sm">{timeRemaining}s</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>Entry: {trade.entryPrice.toFixed(2)} USDT</span>
+                        <span>Current: {currentPrice.toFixed(2)} USDT</span>
+                      </div>
+                      <div className="mt-1">
+                        <span className={`text-xs font-medium ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
+                          {isWinning ? `+${(potentialPayout - trade.amount).toFixed(2)} USDT` : `-${trade.amount.toFixed(2)} USDT`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-gray-400 text-sm text-center py-4">
+                No active orders
+              </div>
+            )}
+          </div>
 
           {/* Mobile Options Trading Interface */}
-          <div className="px-4 py-4 space-y-4">
-            {/* Duration Selection */}
+          <div className="px-4 py-3 space-y-3 bg-[#10121E]">
+            {/* Duration Selection - Compact */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Duration</label>
-              <div className="flex space-x-2 overflow-x-auto pb-2">
-                {["30s", "60s", "90s", "120s", "180s", "240s", "300s", "600s"].map((duration) => (
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">Duration</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {["30s", "60s", "90s", "120s"].map((duration) => (
                   <button
                     key={duration}
                     onClick={() => setSelectedDuration(duration)}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                    className={`py-1.5 px-2 rounded text-xs font-medium transition-colors ${
                       selectedDuration === duration
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -966,15 +985,15 @@ export default function OptionsPage() {
               </div>
             </div>
 
-            {/* Amount Selection */}
+            {/* Amount Selection - Compact */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Amount (USDT)</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">Amount (USDT)</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[100, 500, 1000, 2000].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
-                    className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                    className={`py-1.5 px-2 rounded text-xs font-medium transition-colors ${
                       selectedAmount === amount
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -983,19 +1002,6 @@ export default function OptionsPage() {
                     {amount}
                   </button>
                 ))}
-                <button
-                  onClick={() => {
-                    const maxAmount = Math.floor(balance) || 0;
-                    setSelectedAmount(maxAmount);
-                  }}
-                  className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                    selectedAmount === Math.floor(balance || 0)
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Max
-                </button>
               </div>
             </div>
 
@@ -1038,28 +1044,20 @@ export default function OptionsPage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => handleTrade('up')}
                   disabled={!user || countdown > 0}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
+                  className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-6 px-6 rounded-xl transition-colors text-xl"
                 >
-                  <span className="text-2xl mb-1">↗</span>
-                  <span className="text-sm">UP</span>
-                  <span className="text-xs opacity-75">
-                    {selectedDuration === "30s" ? "10%" : "15%"} profit
-                  </span>
+                  BUY BTC
                 </button>
                 <button
                   onClick={() => handleTrade('down')}
                   disabled={!user || countdown > 0}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-lg transition-colors flex flex-col items-center"
+                  className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-6 px-6 rounded-xl transition-colors text-xl"
                 >
-                  <span className="text-2xl mb-1">↘</span>
-                  <span className="text-sm">DOWN</span>
-                  <span className="text-xs opacity-75">
-                    {selectedDuration === "30s" ? "10%" : "15%"} profit
-                  </span>
+                  SELL BTC
                 </button>
               </div>
             )}
@@ -1073,72 +1071,7 @@ export default function OptionsPage() {
             )}
           </div>
 
-          {/* Mobile Active Trades */}
-          {activeTrades.length > 0 && (
-            <div className="px-4 py-4">
-              <h3 className="text-white font-bold mb-3">Active Trades</h3>
-              <div className="space-y-2">
-                {activeTrades.map((trade) => {
-                  const timeRemaining = Math.max(0, trade.duration - Math.floor((Date.now() - trade.startTime) / 1000));
-                  const priceChange = currentPrice - trade.entryPrice;
-                  const isWinning = (trade.direction === 'up' && priceChange > 0) ||
-                                   (trade.direction === 'down' && priceChange < 0);
-                  const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) : 0;
 
-                  return (
-                    <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`text-sm font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                          {trade.direction.toUpperCase()} {trade.amount} USDT
-                        </span>
-                        <span className="text-yellow-400 font-bold text-sm">{timeRemaining}s</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>Entry: {trade.entryPrice.toFixed(2)} USDT</span>
-                        <span>Current: {currentPrice.toFixed(2)} USDT</span>
-                      </div>
-                      <div className="mt-1">
-                        <span className={`text-xs font-medium ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                          {isWinning ? `+${(potentialPayout - trade.amount).toFixed(2)} USDT` : `-${trade.amount.toFixed(2)} USDT`}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Mobile Trade History */}
-          <div className="px-4 py-4">
-            <h3 className="text-white font-bold mb-3">Recent Trades</h3>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {(tradeHistory || []).slice(0, 5).map((trade) => (
-                <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className={`text-sm font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.direction.toUpperCase()} {trade.amount} USDT
-                      </span>
-                      <div className="text-xs text-gray-400">
-                        {trade.entryPrice.toFixed(2)} → {trade.currentPrice?.toFixed(2)} USDT
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-medium ${
-                        trade.status === 'won' ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {trade.status === 'won' ? 'WON' : 'LOST'}
-                      </div>
-                      <div className={`text-xs ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.status === 'won' ? `+${(trade.payout! - trade.amount).toFixed(2)} USDT` : `-${trade.amount.toFixed(2)} USDT`}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
           <MobileBottomNav />
         </div>

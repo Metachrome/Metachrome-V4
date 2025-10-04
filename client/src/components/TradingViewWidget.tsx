@@ -85,6 +85,9 @@ function TradingViewWidget({
       script.type = "text/javascript";
       script.async = true;
 
+      // Check if mobile for specific mobile chart settings
+      const isMobile = window.innerWidth <= 768;
+
       const config = {
         autosize: true,
         symbol: symbol,
@@ -98,18 +101,18 @@ function TradingViewWidget({
         calendar: false,
         support_host: "https://www.tradingview.com",
         container_id: container_id,
-        hide_side_toolbar: false,
+        hide_side_toolbar: isMobile && container_id === 'options_mobile_chart',
         hide_top_toolbar: false,
-        hide_legend: false,
+        hide_legend: isMobile && container_id === 'options_mobile_chart',
         save_image: false,
         backgroundColor: theme === 'dark' ? "#0F0F0F" : "#FFFFFF",
         gridColor: theme === 'dark' ? "rgba(242, 242, 242, 0.06)" : "rgba(0, 0, 0, 0.06)",
         studies: [],
         watchlist: [],
-        details: true,
+        details: !isMobile || container_id !== 'options_mobile_chart',
         hotlist: false,
-        withdateranges: true,
-        hide_volume: false
+        withdateranges: !isMobile || container_id !== 'options_mobile_chart',
+        hide_volume: isMobile && container_id === 'options_mobile_chart'
       };
 
       script.innerHTML = JSON.stringify(config);

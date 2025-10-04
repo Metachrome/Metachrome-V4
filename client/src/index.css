@@ -522,3 +522,29 @@ button {
     margin-top: 12px !important;
   }
 }
+
+/* Mobile Chart Vertical Layout - Force vertical aspect ratio */
+@media (max-width: 768px) {
+  #options_mobile_chart {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 500px !important;
+  }
+
+  #options_mobile_chart iframe {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 500px !important;
+  }
+
+  /* Force TradingView widget to fill vertical space */
+  .tradingview-widget-container {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .tradingview-widget-container__widget {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
