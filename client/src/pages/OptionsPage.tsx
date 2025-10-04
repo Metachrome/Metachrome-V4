@@ -246,15 +246,28 @@ export default function OptionsPage() {
     }
   };
 
-  // Handle price updates from TradingView widget
+  // Handle price updates from TradingView widget - PRIMARY PRICE SOURCE
   const handlePriceUpdate = (price: number) => {
-    console.log('📊 TradingView price update:', price);
+    console.log('📊 TradingView price update (PRIMARY SOURCE):', price);
+
+    // Set current price for all panels
     setCurrentPrice(price);
+
+    // Update real-time price display (used in panels)
+    setRealTimePrice(price.toFixed(2));
+
+    // Update order book price (for left panel)
+    setOrderBookPrice(price);
+
     // Update price history for trade calculations
     priceHistoryRef.current.push(price);
     if (priceHistoryRef.current.length > 1000) {
       priceHistoryRef.current = priceHistoryRef.current.slice(-1000);
     }
+
+    // Generate new order book data based on TradingView price
+    const newOrderBookData = generateOrderBookData(price);
+    setOrderBookData(newOrderBookData);
   };
 
   // Generate dynamic order book data based on current price
@@ -855,12 +868,12 @@ export default function OptionsPage() {
         <div className="min-h-screen bg-[#10121E] text-white pb-20">
           <Navigation />
 
-          {/* Mobile Header */}
+          {/* Mobile Header - Using TradingView Price */}
           <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700 sticky top-0 z-40">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-white font-bold text-lg">BTC/USDT</div>
-                <div className="text-white text-xl font-bold">{realTimePrice || safeCurrentPrice.toFixed(2)} USDT</div>
+                <div className="text-white text-xl font-bold">{currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || safeCurrentPrice.toFixed(2))} USDT</div>
                 <div className={`text-sm font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {priceChange || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
@@ -1012,7 +1025,7 @@ export default function OptionsPage() {
 
           {/* Mobile Options Trading Interface */}
           <div className="px-4 py-3 space-y-3 bg-[#10121E]">
-            {/* Balance Display */}
+            {/* Balance Display - Using TradingView Price */}
             <div className="bg-gray-800 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -1025,7 +1038,7 @@ export default function OptionsPage() {
                   </div>
                 </div>
                 <span className="text-white font-bold text-base">
-                  {safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...'} USDT
+                  {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
                 </span>
               </div>
               <div className="flex items-center justify-between mt-2">
@@ -1206,13 +1219,13 @@ export default function OptionsPage() {
       <div className="min-h-screen bg-gray-900">
         <Navigation />
       
-      {/* Top Header with BTC/USDT Info */}
+      {/* Top Header with BTC/USDT Info - Using TradingView Price */}
       <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700">
         <div className="flex items-center space-x-6">
           <div>
             <div className="text-white font-bold text-lg">BTC/USDT</div>
-            <div className="text-white text-2xl font-bold">{safeCurrentPrice.toFixed(2)}</div>
-            <div className="text-gray-400 text-sm">{safeCurrentPrice.toFixed(2)} USDT</div>
+            <div className="text-white text-2xl font-bold">{currentPrice > 0 ? currentPrice.toFixed(2) : safeCurrentPrice.toFixed(2)}</div>
+            <div className="text-gray-400 text-sm">{currentPrice > 0 ? currentPrice.toFixed(2) : safeCurrentPrice.toFixed(2)} USDT</div>
           </div>
           <div className={`text-lg font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
             {btcMarketData?.priceChangePercent24h || '+0.00%'}
@@ -1246,13 +1259,13 @@ export default function OptionsPage() {
       <div className="bg-[#10121E] flex">
         {/* Left Panel - Order Book */}
         <div className="w-64 border-r border-gray-700">
-          {/* Order Book Header */}
+          {/* Order Book Header - Using TradingView Price */}
           <div className="p-3 border-b border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <div className="text-white font-bold">BTC/USDT</div>
               <div className="text-right">
                 <div className={`font-bold price-display ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {realTimePrice || safeCurrentPrice.toFixed(2)}
+                  {currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || safeCurrentPrice.toFixed(2))}
                 </div>
                 <div className={`text-sm price-change ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {priceChange || btcMarketData?.priceChangePercent24h || '+0.00%'}
@@ -1362,7 +1375,7 @@ export default function OptionsPage() {
 
           {/* Options Trading Controls */}
           <div className="p-4 border-t border-gray-700">
-            {/* Current Price Display */}
+            {/* Current Price Display - Using TradingView Price */}
             <div className="mb-4 p-3 bg-gray-800 rounded">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -1376,7 +1389,7 @@ export default function OptionsPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-white font-bold text-lg">
-                    {safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...'} USDT
+                    {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
                   </span>
                 </div>
               </div>

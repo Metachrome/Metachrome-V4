@@ -331,9 +331,19 @@ export default function SpotPage() {
     return (price * amount).toFixed(2);
   };
 
+  // Handle price updates from TradingView widget - PRIMARY PRICE SOURCE
   const handlePriceUpdate = (price: number) => {
+    console.log('📊 TradingView price update (PRIMARY SOURCE):', price);
+
+    // Set current price for all panels
     setCurrentPrice(price);
-    setRealTimePrice(price.toString());
+
+    // Update real-time price display (used in panels)
+    setRealTimePrice(price.toFixed(2));
+
+    // Update form prices if not manually set
+    if (!buyPrice) setBuyPrice(price.toFixed(2));
+    if (!sellPrice) setSellPrice(price.toFixed(2));
   };
 
   // Sync turnover with price/amount changes
@@ -514,12 +524,12 @@ export default function SpotPage() {
       <div className="min-h-screen bg-[#10121E] text-white pb-20">
         <Navigation />
 
-        {/* Mobile Header */}
+        {/* Mobile Header - Using TradingView Price */}
         <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700 sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-white font-bold text-lg">BTC/USDT</div>
-              <div className="text-white text-xl font-bold">${realTimePrice || currentPrice.toFixed(2)}</div>
+              <div className="text-white text-xl font-bold">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
               <div className={`text-sm font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                 {priceChange || btcMarketData?.priceChangePercent24h || '+0.50%'}
               </div>
@@ -584,7 +594,7 @@ export default function SpotPage() {
             <div>
               <div className="text-red-400 text-sm font-medium mb-2">Sell Orders</div>
               <div className="space-y-1">
-                {generateOrderBookData(parseFloat(realTimePrice) || currentPrice || 166373.87).sellOrders.slice(0, 5).map((order, index) => (
+                {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).sellOrders.slice(0, 5).map((order, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span className="text-red-400">{order.price}</span>
                     <span className="text-gray-400">{order.amount}</span>
@@ -597,7 +607,7 @@ export default function SpotPage() {
             <div>
               <div className="text-green-400 text-sm font-medium mb-2">Buy Orders</div>
               <div className="space-y-1">
-                {generateOrderBookData(parseFloat(realTimePrice) || currentPrice || 166373.87).buyOrders.slice(0, 5).map((order, index) => (
+                {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).buyOrders.slice(0, 5).map((order, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span className="text-green-400">{order.price}</span>
                     <span className="text-gray-400">{order.amount}</span>
@@ -613,7 +623,7 @@ export default function SpotPage() {
           <h3 className="text-white font-bold mb-3">Market Overview</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { symbol: 'BTC/USDT', price: realTimePrice || currentPrice.toFixed(2), change: priceChange || '+0.50%' },
+              { symbol: 'BTC/USDT', price: currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00'), change: priceChange || '+0.50%' },
               { symbol: 'ETH/USDT', price: '3,456.78', change: '+1.23%' },
               { symbol: 'BNB/USDT', price: '712.45', change: '-0.45%' },
               { symbol: 'ADA/USDT', price: '0.8272', change: '+0.60%' }
@@ -774,12 +784,12 @@ export default function SpotPage() {
           {/* Top Header with BTC/USDT and Controls */}
           <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700">
             <div className="flex items-center justify-between">
-              {/* Left - BTC/USDT Info */}
+              {/* Left - BTC/USDT Info - Using TradingView Price */}
               <div className="flex items-center space-x-6">
                 <div>
                   <div className="text-white font-bold text-lg">BTC/USDT</div>
-                  <div className="text-white text-2xl font-bold">${realTimePrice || currentPrice.toFixed(2)}</div>
-                  <div className="text-gray-400 text-sm">$ {realTimePrice || currentPrice.toFixed(2)}</div>
+                  <div className="text-white text-2xl font-bold">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
+                  <div className="text-gray-400 text-sm">$ {currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
                 </div>
                 <div className={`text-lg font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {priceChange || btcMarketData?.priceChangePercent24h || '+0.50%'}
@@ -848,9 +858,9 @@ export default function SpotPage() {
 
           {/* Order Book Data */}
           <div className="flex-1 min-h-[650px] overflow-y-auto">
-            {/* Sell Orders (Red) */}
+            {/* Sell Orders (Red) - Using TradingView Price */}
             <div className="space-y-0">
-              {generateOrderBookData(currentPrice || parseFloat(realTimePrice) || 166373.87).sellOrders.map((order, index) => (
+              {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).sellOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
                   <span className="text-red-400">{order.price}</span>
                   <span className="text-gray-300">{order.volume}</span>
@@ -859,22 +869,22 @@ export default function SpotPage() {
               ))}
             </div>
 
-            {/* Current Price */}
+            {/* Current Price - Using TradingView Price */}
             <div className="bg-[#10121E] p-2 my-1">
               <div className="flex items-center justify-between">
                 <span className={`font-bold text-lg ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {realTimePrice || currentPrice.toFixed(2)}
+                  {currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}
                 </span>
                 <span className={`${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {priceChange?.startsWith('-') ? '↓' : '↑'}
                 </span>
-                <span className="text-gray-400 text-sm">${realTimePrice || currentPrice.toFixed(2)}</span>
+                <span className="text-gray-400 text-sm">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</span>
               </div>
             </div>
 
-            {/* Buy Orders (Green) */}
+            {/* Buy Orders (Green) - Using TradingView Price */}
             <div className="space-y-0">
-              {generateOrderBookData(currentPrice || parseFloat(realTimePrice) || 166373.87).buyOrders.map((order, index) => (
+              {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).buyOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
                   <span className="text-green-400">{order.price}</span>
                   <span className="text-gray-300">{order.volume}</span>
