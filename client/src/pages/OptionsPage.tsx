@@ -1647,7 +1647,7 @@ export default function OptionsPage() {
 
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto">
-            {(marketData || [
+            {[
               { symbol: 'BTCUSDT', price: currentPrice.toString(), priceChangePercent24h: priceChange || '+1.44%' },
               { symbol: 'ETHUSDT', price: '3550.21', priceChangePercent24h: '+1.06%' },
               { symbol: 'BNBUSDT', price: '698.45', priceChangePercent24h: '+2.15%' },
@@ -1658,7 +1658,7 @@ export default function OptionsPage() {
               { symbol: 'MATICUSDT', price: '0.5234', priceChangePercent24h: '+1.23%' },
               { symbol: 'DOTUSDT', price: '7.89', priceChangePercent24h: '-0.45%' },
               { symbol: 'AVAXUSDT', price: '42.56', priceChangePercent24h: '+2.78%' }
-            ]).slice(0, 10).map((marketItem, index) => {
+            ].slice(0, 10).map((marketItem, index) => {
               const symbol = marketItem.symbol.replace('USDT', '/USDT');
               const coin = marketItem.symbol.replace('USDT', '');
               const isPositive = !marketItem.priceChangePercent24h?.startsWith('-');
