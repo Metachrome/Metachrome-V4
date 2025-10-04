@@ -4361,11 +4361,23 @@ app.get('/api/balances', async (req, res) => {
       // Extract user ID from token format: user-session-{userId}-{timestamp}
       const tokenParts = authToken.replace('user-session-', '').split('-');
       const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
-      console.log('💰 Extracted user ID from token:', userId);
+      console.log('💰 Extracted user ID from user-session token:', userId);
 
       currentUser = users.find(u => u.id === userId);
       if (currentUser) {
-        console.log('💰 Found user by session:', currentUser.username || currentUser.email);
+        console.log('💰 Found user by user-session:', currentUser.username || currentUser.email);
+      }
+    }
+    // Handle admin session tokens
+    else if (authToken.startsWith('admin-session-')) {
+      // Extract user ID from token format: admin-session-{userId}-{timestamp}
+      const tokenParts = authToken.replace('admin-session-', '').split('-');
+      const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+      console.log('💰 Extracted user ID from admin-session token:', userId);
+
+      currentUser = users.find(u => u.id === userId);
+      if (currentUser) {
+        console.log('💰 Found admin user by admin-session:', currentUser.username || currentUser.email);
       }
     }
     // Handle JWT tokens (from Google OAuth)
@@ -4380,6 +4392,8 @@ app.get('/api/balances', async (req, res) => {
 
     if (!currentUser) {
       console.log('💰 ERROR: User not found for token');
+      console.log('💰 ERROR: Token format:', authToken.substring(0, 30) + '...');
+      console.log('💰 ERROR: Available users:', users.map(u => ({ id: u.id, username: u.username })));
       return res.status(404).json({ error: 'User not found' });
     }
 
