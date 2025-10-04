@@ -1648,21 +1648,31 @@ export default function OptionsPage() {
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto">
             {(marketData || [
-              { symbol: 'BTCUSDT', price: realTimePrice || '118099.98', priceChangePercent24h: priceChange || '+1.44%' },
-              { symbol: 'ETHUSDT', price: '3776.75', priceChangePercent24h: '+1.06%' },
-              { symbol: 'DOGEUSDT', price: '0.238780', priceChangePercent24h: '+0.80%' },
-              { symbol: 'XRPUSDT', price: '3.188300', priceChangePercent24h: '+1.47%' },
-              { symbol: 'ADAUSDT', price: '0.827200', priceChangePercent24h: '+0.60%' }
-            ]).slice(0, 6).map((marketItem, index) => {
+              { symbol: 'BTCUSDT', price: currentPrice.toString(), priceChangePercent24h: priceChange || '+1.44%' },
+              { symbol: 'ETHUSDT', price: '3550.21', priceChangePercent24h: '+1.06%' },
+              { symbol: 'BNBUSDT', price: '698.45', priceChangePercent24h: '+2.15%' },
+              { symbol: 'SOLUSDT', price: '245.67', priceChangePercent24h: '+3.42%' },
+              { symbol: 'XRPUSDT', price: '3.18', priceChangePercent24h: '+1.47%' },
+              { symbol: 'ADAUSDT', price: '0.8272', priceChangePercent24h: '+0.60%' },
+              { symbol: 'DOGEUSDT', price: '0.2388', priceChangePercent24h: '+0.80%' },
+              { symbol: 'MATICUSDT', price: '0.5234', priceChangePercent24h: '+1.23%' },
+              { symbol: 'DOTUSDT', price: '7.89', priceChangePercent24h: '-0.45%' },
+              { symbol: 'AVAXUSDT', price: '42.56', priceChangePercent24h: '+2.78%' }
+            ]).slice(0, 10).map((marketItem, index) => {
               const symbol = marketItem.symbol.replace('USDT', '/USDT');
               const coin = marketItem.symbol.replace('USDT', '');
               const isPositive = !marketItem.priceChangePercent24h?.startsWith('-');
               const iconMap: { [key: string]: { icon: string, bg: string } } = {
                 'BTC': { icon: '₿', bg: 'bg-orange-500' },
                 'ETH': { icon: 'Ξ', bg: 'bg-purple-500' },
-                'DOGE': { icon: 'D', bg: 'bg-yellow-500' },
+                'BNB': { icon: 'B', bg: 'bg-yellow-600' },
+                'SOL': { icon: 'S', bg: 'bg-purple-600' },
                 'XRP': { icon: '✕', bg: 'bg-gray-600' },
                 'ADA': { icon: 'A', bg: 'bg-blue-500' },
+                'DOGE': { icon: 'D', bg: 'bg-yellow-500' },
+                'MATIC': { icon: 'M', bg: 'bg-purple-700' },
+                'DOT': { icon: '●', bg: 'bg-pink-500' },
+                'AVAX': { icon: 'A', bg: 'bg-red-500' },
               };
               const iconInfo = iconMap[coin] || { icon: coin[0], bg: 'bg-gray-500' };
               const pair = {

@@ -1288,13 +1288,16 @@ export default function SpotPage() {
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto flex-shrink-0">
             {[
-              { symbol: 'BTC/USDT', coin: 'BTC', price: '118113.00', change: '+0.50%', isPositive: true, icon: '₿', iconBg: 'bg-orange-500' },
-              { symbol: 'ETH/USDT', coin: 'ETH', price: '3776.75', change: '+1.06%', isPositive: true, icon: 'Ξ', iconBg: 'bg-purple-500' },
-              { symbol: 'DOGE/USDT', coin: 'DOGE', price: '0.238780', change: '+0.80%', isPositive: true, icon: 'D', iconBg: 'bg-yellow-500' },
-              { symbol: 'XRP/USDT', coin: 'XRP', price: '3.188300', change: '+1.47%', isPositive: true, icon: '✕', iconBg: 'bg-gray-600' },
-              { symbol: 'TRUMP/USDT', coin: 'TRUMP', price: '10.2300', change: '+1.28%', isPositive: true, icon: 'T', iconBg: 'bg-red-500' },
-              { symbol: 'PEPE/USDT', coin: 'PEPE', price: '0.000012600', change: '+0.07%', isPositive: true, icon: 'P', iconBg: 'bg-green-500' },
-              { symbol: 'ADA/USDT', coin: 'ADA', price: '0.827200', change: '+0.60%', isPositive: true, icon: 'A', iconBg: 'bg-blue-500' }
+              { symbol: 'BTC/USDT', coin: 'BTC', price: currentPrice.toFixed(2), change: priceChange || '+1.47%', isPositive: !priceChange?.startsWith('-'), icon: '₿', iconBg: 'bg-orange-500' },
+              { symbol: 'ETH/USDT', coin: 'ETH', price: '3550.21', change: '+1.06%', isPositive: true, icon: 'Ξ', iconBg: 'bg-purple-500' },
+              { symbol: 'BNB/USDT', coin: 'BNB', price: '698.45', change: '+2.15%', isPositive: true, icon: 'B', iconBg: 'bg-yellow-600' },
+              { symbol: 'SOL/USDT', coin: 'SOL', price: '245.67', change: '+3.42%', isPositive: true, icon: 'S', iconBg: 'bg-purple-600' },
+              { symbol: 'XRP/USDT', coin: 'XRP', price: '3.18', change: '+1.47%', isPositive: true, icon: '✕', iconBg: 'bg-gray-600' },
+              { symbol: 'ADA/USDT', coin: 'ADA', price: '0.8272', change: '+0.60%', isPositive: true, icon: 'A', iconBg: 'bg-blue-500' },
+              { symbol: 'DOGE/USDT', coin: 'DOGE', price: '0.2388', change: '+0.80%', isPositive: true, icon: 'D', iconBg: 'bg-yellow-500' },
+              { symbol: 'MATIC/USDT', coin: 'MATIC', price: '0.5234', change: '+1.23%', isPositive: true, icon: 'M', iconBg: 'bg-purple-700' },
+              { symbol: 'DOT/USDT', coin: 'DOT', price: '7.89', change: '-0.45%', isPositive: false, icon: '●', iconBg: 'bg-pink-500' },
+              { symbol: 'AVAX/USDT', coin: 'AVAX', price: '42.56', change: '+2.78%', isPositive: true, icon: 'A', iconBg: 'bg-red-500' }
             ].map((pair, index) => (
               <div key={index} className="flex items-center justify-between p-2 hover:bg-[#1a1b2e] rounded cursor-pointer">
                 <div className="flex items-center space-x-3">
@@ -1335,26 +1338,26 @@ export default function SpotPage() {
             <div className="flex-1 overflow-y-auto px-4">
               <div className="space-y-1 py-2">
                 {[
-                  { time: '20:10:41', price: '118113.00', amount: '0.0080', type: 'buy' },
-                  { time: '20:10:41', price: '118113.00', amount: '0.0001700', type: 'buy' },
-                  { time: '20:10:41', price: '118113.00', amount: '0.1000', type: 'sell' },
-                  { time: '20:10:38', price: '118113.00', amount: '0.0004200', type: 'buy' },
-                  { time: '20:10:36', price: '118113.00', amount: '0.0047', type: 'sell' },
-                  { time: '20:10:38', price: '118113.00', amount: '0.0016', type: 'buy' },
-                  { time: '20:10:38', price: '118113.00', amount: '0.00070000', type: 'sell' },
-                  { time: '20:10:38', price: '118113.00', amount: '0.0243', type: 'buy' },
-                  { time: '20:10:37', price: '118112.99', amount: '0.0089', type: 'buy' },
-                  { time: '20:10:37', price: '118112.99', amount: '0.0156', type: 'sell' },
-                  { time: '20:10:36', price: '118112.98', amount: '0.0034', type: 'buy' },
-                  { time: '20:10:36', price: '118112.98', amount: '0.0078', type: 'sell' },
-                  { time: '20:10:35', price: '118112.97', amount: '0.0092', type: 'buy' },
-                  { time: '20:10:35', price: '118112.97', amount: '0.0067', type: 'sell' },
-                  { time: '20:10:34', price: '118112.96', amount: '0.0123', type: 'buy' },
-                  { time: '20:10:34', price: '118112.96', amount: '0.0045', type: 'sell' },
-                  { time: '20:10:33', price: '118112.95', amount: '0.0234', type: 'buy' },
-                  { time: '20:10:33', price: '118112.95', amount: '0.0087', type: 'sell' },
-                  { time: '20:10:32', price: '118112.94', amount: '0.0156', type: 'buy' },
-                  { time: '20:10:32', price: '118112.94', amount: '0.0098', type: 'sell' }
+                  { time: new Date().toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0080', type: 'buy' },
+                  { time: new Date(Date.now() - 1000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0001700', type: 'buy' },
+                  { time: new Date(Date.now() - 2000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.1000', type: 'sell' },
+                  { time: new Date(Date.now() - 3000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0004200', type: 'buy' },
+                  { time: new Date(Date.now() - 5000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0047', type: 'sell' },
+                  { time: new Date(Date.now() - 6000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0016', type: 'buy' },
+                  { time: new Date(Date.now() - 7000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.00070000', type: 'sell' },
+                  { time: new Date(Date.now() - 8000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0243', type: 'buy' },
+                  { time: new Date(Date.now() - 9000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.01).toFixed(2), amount: '0.0089', type: 'buy' },
+                  { time: new Date(Date.now() - 10000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.01).toFixed(2), amount: '0.0156', type: 'sell' },
+                  { time: new Date(Date.now() - 11000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.02).toFixed(2), amount: '0.0034', type: 'buy' },
+                  { time: new Date(Date.now() - 12000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.02).toFixed(2), amount: '0.0078', type: 'sell' },
+                  { time: new Date(Date.now() - 13000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.03).toFixed(2), amount: '0.0092', type: 'buy' },
+                  { time: new Date(Date.now() - 14000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.03).toFixed(2), amount: '0.0067', type: 'sell' },
+                  { time: new Date(Date.now() - 15000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.04).toFixed(2), amount: '0.0123', type: 'buy' },
+                  { time: new Date(Date.now() - 16000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.04).toFixed(2), amount: '0.0045', type: 'sell' },
+                  { time: new Date(Date.now() - 17000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.05).toFixed(2), amount: '0.0234', type: 'buy' },
+                  { time: new Date(Date.now() - 18000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.05).toFixed(2), amount: '0.0087', type: 'sell' },
+                  { time: new Date(Date.now() - 19000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.06).toFixed(2), amount: '0.0156', type: 'buy' },
+                  { time: new Date(Date.now() - 20000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.06).toFixed(2), amount: '0.0098', type: 'sell' }
                 ].map((transaction, index) => (
                   <div key={index} className="flex justify-between text-xs py-1 hover:bg-gray-800/50 rounded px-2 -mx-2">
                     <span className="text-gray-400 font-mono">{transaction.time}</span>
