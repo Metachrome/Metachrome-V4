@@ -168,10 +168,9 @@ export default function LightweightChart({
 
     fetchKlines();
 
-    // Update chart every 5 seconds
-    const interval_id = setInterval(fetchKlines, 5000);
-
-    return () => clearInterval(interval_id);
+    // REMOVED: Auto-refresh interval - Chart should only update last candle with real-time price
+    // Full chart refresh is annoying and unnecessary
+    // Real-time updates are handled by the useEffect below that updates only the last candle
   }, [symbol, interval]);
 
   // Update last candle with real-time price

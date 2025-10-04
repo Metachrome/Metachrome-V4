@@ -233,6 +233,10 @@ function OptionsPageContent() {
   const realTimePrice = priceData?.price.toFixed(2) || '0.00';
   const orderBookPrice = priceData?.price || 166373.87;
 
+  // SINGLE SOURCE OF TRUTH for display price - ALWAYS use priceData from context
+  // This ensures ALL numbers across the page are SYNCHRONIZED
+  const displayPrice = priceData?.price || currentPrice || 166373.87;
+
   const [orderBookData, setOrderBookData] = useState<{sellOrders: any[], buyOrders: any[]}>({sellOrders: [], buyOrders: []}); // Cache order book data
 
   // REMOVED: fetchBinancePrice - Now using PriceContext instead
@@ -363,8 +367,8 @@ function OptionsPageContent() {
   const btcMarketData = marketData?.find(item => item.symbol === 'BTCUSDT');
   const realPrice = btcMarketData ? parseFloat(btcMarketData.price) : 0;
 
-  // Ensure currentPrice is always a valid number
-  const safeCurrentPrice = Number(currentPrice) || Number(realPrice) || 166373.87;
+  // Ensure currentPrice is always a valid number - ALWAYS use displayPrice as primary source
+  const safeCurrentPrice = displayPrice;
 
   // REMOVED: Initialize real-time price fetching - Now handled by PriceContext
   // Price updates are automatically managed by PriceContext provider
@@ -837,7 +841,7 @@ function OptionsPageContent() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-white font-bold text-lg">BTC/USDT</div>
-                <div className="text-white text-xl font-bold">{currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || safeCurrentPrice.toFixed(2))} USDT</div>
+                <div className="text-white text-xl font-bold">{displayPrice.toFixed(2)} USDT</div>
                 <div className={`text-sm font-semibold ${changeColor}`}>
                   {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
@@ -881,7 +885,7 @@ function OptionsPageContent() {
           <div className="bg-[#10121E] relative w-full" style={{ height: '65vh', minHeight: '550px' }}>
             <TradeOverlay
               trades={activeTrades}
-              currentPrice={priceData?.price || currentPrice}
+              currentPrice={displayPrice}
             />
             <div className="w-full h-full">
               <LightweightChart
@@ -915,7 +919,7 @@ function OptionsPageContent() {
                       </div>
                       <div className="flex justify-between text-xs text-gray-400">
                         <span>Entry: {trade.entryPrice.toFixed(2)} USDT</span>
-                        <span>Current: {currentPrice.toFixed(2)} USDT</span>
+                        <span>Current: {displayPrice.toFixed(2)} USDT</span>
                       </div>
                       <div className="mt-1">
                         <span className={`text-xs font-medium ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
@@ -959,12 +963,12 @@ function OptionsPageContent() {
             <div className={`p-2 my-2 rounded ${isPositive ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
               <div className="flex items-center justify-between">
                 <span className={`font-bold text-base ${changeColor}`}>
-                  {currentPrice.toFixed(2)}
+                  {displayPrice.toFixed(2)}
                 </span>
                 <span className={changeColor}>
                   {isPositive ? '↑' : '↓'}
                 </span>
-                <span className="text-gray-400 text-xs">{currentPrice.toFixed(2)} USDT</span>
+                <span className="text-gray-400 text-xs">{displayPrice.toFixed(2)} USDT</span>
               </div>
             </div>
 
@@ -1181,8 +1185,8 @@ function OptionsPageContent() {
         <div className="flex items-center space-x-6">
           <div>
             <div className="text-white font-bold text-lg">BTC/USDT</div>
-            <div className="text-white text-2xl font-bold">{currentPrice > 0 ? currentPrice.toFixed(2) : safeCurrentPrice.toFixed(2)}</div>
-            <div className="text-gray-400 text-sm">{currentPrice > 0 ? currentPrice.toFixed(2) : safeCurrentPrice.toFixed(2)} USDT</div>
+            <div className="text-white text-2xl font-bold">{displayPrice.toFixed(2)}</div>
+            <div className="text-gray-400 text-sm">{displayPrice.toFixed(2)} USDT</div>
           </div>
           <div className={`text-lg font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
             {btcMarketData?.priceChangePercent24h || '+0.00%'}
@@ -1222,7 +1226,7 @@ function OptionsPageContent() {
               <div className="text-white font-bold">BTC/USDT</div>
               <div className="text-right">
                 <div className={`font-bold price-display ${changeColor}`}>
-                  {currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || safeCurrentPrice.toFixed(2))}
+                  {displayPrice.toFixed(2)}
                 </div>
                 <div className={`text-sm price-change ${changeColor}`}>
                   {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
@@ -1266,15 +1270,15 @@ function OptionsPageContent() {
             </div>
 
             {/* Current Price */}
-            <div className={`p-2 my-1 ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'bg-red-900/20' : 'bg-green-900/20'}`}>
+            <div className={`p-2 my-1 ${isPositive ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
               <div className="flex items-center justify-between">
-                <span className={`font-bold text-lg ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {currentPrice.toFixed(2)}
+                <span className={`font-bold text-lg ${changeColor}`}>
+                  {displayPrice.toFixed(2)}
                 </span>
-                <span className={`${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {btcMarketData?.priceChangePercent24h?.startsWith('-') ? '↓' : '↑'}
+                <span className={changeColor}>
+                  {isPositive ? '↑' : '↓'}
                 </span>
-                <span className="text-gray-400 text-sm">{currentPrice.toFixed(2)} USDT</span>
+                <span className="text-gray-400 text-sm">{displayPrice.toFixed(2)} USDT</span>
               </div>
             </div>
 
