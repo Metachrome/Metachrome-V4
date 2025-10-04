@@ -182,7 +182,7 @@ export default function SpotPage() {
     }
   }, [lastMessage, queryClient, user?.id]);
 
-  // Fetch Binance price data
+  // Fetch Binance price data - ONLY FOR 24h STATS (NOT FOR CURRENT PRICE)
   const fetchBinancePrice = async () => {
     try {
       const response = await fetch('/api/market-data');
@@ -192,13 +192,15 @@ export default function SpotPage() {
       if (Array.isArray(data)) {
         const btcData = data.find((item: any) => item.symbol === selectedSymbol);
         if (btcData) {
-          setRealTimePrice(btcData.price);
+          // ONLY update price change percentage, NOT the current price
+          // Current price comes from TradingView only!
           setPriceChange(btcData.priceChange24h);
-          setCurrentPrice(parseFloat(btcData.price));
 
-          // Update form prices if not manually set
-          if (!buyPrice) setBuyPrice(btcData.price);
-          if (!sellPrice) setSellPrice(btcData.price);
+          // DO NOT update currentPrice here - TradingView is the only source
+          // setRealTimePrice(btcData.price); // DISABLED
+          // setCurrentPrice(parseFloat(btcData.price)); // DISABLED
+          // if (!buyPrice) setBuyPrice(btcData.price); // DISABLED
+          // if (!sellPrice) setSellPrice(btcData.price); // DISABLED
         }
       } else {
         console.warn('Market data is not an array:', data);
@@ -463,11 +465,12 @@ export default function SpotPage() {
     return () => clearInterval(interval);
   }, [selectedSymbol]);
 
-  // Update current price from real market data (fallback)
+  // Update current price from real market data - DISABLED (TradingView is the only source)
   useEffect(() => {
     if (realPrice > 0 && !realTimePrice) {
-      setCurrentPrice(realPrice);
-      console.log('📈 Real Price Update:', realPrice.toFixed(2));
+      // DO NOT update currentPrice from market data - TradingView is the only source
+      // setCurrentPrice(realPrice); // DISABLED
+      console.log('📈 Market data price ignored - using TradingView only');
     }
   }, [realPrice, realTimePrice]);
 
