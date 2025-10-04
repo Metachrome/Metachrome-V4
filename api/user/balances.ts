@@ -41,25 +41,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { userId } = req.query;
       let targetUserId = userId as string || 'demo-user-1';
 
+      console.log('💰 [BALANCE API] Request for userId:', userId);
+      console.log('💰 [BALANCE API] Target userId:', targetUserId);
+
       // Handle admin users - map them to their trading profile for balance display
       if (targetUserId === 'superadmin-001' || targetUserId === 'admin-001') {
         targetUserId = `${targetUserId}-trading`;
         console.log(`🔧 Admin user ${userId} balance mapped to ${targetUserId}`);
       }
 
-      console.log('💰 Getting balance for user:', targetUserId);
-
       // Try to get from database first
       let balanceData = null;
       try {
         if (supabaseAdmin) {
-          const { data: user } = await supabaseAdmin
+          console.log('💰 [BALANCE API] Querying Supabase for user:', targetUserId);
+
+          const { data: user, error } = await supabaseAdmin
             .from('users')
-            .select('balance')
+            .select('id, username, balance')
             .eq('id', targetUserId)
             .single();
 
-          if (user) {
+          console.log('💰 [BALANCE API] Supabase response:', { user, error });
+
+          if (error) {
+            console.error('❌ [BALANCE API] Supabase error:', error);
+          }
+
+          if (user && user.balance !== null && user.balance !== undefined) {
+            console.log(`✅ [BALANCE API] Found user ${user.username} with balance: ${user.balance}`);
             // SIMPLIFIED BALANCE SYSTEM: Only USDT balance (auto-conversion enabled)
             balanceData = [
               {
@@ -68,14 +78,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 locked: '0'
               }
             ];
+          } else {
+            console.log('⚠️ [BALANCE API] User found but no balance field');
           }
+        } else {
+          console.log('⚠️ [BALANCE API] Supabase admin client not initialized');
         }
       } catch (dbError) {
-        console.log('⚠️ Database query failed, using in-memory balance');
+        console.error('❌ [BALANCE API] Database query exception:', dbError);
       }
 
       // Fallback to in-memory balance
       if (!balanceData) {
+        console.log('⚠️ [BALANCE API] Using fallback in-memory balance');
         const userBalance = userBalances.get(targetUserId) || { balance: 0, currency: 'USDT' };
         // SIMPLIFIED BALANCE SYSTEM: Only USDT balance (auto-conversion enabled)
         balanceData = [
@@ -87,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ];
       }
 
-      console.log('✅ Balance data:', balanceData);
+      console.log('✅ [BALANCE API] Final balance data:', balanceData);
 
       return res.json(balanceData);
     }

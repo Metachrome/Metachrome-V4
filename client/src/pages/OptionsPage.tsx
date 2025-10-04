@@ -1572,7 +1572,7 @@ export default function OptionsPage() {
                   </a>
                 </p>
               </div>
-            ) : (!user?.verification_status || user?.verification_status === 'unverified') && user?.role !== 'superadmin' ? (
+            ) : (!user?.verificationStatus || user?.verificationStatus === 'unverified') && user?.role !== 'super_admin' ? (
               <div className="space-y-4">
                 <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4">
                   <div className="text-center">
@@ -1586,7 +1586,7 @@ export default function OptionsPage() {
                   </div>
                 </div>
               </div>
-            ) : user?.verification_status === 'pending' ? (
+            ) : user?.verificationStatus === 'pending' ? (
               <div className="space-y-4">
                 <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4">
                   <div className="text-center">
