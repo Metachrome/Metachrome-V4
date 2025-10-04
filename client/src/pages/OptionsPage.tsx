@@ -952,9 +952,9 @@ function OptionsPageContent() {
             <div className="space-y-0 mb-2">
               {orderBookData.sellOrders.slice(0, 5).map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 py-1 text-xs">
-                  <span className="text-red-400">{order.price}</span>
-                  <span className="text-gray-300">{order.volume}</span>
-                  <span className="text-gray-300">{order.turnover}</span>
+                  <span style={{ color: '#f87171' }}>{order.price}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
                 </div>
               ))}
             </div>
@@ -976,9 +976,9 @@ function OptionsPageContent() {
             <div className="space-y-0">
               {orderBookData.buyOrders.slice(0, 5).map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 py-1 text-xs">
-                  <span className="text-green-400">{order.price}</span>
-                  <span className="text-gray-300">{order.volume}</span>
-                  <span className="text-gray-300">{order.turnover}</span>
+                  <span style={{ color: '#4ade80' }}>{order.price}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
                 </div>
               ))}
             </div>
@@ -1262,9 +1262,9 @@ function OptionsPageContent() {
             <div className="space-y-0">
               {orderBookData.sellOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800">
-                  <span className="text-red-400">{order.price}</span>
-                  <span className="text-gray-300">{order.volume}</span>
-                  <span className="text-gray-300">{order.turnover}</span>
+                  <span style={{ color: '#f87171' }}>{order.price}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
                 </div>
               ))}
             </div>
@@ -1286,9 +1286,9 @@ function OptionsPageContent() {
             <div className="space-y-0">
               {orderBookData.buyOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800">
-                  <span className="text-green-400">{order.price}</span>
-                  <span className="text-gray-300">{order.volume}</span>
-                  <span className="text-gray-300">{order.turnover}</span>
+                  <span style={{ color: '#4ade80' }}>{order.price}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
                 </div>
               ))}
             </div>
@@ -1611,7 +1611,7 @@ function OptionsPageContent() {
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto">
             {[
-              { symbol: 'BTCUSDT', price: currentPrice.toString(), priceChangePercent24h: changeText || '+1.44%' },
+              { symbol: 'BTCUSDT', price: displayPrice.toString(), priceChangePercent24h: changeText || '+1.44%' },
               { symbol: 'ETHUSDT', price: '3550.21', priceChangePercent24h: '+1.06%' },
               { symbol: 'BNBUSDT', price: '698.45', priceChangePercent24h: '+2.15%' },
               { symbol: 'SOLUSDT', price: '245.67', priceChangePercent24h: '+3.42%' },
