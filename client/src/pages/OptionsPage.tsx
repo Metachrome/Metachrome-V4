@@ -1263,14 +1263,14 @@ function OptionsPageContent() {
           </div>
 
           {/* Order Book Data */}
-          <div className="h-[400px] overflow-y-auto">
+          <div className="h-[400px] overflow-y-auto" data-orderbook="desktop">
             {/* Sell Orders (Red) */}
             <div className="space-y-0">
               {orderBookData.sellOrders.length > 0 ? orderBookData.sellOrders.map((order, index) => (
-                <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800">
-                  <span style={{ color: '#f87171', fontWeight: '500' }}>{order.price}</span>
-                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
-                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
+                <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800" data-order-type="sell">
+                  <span style={{ color: 'rgb(248, 113, 113)', fontWeight: '500' }} data-field="price">{order.price}</span>
+                  <span style={{ color: 'rgb(209, 213, 219)' }} data-field="volume">{order.volume}</span>
+                  <span style={{ color: 'rgb(209, 213, 219)' }} data-field="turnover">{order.turnover}</span>
                 </div>
               )) : (
                 <div className="text-gray-400 text-center py-4">Loading sell orders...</div>
@@ -1293,10 +1293,10 @@ function OptionsPageContent() {
             {/* Buy Orders (Green) */}
             <div className="space-y-0">
               {orderBookData.buyOrders.length > 0 ? orderBookData.buyOrders.map((order, index) => (
-                <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800">
-                  <span style={{ color: '#4ade80', fontWeight: '500' }}>{order.price}</span>
-                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
-                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
+                <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800" data-order-type="buy">
+                  <span style={{ color: 'rgb(74, 222, 128)', fontWeight: '500' }} data-field="price">{order.price}</span>
+                  <span style={{ color: 'rgb(209, 213, 219)' }} data-field="volume">{order.volume}</span>
+                  <span style={{ color: 'rgb(209, 213, 219)' }} data-field="turnover">{order.turnover}</span>
                 </div>
               )) : (
                 <div className="text-gray-400 text-center py-4">Loading buy orders...</div>
