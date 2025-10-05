@@ -958,9 +958,9 @@ function OptionsPageContent() {
             <div className="space-y-0 mb-2">
               {orderBookData.sellOrders.slice(0, 5).map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 py-1 text-xs">
-                  <span className="price-down font-medium">{order.price}</span>
-                  <span className="price-neutral">{order.volume}</span>
-                  <span className="price-neutral">{order.turnover}</span>
+                  <span style={{ color: '#f87171', fontWeight: '500' }}>{order.price}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
                 </div>
               ))}
             </div>
@@ -1268,9 +1268,9 @@ function OptionsPageContent() {
             <div className="space-y-0">
               {orderBookData.sellOrders.length > 0 ? orderBookData.sellOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800">
-                  <span className="price-down font-medium">{order.price}</span>
-                  <span className="price-neutral">{order.volume}</span>
-                  <span className="price-neutral">{order.turnover}</span>
+                  <span style={{ color: '#f87171', fontWeight: '500' }}>{order.price}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
                 </div>
               )) : (
                 <div className="text-gray-400 text-center py-4">Loading sell orders...</div>
@@ -1294,9 +1294,9 @@ function OptionsPageContent() {
             <div className="space-y-0">
               {orderBookData.buyOrders.length > 0 ? orderBookData.buyOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-gray-800">
-                  <span className="price-up font-medium">{order.price}</span>
-                  <span className="price-neutral">{order.volume}</span>
-                  <span className="price-neutral">{order.turnover}</span>
+                  <span style={{ color: '#4ade80', fontWeight: '500' }}>{order.price}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.volume}</span>
+                  <span style={{ color: '#d1d5db' }}>{order.turnover}</span>
                 </div>
               )) : (
                 <div className="text-gray-400 text-center py-4">Loading buy orders...</div>
