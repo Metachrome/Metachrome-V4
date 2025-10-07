@@ -772,7 +772,7 @@ function OptionsPageContent() {
       // Determine correct user ID for trading
       let tradingUserId = 'user-1'; // fallback
       if (user?.email === 'angela.soenoko@gmail.com') {
-        tradingUserId = 'user-angela'; // Match the ID in users-data.json
+        tradingUserId = 'user-angela-1758195715'; // Match the actual ID in users-data.json
       } else if (user?.email === 'amdsnkstudio@metachrome.io') {
         tradingUserId = 'user-1'; // Match the ID in users-data.json
       } else if (user?.id) {
