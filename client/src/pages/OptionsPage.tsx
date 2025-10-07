@@ -315,17 +315,32 @@ function OptionsPageContent() {
     refetchInterval: 5000,
   });
 
-  // Fetch user balance with real-time sync
+  // Fetch user balance with real-time sync - FIXED: Use same endpoint as Wallet page
   const { data: userBalances } = useQuery({
-    queryKey: ['/api/user/balances', user?.id],
+    queryKey: ['/api/balances'],
     enabled: !!user,
     refetchInterval: 2000, // Very fast refetch for real-time balance sync
     staleTime: 0, // Always consider data stale
-    cacheTime: 0, // Don't cache data
+    gcTime: 0, // Don't cache data (updated from cacheTime)
     queryFn: async () => {
-      const url = user?.id ? `/api/user/balances?userId=${user.id}` : '/api/user/balances';
-      console.log('🔍 OPTIONS: Fetching balance from:', url, 'for user:', user?.id);
-      const response = await apiRequest('GET', url);
+      console.log('🔍 OPTIONS: Fetching balance from /api/balances for user:', user?.id, user?.username);
+      console.log('🔍 OPTIONS: Auth token:', localStorage.getItem('authToken')?.substring(0, 30) + '...');
+
+      const response = await fetch('/api/balances', {
+        credentials: 'include', // Important: send session cookies
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      console.log('🔍 OPTIONS: Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ OPTIONS: Balance API failed:', response.status, errorText);
+        throw new Error(`Failed to fetch balance: ${response.status} ${errorText}`);
+      }
+
       const data = await response.json();
       console.log('🔍 OPTIONS: Balance API response:', data);
       return data;
@@ -367,14 +382,13 @@ function OptionsPageContent() {
       console.log('🔄 OPTIONS: Current user ID:', user?.id, 'Update for user:', lastMessage.data?.userId);
 
       // Aggressive cache invalidation - clear all balance-related queries
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
-      queryClient.removeQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.removeQueries({ queryKey: ['/api/balances'] });
 
       // Force immediate refetch with a small delay to ensure cache is cleared
       setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['/api/user/balances', user?.id] });
-        queryClient.refetchQueries({ queryKey: ['/api/user/balances'] });
+        queryClient.refetchQueries({ queryKey: ['/api/balances'] });
       }, 100);
     }
   }, [lastMessage, queryClient, user?.id]);
@@ -474,9 +488,8 @@ function OptionsPageContent() {
     if (lastMessage?.type === 'balance_update' && lastMessage.data?.userId === user?.id) {
       console.log('💰 Real-time balance update received:', lastMessage.data);
 
-      // Invalidate and refetch balance data to ensure UI sync - use exact query key pattern
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      // Invalidate and refetch balance data to ensure UI sync - use correct query key
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
 
       // Show notification for balance changes
       if (lastMessage.data.changeType !== 'trade_start') {
@@ -551,7 +564,7 @@ function OptionsPageContent() {
 
       if (response.ok) {
         // Refresh balance to show updated amount
-        queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
         console.log(`💰 Balance updated: Trade ${won ? 'WON' : 'LOST'} - Amount: ${trade.amount} USDT`);
       } else {
         console.error('Failed to update balance after trade completion');
@@ -816,7 +829,7 @@ function OptionsPageContent() {
         setIsTrading(true);
 
         // Refresh balance to show updated amount
-        queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
 
         // Play trade placement sound safely
         try {

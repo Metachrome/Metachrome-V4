@@ -13,6 +13,16 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 // Load environment variables
 require('dotenv').config();
 
+// AUTO-BUILD PROCESS - Build frontend before starting server
+console.log('🔨 AUTO-BUILD: Building frontend...');
+const { execSync } = require('child_process');
+try {
+  execSync('npm run build', { stdio: 'inherit' });
+  console.log('✅ AUTO-BUILD: Frontend built successfully');
+} catch (error) {
+  console.log('⚠️ AUTO-BUILD: Build failed, continuing with existing build...');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3005;
 
