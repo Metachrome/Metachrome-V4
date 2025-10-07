@@ -585,188 +585,25 @@ function SpotPageContent() {
           </div>
         </div>
 
-        {/* Mobile Order Book */}
-        <div className="px-4 py-3 border-b border-gray-700">
-          <h3 className="text-white font-bold mb-3">Order Book</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {/* Sell Orders */}
-            <div>
-              <div className="text-red-400 text-sm font-medium mb-2">Sell Orders</div>
-              <div className="space-y-1">
-                {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).sellOrders.slice(0, 5).map((order, index) => (
-                  <div key={index} className="flex justify-between text-xs">
-                    <span className="text-red-400">{order.price}</span>
-                    <span className="text-gray-400">{order.amount}</span>
-                  </div>
-                ))}
-              </div>
+        {/* Compact Bottom Trading Panel */}
+        <div className="fixed bottom-20 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-4">
+          <div className="text-center">
+            <div className="text-white font-bold text-lg mb-2">
+              BTC/USDT: ${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}
             </div>
-
-            {/* Buy Orders */}
-            <div>
-              <div className="text-green-400 text-sm font-medium mb-2">Buy Orders</div>
-              <div className="space-y-1">
-                {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).buyOrders.slice(0, 5).map((order, index) => (
-                  <div key={index} className="flex justify-between text-xs">
-                    <span className="text-green-400">{order.price}</span>
-                    <span className="text-gray-400">{order.amount}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="text-gray-400 text-sm">
+              Spot Trading • Real-time Price
             </div>
           </div>
         </div>
 
-        {/* Mobile Market Overview */}
-        <div className="px-4 py-3 border-b border-gray-700">
-          <h3 className="text-white font-bold mb-3">Market Overview</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { symbol: 'BTC/USDT', price: currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00'), change: priceChange || '+0.50%' },
-              { symbol: 'ETH/USDT', price: '3,456.78', change: '+1.23%' },
-              { symbol: 'BNB/USDT', price: '712.45', change: '-0.45%' },
-              { symbol: 'ADA/USDT', price: '0.8272', change: '+0.60%' }
-            ].map((market, index) => (
-              <div key={index} className="bg-gray-800 rounded-lg p-3">
-                <div className="text-white text-sm font-medium">{market.symbol}</div>
-                <div className="text-white text-lg font-bold">${market.price}</div>
-                <div className={`text-xs font-medium ${market.change.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {market.change}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Mobile Trading Interface */}
-        <div className="px-4 py-4 space-y-4">
-          {/* Buy/Sell Toggle */}
-          <div className="flex bg-gray-800 rounded-lg p-1">
-            <button
-              onClick={() => setMobileTradeTab('buy')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                mobileTradeTab === 'buy'
-                  ? 'bg-green-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Buy
-            </button>
-            <button
-              onClick={() => setMobileTradeTab('sell')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                mobileTradeTab === 'sell'
-                  ? 'bg-red-600 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Sell
-            </button>
-          </div>
 
-          {/* Trading Form */}
-          {mobileTradeTab === 'buy' ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
-                <input
-                  type="number"
-                  value={buyPrice}
-                  onChange={(e) => setBuyPrice(e.target.value)}
-                  placeholder="Market Price"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
-                <input
-                  type="number"
-                  value={buyAmount}
-                  onChange={(e) => setBuyAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Total (USDT)</label>
-                <div className="text-white bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
-                  {calculateBuyTotal()}
-                </div>
-              </div>
-              <Button
-                onClick={handleBuySubmit}
-                disabled={!buyAmount || buyAmount === '0' || !user}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
-              >
-                {!user ? 'Login to Trade' : `Buy BTC`}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
-                <input
-                  type="number"
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(e.target.value)}
-                  placeholder="Market Price"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
-                <input
-                  type="number"
-                  value={sellAmount}
-                  onChange={(e) => setSellAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Total (USDT)</label>
-                <div className="text-white bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
-                  {calculateSellTotal()}
-                </div>
-              </div>
-              <Button
-                onClick={handleSellSubmit}
-                disabled={!sellAmount || sellAmount === '0' || !user}
-                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
-              >
-                {!user ? 'Login to Trade' : `Sell BTC`}
-              </Button>
-            </div>
-          )}
-        </div>
 
-        {/* Mobile Recent Orders */}
-        <div className="px-4 py-4">
-          <h3 className="text-white font-bold mb-3">Recent Orders</h3>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {(orders || []).slice(0, 5).map((order) => (
-              <div key={order.id} className="bg-gray-800 rounded-lg p-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className={`text-sm font-medium ${order.side === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                      {order.side.toUpperCase()} {order.symbol}
-                    </span>
-                    <div className="text-xs text-gray-400">{order.amount} @ ${order.price || 'Market'}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-sm font-medium ${
-                      order.status === 'filled' ? 'text-green-400' :
-                      order.status === 'cancelled' ? 'text-red-400' : 'text-yellow-400'
-                    }`}>
-                      {order.status}
-                    </div>
-                    <div className="text-xs text-gray-400">${order.total}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+
+
+
+
 
         <MobileBottomNav />
       </div>
