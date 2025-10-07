@@ -38,8 +38,14 @@ export default function LightweightChart({
     if (!chartContainerRef.current) return;
 
     console.log('📊 [LightweightChart] Initializing chart for', symbol, interval);
+    console.log('📊 [LightweightChart] Height prop:', height, 'Calculated height:', chartHeight);
+    console.log('📊 [LightweightChart] Container dimensions:', {
+      width: chartContainerRef.current.clientWidth,
+      height: chartContainerRef.current.clientHeight,
+      windowHeight: window.innerHeight
+    });
 
-    // Calculate chart height - handle percentage heights properly
+    // Calculate chart height - handle percentage heights and calc() properly
     let chartHeight = 400; // default
     if (typeof height === 'number') {
       chartHeight = height;
@@ -47,6 +53,15 @@ export default function LightweightChart({
       if (height.includes('%')) {
         // For percentage heights, use the container's actual height
         chartHeight = chartContainerRef.current.clientHeight || window.innerHeight * 0.8;
+      } else if (height.includes('calc(')) {
+        // For calc() values, use the container's actual height or calculate based on viewport
+        const containerHeight = chartContainerRef.current.clientHeight;
+        if (containerHeight > 0) {
+          chartHeight = containerHeight;
+        } else {
+          // Fallback calculation for calc(100vh - 120px)
+          chartHeight = window.innerHeight - 120;
+        }
       } else {
         chartHeight = parseInt(height) || 400;
       }
@@ -105,10 +120,15 @@ export default function LightweightChart({
     // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
-        // Recalculate height for percentage-based heights
+        // Recalculate height for percentage-based and calc() heights
         let newHeight = chartHeight;
-        if (typeof height === 'string' && height.includes('%')) {
-          newHeight = chartContainerRef.current.clientHeight || window.innerHeight * 0.8;
+        if (typeof height === 'string') {
+          if (height.includes('%')) {
+            newHeight = chartContainerRef.current.clientHeight || window.innerHeight * 0.8;
+          } else if (height.includes('calc(')) {
+            const containerHeight = chartContainerRef.current.clientHeight;
+            newHeight = containerHeight > 0 ? containerHeight : window.innerHeight - 120;
+          }
         }
 
         chartRef.current.applyOptions({
