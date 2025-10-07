@@ -542,12 +542,12 @@ span.price-neutral {
 
 /* Mobile Chart Vertical Layout - Force vertical aspect ratio */
 @media (max-width: 768px) {
-  /* Mobile chart containers - ensure full height minus header */
+  /* Mobile chart containers - ensure large vertical height */
   #options_mobile_chart,
   #spot_mobile_chart {
     width: 100% !important;
     height: 100% !important;
-    min-height: calc(100vh - 120px) !important;
+    min-height: 500px !important;
   }
 
   /* Chart canvas elements */
@@ -555,7 +555,7 @@ span.price-neutral {
   #spot_mobile_chart canvas {
     width: 100% !important;
     height: 100% !important;
-    min-height: calc(100vh - 120px) !important;
+    min-height: 500px !important;
   }
 
   /* TradingView iframes */
@@ -563,32 +563,31 @@ span.price-neutral {
   #spot_mobile_chart iframe {
     width: 100% !important;
     height: 100% !important;
-    min-height: calc(100vh - 120px) !important;
+    min-height: 500px !important;
   }
 
   /* Force TradingView widget to fill vertical space */
   .tradingview-widget-container {
     width: 100% !important;
     height: 100% !important;
-    min-height: calc(100vh - 120px) !important;
+    min-height: 500px !important;
   }
 
   .tradingview-widget-container__widget {
     width: 100% !important;
     height: 100% !important;
-    min-height: calc(100vh - 120px) !important;
+    min-height: 500px !important;
   }
 
-  /* Ensure mobile chart parent containers take calculated height */
+  /* Ensure mobile chart parent containers take large height */
   .mobile-chart-container {
-    height: calc(100vh - 120px) !important;
-    min-height: calc(100vh - 120px) !important;
+    min-height: 500px !important;
   }
 
   /* Force chart content to be vertical */
   .mobile-chart-container > div {
     height: 100% !important;
-    min-height: calc(100vh - 120px) !important;
+    min-height: 500px !important;
   }
 
   /* Ensure chart containers don't overflow */

@@ -574,12 +574,12 @@ function SpotPageContent() {
         </div>
 
         {/* Mobile Chart - Full Vertical Layout */}
-        <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: 'calc(100vh - 120px)', minHeight: 'calc(100vh - 120px)' }}>
+        <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '80vh', minHeight: '500px' }}>
           <div className="w-full h-full">
             <LightweightChart
               symbol="BTCUSDT"
               interval="1m"
-              height="calc(100vh - 120px)"
+              height="80vh"
               containerId="spot_mobile_chart"
             />
           </div>
