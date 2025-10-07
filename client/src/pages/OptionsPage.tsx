@@ -891,7 +891,7 @@ function OptionsPageContent() {
           </div>
 
           {/* Mobile Chart - Vertical/Tall Layout */}
-          <div className="bg-[#10121E] relative w-full" style={{ height: '65vh', minHeight: '550px' }}>
+          <div className="bg-[#10121E] relative w-full" style={{ height: '85vh', minHeight: '750px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
