@@ -890,8 +890,8 @@ function OptionsPageContent() {
             </div>
           </div>
 
-          {/* Mobile Chart - Vertical/Tall Layout */}
-          <div className="bg-[#10121E] relative w-full" style={{ height: '85vh', minHeight: '750px' }}>
+          {/* Mobile Chart - Full Vertical Layout */}
+          <div className="bg-[#10121E] relative w-full h-screen">
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
@@ -904,12 +904,35 @@ function OptionsPageContent() {
                 containerId="options_mobile_chart"
               />
             </div>
-
-
           </div>
 
+          {/* Mobile Content - Scrollable Below Chart */}
+          <div className="bg-[#10121E] min-h-screen">
 
-
+          {/* Mobile Market Stats - Same as Desktop */}
+          <div className="px-4 py-3 border-b border-gray-700">
+            <h3 className="text-white font-bold mb-3">Market Statistics</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-gray-400">24h Change</div>
+                <div className={`font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                  {btcMarketData?.priceChange24h || '0.00'} ({btcMarketData?.priceChangePercent24h || '0.00%'})
+                </div>
+              </div>
+              <div>
+                <div className="text-gray-400">24h High</div>
+                <div className="text-white font-semibold">{btcMarketData?.high24h || currentPrice.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-gray-400">24h Low</div>
+                <div className="text-white font-semibold">{btcMarketData?.low24h || currentPrice.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-gray-400">24h Volume</div>
+                <div className="text-white font-semibold">{btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(2) + 'M BTC' : '0.00'}</div>
+              </div>
+            </div>
+          </div>
 
           {/* My Order Section */}
           <div className="px-4 py-3 border-b border-gray-700">
@@ -1199,6 +1222,7 @@ function OptionsPageContent() {
                 </div>
               </div>
             )}
+          </div>
           </div>
 
           <MobileBottomNav />

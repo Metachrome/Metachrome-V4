@@ -573,8 +573,8 @@ function SpotPageContent() {
           </div>
         </div>
 
-        {/* Mobile Chart - Vertical/Tall Layout */}
-        <div className="bg-[#10121E] relative w-full" style={{ height: '85vh', minHeight: '750px' }}>
+        {/* Mobile Chart - Full Vertical Layout */}
+        <div className="bg-[#10121E] relative w-full h-screen">
           <div className="w-full h-full">
             <LightweightChart
               symbol="BTCUSDT"
@@ -582,6 +582,34 @@ function SpotPageContent() {
               height="100%"
               containerId="spot_mobile_chart"
             />
+          </div>
+        </div>
+
+        {/* Mobile Content - Scrollable Below Chart */}
+        <div className="bg-[#10121E] min-h-screen">
+
+        {/* Mobile Market Stats - Same as Desktop */}
+        <div className="px-4 py-3 border-b border-gray-700">
+          <h3 className="text-white font-bold mb-3">Market Statistics</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-gray-400">Current Price</div>
+              <div className="text-white font-bold text-lg">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
+            </div>
+            <div>
+              <div className="text-gray-400">24h Change</div>
+              <div className={`font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                {priceChange || '+0.50%'}
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-400">24h Volume</div>
+              <div className="text-white font-semibold">2,847.32 BTC</div>
+            </div>
+            <div>
+              <div className="text-gray-400">Market Cap</div>
+              <div className="text-white font-semibold">$1.2T</div>
+            </div>
           </div>
         </div>
 
@@ -766,6 +794,7 @@ function SpotPageContent() {
               </div>
             ))}
           </div>
+        </div>
         </div>
 
         <MobileBottomNav />
