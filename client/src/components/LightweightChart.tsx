@@ -39,10 +39,23 @@ export default function LightweightChart({
 
     console.log('📊 [LightweightChart] Initializing chart for', symbol, interval);
 
+    // Calculate chart height - handle percentage heights properly
+    let chartHeight = 400; // default
+    if (typeof height === 'number') {
+      chartHeight = height;
+    } else if (typeof height === 'string') {
+      if (height.includes('%')) {
+        // For percentage heights, use the container's actual height
+        chartHeight = chartContainerRef.current.clientHeight || window.innerHeight * 0.8;
+      } else {
+        chartHeight = parseInt(height) || 400;
+      }
+    }
+
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: typeof height === 'number' ? height : parseInt(height as string) || 400,
+      height: chartHeight,
       layout: {
         background: { color: '#10121E' },
         textColor: '#D1D5DB',
@@ -92,8 +105,15 @@ export default function LightweightChart({
     // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
+        // Recalculate height for percentage-based heights
+        let newHeight = chartHeight;
+        if (typeof height === 'string' && height.includes('%')) {
+          newHeight = chartContainerRef.current.clientHeight || window.innerHeight * 0.8;
+        }
+
         chartRef.current.applyOptions({
           width: chartContainerRef.current.clientWidth,
+          height: newHeight,
         });
       }
     };

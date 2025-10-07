@@ -542,28 +542,52 @@ span.price-neutral {
 
 /* Mobile Chart Vertical Layout - Force vertical aspect ratio */
 @media (max-width: 768px) {
+  /* Mobile chart containers - ensure full height */
   #options_mobile_chart,
   #spot_mobile_chart {
     width: 100% !important;
     height: 100% !important;
-    min-height: 500px !important;
+    min-height: 70vh !important;
   }
 
+  /* Chart canvas elements */
+  #options_mobile_chart canvas,
+  #spot_mobile_chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 70vh !important;
+  }
+
+  /* TradingView iframes */
   #options_mobile_chart iframe,
   #spot_mobile_chart iframe {
     width: 100% !important;
     height: 100% !important;
-    min-height: 500px !important;
+    min-height: 70vh !important;
   }
 
   /* Force TradingView widget to fill vertical space */
   .tradingview-widget-container {
     width: 100% !important;
     height: 100% !important;
+    min-height: 70vh !important;
   }
 
   .tradingview-widget-container__widget {
     width: 100% !important;
     height: 100% !important;
+    min-height: 70vh !important;
+  }
+
+  /* Ensure mobile chart parent containers take full height */
+  .mobile-chart-container {
+    height: 100vh !important;
+    min-height: 100vh !important;
+  }
+
+  /* Force chart content to be vertical */
+  .mobile-chart-container > div {
+    height: 100% !important;
+    min-height: 70vh !important;
   }
 }
