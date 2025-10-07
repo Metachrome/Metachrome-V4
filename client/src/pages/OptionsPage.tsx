@@ -1283,10 +1283,10 @@ function OptionsPageContent() {
             {/* Current Price */}
             <div className={`p-2 my-1 ${isPositive ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
               <div className="flex items-center justify-between">
-                <span className={`font-bold text-lg ${changeColor}`}>
+                <span className="font-bold text-white text-lg">
                   {displayPrice.toFixed(2)}
                 </span>
-                <span className={changeColor}>
+                <span className={`${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                   {isPositive ? '↑' : '↓'}
                 </span>
                 <span className="text-gray-400 text-sm">{displayPrice.toFixed(2)} USDT</span>
