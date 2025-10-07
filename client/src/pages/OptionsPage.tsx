@@ -335,21 +335,28 @@ function OptionsPageContent() {
   // Get current USDT balance - Only when user is authenticated
   let balance = 0;
 
+  console.log('🔍 OPTIONS PAGE - User:', user?.id, 'UserBalances:', userBalances);
+
   if (user && userBalances && Array.isArray(userBalances)) {
-    console.log('🔍 RAW userBalances (array):', userBalances);
+    console.log('🔍 OPTIONS - RAW userBalances (array):', userBalances);
     // Format: [{ symbol: "USDT", available: "1400" }, ...]
     const usdtBalance = userBalances.find((b: any) => b.symbol === 'USDT');
     balance = Number(usdtBalance?.available || 0);
-    console.log('🔍 Using standardized array format:', balance, usdtBalance);
+    console.log('🔍 OPTIONS - Using standardized array format:', balance, usdtBalance);
   } else if (user) {
-    console.log('🔍 userBalances is not in expected array format:', typeof userBalances, userBalances);
+    console.log('🔍 OPTIONS - userBalances is not in expected array format:', typeof userBalances, userBalances);
+    console.log('🔍 OPTIONS - User authenticated but no balance data');
+  } else {
+    console.log('🔍 OPTIONS - No user authenticated');
   }
 
   // Ensure balance is a valid number
   if (isNaN(balance)) {
-    console.warn('🔍 Balance is NaN, setting to 0');
+    console.warn('🔍 OPTIONS - Balance is NaN, setting to 0');
     balance = 0;
   }
+
+  console.log('🔍 OPTIONS - Final balance:', balance);
 
 
 
@@ -1814,27 +1821,27 @@ function OptionsPageContent() {
               </div>
             </div>
 
-            {/* Transaction List */}
+            {/* Transaction List - Using Real Trade History */}
             <div className="h-[200px] overflow-y-auto px-4">
               <div className="space-y-1 py-2">
-                {[
-                  { time: new Date().toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0080', type: 'buy' },
-                  { time: new Date(Date.now() - 1000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0001700', type: 'buy' },
-                  { time: new Date(Date.now() - 2000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.1000', type: 'sell' },
-                  { time: new Date(Date.now() - 3000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0004200', type: 'buy' },
-                  { time: new Date(Date.now() - 5000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0047', type: 'sell' },
-                  { time: new Date(Date.now() - 6000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0016', type: 'buy' },
-                  { time: new Date(Date.now() - 7000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.00070000', type: 'sell' },
-                  { time: new Date(Date.now() - 8000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0243', type: 'buy' },
-                ].map((transaction, index) => (
-                  <div key={index} className="flex justify-between text-xs py-1 hover:bg-gray-800/50 rounded px-2 -mx-2">
-                    <span className="text-gray-400 font-mono">{transaction.time}</span>
-                    <span className={`font-mono ${transaction.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                      {transaction.price}
-                    </span>
-                    <span className="text-gray-300 font-mono">{transaction.amount}</span>
+                {tradeHistory.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="text-gray-400 text-sm">No recent transactions</div>
+                    <div className="text-gray-500 text-xs mt-1">Complete some trades to see transactions here</div>
                   </div>
-                ))}
+                ) : (
+                  tradeHistory.slice(0, 8).map((trade, index) => (
+                    <div key={index} className="flex justify-between text-xs py-1 hover:bg-gray-800/50 rounded px-2 -mx-2">
+                      <span className="text-gray-400 font-mono">
+                        {new Date(trade.endTime).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8)}
+                      </span>
+                      <span className={`font-mono ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                        {trade.entryPrice.toFixed(2)}
+                      </span>
+                      <span className="text-gray-300 font-mono">{trade.amount.toFixed(0)}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
