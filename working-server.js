@@ -4975,6 +4975,162 @@ app.post('/api/spot/orders', async (req, res) => {
   }
 });
 
+// Generic trading endpoint (for TradingPage.tsx compatibility)
+app.post('/api/trades', async (req, res) => {
+  try {
+    const { symbol, type, direction, amount, duration, userId } = req.body;
+    console.log('🎯 Generic trade request:', { symbol, type, direction, amount, duration, userId });
+
+    // Extract userId from request body or use authenticated user
+    let finalUserId = userId;
+    if (!finalUserId) {
+      // Try to get user from auth token
+      const authToken = req.headers.authorization?.replace('Bearer ', '');
+      if (authToken) {
+        const user = await getUserFromToken(authToken);
+        if (user) {
+          finalUserId = user.id;
+        }
+      }
+    }
+
+    if (!finalUserId || !symbol || !direction || !amount || !duration) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: userId, symbol, direction, amount, duration"
+      });
+    }
+
+    // Validate minimum amount based on duration
+    const tradeAmount = parseFloat(amount);
+    let minAmount = 100; // Default minimum
+    if (duration === 30) minAmount = 100;
+    else if (duration === 60) minAmount = 1000;
+    else if (duration === 120) minAmount = 2000;
+    else if (duration === 180) minAmount = 3000;
+    else if (duration === 240) minAmount = 4000;
+    else if (duration === 300) minAmount = 5000;
+    else if (duration === 600) minAmount = 10000;
+
+    if (tradeAmount < minAmount) {
+      return res.status(400).json({
+        success: false,
+        message: `Minimum amount for ${duration}s is $${minAmount}`
+      });
+    }
+
+    // Check user balance and deduct immediately
+    const users = await getUsers();
+    const user = users.find(u => u.id === finalUserId || u.username === finalUserId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userBalance = parseFloat(user.balance || '0');
+    if (userBalance < tradeAmount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient balance'
+      });
+    }
+
+    // IMMEDIATE BALANCE DEDUCTION
+    user.balance = (userBalance - tradeAmount).toString();
+    await saveUsers(users);
+    console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
+
+    // Create trade record
+    const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const currentPrice = 65000 + (Math.random() - 0.5) * 2000; // Mock price
+
+    const trade = {
+      id: tradeId,
+      user_id: finalUserId,
+      symbol,
+      direction,
+      amount: parseFloat(amount),
+      entry_price: parseFloat(currentPrice),
+      duration: parseInt(duration),
+      expires_at: new Date(Date.now() + duration * 1000).toISOString(),
+      result: 'pending',
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Save trade to storage
+    try {
+      if (isProduction && supabase) {
+        const { data, error } = await supabase
+          .from('trades')
+          .insert(trade)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Supabase trade save error:', error);
+          throw error;
+        }
+
+        trade.id = data.id;
+        console.log('✅ Trade saved to database with ID:', data.id);
+      } else {
+        // Development: Save to local file
+        const allTrades = await getTrades();
+        allTrades.unshift(trade);
+        await saveTrades(allTrades);
+        console.log('✅ Trade saved to local storage:', trade.id);
+      }
+    } catch (saveError) {
+      console.error('❌ Error saving trade:', saveError);
+      // Continue with trade execution even if save fails
+    }
+
+    // Schedule trade completion
+    setTimeout(async () => {
+      try {
+        console.log(`⏰ Auto-completing trade ${trade.id} after ${duration} seconds`);
+
+        // Determine outcome with trading control enforcement
+        const randomOutcome = Math.random() > 0.5;
+        const finalOutcome = await enforceTradeOutcome(finalUserId, randomOutcome, 'auto-completion');
+
+        // Complete the trade
+        await fetch(`http://localhost:${PORT}/api/trades/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tradeId: trade.id,
+            userId: finalUserId,
+            won: finalOutcome,
+            amount: tradeAmount.toString(),
+            payout: finalOutcome ? (tradeAmount * 1.8).toString() : '0'
+          })
+        });
+      } catch (error) {
+        console.error('❌ Error auto-completing trade:', error);
+      }
+    }, duration * 1000);
+
+    res.json({
+      success: true,
+      trade: trade,
+      message: 'Trade placed successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Generic trade error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Options trading endpoint
 app.post('/api/trades/options', async (req, res) => {
   try {
