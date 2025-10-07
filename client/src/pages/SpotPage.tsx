@@ -531,7 +531,7 @@ function SpotPageContent() {
         <Navigation />
 
         {/* Mobile Header - Using TradingView Price */}
-        <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700 sticky top-0 z-40">
+        <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700 sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-white font-bold text-lg">BTC/USDT</div>
@@ -574,7 +574,7 @@ function SpotPageContent() {
         </div>
 
         {/* Mobile Chart - Vertical/Tall Layout */}
-        <div className="bg-[#10121E] relative w-full" style={{ height: '65vh', minHeight: '550px' }}>
+        <div className="bg-[#10121E] relative w-full" style={{ height: 'calc(100vh - 140px)', minHeight: '700px' }}>
           <div className="w-full h-full">
             <LightweightChart
               symbol="BTCUSDT"
