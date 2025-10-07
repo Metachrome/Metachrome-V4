@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
 // Initialize Supabase client directly
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -14,21 +16,34 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
     })
   : null;
 
-// Import shared user balances from balances API
-let userBalances: Map<string, { balance: number; currency: string }>;
+// User management functions
+async function getUsers() {
+  try {
+    const usersPath = path.join(process.cwd(), 'users.json');
+    if (fs.existsSync(usersPath)) {
+      const data = fs.readFileSync(usersPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.log('⚠️ Could not read users.json, using fallback data');
+  }
 
-// Initialize shared balance storage
-try {
-  // Try to import from balances module
-  const balancesModule = require('./balances');
-  userBalances = balancesModule.userBalances;
-} catch {
-  // Fallback to local storage if import fails
-  userBalances = new Map([
-    ['user-1', { balance: 10000, currency: 'USDT' }],
-    ['demo-user-1', { balance: 10000, currency: 'USDT' }],
-    ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
-  ]);
+  // Fallback users
+  return [
+    { id: 'user-1', username: 'demo-user', balance: '10000', role: 'user' },
+    { id: 'demo-user-1', username: 'demo-user-1', balance: '10000', role: 'user' },
+    { id: 'superadmin-001', username: 'superadmin', balance: '1000000', role: 'super_admin' }
+  ];
+}
+
+async function saveUsers(users: any[]) {
+  try {
+    const usersPath = path.join(process.cwd(), 'users.json');
+    fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+    console.log('✅ Users saved to users.json');
+  } catch (error) {
+    console.error('❌ Failed to save users:', error);
+  }
 }
 
 // Mock trades storage
@@ -81,60 +96,78 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-function handleSpotTrading(req: VercelRequest, res: VercelResponse) {
+async function handleSpotTrading(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
-    const { symbol, side, amount, price, userId } = req.body || {};
-    
-    console.log('📈 Spot trade request:', { symbol, side, amount, price, userId });
-    
-    if (!symbol || !side || !amount) {
-      return res.status(400).json({
+    try {
+      const { symbol, side, amount, price, userId } = req.body || {};
+
+      console.log('📈 Spot trade request:', { symbol, side, amount, price, userId });
+
+      if (!symbol || !side || !amount || !userId) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: symbol, side, amount, userId"
+        });
+      }
+
+      // Get users and find the user
+      const users = await getUsers();
+      const user = users.find(u => u.id === userId || u.username === userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      const tradeAmount = parseFloat(amount);
+      const userBalance = parseFloat(user.balance || '0');
+
+      if (userBalance < tradeAmount) {
+        return res.status(400).json({
+          success: false,
+          message: "Insufficient balance"
+        });
+      }
+
+      // Create trade
+      const trade = {
+        id: `trade-${Date.now()}`,
+        userId: userId,
+        symbol,
+        side,
+        amount: tradeAmount,
+        price: parseFloat(price) || 0,
+        type: 'spot',
+        status: 'completed',
+        profit_loss: (Math.random() > 0.5 ? '+' : '-') + (Math.random() * 100).toFixed(2),
+        created_at: new Date().toISOString()
+      };
+
+      trades.set(trade.id, trade);
+
+      // Update balance
+      if (side === 'buy') {
+        user.balance = (userBalance - tradeAmount).toString();
+      } else {
+        user.balance = (userBalance + tradeAmount).toString();
+      }
+      await saveUsers(users);
+
+      console.log('✅ Spot trade executed:', trade);
+      return res.json({
+        success: true,
+        trade,
+        message: "Spot trade executed successfully"
+      });
+    } catch (error) {
+      console.error('❌ Spot trading error:', error);
+      return res.status(500).json({
         success: false,
-        message: "Missing required fields: symbol, side, amount"
+        message: "Spot trading failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-
-    // Check user balance
-    const userBalance = userBalances.get(userId || 'demo-user-1') || { balance: 0, currency: 'USDT' };
-    const tradeAmount = parseFloat(amount);
-    
-    if (userBalance.balance < tradeAmount) {
-      return res.status(400).json({
-        success: false,
-        message: "Insufficient balance"
-      });
-    }
-
-    // Create trade
-    const trade = {
-      id: `trade-${Date.now()}`,
-      userId: userId || 'demo-user-1',
-      symbol,
-      side,
-      amount: tradeAmount,
-      price: parseFloat(price) || 0,
-      type: 'spot',
-      status: 'completed',
-      profit_loss: (Math.random() > 0.5 ? '+' : '-') + (Math.random() * 100).toFixed(2),
-      created_at: new Date().toISOString()
-    };
-
-    trades.set(trade.id, trade);
-
-    // Update balance (simplified)
-    if (side === 'buy') {
-      userBalance.balance -= tradeAmount;
-    } else {
-      userBalance.balance += tradeAmount;
-    }
-    userBalances.set(userId || 'demo-user-1', userBalance);
-
-    console.log('✅ Spot trade executed:', trade);
-    return res.json({
-      success: true,
-      trade,
-      message: "Spot trade executed successfully"
-    });
   }
 
   return res.status(405).json({ message: "Method not allowed" });
@@ -148,21 +181,13 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
       // Accept either 'side' or 'direction' for compatibility
       const tradeDirection = side || direction;
 
-      // Handle admin users - map them to their trading profile
-      let finalUserId = userId || 'demo-user-1';
-      if (userId === 'superadmin-001' || userId === 'admin-001') {
-        // Create a virtual trading profile for admin users
-        finalUserId = `${userId}-trading`;
-        console.log(`🔧 Admin user ${userId} trading as ${finalUserId}`);
-      }
-
-      console.log('📈 Options trade request:', { symbol, side, direction, tradeDirection, amount, duration, originalUserId: userId, finalUserId });
+      console.log('📈 Options trade request:', { symbol, side, direction, tradeDirection, amount, duration, userId });
 
       // Validate required fields
-      if (!symbol || !tradeDirection || !amount || !duration) {
+      if (!symbol || !tradeDirection || !amount || !duration || !userId) {
         return res.status(400).json({
           success: false,
-          message: "Missing required fields: symbol, direction/side, amount, duration"
+          message: "Missing required fields: symbol, direction/side, amount, duration, userId"
         });
       }
 
@@ -193,42 +218,77 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
       }
 
       // Check minimum amounts based on duration
-      const minAmount = tradeDuration === 30 ? 100 : 1000;
+      let minAmount = 100; // Default minimum
+      if (tradeDuration === 30) minAmount = 100;
+      else if (tradeDuration === 60) minAmount = 1000;
+      else if (tradeDuration === 120) minAmount = 2000;
+      else if (tradeDuration === 180) minAmount = 3000;
+      else if (tradeDuration === 240) minAmount = 4000;
+      else if (tradeDuration === 300) minAmount = 5000;
+      else if (tradeDuration === 600) minAmount = 10000;
+
       if (tradeAmount < minAmount) {
         return res.status(400).json({
           success: false,
-          message: `Minimum amount for ${tradeDuration}s is ${minAmount} USDT`
+          message: `Minimum amount for ${tradeDuration}s is $${minAmount}`
         });
       }
 
-      // Get or initialize user balance
-      let userBalance = userBalances.get(finalUserId);
-      if (!userBalance) {
-        userBalance = { balance: 10000, currency: 'USDT' }; // Default balance for new users
-        userBalances.set(finalUserId, userBalance);
+      // Get users and find the actual user
+      const users = await getUsers();
+      let finalUserId = userId;
+
+      // Handle admin users - find the actual admin user in database
+      let adminUser = users.find(u => u.id === userId);
+      if (!adminUser) {
+        adminUser = users.find(u => u.username === userId);
       }
 
-      // Check balance
-      if (userBalance.balance < tradeAmount) {
+      // If user has admin role, use their actual ID for trading
+      if (adminUser && (adminUser.role === 'super_admin' || adminUser.role === 'admin')) {
+        finalUserId = adminUser.id;
+        console.log(`🔧 Admin user ${userId} (${adminUser.username}) trading with ID: ${finalUserId}`);
+      } else if (userId === 'superadmin-001' || userId === 'admin-001') {
+        // Legacy support - try to find by username
+        const legacyAdmin = users.find(u => u.username === 'superadmin' || u.username === 'admin');
+        if (legacyAdmin) {
+          finalUserId = legacyAdmin.id;
+          console.log(`🔧 Legacy admin user ${userId} mapped to ${legacyAdmin.username} with ID: ${finalUserId}`);
+        }
+      }
+
+      // Find the user for balance check
+      const user = users.find(u => u.id === finalUserId || u.username === finalUserId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Check user balance
+      const userBalance = parseFloat(user.balance || '0');
+      if (userBalance < tradeAmount) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient balance. Required: ${tradeAmount} USDT, Available: ${userBalance.balance} USDT`
+          message: `Insufficient balance. Required: ${tradeAmount} USDT, Available: ${userBalance} USDT`
         });
       }
 
-      // Deduct amount from balance immediately (before trade creation)
-      const newBalance = userBalance.balance - tradeAmount;
-      userBalances.set(finalUserId, { balance: newBalance, currency: 'USDT' });
-
-      console.log(`💰 Balance deducted: ${tradeAmount} USDT, New balance: ${newBalance} USDT`);
+      // Deduct balance immediately
+      user.balance = (userBalance - tradeAmount).toString();
+      await saveUsers(users);
+      console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
 
       // Get current market price (mock for now)
-      const currentPrice = 117000 + (Math.random() * 2000);
+      const currentPrice = 65000 + (Math.random() - 0.5) * 2000;
 
-      // Create options trade
+      // Create trade record
+      const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const trade = {
-        id: `options-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: tradeId,
         userId: finalUserId,
+        username: user.username,
         symbol,
         direction: tradeDirection,
         side: tradeDirection === 'up' ? 'call' : 'put',
@@ -249,8 +309,9 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
       console.log('✅ Options trade created:', {
         tradeId: trade.id,
         userId: finalUserId,
+        username: user.username,
         amount: tradeAmount,
-        newBalance: newBalance
+        newBalance: user.balance
       });
 
       // Try to save to database
@@ -275,7 +336,7 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
           await supabaseAdmin
             .from('users')
             .update({
-              balance: userBalance.balance,
+              balance: user.balance,
               updated_at: new Date().toISOString()
             })
             .eq('id', finalUserId);
@@ -288,7 +349,7 @@ async function handleOptionsTrading(req: VercelRequest, res: VercelResponse) {
 
       // Simulate trade completion after duration
       setTimeout(async () => {
-        await completeOptionsTrade(trade.id, finalUserId);
+        await completeOptionsTrade(trade.id, finalUserId, user.username);
       }, Math.min(tradeDuration * 1000, 30000)); // Max 30 seconds for demo
 
       return res.json({
@@ -324,8 +385,16 @@ async function handleTradeCompletion(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      // Get current balance
-      const currentBalance = userBalances.get(userId) || { balance: 0, currency: 'USDT' };
+      // Get users and find the user
+      const users = await getUsers();
+      const user = users.find(u => u.id === userId || u.username === userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
       const tradeAmount = parseFloat(amount);
       let balanceChange = 0;
 
@@ -333,22 +402,21 @@ async function handleTradeCompletion(req: VercelRequest, res: VercelResponse) {
         // Calculate profit based on payout or default percentage
         const profitAmount = payout ? parseFloat(payout) : tradeAmount * 0.8; // 80% profit default
         balanceChange = profitAmount;
-        currentBalance.balance += profitAmount;
-        console.log(`💰 Trade WON: +${profitAmount} USDT`);
+        const currentBalance = parseFloat(user.balance);
+        user.balance = (currentBalance + profitAmount).toString();
+        await saveUsers(users);
+        console.log(`💰 Trade WON: +${profitAmount} USDT, New balance: ${user.balance}`);
       } else {
         // Trade lost - amount was already deducted when trade was placed
         console.log(`💸 Trade LOST: -${tradeAmount} USDT (already deducted)`);
       }
-
-      // Update balance
-      userBalances.set(userId, currentBalance);
 
       console.log('✅ Trade completion processed:', {
         tradeId,
         userId,
         won,
         balanceChange,
-        newBalance: currentBalance.balance
+        newBalance: user.balance
       });
 
       return res.json({
@@ -356,7 +424,7 @@ async function handleTradeCompletion(req: VercelRequest, res: VercelResponse) {
         tradeId,
         won,
         balanceChange,
-        newBalance: currentBalance.balance,
+        newBalance: parseFloat(user.balance),
         message: `Trade ${won ? 'won' : 'lost'} - balance updated`
       });
 
@@ -373,7 +441,7 @@ async function handleTradeCompletion(req: VercelRequest, res: VercelResponse) {
   return res.status(405).json({ message: "Method not allowed" });
 }
 
-async function completeOptionsTrade(tradeId: string, userId: string) {
+async function completeOptionsTrade(tradeId: string, userId: string, username?: string) {
   try {
     const trade = trades.get(tradeId);
     if (!trade || trade.status !== 'active') {
@@ -381,10 +449,18 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
       return;
     }
 
-    // Get user's trading mode from multiple sources
-    let tradingMode = 'normal';
+    // Get users to find trading mode
+    const users = await getUsers();
+    const user = users.find(u => u.id === userId || u.username === userId);
+    if (!user) {
+      console.log('⚠️ User not found for trade completion:', userId);
+      return;
+    }
 
-    // First try to import from trading controls
+    // Get user's trading mode
+    let tradingMode = user.trading_mode || 'normal';
+
+    // Also try to import from trading controls for real-time updates
     try {
       const tradingControlsModule = require('./admin/trading-controls');
       const userTradingModes = tradingControlsModule.userTradingModes;
@@ -393,27 +469,7 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
         console.log('🎯 Trading mode from controls:', tradingMode);
       }
     } catch (importError) {
-      console.log('⚠️ Could not import trading controls, trying database');
-    }
-
-    // Fallback to database
-    if (tradingMode === 'normal') {
-      try {
-        if (supabaseAdmin) {
-          const { data: user } = await supabaseAdmin
-            .from('users')
-            .select('trading_mode')
-            .eq('id', userId)
-            .single();
-
-          if (user && user.trading_mode) {
-            tradingMode = user.trading_mode;
-            console.log('🎯 Trading mode from database:', tradingMode);
-          }
-        }
-      } catch (error) {
-        console.log('⚠️ Could not fetch user trading mode from database');
-      }
+      console.log('🎯 Using trading mode from user data:', tradingMode);
     }
 
     // Determine win/loss based on admin settings
@@ -431,7 +487,15 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
 
     // Calculate profit based on duration
     const tradeAmount = trade.amount;
-    const profitPercentage = trade.duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for 60s
+    let profitPercentage = 0.10; // Default 10%
+    if (trade.duration === 30) profitPercentage = 0.10;
+    else if (trade.duration === 60) profitPercentage = 0.15;
+    else if (trade.duration === 120) profitPercentage = 0.20;
+    else if (trade.duration === 180) profitPercentage = 0.25;
+    else if (trade.duration === 240) profitPercentage = 0.30;
+    else if (trade.duration === 300) profitPercentage = 0.75;
+    else if (trade.duration === 600) profitPercentage = 1.00;
+
     const profit = isWin ? tradeAmount * profitPercentage : 0;
     const exitPrice = trade.entry_price * (isWin ? 1.01 : 0.99);
 
@@ -441,13 +505,15 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
     trade.result = isWin ? 'win' : 'lose';
     trade.profit_loss = isWin ? `+${profit.toFixed(2)}` : `-${tradeAmount.toFixed(2)}`;
 
-    // Update user balance
-    const currentBalance = userBalances.get(userId) || { balance: 0, currency: 'USDT' };
+    // Update user balance if won
     if (isWin) {
-      currentBalance.balance += tradeAmount + profit; // Return original amount + profit
+      const currentBalance = parseFloat(user.balance);
+      user.balance = (currentBalance + tradeAmount + profit).toString(); // Return original amount + profit
+      await saveUsers(users);
+      console.log(`💰 TRADE WON: ${user.username} balance: ${currentBalance} → ${user.balance} (+${tradeAmount + profit})`);
+    } else {
+      console.log(`💸 TRADE LOST: ${user.username} - amount already deducted: -${tradeAmount}`);
     }
-    // If lose, amount was already deducted when trade was created
-    userBalances.set(userId, currentBalance);
 
     trades.set(tradeId, trade);
 
@@ -456,24 +522,8 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
       isWin,
       tradingMode,
       profit: trade.profit_loss,
-      newBalance: currentBalance.balance
+      newBalance: user.balance
     });
-
-    // Broadcast balance update for real-time sync
-    try {
-      console.log('📡 Broadcasting trade completion and balance update:', {
-        type: 'trade_completed',
-        data: {
-          tradeId: trade.id,
-          userId,
-          result: isWin ? 'win' : 'lose',
-          profit: isWin ? profit : -tradeAmount,
-          newBalance: currentBalance.balance
-        }
-      });
-    } catch (broadcastError) {
-      console.log('⚠️ Trade completion broadcast failed:', broadcastError);
-    }
 
     // Try to update database if available
     try {
@@ -494,7 +544,7 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
         await supabaseAdmin
           .from('users')
           .update({
-            balance: currentBalance.balance,
+            balance: user.balance,
             updated_at: new Date().toISOString()
           })
           .eq('id', userId);

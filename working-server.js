@@ -13,14 +13,18 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 // Load environment variables
 require('dotenv').config();
 
-// AUTO-BUILD PROCESS - Build frontend before starting server
-console.log('🔨 AUTO-BUILD: Building frontend...');
-const { execSync } = require('child_process');
-try {
-  execSync('npm run build', { stdio: 'inherit' });
-  console.log('✅ AUTO-BUILD: Frontend built successfully');
-} catch (error) {
-  console.log('⚠️ AUTO-BUILD: Build failed, continuing with existing build...');
+// AUTO-BUILD PROCESS - Build frontend before starting server (unless skipped)
+if (!process.env.SKIP_AUTO_BUILD) {
+  console.log('🔨 AUTO-BUILD: Building frontend...');
+  const { execSync } = require('child_process');
+  try {
+    execSync('npm run build', { stdio: 'inherit' });
+    console.log('✅ AUTO-BUILD: Frontend built successfully');
+  } catch (error) {
+    console.log('⚠️ AUTO-BUILD: Build failed, continuing with existing build...');
+  }
+} else {
+  console.log('⏭️ AUTO-BUILD: Skipped (SKIP_AUTO_BUILD=true)');
 }
 
 const app = express();

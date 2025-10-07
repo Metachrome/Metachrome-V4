@@ -1,0 +1,14 @@
+[
+  {
+    "id": "test-user-1",
+    "username": "testuser",
+    "balance": "10000",
+    "role": "user"
+  },
+  {
+    "id": "superadmin-001",
+    "username": "superadmin",
+    "balance": "1000000",
+    "role": "super_admin"
+  }
+]
