@@ -5043,6 +5043,39 @@ app.post('/api/trades', async (req, res) => {
     await saveUsers(users);
     console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
 
+    // Broadcast balance update via WebSocket for immediate frontend sync
+    if (global.wss) {
+      const balanceUpdateMessage = {
+        type: 'balance_update',
+        data: {
+          userId: finalUserId,
+          username: user.username,
+          oldBalance: userBalance.toString(),
+          newBalance: user.balance,
+          change: -tradeAmount,
+          changeType: 'trade_start',
+          tradeId: `trade-${Date.now()}`,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📡 Broadcasting immediate balance deduction via WebSocket:', balanceUpdateMessage);
+
+      let broadcastCount = 0;
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(balanceUpdateMessage));
+            broadcastCount++;
+          } catch (error) {
+            console.error('❌ Failed to broadcast balance update to client:', error);
+          }
+        }
+      });
+
+      console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
+    }
+
     // Create trade record
     const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const currentPrice = 65000 + (Math.random() - 0.5) * 2000; // Mock price
@@ -5224,6 +5257,40 @@ app.post('/api/trades/options', async (req, res) => {
     // Deduct balance
     user.balance = (userBalance - tradeAmount).toString();
     await saveUsers(users);
+    console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
+
+    // Broadcast balance update via WebSocket for immediate frontend sync
+    if (global.wss) {
+      const balanceUpdateMessage = {
+        type: 'balance_update',
+        data: {
+          userId: finalUserId,
+          username: user.username,
+          oldBalance: userBalance.toString(),
+          newBalance: user.balance,
+          change: -tradeAmount,
+          changeType: 'trade_start',
+          tradeId: `trade-${Date.now()}`,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📡 Broadcasting immediate balance deduction via WebSocket:', balanceUpdateMessage);
+
+      let broadcastCount = 0;
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(balanceUpdateMessage));
+            broadcastCount++;
+          } catch (error) {
+            console.error('❌ Failed to broadcast balance update to client:', error);
+          }
+        }
+      });
+
+      console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
+    }
 
     // Create trade record
     const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
