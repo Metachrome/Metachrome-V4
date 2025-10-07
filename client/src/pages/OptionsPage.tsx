@@ -890,8 +890,8 @@ function OptionsPageContent() {
             </div>
           </div>
 
-          {/* Mobile Chart - Full Screen Layout */}
-          <div className="bg-[#10121E] relative w-full" style={{ height: 'calc(100vh - 120px)', minHeight: '800px' }}>
+          {/* Mobile Chart - Vertical/Tall Layout */}
+          <div className="bg-[#10121E] relative w-full" style={{ height: '70vh', minHeight: '600px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
@@ -1044,15 +1044,295 @@ function OptionsPageContent() {
             )}
           </div>
 
+          {/* My Order Section */}
+          <div className="px-4 py-3 border-b border-gray-700">
+            <h3 className="text-white font-bold mb-3">My Orders</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {activeTrades.length > 0 ? (
+                activeTrades.map((trade) => {
+                  const timeLeft = Math.max(0, Math.ceil((trade.expiryTime - Date.now()) / 1000));
+                  const progress = timeLeft > 0 ? (timeLeft / trade.duration) * 100 : 0;
 
+                  return (
+                    <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'up' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                          <span className="text-white text-sm font-medium">BTC/USDT</span>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            trade.direction === 'up' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'
+                          }`}>
+                            {trade.direction.toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-white font-bold">${trade.amount}</span>
+                      </div>
 
+                      <div className="flex justify-between text-xs text-gray-400 mb-2">
+                        <span>Entry: ${trade.entryPrice}</span>
+                        <span>Current: ${displayPrice.toFixed(2)}</span>
+                      </div>
 
+                      {timeLeft > 0 ? (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-400">Time left: {timeLeft}s</span>
+                            <span className={`font-medium ${
+                              (trade.direction === 'up' && displayPrice > trade.entryPrice) ||
+                              (trade.direction === 'down' && displayPrice < trade.entryPrice)
+                                ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {(trade.direction === 'up' && displayPrice > trade.entryPrice) ||
+                               (trade.direction === 'down' && displayPrice < trade.entryPrice)
+                                ? 'Winning' : 'Losing'}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-1">
+                            <div
+                              className="bg-blue-500 h-1 rounded-full transition-all duration-1000"
+                              style={{ width: `${progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <span className={`text-sm font-bold ${
+                            (trade.direction === 'up' && trade.exitPrice > trade.entryPrice) ||
+                            (trade.direction === 'down' && trade.exitPrice < trade.entryPrice)
+                              ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {(trade.direction === 'up' && trade.exitPrice > trade.entryPrice) ||
+                             (trade.direction === 'down' && trade.exitPrice < trade.entryPrice)
+                              ? 'WON' : 'LOST'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-4">
+                  <div className="text-gray-400 text-sm">No active trades</div>
+                </div>
+              )}
+            </div>
+          </div>
 
+          {/* Mobile Order Book */}
+          <div className="px-4 py-3 border-b border-gray-700">
+            <h3 className="text-white font-bold mb-3">Order Book</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Sell Orders */}
+              <div>
+                <div className="text-red-400 text-sm font-medium mb-2">Sell Orders</div>
+                <div className="space-y-1">
+                  {generateOrderBookData(displayPrice).sellOrders.slice(0, 5).map((order, index) => (
+                    <div key={index} className="flex justify-between text-xs">
+                      <span className="text-red-400">{order.price}</span>
+                      <span className="text-gray-400">{order.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
+              {/* Buy Orders */}
+              <div>
+                <div className="text-green-400 text-sm font-medium mb-2">Buy Orders</div>
+                <div className="space-y-1">
+                  {generateOrderBookData(displayPrice).buyOrders.slice(0, 5).map((order, index) => (
+                    <div key={index} className="flex justify-between text-xs">
+                      <span className="text-green-400">{order.price}</span>
+                      <span className="text-gray-400">{order.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {/* Mobile Options Trading Interface */}
+          <div className="px-4 py-3 space-y-3 bg-[#10121E]">
+            {/* Balance Display - Using TradingView Price */}
+            <div className="bg-gray-800 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-400 text-sm">Current Price:</span>
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+                    <span className="text-xs text-gray-500">
+                      {connected ? 'Live' : 'Offline'}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-white font-bold text-base">
+                  {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-gray-400 text-sm">Balance:</span>
+                {user ? (
+                  <span className="text-green-400 font-bold text-base">{balance.toFixed(2)} USDT</span>
+                ) : (
+                  <span className="text-yellow-400 font-bold text-sm">Sign in required</span>
+                )}
+              </div>
+            </div>
 
+            {/* Duration Selection - All 8 options with profit percentages */}
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">Duration & Profit</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { duration: '30s', profit: '10%' },
+                  { duration: '60s', profit: '15%' },
+                  { duration: '90s', profit: '20%' },
+                  { duration: '120s', profit: '25%' },
+                  { duration: '180s', profit: '30%' },
+                  { duration: '240s', profit: '50%' },
+                  { duration: '300s', profit: '75%' },
+                  { duration: '600s', profit: '100%' }
+                ].map((option) => (
+                  <button
+                    key={option.duration}
+                    onClick={() => {
+                      setSelectedDuration(option.duration);
+                      const minAmount = getMinimumAmount(option.duration);
+                      if (selectedAmount < minAmount) {
+                        setSelectedAmount(minAmount);
+                      }
+                    }}
+                    className={`py-1.5 px-1 rounded text-center transition-colors ${
+                      selectedDuration === option.duration
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                    disabled={isTrading}
+                  >
+                    <div className="text-xs font-medium">{option.duration}</div>
+                    <div className="text-[10px] text-green-400">{option.profit}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
+            {/* Amount Selection - More options */}
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                Amount (USDT) - Min: {getMinimumAmount(selectedDuration).toLocaleString()}
+              </label>
+              <div className="grid grid-cols-3 gap-1.5 mb-2">
+                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setSelectedAmount(amount)}
+                    className={`py-1.5 px-2 rounded text-xs font-medium transition-colors ${
+                      selectedAmount === amount
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:text-white'
+                    }`}
+                    disabled={isTrading}
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
 
+              {/* Max Button */}
+              <button
+                onClick={() => {
+                  const maxAmount = Math.floor(balance) || 0;
+                  setSelectedAmount(maxAmount);
+                }}
+                className={`w-full py-1.5 px-2 rounded text-xs font-medium transition-colors mb-2 ${
+                  selectedAmount === Math.floor(balance || 0)
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:text-white'
+                }`}
+                disabled={isTrading}
+              >
+                Max ({Math.floor(balance || 0)} USDT)
+              </button>
+
+              {/* Custom Amount Input */}
+              <input
+                type="number"
+                min={getMinimumAmount(selectedDuration)}
+                value={selectedAmount}
+                onChange={(e) => {
+                  const minAmount = getMinimumAmount(selectedDuration);
+                  setSelectedAmount(Math.max(minAmount, parseInt(e.target.value) || minAmount));
+                }}
+                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
+                placeholder={`Enter amount (min ${getMinimumAmount(selectedDuration)})`}
+                disabled={isTrading}
+              />
+            </div>
+
+            {/* Login to Trade Message for Non-Logged Users */}
+            {!user && (
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-4 mb-4 text-center">
+                <div className="text-white font-bold text-lg mb-2">🔒 Login to Trade</div>
+                <div className="text-white/80 text-sm mb-3">
+                  Sign in to start options trading and earn up to 15% profit
+                </div>
+                <a
+                  href="/login"
+                  className="inline-block bg-white text-purple-600 font-bold py-2 px-6 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Login Now
+                </a>
+              </div>
+            )}
+
+            {/* UP/DOWN Buttons - VERIFICATION ENABLED (Bypass for superadmin) */}
+            {(!user?.verificationStatus || user?.verificationStatus === 'unverified') && user?.role !== 'super_admin' ? (
+              <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4 mb-4">
+                <div className="text-center">
+                  <div className="text-yellow-100 font-semibold mb-2">🔒 Verification Required</div>
+                  <div className="text-yellow-200 text-sm mb-3">
+                    Upload your verification documents to start trading
+                  </div>
+                  <a href="/profile" className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm">
+                    Upload Documents
+                  </a>
+                </div>
+              </div>
+            ) : user?.verificationStatus === 'pending' ? (
+              <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4 mb-4">
+                <div className="text-center">
+                  <div className="text-blue-100 font-semibold mb-2">⏳ Verification Pending</div>
+                  <div className="text-blue-200 text-sm">
+                    Your documents are being reviewed. Trading will be enabled once approved.
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => handleTrade('up')}
+                  disabled={!user || countdown > 0}
+                  className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-6 px-6 rounded-xl transition-colors text-xl"
+                >
+                  BUY BTC
+                </button>
+                <button
+                  onClick={() => handleTrade('down')}
+                  disabled={!user || countdown > 0}
+                  className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-6 px-6 rounded-xl transition-colors text-xl"
+                >
+                  SELL BTC
+                </button>
+              </div>
+            )}
+
+            {countdown > 0 && (
+              <div className="text-center py-2">
+                <div className="text-yellow-400 font-bold">
+                  Next trade available in: {countdown}s
+                </div>
+              </div>
+            )}
+          </div>
 
           <MobileBottomNav />
         </div>
