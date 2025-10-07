@@ -33,10 +33,14 @@ function SpotPageContent() {
   const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
   const isMobile = useIsMobile();
 
-  // Use price context for synchronized price data
+  // Use price context for synchronized price data - SINGLE SOURCE OF TRUTH
   const { priceData } = usePrice();
   const { changeText, changeColor, isPositive } = usePriceChange();
   const { high, low, volume } = use24hStats();
+
+  // Get current price from context (single source of truth)
+  const currentPrice = priceData?.price || 0;
+  const formattedPrice = currentPrice.toFixed(2);
 
   // Debug logging
   useEffect(() => {
@@ -55,10 +59,10 @@ function SpotPageContent() {
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
 
-  // Price State
-  const [currentPrice, setCurrentPrice] = useState<number>(166373.87);
-  const [realTimePrice, setRealTimePrice] = useState<string>('');
-  const [priceChange, setPriceChange] = useState<string>('+0.50%');
+  // Legacy price states - REMOVED (now using PriceContext as single source of truth)
+  // const [currentPrice, setCurrentPrice] = useState<number>(166373.87);
+  // const [realTimePrice, setRealTimePrice] = useState<string>('');
+  // const [priceChange, setPriceChange] = useState<string>('+0.50%');
 
   // Buy Form State
   const [buyPrice, setBuyPrice] = useState<string>('');
@@ -190,36 +194,7 @@ function SpotPageContent() {
     }
   }, [lastMessage, queryClient, user?.id]);
 
-  // Fetch Binance price data - PRIMARY SOURCE (TradingView widget can't provide real prices due to CORS)
-  const fetchBinancePrice = async () => {
-    try {
-      const response = await fetch('/api/market-data');
-      const data = await response.json();
-
-      // Ensure data is an array before calling find
-      if (Array.isArray(data)) {
-        const btcData = data.find((item: any) => item.symbol === selectedSymbol);
-        if (btcData) {
-          const price = parseFloat(btcData.price);
-
-          // Update ALL price states from Binance API (single source of truth)
-          setRealTimePrice(btcData.price);
-          setPriceChange(btcData.priceChange24h);
-          setCurrentPrice(price);
-
-          // Update form prices if not manually set
-          if (!buyPrice) setBuyPrice(btcData.price);
-          if (!sellPrice) setSellPrice(btcData.price);
-
-          console.log('📊 Binance price update (PRIMARY SOURCE):', price.toFixed(2));
-        }
-      } else {
-        console.warn('Market data is not an array:', data);
-      }
-    } catch (error) {
-      console.error('Error fetching Binance price:', error);
-    }
-  };
+  // REMOVED: fetchBinancePrice - now using PriceContext as single source of truth
 
   // Fetch real market data
   const { data: marketData } = useQuery<MarketData[]>({
@@ -457,33 +432,17 @@ function SpotPageContent() {
     });
   };
 
-  // Initialize real-time price fetching
-  useEffect(() => {
-    fetchBinancePrice(); // Initial fetch
+  // REMOVED: Initialize real-time price fetching - now using PriceContext
 
-    // Check if we're on Vercel (no WebSocket support)
-    const isVercel = window.location.hostname.includes('vercel.app');
-    const updateInterval = isVercel ? 3000 : 6000; // Faster updates on Vercel since no WebSocket
+  // REMOVED: Update current price from real market data - now using PriceContext
 
-    const interval = setInterval(fetchBinancePrice, updateInterval);
-    return () => clearInterval(interval);
-  }, [selectedSymbol]);
-
-  // Update current price from real market data - RE-ENABLED (Binance is the primary source)
-  useEffect(() => {
-    if (realPrice > 0 && !realTimePrice) {
-      setCurrentPrice(realPrice);
-      console.log('📈 Real Price Update:', realPrice.toFixed(2));
-    }
-  }, [realPrice, realTimePrice]);
-
-  // Initialize price fields when current price is available
+  // Initialize price fields when current price is available from PriceContext
   useEffect(() => {
     if (currentPrice > 0) {
-      if (!buyPrice) setBuyPrice(currentPrice.toFixed(2));
-      if (!sellPrice) setSellPrice(currentPrice.toFixed(2));
+      if (!buyPrice) setBuyPrice(formattedPrice);
+      if (!sellPrice) setSellPrice(formattedPrice);
     }
-  }, [currentPrice, buyPrice, sellPrice]);
+  }, [currentPrice, buyPrice, sellPrice, formattedPrice]);
 
   // Generate dynamic order book data based on current price
   const generateOrderBookData = (basePrice: number) => {
@@ -535,9 +494,9 @@ function SpotPageContent() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-white font-bold text-lg">BTC/USDT</div>
-              <div className="text-white text-xl font-bold">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
-              <div className={`text-sm font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                {priceChange || btcMarketData?.priceChangePercent24h || '+0.50%'}
+              <div className="text-white text-xl font-bold">${formattedPrice}</div>
+              <div className={`text-sm font-semibold ${changeColor}`} style={{ color: changeColor }}>
+                {changeText}
               </div>
             </div>
             <div className="text-right">
@@ -594,12 +553,12 @@ function SpotPageContent() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <div className="text-gray-400">Current Price</div>
-              <div className="text-white font-bold text-lg">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
+              <div className="text-white font-bold text-lg">${formattedPrice}</div>
             </div>
             <div>
               <div className="text-gray-400">24h Change</div>
-              <div className={`font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                {priceChange || '+0.50%'}
+              <div className="font-semibold" style={{ color: changeColor }}>
+                {changeText}
               </div>
             </div>
             <div>
@@ -621,7 +580,7 @@ function SpotPageContent() {
             <div>
               <div className="text-red-400 text-sm font-medium mb-2">Sell Orders</div>
               <div className="space-y-1">
-                {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).sellOrders.slice(0, 5).map((order, index) => (
+                {generateOrderBookData(currentPrice || 124119.71).sellOrders.slice(0, 5).map((order, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span className="text-red-400">{order.price}</span>
                     <span className="text-gray-400">{order.amount}</span>
@@ -634,7 +593,7 @@ function SpotPageContent() {
             <div>
               <div className="text-green-400 text-sm font-medium mb-2">Buy Orders</div>
               <div className="space-y-1">
-                {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).buyOrders.slice(0, 5).map((order, index) => (
+                {generateOrderBookData(currentPrice || 124119.71).buyOrders.slice(0, 5).map((order, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span className="text-green-400">{order.price}</span>
                     <span className="text-gray-400">{order.amount}</span>
@@ -650,7 +609,7 @@ function SpotPageContent() {
           <h3 className="text-white font-bold mb-3">Market Overview</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { symbol: 'BTC/USDT', price: currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00'), change: priceChange || '+0.50%' },
+              { symbol: 'BTC/USDT', price: formattedPrice, change: changeText },
               { symbol: 'ETH/USDT', price: '3,456.78', change: '+1.23%' },
               { symbol: 'BNB/USDT', price: '712.45', change: '-0.45%' },
               { symbol: 'ADA/USDT', price: '0.8272', change: '+0.60%' }
@@ -816,11 +775,11 @@ function SpotPageContent() {
               <div className="flex items-center space-x-6">
                 <div>
                   <div className="text-white font-bold text-lg">BTC/USDT</div>
-                  <div className="text-white text-2xl font-bold">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
-                  <div className="text-gray-400 text-sm">$ {currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</div>
+                  <div className="text-white text-2xl font-bold">${formattedPrice}</div>
+                  <div className="text-gray-400 text-sm">$ {formattedPrice}</div>
                 </div>
-                <div className={`text-lg font-semibold ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {priceChange || btcMarketData?.priceChangePercent24h || '+0.50%'}
+                <div className="text-lg font-semibold" style={{ color: changeColor }}>
+                  {changeText}
                 </div>
                 <div className="flex items-center space-x-4 text-sm">
                   <div>
@@ -888,7 +847,7 @@ function SpotPageContent() {
           <div className="flex-1 min-h-[650px] overflow-y-auto">
             {/* Sell Orders (Red) - Using TradingView Price */}
             <div className="space-y-0">
-              {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).sellOrders.map((order, index) => (
+              {generateOrderBookData(currentPrice || 124119.71).sellOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
                   <span className="text-red-400">{order.price}</span>
                   <span className="text-gray-300">{order.volume}</span>
@@ -900,19 +859,19 @@ function SpotPageContent() {
             {/* Current Price - Using TradingView Price */}
             <div className="bg-[#10121E] p-2 my-1">
               <div className="flex items-center justify-between">
-                <span className={`font-bold text-lg ${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}
+                <span className="font-bold text-lg" style={{ color: changeColor }}>
+                  {formattedPrice}
                 </span>
-                <span className={`${priceChange?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {priceChange?.startsWith('-') ? '↓' : '↑'}
+                <span style={{ color: changeColor }}>
+                  {isPositive ? '↑' : '↓'}
                 </span>
-                <span className="text-gray-400 text-sm">${currentPrice > 0 ? currentPrice.toFixed(2) : (realTimePrice || '0.00')}</span>
+                <span className="text-gray-400 text-sm">${formattedPrice}</span>
               </div>
             </div>
 
             {/* Buy Orders (Green) - Using TradingView Price */}
             <div className="space-y-0">
-              {generateOrderBookData(currentPrice > 0 ? currentPrice : (parseFloat(realTimePrice) || 166373.87)).buyOrders.map((order, index) => (
+              {generateOrderBookData(currentPrice || 124119.71).buyOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
                   <span className="text-green-400">{order.price}</span>
                   <span className="text-gray-300">{order.volume}</span>
@@ -992,7 +951,7 @@ function SpotPageContent() {
                         className="w-full bg-[#1a1b2e] text-white px-3 py-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none pr-12"
                         value={buyPrice}
                         onChange={(e) => setBuyPrice(e.target.value)}
-                        placeholder={currentPrice.toFixed(2)}
+                        placeholder={formattedPrice}
                       />
                       <span className="absolute right-3 top-2 text-gray-400 text-sm">USDT</span>
                     </div>
@@ -1141,7 +1100,7 @@ function SpotPageContent() {
                         className="w-full bg-[#1a1b2e] text-white px-3 py-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none pr-12"
                         value={sellPrice}
                         onChange={(e) => setSellPrice(e.target.value)}
-                        placeholder={currentPrice.toFixed(2)}
+                        placeholder={formattedPrice}
                       />
                       <span className="absolute right-3 top-2 text-gray-400 text-sm">USDT</span>
                     </div>
@@ -1312,7 +1271,7 @@ function SpotPageContent() {
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto flex-shrink-0">
             {[
-              { symbol: 'BTC/USDT', coin: 'BTC', price: currentPrice.toFixed(2), change: priceChange || '+1.47%', isPositive: !priceChange?.startsWith('-'), icon: '₿', iconBg: 'bg-orange-500' },
+              { symbol: 'BTC/USDT', coin: 'BTC', price: formattedPrice, change: changeText, isPositive: isPositive, icon: '₿', iconBg: 'bg-orange-500' },
               { symbol: 'ETH/USDT', coin: 'ETH', price: '3550.21', change: '+1.06%', isPositive: true, icon: 'Ξ', iconBg: 'bg-purple-500' },
               { symbol: 'BNB/USDT', coin: 'BNB', price: '698.45', change: '+2.15%', isPositive: true, icon: 'B', iconBg: 'bg-yellow-600' },
               { symbol: 'SOL/USDT', coin: 'SOL', price: '245.67', change: '+3.42%', isPositive: true, icon: 'S', iconBg: 'bg-purple-600' },
@@ -1362,12 +1321,12 @@ function SpotPageContent() {
             <div className="flex-1 overflow-y-auto px-4">
               <div className="space-y-1 py-2">
                 {[
-                  { time: new Date().toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0080', type: 'buy' },
-                  { time: new Date(Date.now() - 1000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0001700', type: 'buy' },
-                  { time: new Date(Date.now() - 2000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.1000', type: 'sell' },
-                  { time: new Date(Date.now() - 3000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0004200', type: 'buy' },
-                  { time: new Date(Date.now() - 5000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0047', type: 'sell' },
-                  { time: new Date(Date.now() - 6000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0016', type: 'buy' },
+                  { time: new Date().toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: formattedPrice, amount: '0.0080', type: 'buy' },
+                  { time: new Date(Date.now() - 1000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: formattedPrice, amount: '0.0001700', type: 'buy' },
+                  { time: new Date(Date.now() - 2000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: formattedPrice, amount: '0.1000', type: 'sell' },
+                  { time: new Date(Date.now() - 3000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: formattedPrice, amount: '0.0004200', type: 'buy' },
+                  { time: new Date(Date.now() - 5000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: formattedPrice, amount: '0.0047', type: 'sell' },
+                  { time: new Date(Date.now() - 6000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: formattedPrice, amount: '0.0016', type: 'buy' },
                   { time: new Date(Date.now() - 7000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.00070000', type: 'sell' },
                   { time: new Date(Date.now() - 8000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: currentPrice.toFixed(2), amount: '0.0243', type: 'buy' },
                   { time: new Date(Date.now() - 9000).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8), price: (currentPrice - 0.01).toFixed(2), amount: '0.0089', type: 'buy' },
