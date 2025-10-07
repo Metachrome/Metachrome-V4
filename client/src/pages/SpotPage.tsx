@@ -78,17 +78,32 @@ function SpotPageContent() {
   const [buyTurnover, setBuyTurnover] = useState<string>('');
   const [sellTurnover, setSellTurnover] = useState<string>('');
 
-  // Fetch user balances with real-time refetch
+  // Fetch user balances with real-time refetch - FIXED: Use same endpoint as Wallet page
   const { data: balances } = useQuery({
-    queryKey: ['/api/user/balances', user?.id],
+    queryKey: ['/api/balances'],
     enabled: !!user,
     refetchInterval: 2000, // Very fast refetch for real-time sync
     staleTime: 0, // Always consider data stale
-    cacheTime: 0, // Don't cache data
+    gcTime: 0, // Don't cache data (updated from cacheTime)
     queryFn: async () => {
-      const url = user?.id ? `/api/user/balances?userId=${user.id}` : '/api/user/balances';
-      console.log('🔍 SPOT: Fetching balance from:', url, 'for user:', user?.id);
-      const response = await apiRequest('GET', url);
+      console.log('🔍 SPOT: Fetching balance from /api/balances for user:', user?.id, user?.username);
+      console.log('🔍 SPOT: Auth token:', localStorage.getItem('authToken')?.substring(0, 30) + '...');
+
+      const response = await fetch('/api/balances', {
+        credentials: 'include', // Important: send session cookies
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      console.log('🔍 SPOT: Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ SPOT: Balance API failed:', response.status, errorText);
+        throw new Error(`Failed to fetch balance: ${response.status} ${errorText}`);
+      }
+
       const data = await response.json();
       console.log('🔍 SPOT: Balance API response:', data);
       return data;
@@ -108,40 +123,24 @@ function SpotPageContent() {
     },
   });
 
-  // Get available balances - FIXED parsing logic
+  // Get available balances - FIXED: Use same parsing logic as Wallet page
   let usdtBalance = 0;
   let btcBalance = 0.5; // Default BTC balance
 
-  if (balances) {
-    // Try multiple parsing strategies to handle different API response formats
-    if (balances.USDT?.available) {
-      // Format: { USDT: { available: "10420", ... } }
-      usdtBalance = Number(balances.USDT.available);
-    } else if (Array.isArray(balances.balances)) {
-      // Format: { balances: [{ currency: "USDT", balance: 10420 }, ...] }
-      const usdtData = balances.balances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
-      usdtBalance = Number(usdtData?.balance || usdtData?.available || 0);
-    } else if (Array.isArray(balances)) {
-      // Format: [{ currency: "USDT", balance: 10420 }, ...]
-      const usdtData = balances.find((b: any) => b.currency === 'USDT' || b.symbol === 'USDT');
-      usdtBalance = Number(usdtData?.balance || usdtData?.available || 0);
-    } else if (balances['0']?.currency === 'USDT') {
-      // Format: { "0": { currency: "USDT", balance: 10420 }, ... }
-      usdtBalance = Number(balances['0'].balance || balances['0'].available || 0);
-    }
+  if (balances && Array.isArray(balances)) {
+    // Format: [{ symbol: "USDT", available: "700610", locked: "0" }, ...]
+    const usdtData = balances.find((b: any) => b.symbol === 'USDT');
+    const btcData = balances.find((b: any) => b.symbol === 'BTC');
 
-    // Parse BTC balance similarly
-    if (balances.BTC?.available) {
-      btcBalance = Number(balances.BTC.available);
-    } else if (Array.isArray(balances.balances)) {
-      const btcData = balances.balances.find((b: any) => b.currency === 'BTC' || b.symbol === 'BTC');
-      btcBalance = Number(btcData?.balance || btcData?.available || 0.5);
-    } else if (Array.isArray(balances)) {
-      const btcData = balances.find((b: any) => b.currency === 'BTC' || b.symbol === 'BTC');
-      btcBalance = Number(btcData?.balance || btcData?.available || 0.5);
-    } else if (balances['1']?.currency === 'BTC') {
-      btcBalance = Number(balances['1'].balance || balances['1'].available || 0.5);
-    }
+    usdtBalance = parseFloat(usdtData?.available || '0');
+    btcBalance = parseFloat(btcData?.available || '0.5');
+
+    console.log('🔍 SPOT: Parsed balances from array format:', {
+      usdtData,
+      btcData,
+      usdtBalance,
+      btcBalance
+    });
   }
 
   // ENHANCED Debug logging for balance sync
@@ -182,14 +181,13 @@ function SpotPageContent() {
       console.log('🔄 SPOT: Current user ID:', user?.id, 'Update for user:', lastMessage.data?.userId);
 
       // Aggressive cache invalidation - clear all balance-related queries
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
-      queryClient.removeQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.removeQueries({ queryKey: ['/api/balances'] });
 
       // Force immediate refetch with a small delay to ensure cache is cleared
       setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['/api/user/balances', user?.id] });
-        queryClient.refetchQueries({ queryKey: ['/api/user/balances'] });
+        queryClient.refetchQueries({ queryKey: ['/api/balances'] });
       }, 100);
     }
   }, [lastMessage, queryClient, user?.id]);
@@ -231,7 +229,7 @@ function SpotPageContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/spot/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
       toast({ title: "Buy order placed successfully!" });
       // Reset form
       setBuyAmount('');
@@ -263,7 +261,7 @@ function SpotPageContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/spot/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
       toast({ title: "Sell order placed successfully!" });
       // Reset form
       setSellAmount('');
@@ -283,9 +281,8 @@ function SpotPageContent() {
     if (lastMessage?.type === 'balance_update' && lastMessage.data?.userId === user?.id) {
       console.log('💰 Real-time balance update received in Spot page:', lastMessage.data);
 
-      // Invalidate and refetch balance data to ensure UI sync - use exact query key pattern
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balances'] });
+      // Invalidate and refetch balance data to ensure UI sync - use correct query key
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
 
       // Show notification for balance changes
       if (lastMessage.data.changeType === 'spot_buy' || lastMessage.data.changeType === 'spot_sell') {
@@ -533,12 +530,12 @@ function SpotPageContent() {
         </div>
 
         {/* Mobile Chart - Full Vertical Layout */}
-        <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '80vh', minHeight: '500px' }}>
+        <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '375px' }}>
           <div className="w-full h-full">
             <LightweightChart
               symbol="BTCUSDT"
               interval="1m"
-              height="80vh"
+              height={375}
               containerId="spot_mobile_chart"
             />
           </div>

@@ -911,7 +911,7 @@ function OptionsPageContent() {
           </div>
 
           {/* Mobile Chart - Full Vertical Layout */}
-          <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '80vh', minHeight: '500px' }}>
+          <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '375px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
@@ -920,7 +920,7 @@ function OptionsPageContent() {
               <LightweightChart
                 symbol="BTCUSDT"
                 interval="1m"
-                height="80vh"
+                height={375}
                 containerId="options_mobile_chart"
               />
             </div>
