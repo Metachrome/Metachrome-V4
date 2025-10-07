@@ -68,6 +68,7 @@ export default function LightweightChart({
       layout: {
         background: { color: '#10121E' },
         textColor: '#D1D5DB',
+        fontSize: 11, // Smaller font for mobile
       },
       grid: {
         vertLines: { color: '#1F2937' },
@@ -78,11 +79,13 @@ export default function LightweightChart({
       },
       rightPriceScale: {
         borderColor: '#374151',
-        width: 60, // Compact width for mobile
+        width: 45, // Very compact width for mobile
         scaleMargins: {
-          top: 0.1,
-          bottom: 0.1,
+          top: 0.05,
+          bottom: 0.05,
         },
+        minimumWidth: 45,
+        entireTextOnly: false, // Allow partial text for compact display
       },
       timeScale: {
         borderColor: '#374151',

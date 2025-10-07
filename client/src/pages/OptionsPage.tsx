@@ -929,8 +929,8 @@ function OptionsPageContent() {
           {/* Mobile Content - Scrollable Below Chart */}
           <div className="bg-[#10121E] min-h-screen">
           {/* Mobile Market Stats - Same as Desktop */}
-          <div className="px-4 py-3 border-b border-gray-700">
-            <h3 className="text-white font-bold mb-3">Market Statistics</h3>
+          <div className="px-4 py-2 border-b border-gray-700">
+            <h3 className="text-white font-bold mb-2">Market Statistics</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="text-gray-400">24h Change</div>
