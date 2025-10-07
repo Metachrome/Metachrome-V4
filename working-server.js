@@ -4465,7 +4465,29 @@ app.get('/api/user/balances', async (req, res) => {
     if (authToken) {
       console.log('💰 Processing auth token:', authToken.substring(0, 30) + '...');
 
-      if (authToken.startsWith('user-session-')) {
+      // Handle ADMIN tokens first (superadmin/admin)
+      if (authToken.startsWith('admin-token-') || authToken.startsWith('admin-session-')) {
+        console.log('💰 ADMIN TOKEN DETECTED - Finding admin user');
+
+        // Find the actual admin user from database
+        const adminUser = users.find(u => u.role === 'super_admin' || u.role === 'admin');
+
+        if (adminUser) {
+          currentUser = adminUser;
+          console.log('💰 Found admin user by token:', currentUser.username, 'Role:', currentUser.role, 'Balance:', currentUser.balance);
+        } else {
+          // Fallback to default superadmin
+          console.log('💰 Using fallback superadmin');
+          currentUser = {
+            id: 'superadmin-1',
+            username: 'superadmin',
+            email: 'superadmin@metachrome.io',
+            role: 'super_admin',
+            balance: 1000000
+          };
+        }
+      }
+      else if (authToken.startsWith('user-session-')) {
         // Extract user ID from token format: user-session-{userId}-{timestamp}
         const tokenParts = authToken.replace('user-session-', '').split('-');
         const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
@@ -4516,7 +4538,12 @@ app.get('/api/user/balances', async (req, res) => {
       }
     }
 
-    console.log('💰 Returning user balance for:', currentUser.username, 'Balance:', currentUser.balance);
+    console.log('💰 FINAL USER SELECTED:', {
+      username: currentUser.username,
+      role: currentUser.role,
+      id: currentUser.id,
+      balance: currentUser.balance
+    });
 
     // BALANCE SYNC FIX: Ensure we're using the most up-to-date balance
     const userBalance = parseFloat(currentUser.balance || 0);
