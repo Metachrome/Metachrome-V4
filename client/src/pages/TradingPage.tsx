@@ -89,7 +89,37 @@ export default function TradingPage() {
       amount: string;
       duration: number;
     }) => {
-      return await apiRequest('POST', '/api/trades', tradeData);
+      console.log('🎯 TRADING PAGE: Placing trade with data:', tradeData);
+      console.log('🎯 TRADING PAGE: User ID:', user?.id);
+      console.log('🎯 TRADING PAGE: Auth token:', localStorage.getItem('authToken')?.substring(0, 30) + '...');
+
+      const response = await fetch('/api/trades', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          symbol: tradeData.symbol,
+          type: tradeData.type,
+          direction: tradeData.direction,
+          amount: tradeData.amount,
+          duration: tradeData.duration
+        })
+      });
+
+      console.log('🎯 TRADING PAGE: Response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('🎯 TRADING PAGE: Error response:', error);
+        throw new Error(error || 'Failed to place trade');
+      }
+
+      const result = await response.json();
+      console.log('🎯 TRADING PAGE: Success response:', result);
+      return result;
     },
     onSuccess: () => {
       toast({
