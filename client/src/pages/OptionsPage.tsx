@@ -42,6 +42,9 @@ function OptionsPageContent() {
   const { changeText, changeColor, isPositive } = usePriceChange();
   const { high, low, volume } = use24hStats();
 
+  // Chart view state
+  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('basic');
+
   // Debug user data
   console.log('🔍 OPTIONS PAGE - User data:', {
     id: user?.id,
@@ -1231,10 +1234,10 @@ function OptionsPageContent() {
             <div className="flex items-center justify-between mb-2">
               <div className="text-white font-bold">BTC/USDT</div>
               <div className="text-right">
-                <div className={`font-bold price-display ${changeColor}`}>
+                <div className="font-bold text-white text-lg">
                   {displayPrice.toFixed(2)}
                 </div>
-                <div className={`text-sm price-change ${changeColor}`}>
+                <div className={`text-sm font-semibold ${changeColor === '#10B981' ? 'text-green-400' : 'text-red-400'}`}>
                   {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
                 <div className={`text-sm ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
@@ -1307,31 +1310,101 @@ function OptionsPageContent() {
 
         {/* Center Panel - Chart and Options Trading */}
         <div className="flex-1 flex flex-col">
-          {/* Chart Controls - Removed timeframe buttons, keeping only chart controls */}
+          {/* Chart Controls - Chart view switching */}
           <div className="p-2 border-b border-gray-700">
             <div className="flex items-center justify-end">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <button className="text-xs text-gray-400 hover:text-white">Basic version</button>
-                  <button className="text-xs text-gray-400 hover:text-white">Trading view</button>
-                  <button className="text-xs text-gray-400 hover:text-white">Depth</button>
+                  <button
+                    onClick={() => setChartView('basic')}
+                    className={`text-xs transition-colors ${
+                      chartView === 'basic'
+                        ? 'text-white bg-purple-600 px-2 py-1 rounded'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Basic version
+                  </button>
+                  <button
+                    onClick={() => setChartView('tradingview')}
+                    className={`text-xs transition-colors ${
+                      chartView === 'tradingview'
+                        ? 'text-white bg-purple-600 px-2 py-1 rounded'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Trading view
+                  </button>
+                  <button
+                    onClick={() => setChartView('depth')}
+                    className={`text-xs transition-colors ${
+                      chartView === 'depth'
+                        ? 'text-white bg-purple-600 px-2 py-1 rounded'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Depth
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Chart Area - Lightweight Charts with Binance Data */}
+          {/* Chart Area - Dynamic chart based on selected view */}
           <div className="h-[400px] relative bg-[#10121E] p-2">
             <TradeOverlay
               trades={activeTrades}
               currentPrice={priceData?.price || currentPrice}
             />
-            <LightweightChart
-              symbol="BTCUSDT"
-              interval="1m"
-              height={400}
-              containerId="options_desktop_chart"
-            />
+
+            {chartView === 'basic' && (
+              <LightweightChart
+                symbol="BTCUSDT"
+                interval="1m"
+                height={400}
+                containerId="options_desktop_chart"
+              />
+            )}
+
+            {chartView === 'tradingview' && (
+              <TradingViewWidget
+                type="chart"
+                symbol="BINANCE:BTCUSDT"
+                height={400}
+                interval="1"
+                theme="dark"
+                container_id="options_tradingview_chart"
+              />
+            )}
+
+            {chartView === 'depth' && (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-white text-lg font-bold mb-2">Market Depth Chart</div>
+                  <div className="text-gray-400 text-sm mb-4">Order book visualization</div>
+                  <div className="bg-gray-800 rounded-lg p-4 max-w-md">
+                    <div className="text-green-400 text-sm mb-2">Buy Orders (Bids)</div>
+                    <div className="space-y-1 mb-4">
+                      {Array.from({length: 5}, (_, i) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-green-400">{(displayPrice - (i + 1) * 10).toFixed(2)}</span>
+                          <span className="text-gray-300">{(Math.random() * 5 + 1).toFixed(3)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-red-400 text-sm mb-2">Sell Orders (Asks)</div>
+                    <div className="space-y-1">
+                      {Array.from({length: 5}, (_, i) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-red-400">{(displayPrice + (i + 1) * 10).toFixed(2)}</span>
+                          <span className="text-gray-300">{(Math.random() * 5 + 1).toFixed(3)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Options Trading Controls */}
