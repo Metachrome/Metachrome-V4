@@ -78,6 +78,11 @@ export default function LightweightChart({
       },
       rightPriceScale: {
         borderColor: '#374151',
+        width: 60, // Compact width for mobile
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
       },
       timeScale: {
         borderColor: '#374151',
