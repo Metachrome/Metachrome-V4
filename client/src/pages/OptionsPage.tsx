@@ -891,7 +891,7 @@ function OptionsPageContent() {
           </div>
 
           {/* Mobile Chart - Vertical/Tall Layout */}
-          <div className="bg-[#10121E] relative w-full" style={{ height: '70vh', minHeight: '600px' }}>
+          <div className="bg-[#10121E] relative w-full" style={{ height: '85vh', minHeight: '750px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
@@ -905,144 +905,11 @@ function OptionsPageContent() {
               />
             </div>
 
-            {/* Floating Trading Panel - Bottom Right */}
-            <div className="absolute bottom-4 right-4 bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-gray-700 max-w-[200px]">
-              {/* Quick Trade Buttons */}
-              <div className="space-y-2">
-                <div className="text-white text-xs font-medium mb-2">Quick Trade</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleTrade('up')}
-                    disabled={isTrading || !selectedAmount}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs py-2 px-3 rounded font-medium transition-colors"
-                  >
-                    UP
-                  </button>
-                  <button
-                    onClick={() => handleTrade('down')}
-                    disabled={isTrading || !selectedAmount}
-                    className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white text-xs py-2 px-3 rounded font-medium transition-colors"
-                  >
-                    DOWN
-                  </button>
-                </div>
-                <div className="text-xs text-gray-400 text-center">
-                  {selectedAmount} USDT • {selectedDuration}
-                </div>
-              </div>
-            </div>
+
           </div>
 
-          {/* Compact Bottom Trading Panel */}
-          <div className="fixed bottom-20 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-4">
-            {/* Active Trade Display */}
-            {activeTrades.length > 0 && (
-              <div className="mb-3">
-                {activeTrades.map((trade) => {
-                  const timeRemaining = Math.max(0, trade.duration - Math.floor((Date.now() - trade.startTime) / 1000));
-                  const priceChange = currentPrice - trade.entryPrice;
-                  const isWinning = (trade.direction === 'up' && priceChange > 0) ||
-                                   (trade.direction === 'down' && priceChange < 0);
 
-                  return (
-                    <div key={trade.id} className="bg-gray-800 rounded-lg p-2 mb-2">
-                      <div className="flex justify-between items-center">
-                        <span className={`text-xs font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                          {trade.direction.toUpperCase()} {trade.amount} USDT
-                        </span>
-                        <span className="text-yellow-400 font-bold text-xs">{timeRemaining}s</span>
-                        <span className={`text-xs font-medium ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                          {isWinning ? '+' : '-'}{Math.abs(priceChange).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
 
-            {/* Trading Controls */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              {/* Duration Selection */}
-              <div>
-                <div className="text-gray-400 text-xs mb-1">Duration</div>
-                <select
-                  value={selectedDuration}
-                  onChange={(e) => {
-                    setSelectedDuration(e.target.value);
-                    const minAmount = getMinimumAmount(e.target.value);
-                    if (selectedAmount < minAmount) {
-                      setSelectedAmount(minAmount);
-                    }
-                  }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-                  disabled={isTrading}
-                >
-                  <option value="30s">30s (10%)</option>
-                  <option value="60s">60s (15%)</option>
-                </select>
-              </div>
-
-              {/* Amount Selection */}
-              <div>
-                <div className="text-gray-400 text-xs mb-1">Amount</div>
-                <input
-                  type="number"
-                  min={getMinimumAmount(selectedDuration)}
-                  value={selectedAmount}
-                  onChange={(e) => {
-                    const minAmount = getMinimumAmount(selectedDuration);
-                    setSelectedAmount(Math.max(minAmount, parseInt(e.target.value) || minAmount));
-                  }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-                  placeholder={`Min ${getMinimumAmount(selectedDuration)}`}
-                  disabled={isTrading}
-                />
-              </div>
-            </div>
-
-            {/* Balance Display */}
-            <div className="text-center mb-3">
-              <div className="text-gray-400 text-xs">Balance: {balance.toFixed(2)} USDT</div>
-            </div>
-
-            {/* Trade Buttons */}
-            {user ? (
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => handleTrade('up')}
-                  disabled={isTrading || !selectedAmount}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white py-3 px-4 rounded-lg font-bold transition-colors"
-                >
-                  UP ↗
-                </button>
-                <button
-                  onClick={() => handleTrade('down')}
-                  disabled={isTrading || !selectedAmount}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-3 px-4 rounded-lg font-bold transition-colors"
-                >
-                  DOWN ↘
-                </button>
-              </div>
-            ) : (
-              <div className="text-center">
-                <a
-                  href="/login"
-                  className="inline-block bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-bold transition-colors"
-                >
-                  Login to Trade
-                </a>
-              </div>
-            )}
-
-            {countdown > 0 && (
-              <div className="text-center">
-                <div className="text-yellow-400 font-bold text-sm">
-                  Next trade: {countdown}s
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* My Order Section */}
           <div className="px-4 py-3 border-b border-gray-700">
