@@ -106,6 +106,27 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Security headers middleware to fix CSP issues
+app.use((req, res, next) => {
+  // Set Content Security Policy to allow unsafe-eval for development
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://accounts.google.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https://api.binance.com https://accounts.google.com wss: ws:; " +
+    "frame-src 'self' https://accounts.google.com;"
+  );
+
+  // Additional security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+
+  next();
+});
+
 // Serve static files from dist/public with cache control
 const distPath = path.join(__dirname, 'dist', 'public');
 app.use(express.static(distPath, {
