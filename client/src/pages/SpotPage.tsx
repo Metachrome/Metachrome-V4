@@ -784,19 +784,19 @@ function SpotPageContent() {
                 <div className="flex items-center space-x-4 text-sm">
                   <div>
                     <div className="text-gray-400">Change 24h</div>
-                    <div className="text-white">597.01 0.50%</div>
+                    <div className="text-white" style={{ color: changeColor }}>{changeText}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">24h High</div>
-                    <div className="text-white">119558.19</div>
+                    <div className="text-white">{high ? high.toFixed(2) : '119558.19'}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">24h Low</div>
-                    <div className="text-white">117204.65</div>
+                    <div className="text-white">{low ? low.toFixed(2) : '117204.65'}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">Volume 24h (BTC)</div>
-                    <div className="text-white">681.35</div>
+                    <div className="text-white">{volume ? volume.toFixed(2) : '681.35'}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">Turnover 24h (USDT)</div>
@@ -816,9 +816,9 @@ function SpotPageContent() {
             <div className="flex items-center justify-between mb-2">
               <div className="text-white font-bold text-lg">BTC/USDT</div>
               <div className="text-right">
-                <div className="text-green-400 font-bold">118113.00</div>
-                <div className="text-green-400 text-sm">Change 24h</div>
-                <div className="text-green-400 text-sm">597.01 0.50%</div>
+                <div className="font-bold" style={{ color: changeColor }}>${formattedPrice}</div>
+                <div className="text-gray-400 text-sm">Change 24h</div>
+                <div className="text-sm" style={{ color: changeColor }}>{changeText}</div>
               </div>
             </div>
 
