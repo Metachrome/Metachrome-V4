@@ -18,7 +18,7 @@ export default function TradeOverlay({ trades, currentPrice }: TradeOverlayProps
   if (trades.length === 0) return null;
 
   return (
-    <div className="absolute top-2 left-2 z-10 space-y-2">
+    <div className="absolute top-2 left-2 z-50 space-y-2">
       {trades.map(trade => {
         const timeRemaining = Math.max(0, Math.ceil((trade.endTime - Date.now()) / 1000));
         const priceChange = currentPrice - trade.entryPrice;

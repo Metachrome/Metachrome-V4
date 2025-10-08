@@ -5071,7 +5071,31 @@ app.post('/api/trades', async (req, res) => {
 
     // IMMEDIATE BALANCE DEDUCTION
     user.balance = (userBalance - tradeAmount).toString();
-    await saveUsers(users);
+
+    // CRITICAL FIX: Save balance to Supabase in production
+    if (isProduction && supabase) {
+      console.log('💾 PRODUCTION: Updating balance in Supabase database...');
+      const { error: balanceError } = await supabase
+        .from('users')
+        .update({
+          balance: user.balance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', finalUserId);
+
+      if (balanceError) {
+        console.error('❌ Failed to update balance in Supabase:', balanceError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to update balance'
+        });
+      }
+      console.log('✅ Balance updated in Supabase:', userBalance, '→', user.balance);
+    } else {
+      // Development: Save to local file
+      await saveUsers(users);
+    }
+
     console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
 
     // Broadcast balance update via WebSocket for immediate frontend sync
@@ -5303,7 +5327,31 @@ app.post('/api/trades/options', async (req, res) => {
 
     // Deduct balance
     user.balance = (userBalance - tradeAmount).toString();
-    await saveUsers(users);
+
+    // CRITICAL FIX: Save balance to Supabase in production
+    if (isProduction && supabase) {
+      console.log('💾 PRODUCTION: Updating balance in Supabase database...');
+      const { error: balanceError } = await supabase
+        .from('users')
+        .update({
+          balance: user.balance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', finalUserId);
+
+      if (balanceError) {
+        console.error('❌ Failed to update balance in Supabase:', balanceError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to update balance'
+        });
+      }
+      console.log('✅ Balance updated in Supabase:', userBalance, '→', user.balance);
+    } else {
+      // Development: Save to local file
+      await saveUsers(users);
+    }
+
     console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
 
     // Broadcast balance update via WebSocket for immediate frontend sync
