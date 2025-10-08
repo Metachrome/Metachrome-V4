@@ -128,12 +128,20 @@ function OptionsPageContent() {
 
       setIsLoadingHistory(true);
 
-      // Clear any existing cached data to prevent conflicts
+      // CRITICAL FIX: Invalidate React Query cache to prevent conflicts with TransactionHistory.tsx
+      try {
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${user.id}/trades`] });
+        console.log('🗑️ Invalidated React Query cache for trade history to prevent conflicts');
+      } catch (error) {
+        console.error('❌ Error invalidating React Query cache:', error);
+      }
+
+      // Clear any existing localStorage cache to prevent conflicts
       try {
         localStorage.removeItem(`tradeHistory_${user.id}`);
-        console.log('🗑️ Cleared any existing trade history cache to prevent conflicts');
+        console.log('🗑️ Cleared any existing localStorage trade history cache');
       } catch (error) {
-        console.error('❌ Error clearing trade history cache:', error);
+        console.error('❌ Error clearing localStorage cache:', error);
       }
 
       // Always fetch fresh data from server
@@ -525,8 +533,9 @@ function OptionsPageContent() {
         // Remove from active trades
         setActiveTrades(prev => prev.filter(trade => trade.id !== tradeId));
 
-        // Refresh trade history and balance
+        // Refresh trade history and balance - CRITICAL: Invalidate React Query cache
         queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
         if (user?.id) {
           loadTradeHistory();
         }
@@ -575,8 +584,9 @@ function OptionsPageContent() {
               // Remove from active trades
               setActiveTrades(prev => prev.filter(trade => trade.id !== activeTrade.id));
 
-              // Refresh trade history and balance
+              // Refresh trade history and balance - CRITICAL: Invalidate React Query cache
               queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+              queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
               loadTradeHistory();
             }
           });
