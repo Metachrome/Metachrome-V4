@@ -5192,13 +5192,13 @@ app.post('/api/trades', async (req, res) => {
 // Options trading endpoint
 app.post('/api/trades/options', async (req, res) => {
   try {
-    const { userId, symbol, direction, amount, duration } = req.body;
-    console.log('🎯 Options trade request:', { userId, symbol, direction, amount, duration });
+    const { userId, symbol, direction, amount, duration, entryPrice } = req.body;
+    console.log('🎯 Options trade request:', { userId, symbol, direction, amount, duration, entryPrice });
 
-    if (!userId || !symbol || !direction || !amount || !duration) {
+    if (!userId || !symbol || !direction || !amount || !duration || !entryPrice) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: userId, symbol, direction, amount, duration"
+        message: "Missing required fields: userId, symbol, direction, amount, duration, entryPrice"
       });
     }
 
@@ -5319,7 +5319,7 @@ app.post('/api/trades/options', async (req, res) => {
 
     // Create trade record
     const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const currentPrice = 65000 + (Math.random() - 0.5) * 2000; // Mock price
+    const currentPrice = parseFloat(entryPrice); // Use the actual price from frontend
 
     const trade = {
       user_id: finalUserId, // Use user_id for consistency with database schema

@@ -804,7 +804,8 @@ function OptionsPageContent() {
           symbol: 'BTCUSDT',
           direction,
           amount: selectedAmount.toString(),
-          duration: durationSeconds
+          duration: durationSeconds,
+          entryPrice: safeCurrentPrice
         })
       });
 
