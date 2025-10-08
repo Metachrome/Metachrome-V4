@@ -763,8 +763,8 @@ function OptionsPageContent() {
       // Convert duration string to seconds
       const durationSeconds = parseInt(selectedDuration.replace('s', ''));
 
-      // Get current price for entry
-      const safeCurrentPrice = currentPrice || 65000;
+      // Get current price for entry - Use displayPrice from PriceContext (same as UI)
+      const safeCurrentPrice = displayPrice;
 
       // User is already available from useAuth hook
       console.log('🔍 Current user for trade:', user);
@@ -1130,7 +1130,7 @@ function OptionsPageContent() {
                 Amount (USDT) - Min: {getMinimumAmount(selectedDuration).toLocaleString()}
               </label>
               <div className="grid grid-cols-3 gap-1.5 mb-2">
-                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
+                {[100, 500, 1000, 2000].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
@@ -1592,7 +1592,7 @@ function OptionsPageContent() {
                 Minimum buy: {getMinimumAmount(selectedDuration).toLocaleString()} USDT | Selected: {selectedAmount} USDT
               </div>
               <div className="grid grid-cols-4 gap-2 mb-2">
-                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
+                {[100, 500, 1000, 2000].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
