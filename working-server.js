@@ -4760,12 +4760,16 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
     // Update trade record in database
     if (supabase) {
       try {
+        // Get current market price for exit price
+        const currentMarketPrice = await getCurrentPrice('BTCUSDT');
+        const exitPrice = currentMarketPrice ? parseFloat(currentMarketPrice.price) : 0;
+
         const { error } = await supabase
           .from('trades')
           .update({
             result: finalWon ? 'win' : 'lose',
             status: 'completed',
-            exit_price: (Math.random() * 1000 + 64000).toFixed(2), // Mock exit price
+            exit_price: exitPrice, // Use actual current price
             profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           })
@@ -4774,11 +4778,46 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
         if (error) {
           console.error('❌ Database update error:', error);
         } else {
-          console.log(`✅ Trade ${tradeId} updated in database: ${finalWon ? 'WIN' : 'LOSE'}`);
+          console.log(`✅ Trade ${tradeId} updated in database: ${finalWon ? 'WIN' : 'LOSE'}, exit price: ${exitPrice}`);
         }
       } catch (dbError) {
         console.error('❌ Database update exception:', dbError);
       }
+    }
+
+    // Broadcast trade completion notification via WebSocket
+    if (global.wss) {
+      const currentMarketPrice = await getCurrentPrice('BTCUSDT');
+      const exitPrice = currentMarketPrice ? parseFloat(currentMarketPrice.price) : 0;
+
+      const tradeCompletionMessage = {
+        type: 'trade_completed',
+        data: {
+          tradeId: tradeId,
+          userId: userId,
+          result: finalWon ? 'win' : 'lose',
+          exitPrice: exitPrice,
+          profitAmount: profitAmount,
+          newBalance: users[userIndex].balance,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📡 Broadcasting trade completion via WebSocket:', tradeCompletionMessage);
+
+      let broadcastCount = 0;
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(tradeCompletionMessage));
+            broadcastCount++;
+          } catch (error) {
+            console.error('❌ Failed to broadcast trade completion to client:', error);
+          }
+        }
+      });
+
+      console.log(`📡 Trade completion broadcasted to ${broadcastCount} clients`);
     }
 
     console.log(`🏁 ✅ DIRECT COMPLETION SUCCESS: Trade ${tradeId} completed as ${finalWon ? 'WIN' : 'LOSE'}`);
@@ -5903,6 +5942,36 @@ app.post('/api/trades/complete', async (req, res) => {
       });
 
       console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
+
+      // Also broadcast trade completion notification
+      const tradeCompletionMessage = {
+        type: 'trade_completed',
+        data: {
+          tradeId: tradeId,
+          userId: userId,
+          result: finalOutcome ? 'win' : 'lose',
+          exitPrice: currentPrice || 0,
+          profitAmount: profitAmount,
+          newBalance: users[userIndex].balance,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📡 Broadcasting trade completion via WebSocket:', tradeCompletionMessage);
+
+      broadcastCount = 0;
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(tradeCompletionMessage));
+            broadcastCount++;
+          } catch (error) {
+            console.error('❌ Failed to broadcast trade completion to client:', error);
+          }
+        }
+      });
+
+      console.log(`📡 Trade completion broadcasted to ${broadcastCount} clients`);
     }
 
     console.log('✅ Trade completion processed:', {

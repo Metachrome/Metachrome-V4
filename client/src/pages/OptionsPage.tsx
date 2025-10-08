@@ -497,6 +497,44 @@ function OptionsPageContent() {
     }
   }, [lastMessage, user?.id, queryClient]);
 
+  // Handle WebSocket trade completion notifications for reliable notifications
+  useEffect(() => {
+    if (lastMessage?.type === 'trade_completed' && lastMessage.data?.userId === user?.id) {
+      console.log('🎯 WEBSOCKET: Trade completion notification received:', lastMessage.data);
+
+      const { tradeId, result, exitPrice, profitAmount, newBalance } = lastMessage.data;
+
+      // Find the active trade that just completed
+      const completedActiveTrade = activeTrades.find(trade => trade.id === tradeId);
+
+      if (completedActiveTrade) {
+        const won = result === 'win';
+        const profitPercentage = completedActiveTrade.profitPercentage || (completedActiveTrade.duration === 30 ? 10 : 15);
+
+        const completedTrade: ActiveTrade = {
+          ...completedActiveTrade,
+          status: won ? 'won' : 'lost',
+          currentPrice: exitPrice,
+          payout: won ? completedActiveTrade.amount * (1 + profitPercentage / 100) : 0,
+          profit: profitAmount
+        };
+
+        console.log('🎯 WEBSOCKET: Setting completed trade notification:', completedTrade);
+        setCompletedTrade(completedTrade);
+        localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+
+        // Remove from active trades
+        setActiveTrades(prev => prev.filter(trade => trade.id !== tradeId));
+
+        // Refresh trade history and balance
+        queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+        if (user?.id) {
+          loadTradeHistory();
+        }
+      }
+    }
+  }, [lastMessage, user?.id, activeTrades, queryClient]);
+
   // Handle WebSocket trading control updates for real-time sync
   useEffect(() => {
     if (lastMessage?.type === 'trading_control_update' || lastMessage?.type === 'trading_mode_update') {
