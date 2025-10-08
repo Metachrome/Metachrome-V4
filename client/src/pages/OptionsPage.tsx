@@ -535,6 +535,61 @@ function OptionsPageContent() {
     }
   }, [lastMessage, user?.id, activeTrades, queryClient]);
 
+  // Backup polling system for trade completion (fallback if WebSocket fails)
+  useEffect(() => {
+    if (activeTrades.length === 0) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        // Check if any active trades have completed by polling the server
+        const response = await fetch(`/api/users/${user?.id}/trades`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+
+        if (response.ok) {
+          const serverTrades = await response.json();
+
+          // Find recently completed trades that were active
+          activeTrades.forEach(activeTrade => {
+            const serverTrade = serverTrades.find(st => st.id === activeTrade.id);
+
+            if (serverTrade && serverTrade.status === 'completed' && serverTrade.result !== 'pending') {
+              console.log('🔄 POLLING: Found completed trade:', serverTrade);
+
+              const won = serverTrade.result === 'win';
+              const profitPercentage = activeTrade.profitPercentage || (activeTrade.duration === 30 ? 10 : 15);
+
+              const completedTrade: ActiveTrade = {
+                ...activeTrade,
+                status: won ? 'won' : 'lost',
+                currentPrice: serverTrade.exit_price || activeTrade.entryPrice,
+                payout: won ? activeTrade.amount * (1 + profitPercentage / 100) : 0,
+                profit: won ? (activeTrade.amount * profitPercentage / 100) : -activeTrade.amount
+              };
+
+              console.log('🔄 POLLING: Setting completed trade notification:', completedTrade);
+              setCompletedTrade(completedTrade);
+              localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+
+              // Remove from active trades
+              setActiveTrades(prev => prev.filter(trade => trade.id !== activeTrade.id));
+
+              // Refresh trade history and balance
+              queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+              loadTradeHistory();
+            }
+          });
+        }
+      } catch (error) {
+        console.error('🔄 POLLING: Error checking trade completion:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [activeTrades, user?.id, queryClient]);
+
   // Handle WebSocket trading control updates for real-time sync
   useEffect(() => {
     if (lastMessage?.type === 'trading_control_update' || lastMessage?.type === 'trading_mode_update') {

@@ -562,7 +562,7 @@ async function updateUserBalance(userId, newBalance) {
 
 // Database functions for trades
 async function getTrades() {
-  if (isProduction && supabase) {
+  if (supabase) {
     try {
       const { data, error } = await supabase
         .from('trades')
@@ -589,6 +589,7 @@ async function getTrades() {
         };
       });
 
+      console.log('📈 Retrieved trades from Supabase:', formattedTrades.length);
       return formattedTrades;
     } catch (error) {
       console.error('❌ Database error getting trades:', error);
@@ -5445,9 +5446,9 @@ app.post('/api/trades/options', async (req, res) => {
       result: 'pending'
     };
 
-    // Save trade to storage immediately
+    // Save trade to storage immediately - ALWAYS use Supabase if available
     try {
-      if (isProduction && supabase) {
+      if (supabase) {
         console.log('💾 Attempting to save trade to Supabase database...');
         console.log('💾 Trade object to save:', JSON.stringify(trade, null, 2));
 
@@ -5470,7 +5471,8 @@ app.post('/api/trades/options', async (req, res) => {
         // Update the local trade object with the database-generated ID
         trade.id = savedTradeId;
       } else {
-        // Development: Save to local file
+        // Fallback: Save to local file
+        trade.id = tradeId; // Use generated ID
         const allTrades = await getTrades();
         allTrades.unshift(trade); // Add to beginning of array
         await saveTrades(allTrades);
@@ -5479,6 +5481,7 @@ app.post('/api/trades/options', async (req, res) => {
     } catch (saveError) {
       console.error('❌ Error saving trade:', saveError);
       // Continue with trade execution even if save fails
+      trade.id = tradeId; // Ensure we have an ID for completion
     }
 
     // Schedule trade execution - ROBUST COMPLETION SYSTEM
