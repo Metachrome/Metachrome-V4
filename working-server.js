@@ -4748,7 +4748,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
       // Lose: balance was already deducted when trade started, so no change needed
       profitAmount = -amount; // Loss amount (negative)
       balanceChange = 0; // Balance already deducted at trade start
-      users[userIndex].balance = oldBalance.toString(); // Keep current balance
+      // DON'T CHANGE BALANCE - it was already deducted when trade started
+      // users[userIndex].balance remains as oldBalance (which already has the deduction)
     }
 
     console.log(`💰 Balance update: ${users[userIndex].username} ${oldBalance} → ${users[userIndex].balance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
