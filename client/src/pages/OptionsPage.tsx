@@ -28,6 +28,7 @@ interface ActiveTrade {
   status: 'active' | 'won' | 'lost';
   currentPrice?: number;
   payout?: number;
+  profit?: number;
 }
 
 // Inner component that uses price context
@@ -535,12 +536,16 @@ function OptionsPageContent() {
 
   // Helper function to complete a trade and update balance
   const completeTrade = async (trade: ActiveTrade, won: boolean, finalPrice: number) => {
+    // Calculate profit correctly: positive for wins, negative for losses
+    const profitPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
+    const profit = won ? (trade.amount * profitPercentage / 100) : -trade.amount;
 
     const updatedTrade: ActiveTrade = {
       ...trade,
       status: won ? 'won' : 'lost',
       currentPrice: finalPrice,
-      payout: won ? trade.amount * (1 + (trade.profitPercentage || 10) / 100) : 0
+      payout: won ? trade.amount * (1 + profitPercentage / 100) : 0,
+      profit: profit
     };
 
     console.log('🎯 COMPLETE TRADE: Updated trade object:', updatedTrade);
@@ -558,7 +563,9 @@ function OptionsPageContent() {
           userId: user?.id || 'user-1',
           won: won,
           amount: trade.amount,
-          payout: updatedTrade.payout
+          payout: updatedTrade.payout,
+          profit: profit,
+          finalPrice: finalPrice
         })
       });
 
@@ -2033,11 +2040,13 @@ function OptionsPageContent() {
                 </div>
               ) : (
                 tradeHistory.map(trade => {
-                  // Use the profit field from the database if available, otherwise calculate
-                  const pnl = trade.profit !== undefined ? trade.profit :
-                             (trade.status === 'won' ? (trade.payout! - trade.amount) : -trade.amount);
-                  const endTime = new Date(trade.endTime).toLocaleTimeString();
+                  // Calculate P&L correctly: For wins show profit amount, for losses show negative amount
                   const profitPercentage = trade.duration === 30 ? 10 : 15; // Default profit percentages
+                  const pnl = trade.profit !== undefined ? trade.profit :
+                             (trade.status === 'won' ?
+                               (trade.amount * profitPercentage / 100) : // Show profit amount for wins
+                               -trade.amount); // Show negative amount for losses
+                  const endTime = new Date(trade.endTime).toLocaleTimeString();
 
                   return (
                     <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
@@ -2048,8 +2057,8 @@ function OptionsPageContent() {
                       <span className="text-gray-300">{trade.currentPrice?.toFixed(2) || 'N/A'} USDT</span>
                       <span className="text-gray-300">{trade.amount} USDT</span>
                       <span className="text-gray-300">{profitPercentage}%</span>
-                      <span className={`font-bold ${pnl > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {pnl > 0 ? '+' : ''}{pnl.toFixed(2)} USDT
+                      <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                        {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)} USDT
                       </span>
                       <span className="text-gray-400">{endTime}</span>
                       <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
