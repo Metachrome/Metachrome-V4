@@ -5735,7 +5735,7 @@ app.post('/api/trades/complete', async (req, res) => {
           result: finalOutcome ? 'win' : 'lose',
           status: 'completed',
           exit_price: currentPrice || 0,
-          profit: profitAmount
+          profit_loss: profitAmount
         });
 
         // First, check if the trade exists
@@ -5776,7 +5776,7 @@ app.post('/api/trades/complete', async (req, res) => {
           .update({
             result: finalOutcome ? 'win' : 'lose',
             exit_price: currentPrice || 0, // Use current price as exit price
-            profit: profitAmount,
+            profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           })
           .eq('id', tradeId)
@@ -5790,7 +5790,7 @@ app.post('/api/trades/complete', async (req, res) => {
           console.error('❌ Update data attempted:', {
             result: finalOutcome ? 'win' : 'lose',
             exit_price: currentPrice || 0,
-            profit: profitAmount,
+            profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           });
         } else {
@@ -5808,7 +5808,7 @@ app.post('/api/trades/complete', async (req, res) => {
             result: finalOutcome ? 'win' : 'lose',
             status: 'completed',
             exit_price: currentPrice || 0,
-            profit: profitAmount,
+            profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           };
           await saveTrades(trades);
@@ -6298,7 +6298,7 @@ app.get('/api/admin/stats', async (req, res) => {
       })(),
       totalProfit: (() => {
         const profits = trades.reduce((sum, t) => {
-          const profit = parseFloat(t.profit || 0);
+          const profit = parseFloat(t.profit_loss || 0);
           const positiveProfit = profit > 0 ? profit : 0;
           console.log('📊 Profit calc for trade:', t.id, 'profit:', profit, 'positive:', positiveProfit);
           return sum + positiveProfit;
@@ -6308,7 +6308,7 @@ app.get('/api/admin/stats', async (req, res) => {
       })(),
       totalLoss: (() => {
         const losses = Math.abs(trades.reduce((sum, t) => {
-          const profit = parseFloat(t.profit || 0);
+          const profit = parseFloat(t.profit_loss || 0);
           const negativeLoss = profit < 0 ? profit : 0;
           console.log('📊 Loss calc for trade:', t.id, 'profit:', profit, 'negative:', negativeLoss);
           return sum + negativeLoss;
@@ -6363,7 +6363,7 @@ app.post('/api/admin/fix-trades', async (req, res) => {
         .from('trades')
         .update({
           result: result,
-          profit: profit,
+          profit_loss: profit,
           status: 'completed',
           updated_at: new Date().toISOString()
         })
@@ -6451,7 +6451,7 @@ app.post('/api/admin/fix-all-data', async (req, res) => {
         const { error: updateError } = await supabase
           .from('trades')
           .update({
-            profit: profit,
+            profit_loss: profit,
             status: 'completed',
             updated_at: new Date().toISOString()
           })
