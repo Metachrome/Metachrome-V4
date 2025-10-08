@@ -129,17 +129,16 @@ function OptionsPageContent() {
 
       setIsLoadingHistory(true);
 
-      // First, try to load from localStorage for immediate display
+      // Clear any existing cached data to prevent conflicts
       try {
-        const cachedHistory = localStorage.getItem(`tradeHistory_${user.id}`);
-        if (cachedHistory) {
-          const parsed = JSON.parse(cachedHistory);
-          console.log('📈 Loaded cached trade history:', parsed.length);
-          setTradeHistory(parsed);
-        }
+        localStorage.removeItem(`tradeHistory_${user.id}`);
+        console.log('🗑️ Cleared any existing trade history cache to prevent conflicts');
       } catch (error) {
-        console.error('❌ Error loading cached trade history:', error);
+        console.error('❌ Error clearing trade history cache:', error);
       }
+
+      // Always fetch fresh data from server
+      console.log('📈 Loading fresh trade history from server (no caching)');
 
       // Then fetch fresh data from server
       try {
@@ -185,9 +184,8 @@ function OptionsPageContent() {
           console.log('📈 Final formatted trades:', formattedTrades.length);
           setTradeHistory(formattedTrades);
 
-          // Cache the trade history for persistence across page refreshes
-          localStorage.setItem(`tradeHistory_${user.id}`, JSON.stringify(formattedTrades));
-          console.log('💾 Trade history cached for user:', user.id);
+          // Don't cache trade history to prevent conflicts with fresh data
+          console.log('📈 Trade history loaded fresh from server (no caching):', user.id);
         } else {
           console.log('⚠️ Failed to load trade history from server, using cached data');
         }
@@ -587,11 +585,8 @@ function OptionsPageContent() {
         const newHistory = [updatedTrade, ...prev].slice(0, 50);
         console.log('🎯 COMPLETE TRADE: New history length:', newHistory.length);
 
-        // Update cached trade history for persistence
-        if (user?.id) {
-          localStorage.setItem(`tradeHistory_${user.id}`, JSON.stringify(newHistory));
-          console.log('💾 Updated cached trade history for user:', user.id);
-        }
+        // Don't cache trade history to prevent conflicts
+        console.log('📈 Trade history updated in memory only (no caching)');
 
         return newHistory;
       });
@@ -659,8 +654,14 @@ function OptionsPageContent() {
 
             // Trading control will be applied on the server side
 
-            // Complete the trade asynchronously
-            completeTrade(trade, won, finalPrice);
+            // Complete the trade asynchronously and ensure notification shows
+            completeTrade(trade, won, finalPrice).then((completedTrade) => {
+              console.log('🎯 TRADE COMPLETED: Setting notification for trade:', completedTrade.id);
+              setCompletedTrade(completedTrade);
+              localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+            }).catch((error) => {
+              console.error('❌ Trade completion failed:', error);
+            });
             hasCompletedTrades = true;
 
             // Play sound effect safely
@@ -838,6 +839,12 @@ function OptionsPageContent() {
 
         // Refresh balance to show updated amount
         queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+
+        // Clear trade history cache to prevent conflicts
+        if (user?.id) {
+          localStorage.removeItem(`tradeHistory_${user.id}`);
+          console.log('🗑️ Cleared trade history cache to prevent conflicts');
+        }
 
         // Play trade placement sound safely
         try {
@@ -1934,7 +1941,7 @@ function OptionsPageContent() {
                               profit: parseFloat(trade.profit_loss || '0')
                             }));
                           setTradeHistory(formattedTrades);
-                          localStorage.setItem(`tradeHistory_${user.id}`, JSON.stringify(formattedTrades));
+                          // Don't cache trade history to prevent conflicts
                         }
                       } catch (error) {
                         console.error('❌ Error refreshing trade history:', error);
