@@ -5070,10 +5070,12 @@ app.post('/api/trades', async (req, res) => {
     }
 
     // IMMEDIATE BALANCE DEDUCTION
+    console.log('🔥 DEDUCTING BALANCE:', userBalance, '-', tradeAmount, '=', (userBalance - tradeAmount));
     user.balance = (userBalance - tradeAmount).toString();
+    console.log('💰 NEW BALANCE SET TO:', user.balance);
 
-    // CRITICAL FIX: Save balance to Supabase in production
-    if (isProduction && supabase) {
+    // CRITICAL FIX: Save balance to Supabase (ALWAYS - removed production check)
+    if (supabase) {
       console.log('💾 PRODUCTION: Updating balance in Supabase database...');
       const { error: balanceError } = await supabase
         .from('users')
@@ -5326,10 +5328,12 @@ app.post('/api/trades/options', async (req, res) => {
     }
 
     // Deduct balance
+    console.log('🔥 OPTIONS: DEDUCTING BALANCE:', userBalance, '-', tradeAmount, '=', (userBalance - tradeAmount));
     user.balance = (userBalance - tradeAmount).toString();
+    console.log('💰 OPTIONS: NEW BALANCE SET TO:', user.balance);
 
-    // CRITICAL FIX: Save balance to Supabase in production
-    if (isProduction && supabase) {
+    // CRITICAL FIX: Save balance to Supabase (ALWAYS - removed production check)
+    if (supabase) {
       console.log('💾 PRODUCTION: Updating balance in Supabase database...');
       const { error: balanceError } = await supabase
         .from('users')
