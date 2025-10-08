@@ -2040,34 +2040,58 @@ function OptionsPageContent() {
                   <div className="text-gray-500 text-xs mt-2">Complete some trades to see your history here</div>
                 </div>
               ) : (
-                tradeHistory.map(trade => {
-                  // Calculate P&L correctly: For wins show profit amount, for losses show negative amount
-                  const profitPercentage = trade.duration === 30 ? 10 : 15; // Default profit percentages
-                  const pnl = trade.profit !== undefined ? trade.profit :
-                             (trade.status === 'won' ?
-                               (trade.amount * profitPercentage / 100) : // Show profit amount for wins
-                               -trade.amount); // Show negative amount for losses
-                  const endTime = new Date(trade.endTime).toLocaleTimeString();
+                <>
+                  {/* Trade History Table */}
+                  <div className="mb-6">
+                    {tradeHistory.map(trade => {
+                      // Calculate P&L correctly: For wins show profit amount, for losses show negative amount
+                      const profitPercentage = trade.duration === 30 ? 10 : 15; // Default profit percentages
+                      const pnl = trade.profit !== undefined ? trade.profit :
+                                 (trade.status === 'won' ?
+                                   (trade.amount * profitPercentage / 100) : // Show profit amount for wins
+                                   -trade.amount); // Show negative amount for losses
+                      const endTime = new Date(trade.endTime).toLocaleTimeString();
 
-                  return (
-                    <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
-                      <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.direction.toUpperCase()}
-                      </span>
-                      <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
-                      <span className="text-gray-300">{trade.currentPrice?.toFixed(2) || 'N/A'} USDT</span>
-                      <span className="text-gray-300">{trade.amount} USDT</span>
-                      <span className="text-gray-300">{profitPercentage}%</span>
-                      <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)} USDT
-                      </span>
-                      <span className="text-gray-400">{endTime}</span>
-                      <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
-                      </span>
+                      return (
+                        <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
+                          <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                            {trade.direction.toUpperCase()}
+                          </span>
+                          <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
+                          <span className="text-gray-300">{trade.currentPrice?.toFixed(2) || 'N/A'} USDT</span>
+                          <span className="text-gray-300">{trade.amount} USDT</span>
+                          <span className="text-gray-300">{profitPercentage}%</span>
+                          <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                            {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)} USDT
+                          </span>
+                          <span className="text-gray-400">{endTime}</span>
+                          <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                            {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Trading Chart Below History */}
+                  <div className="border-t border-gray-800 pt-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-white">Market Chart</h3>
+                      <div className="text-xs text-gray-400">BTCUSDT • Live</div>
                     </div>
-                  );
-                })
+                    <div className="h-[300px] bg-[#10121E] rounded-lg overflow-hidden">
+                      <TradingViewWidget
+                        type="chart"
+                        symbol="BINANCE:BTCUSDT"
+                        height={300}
+                        interval="1"
+                        theme="dark"
+                        container_id="trade_history_chart"
+                        allow_symbol_change={false}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
             </>
           )}

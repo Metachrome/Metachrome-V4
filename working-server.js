@@ -4739,11 +4739,14 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
     let balanceChange = 0;
 
     if (finalWon) {
-      balanceChange = payout - amount; // Profit only
+      // Win: add back the trade amount + profit (since balance was already deducted)
+      const profitAmount = payout - amount; // Extract profit only
+      balanceChange = amount + profitAmount; // Return original amount + profit
       users[userIndex].balance = (oldBalance + balanceChange).toString();
     } else {
-      balanceChange = -amount; // Loss
-      users[userIndex].balance = (oldBalance + balanceChange).toString();
+      // Lose: balance was already deducted when trade started, so no change needed
+      balanceChange = 0; // Balance already deducted at trade start
+      users[userIndex].balance = oldBalance.toString(); // Keep current balance
     }
 
     console.log(`💰 Balance update: ${users[userIndex].username} ${oldBalance} → ${users[userIndex].balance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
@@ -5542,11 +5545,13 @@ app.post('/api/trades/complete', async (req, res) => {
     let balanceChange = 0;
 
     if (finalOutcome) {
-      // Win: add payout amount
-      balanceChange = payout ? parseFloat(payout) : tradeAmount * 1.8; // Default 80% profit
+      // Win: add back the trade amount + profit (since balance was already deducted)
+      // For wins, we need to return the original amount + profit
+      const profitAmount = payout ? (parseFloat(payout) - tradeAmount) : (tradeAmount * 0.8); // Extract profit only
+      balanceChange = tradeAmount + profitAmount; // Return original amount + profit
     } else {
-      // Lose: subtract trade amount
-      balanceChange = -tradeAmount;
+      // Lose: balance was already deducted when trade started, so no change needed
+      balanceChange = 0; // Balance already deducted at trade start
     }
 
     // Update user balance and trade count
