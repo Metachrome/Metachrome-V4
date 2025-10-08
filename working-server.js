@@ -4738,13 +4738,15 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
     const oldBalance = parseFloat(users[userIndex].balance || '0');
     let balanceChange = 0;
 
+    let profitAmount = 0;
     if (finalWon) {
       // Win: add back the trade amount + profit (since balance was already deducted)
-      const profitAmount = payout - amount; // Extract profit only
+      profitAmount = payout - amount; // Extract profit only
       balanceChange = amount + profitAmount; // Return original amount + profit
       users[userIndex].balance = (oldBalance + balanceChange).toString();
     } else {
       // Lose: balance was already deducted when trade started, so no change needed
+      profitAmount = -amount; // Loss amount (negative)
       balanceChange = 0; // Balance already deducted at trade start
       users[userIndex].balance = oldBalance.toString(); // Keep current balance
     }
@@ -4763,7 +4765,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
             result: finalWon ? 'win' : 'lose',
             status: 'completed',
             exit_price: (Math.random() * 1000 + 64000).toFixed(2), // Mock exit price
-            profit_loss: balanceChange,
+            profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           })
           .eq('id', tradeId);
@@ -5156,9 +5158,25 @@ app.post('/api/trades', async (req, res) => {
       try {
         console.log(`⏰ Auto-completing trade ${trade.id} after ${duration} seconds`);
 
-        // Determine outcome with trading control enforcement
-        const randomOutcome = Math.random() > 0.5;
-        const finalOutcome = await enforceTradeOutcome(finalUserId, randomOutcome, 'auto-completion');
+        // Determine outcome based on proper binary options logic
+        const entryPrice = parseFloat(trade.entry_price);
+        const exitPrice = entryPrice + (Math.random() - 0.5) * 1000; // Simulate price movement
+
+        // Binary options logic: UP wins if exit > entry, DOWN wins if exit < entry
+        let binaryOutcome = false;
+        if (direction === 'up') {
+          binaryOutcome = exitPrice > entryPrice;
+        } else if (direction === 'down') {
+          binaryOutcome = exitPrice < entryPrice;
+        } else {
+          // Fallback for unknown direction
+          binaryOutcome = Math.random() > 0.5;
+        }
+
+        console.log(`📊 BINARY OPTIONS LOGIC: Direction: ${direction}, Entry: ${entryPrice}, Exit: ${exitPrice}, Result: ${binaryOutcome ? 'WIN' : 'LOSE'}`);
+
+        // Apply trading control enforcement (may override the binary outcome)
+        const finalOutcome = await enforceTradeOutcome(finalUserId, binaryOutcome, 'auto-completion');
 
         // Complete the trade
         await fetch(`http://localhost:${PORT}/api/trades/complete`, {
@@ -5383,8 +5401,24 @@ app.post('/api/trades/options', async (req, res) => {
       console.log(`🚨 SETTIMEOUT TRIGGERED! Starting auto-completion for trade ${actualTradeId}...`);
 
       try {
-        // Determine outcome based on market simulation (will be overridden by trading controls)
-        const isWin = Math.random() > 0.5; // 50/50 chance - trading controls will override this
+        // Determine outcome based on proper binary options logic
+        const entryPrice = parseFloat(trade.entry_price);
+        const exitPrice = entryPrice + (Math.random() - 0.5) * 1000; // Simulate price movement
+
+        // Binary options logic: UP wins if exit > entry, DOWN wins if exit < entry
+        let isWin = false;
+        if (trade.direction === 'up') {
+          isWin = exitPrice > entryPrice;
+        } else if (trade.direction === 'down') {
+          isWin = exitPrice < entryPrice;
+        } else {
+          // Fallback for unknown direction
+          isWin = Math.random() > 0.5;
+        }
+
+        console.log(`📊 BINARY OPTIONS LOGIC: Direction: ${trade.direction}, Entry: ${entryPrice}, Exit: ${exitPrice}, Result: ${isWin ? 'WIN' : 'LOSE'}`);
+
+        // Note: Trading controls may still override this outcome
 
         // Calculate payout
         let payout = 0;
@@ -5540,17 +5574,19 @@ app.post('/api/trades/complete', async (req, res) => {
     console.log('🎯 ⚡ TRADE CONTROL ENFORCEMENT COMPLETE!');
     console.log('🎯 ⚡ Results:', { originalWon, finalOutcome, overrideApplied: finalOutcome !== originalWon, overrideReason });
 
-    // Calculate balance change
+    // Calculate balance change and profit separately
     const tradeAmount = parseFloat(amount);
     let balanceChange = 0;
+    let profitAmount = 0;
 
     if (finalOutcome) {
       // Win: add back the trade amount + profit (since balance was already deducted)
       // For wins, we need to return the original amount + profit
-      const profitAmount = payout ? (parseFloat(payout) - tradeAmount) : (tradeAmount * 0.8); // Extract profit only
+      profitAmount = payout ? (parseFloat(payout) - tradeAmount) : (tradeAmount * 0.8); // Extract profit only
       balanceChange = tradeAmount + profitAmount; // Return original amount + profit
     } else {
       // Lose: balance was already deducted when trade started, so no change needed
+      profitAmount = -tradeAmount; // Loss amount (negative)
       balanceChange = 0; // Balance already deducted at trade start
     }
 
@@ -5699,7 +5735,7 @@ app.post('/api/trades/complete', async (req, res) => {
           result: finalOutcome ? 'win' : 'lose',
           status: 'completed',
           exit_price: currentPrice || 0,
-          profit: balanceChange
+          profit: profitAmount
         });
 
         // First, check if the trade exists
@@ -5740,7 +5776,7 @@ app.post('/api/trades/complete', async (req, res) => {
           .update({
             result: finalOutcome ? 'win' : 'lose',
             exit_price: currentPrice || 0, // Use current price as exit price
-            profit: balanceChange,
+            profit: profitAmount,
             updated_at: new Date().toISOString()
           })
           .eq('id', tradeId)
@@ -5754,7 +5790,7 @@ app.post('/api/trades/complete', async (req, res) => {
           console.error('❌ Update data attempted:', {
             result: finalOutcome ? 'win' : 'lose',
             exit_price: currentPrice || 0,
-            profit: balanceChange,
+            profit: profitAmount,
             updated_at: new Date().toISOString()
           });
         } else {
@@ -5772,7 +5808,7 @@ app.post('/api/trades/complete', async (req, res) => {
             result: finalOutcome ? 'win' : 'lose',
             status: 'completed',
             exit_price: currentPrice || 0,
-            profit: balanceChange,
+            profit: profitAmount,
             updated_at: new Date().toISOString()
           };
           await saveTrades(trades);
