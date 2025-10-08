@@ -122,9 +122,8 @@ function OptionsPageContent() {
     document.body.style.overflow = 'hidden';
   };
 
-  // Load trade history from server on component mount and persist locally
-  useEffect(() => {
-    const loadTradeHistory = async () => {
+  // Load trade history function (moved outside useEffect for reusability)
+  const loadTradeHistory = async () => {
       if (!user?.id) return;
 
       setIsLoadingHistory(true);
@@ -155,33 +154,31 @@ function OptionsPageContent() {
           console.log('📈 Loaded trade history from server:', serverTrades.length);
           console.log('📈 Raw server trades:', serverTrades);
 
-          // Convert server trades to ActiveTrade format
+          // Convert server trades to ActiveTrade format - FIXED FILTERING
           const formattedTrades = serverTrades
             .filter(trade => {
-              const isCompleted = trade.result && trade.result !== 'pending' && trade.status === 'completed';
-              console.log(`📈 Trade ${trade.id}: result=${trade.result}, status=${trade.status}, isCompleted=${isCompleted}`);
-              return isCompleted;
+              // Only filter out truly incomplete trades (pending status or no result)
+              const hasValidResult = trade.result && (trade.result === 'win' || trade.result === 'lose');
+              const isCompleted = trade.status === 'completed';
+              return hasValidResult && isCompleted;
             })
-            .map(trade => {
-              const formatted = {
-                id: trade.id,
-                symbol: trade.symbol || 'BTCUSDT',
-                amount: parseFloat(trade.amount),
-                direction: trade.direction,
-                duration: trade.duration || 30,
-                entryPrice: parseFloat(trade.entry_price || '0'),
-                currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
-                payout: trade.result === 'win' ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
-                status: trade.result === 'win' ? 'won' : 'lost',
-                endTime: trade.updated_at || trade.created_at,
-                startTime: trade.created_at,
-                profit: parseFloat(trade.profit_loss || '0')
-              };
-              console.log('📈 Formatted trade:', formatted);
-              return formatted;
-            });
+            .map(trade => ({
+              id: trade.id,
+              symbol: trade.symbol || 'BTCUSDT',
+              amount: parseFloat(trade.amount),
+              direction: trade.direction,
+              duration: trade.duration || 30,
+              entryPrice: parseFloat(trade.entry_price || '0'),
+              currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
+              payout: trade.result === 'win' ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
+              status: trade.result === 'win' ? 'won' : 'lost',
+              endTime: trade.updated_at || trade.created_at,
+              startTime: trade.created_at,
+              profit: parseFloat(trade.profit_loss || '0'),
+              profitPercentage: trade.duration === 30 ? 10 : 15
+            }));
 
-          console.log('📈 Final formatted trades:', formattedTrades.length);
+          console.log('📈 Formatted trades count:', formattedTrades.length);
           setTradeHistory(formattedTrades);
 
           // Don't cache trade history to prevent conflicts with fresh data
@@ -194,8 +191,10 @@ function OptionsPageContent() {
       } finally {
         setIsLoadingHistory(false);
       }
-    };
+  };
 
+  // Load trade history from server on component mount and persist locally
+  useEffect(() => {
     loadTradeHistory();
 
     // Set up periodic refresh of trade history (every 30 seconds)
