@@ -205,8 +205,11 @@ function OptionsPageContent() {
   useEffect(() => {
     loadTradeHistory();
 
-    // Set up periodic refresh of trade history (every 30 seconds)
-    const refreshInterval = setInterval(loadTradeHistory, 30000);
+    // Set up more frequent refresh during active trading (every 10 seconds)
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 AUTO-REFRESH: Periodic trade history refresh...');
+      loadTradeHistory();
+    }, 10000); // Reduced from 30s to 10s for more responsive updates
 
     return () => clearInterval(refreshInterval);
   }, [user?.id]);
@@ -536,9 +539,14 @@ function OptionsPageContent() {
         // Refresh trade history and balance - CRITICAL: Invalidate React Query cache
         queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
         queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
-        if (user?.id) {
-          loadTradeHistory();
-        }
+
+        // CRITICAL FIX: Add delay to ensure database is updated before fetching
+        console.log('🔄 WEBSOCKET: Refreshing trade history after trade completion...');
+        setTimeout(() => {
+          if (user?.id) {
+            loadTradeHistory();
+          }
+        }, 1000); // 1 second delay to ensure database is updated
       }
     }
   }, [lastMessage, user?.id, activeTrades, queryClient]);
@@ -587,7 +595,12 @@ function OptionsPageContent() {
               // Refresh trade history and balance - CRITICAL: Invalidate React Query cache
               queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
               queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
-              loadTradeHistory();
+
+              // CRITICAL FIX: Add delay to ensure database is updated before fetching
+              console.log('🔄 POLLING: Refreshing trade history after trade completion...');
+              setTimeout(() => {
+                loadTradeHistory();
+              }, 1000); // 1 second delay to ensure database is updated
             }
           });
         }
@@ -670,9 +683,18 @@ function OptionsPageContent() {
       });
 
       if (response.ok) {
-        // Refresh balance to show updated amount
+        // Refresh balance and trade history to show updated data
         queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
         console.log(`💰 Balance updated: Trade ${won ? 'WON' : 'LOST'} - Amount: ${trade.amount} USDT`);
+
+        // CRITICAL FIX: Refresh trade history immediately after trade completion
+        console.log('🔄 COMPLETE TRADE: Refreshing trade history after API completion...');
+        setTimeout(() => {
+          if (user?.id) {
+            loadTradeHistory();
+          }
+        }, 1500); // 1.5 second delay to ensure database is fully updated
       } else {
         console.error('Failed to update balance after trade completion');
       }
@@ -680,18 +702,8 @@ function OptionsPageContent() {
       console.error('Error updating balance:', balanceError);
     }
 
-    // Move to history and show notification
+    // Show notification (don't manually add to history - let server data refresh handle it)
     try {
-      console.log('🎯 COMPLETE TRADE: Adding to trade history. Current history length:', tradeHistory.length);
-      setTradeHistory(prev => {
-        const newHistory = [updatedTrade, ...prev].slice(0, 50);
-        console.log('🎯 COMPLETE TRADE: New history length:', newHistory.length);
-
-        // Don't cache trade history to prevent conflicts
-        console.log('📈 Trade history updated in memory only (no caching)');
-
-        return newHistory;
-      });
       console.log('🎯 COMPLETE TRADE: Setting completed trade for notification:', updatedTrade);
 
       // Add completion timestamp and save to localStorage for persistence
@@ -2002,6 +2014,22 @@ function OptionsPageContent() {
             >
               Trade History({tradeHistory.length})
             </button>
+            {activeTab === "history" && (
+              <button
+                onClick={() => {
+                  console.log('🔄 MANUAL REFRESH: User clicked refresh button');
+                  setIsLoadingHistory(true);
+                  loadTradeHistory();
+                }}
+                disabled={isLoadingHistory}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <svg className={`w-4 h-4 ${isLoadingHistory ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>{isLoadingHistory ? 'Refreshing...' : 'Refresh'}</span>
+              </button>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <label className="flex items-center text-sm text-gray-400">
