@@ -4,9 +4,9 @@ import { Button } from "../components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
 import { Mail, MessageCircle, Clock, ChevronDown, ChevronRight, Phone } from "lucide-react";
 import { useIsMobile } from "../hooks/use-mobile";
-import faqImage from "@assets/FAQ_image-2_1755414462649.png";
-import supportBannerDesktop from "@assets/support_banner_desktop.jpg";
-import supportBannerMobile from "@assets/support_banner_mobile.jpg";
+import faqImage from "../assets/FAQ_image-2_1755414462649.png";
+import supportBannerDesktop from "../assets/support_banner_desktop.jpg";
+import supportBannerMobile from "../assets/support_banner_mobile.jpg";
 
 
 export default function SupportPage() {

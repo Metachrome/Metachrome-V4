@@ -35,6 +35,18 @@
       "status": "approved",
       "created_at": "2025-09-17T14:20:00.000Z",
       "updated_at": "2025-09-17T15:45:00.000Z"
+    },
+    {
+      "id": "withdrawal-1760022832980-zmms3h3b7",
+      "user_id": "463d694d-618e-42dd-a105-497b8968fe41",
+      "username": "testuser_1759852455748",
+      "amount": 1,
+      "currency": "USDT",
+      "wallet_address": "test-address",
+      "status": "pending",
+      "user_balance": 0,
+      "created_at": "2025-10-09T15:13:52.980Z",
+      "updated_at": "2025-10-09T15:13:52.980Z"
     }
   ],
   "processedWithdrawals": [

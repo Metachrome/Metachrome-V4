@@ -1,8 +1,8 @@
 import { Button } from "./button";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useLocation } from "wouter";
-import heroDesktopImage from "@assets/hero-desktop_1754552987909.jpg";
-import heroMobileImage from "@assets/hero-mobile.jpg";
+import heroDesktopImage from "../../assets/hero-desktop_1754552987909.jpg";
+import heroMobileImage from "../../assets/hero-mobile.jpg";
 
 export function MobileHero() {
   const isMobile = useIsMobile();
