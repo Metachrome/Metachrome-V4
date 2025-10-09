@@ -976,6 +976,15 @@ async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown')
       timestamp: new Date().toISOString()
     });
 
+    // EXTRA DEBUG: Log the full user object to see trading_mode
+    console.log(`🔍 FULL USER OBJECT DEBUG:`, {
+      id: user.id,
+      username: user.username,
+      trading_mode: user.trading_mode,
+      role: user.role,
+      allUserProperties: Object.keys(user)
+    });
+
     switch (tradingMode) {
       case 'win':
         finalOutcome = true;
@@ -5726,6 +5735,12 @@ app.post('/api/trades/complete', async (req, res) => {
     // USE ROBUST TRADING CONTROL ENFORCEMENT FUNCTION FOR CONSISTENCY
     console.log('🎯 ⚡ CALLING TRADE CONTROL ENFORCEMENT...');
     console.log('🎯 ⚡ Input parameters:', { userId, originalWon, context: 'MAIN_ENDPOINT' });
+    console.log('🎯 ⚡ User found for enforcement:', {
+      id: user.id,
+      username: user.username,
+      trading_mode: user.trading_mode,
+      role: user.role
+    });
     finalOutcome = await enforceTradeOutcome(userId, originalWon, 'MAIN_ENDPOINT');
     overrideReason = finalOutcome !== originalWon ? ' (ADMIN OVERRIDE)' : '';
     console.log('🎯 ⚡ TRADE CONTROL ENFORCEMENT COMPLETE!');
@@ -5932,6 +5947,7 @@ app.post('/api/trades/complete', async (req, res) => {
           .from('trades')
           .update({
             result: finalOutcome ? 'win' : 'lose',
+            status: 'completed', // CRITICAL: Set status to completed for trade history
             exit_price: currentPrice || 0, // Use current price as exit price
             profit_loss: profitAmount,
             updated_at: new Date().toISOString()
@@ -5963,13 +5979,14 @@ app.post('/api/trades/complete', async (req, res) => {
           trades[tradeIndex] = {
             ...trades[tradeIndex],
             result: finalOutcome ? 'win' : 'lose',
-            status: 'completed',
+            status: 'completed', // CRITICAL: Set status to completed for trade history
             exit_price: currentPrice || 0,
             profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           };
           await saveTrades(trades);
           console.log('✅ Trade updated in local storage:', tradeId);
+          console.log('✅ Trade status set to completed for history tracking');
         }
       }
     } catch (tradeUpdateError) {
