@@ -699,34 +699,9 @@ function OptionsPageContent() {
       console.error('Error updating balance:', balanceError);
     }
 
-    // Show notification (don't manually add to history - let server data refresh handle it)
-    try {
-      console.log('🎯 COMPLETE TRADE: Setting completed trade for notification:', updatedTrade);
-
-      // Add completion timestamp and save to localStorage for persistence
-      const tradeWithTimestamp = {
-        ...updatedTrade,
-        completedAt: new Date().toISOString()
-      };
-
-      console.log('🎯 COMPLETE TRADE: Trade with timestamp:', tradeWithTimestamp);
-
-      // ROBUST NOTIFICATION TRIGGER
-      triggerNotification(tradeWithTimestamp);
-
-      // Use multiple mobile detection methods
-      const isMobileWidth = window.innerWidth < 768;
-      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const shouldShowMobileModal = isMobileWidth || isMobile || isMobileUserAgent;
-
-      // DISABLE OLD MOBILE MODAL - Use TradeNotification component instead
-
-      // Don't trigger the old mobile modal anymore - let TradeNotification handle it
-
-      // Auto-hide is now handled in triggerNotification function
-    } catch (historyError) {
-      console.error('Trade history update error:', historyError);
-    }
+    // NOTE: Notification will be triggered by WebSocket with server's actual result
+    // Don't trigger notification here to avoid showing wrong result before server applies trading controls
+    console.log('🎯 COMPLETE TRADE: Trade completed, waiting for WebSocket notification with server result');
 
     return updatedTrade;
   };
@@ -762,12 +737,10 @@ function OptionsPageContent() {
 
             // Trading control will be applied on the server side
 
-            // Complete the trade asynchronously and ensure notification shows
+            // Complete the trade asynchronously - notification will come via WebSocket
             completeTrade(trade, won, finalPrice).then((completedTrade) => {
-              console.log('🎯 TRADE COMPLETED: Setting notification for trade:', completedTrade.id);
-
-              // ROBUST NOTIFICATION TRIGGER
-              triggerNotification(completedTrade);
+              console.log('🎯 TRADE COMPLETED: Trade completed, waiting for WebSocket notification for trade:', completedTrade.id);
+              // NOTE: Notification will be triggered by WebSocket with server's actual result
             }).catch((error) => {
               console.error('❌ Trade completion failed:', error);
             });
