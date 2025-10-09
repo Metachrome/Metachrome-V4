@@ -5496,9 +5496,12 @@ app.post('/api/trades/options', async (req, res) => {
       console.log(`🚨 SETTIMEOUT TRIGGERED! Starting auto-completion for trade ${actualTradeId}...`);
 
       try {
-        // Determine outcome based on proper binary options logic
+        // CRITICAL FIX: Use real market data instead of random prices
         const entryPrice = parseFloat(trade.entry_price);
-        const exitPrice = entryPrice + (Math.random() - 0.5) * 1000; // Simulate price movement
+
+        // Get current market price for exit price
+        const currentMarketPrice = await getCurrentPrice('BTCUSDT');
+        const exitPrice = currentMarketPrice ? parseFloat(currentMarketPrice.price) : entryPrice;
 
         // Binary options logic: UP wins if exit > entry, DOWN wins if exit < entry
         let isWin = false;
@@ -5511,7 +5514,7 @@ app.post('/api/trades/options', async (req, res) => {
           isWin = Math.random() > 0.5;
         }
 
-        console.log(`📊 BINARY OPTIONS LOGIC: Direction: ${trade.direction}, Entry: ${entryPrice}, Exit: ${exitPrice}, Result: ${isWin ? 'WIN' : 'LOSE'}`);
+        console.log(`📊 REAL MARKET LOGIC: Direction: ${trade.direction}, Entry: ${entryPrice}, Exit: ${exitPrice}, Result: ${isWin ? 'WIN' : 'LOSE'}`);
 
         // Note: Trading controls may still override this outcome
 

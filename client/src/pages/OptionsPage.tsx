@@ -201,17 +201,9 @@ function OptionsPageContent() {
       }
   };
 
-  // Load trade history from server on component mount and persist locally
+  // Load trade history from server on component mount (no auto-refresh)
   useEffect(() => {
     loadTradeHistory();
-
-    // Set up more frequent refresh during active trading (every 10 seconds)
-    const refreshInterval = setInterval(() => {
-      console.log('🔄 AUTO-REFRESH: Periodic trade history refresh...');
-      loadTradeHistory();
-    }, 10000); // Reduced from 30s to 10s for more responsive updates
-
-    return () => clearInterval(refreshInterval);
   }, [user?.id]);
 
   // Sync trading mode from localStorage on mount and when it changes

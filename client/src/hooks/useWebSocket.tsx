@@ -22,18 +22,23 @@ export function useWebSocket() {
                      window.location.hostname === '127.0.0.1' ||
                      window.location.hostname === '0.0.0.0';
 
-      // Check if we're on Vercel
+      // Check if we're on Vercel or Railway
       const isVercel = window.location.hostname.includes('vercel.app');
+      const isRailway = window.location.hostname.includes('railway.app');
 
       // Use correct WebSocket URL
       let wsUrl;
       if (isLocal) {
-        wsUrl = 'ws://127.0.0.1:9999/ws'; // Fixed: Use port 9999 to match server
+        wsUrl = 'ws://127.0.0.1:3005/ws'; // FIXED: Use port 3005 to match server
       } else if (isVercel) {
         // Vercel doesn't support WebSockets in serverless functions
         // We'll use polling instead for Vercel deployment
         console.log('🔌 Vercel deployment detected - WebSocket not available, using polling');
         return;
+      } else if (isRailway) {
+        // Railway supports WebSockets - use the same host and port
+        wsUrl = `${protocol}//${window.location.host}/ws`;
+        console.log('🔌 Railway deployment detected - using WebSocket:', wsUrl);
       } else {
         wsUrl = `${protocol}//${window.location.host}/ws`;
       }
