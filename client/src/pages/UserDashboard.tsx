@@ -371,8 +371,16 @@ export default function UserDashboard() {
           </p>
         </div>
 
+        {/* Debug Verification Status - Remove in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-3 bg-gray-900/50 border border-gray-600 rounded text-xs text-gray-400">
+            <strong>Debug Info:</strong> verificationStatus: {String(user?.verificationStatus)},
+            shouldShowBanner: {String(!user?.verificationStatus || user?.verificationStatus === 'unverified')}
+          </div>
+        )}
+
         {/* Verification Status Notification - ENABLED */}
-        {(!user?.verification_status || user?.verification_status === 'unverified') && (
+        {(!user?.verificationStatus || user?.verificationStatus === 'unverified') && (
           <div className="mb-8">
             <Card className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border-yellow-600/50">
               <CardContent className="p-6">
@@ -409,7 +417,7 @@ export default function UserDashboard() {
         )}
 
         {/* Verification Pending Notification - ENABLED */}
-        {(user?.verification_status === 'pending') && (
+        {(user?.verificationStatus === 'pending') && (
           <div className="mb-8">
             <Card className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border-blue-600/50">
               <CardContent className="p-6">
