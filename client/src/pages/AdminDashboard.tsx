@@ -2814,15 +2814,15 @@ export default function WorkingAdminDashboard() {
                   <div className="flex-1 ml-3">
                     {selectedUser.wallet_address ? (
                       <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-white font-mono text-xs bg-gray-700 px-2 py-1 rounded break-all">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-white font-mono text-xs bg-gray-700 px-2 py-1 rounded break-all flex-1">
                             {selectedUser.wallet_address}
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => navigator.clipboard.writeText(selectedUser.wallet_address || '')}
-                            className="text-gray-400 hover:text-white p-1"
+                            className="text-gray-400 hover:text-white p-1 flex-shrink-0"
                             title="Copy address"
                           >
                             📋
@@ -3046,7 +3046,14 @@ export default function WorkingAdminDashboard() {
           {showDepositModal && selectedUserForAction && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
-                <h3 className="text-xl font-bold text-white mb-4">💰 Deposit to {selectedUserForAction.username}</h3>
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-white mb-2">💰 Deposit to</h3>
+                  <div className="bg-gray-700 rounded-lg p-2">
+                    <span className="text-sm text-gray-300 font-mono break-all">
+                      {selectedUserForAction.username}
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <label className="text-gray-400 text-sm block mb-1">Amount ($)</label>
@@ -3078,7 +3085,14 @@ export default function WorkingAdminDashboard() {
           {showWithdrawalModal && selectedUserForAction && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
-                <h3 className="text-xl font-bold text-white mb-4">💸 Withdraw from {selectedUserForAction.username}</h3>
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-white mb-2">💸 Withdraw from</h3>
+                  <div className="bg-gray-700 rounded-lg p-2">
+                    <span className="text-sm text-gray-300 font-mono break-all">
+                      {selectedUserForAction.username}
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <label className="text-gray-400 text-sm block mb-1">Amount ($)</label>
@@ -3110,7 +3124,14 @@ export default function WorkingAdminDashboard() {
           {showPasswordModal && selectedUserForAction && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
-                <h3 className="text-xl font-bold text-white mb-4">🔑 Change Password for {selectedUserForAction.username}</h3>
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-white mb-2">🔑 Change Password for</h3>
+                  <div className="bg-gray-700 rounded-lg p-2">
+                    <span className="text-sm text-gray-300 font-mono break-all">
+                      {selectedUserForAction.username}
+                    </span>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <label className="text-gray-400 text-sm block mb-1">New Password</label>
@@ -3142,7 +3163,14 @@ export default function WorkingAdminDashboard() {
           {showWalletModal && selectedUserForAction && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4 border border-gray-700 max-h-[80vh] overflow-y-auto">
-                <h3 className="text-xl font-bold text-white mb-4">🏦 Manage Wallet for {selectedUserForAction.username}</h3>
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-white mb-2">🏦 Manage Wallet for</h3>
+                  <div className="bg-gray-700 rounded-lg p-2">
+                    <span className="text-sm text-gray-300 font-mono break-all">
+                      {selectedUserForAction.username}
+                    </span>
+                  </div>
+                </div>
 
                 <div className="space-y-6">
                   {/* Current Wallet Info */}
@@ -3150,15 +3178,15 @@ export default function WorkingAdminDashboard() {
                     <h4 className="text-white font-medium mb-2">Current Wallet Address</h4>
                     <div className="text-sm">
                       {selectedUserForAction.wallet_address ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono text-green-400 bg-gray-800 px-2 py-1 rounded">
+                        <div className="flex items-start space-x-2">
+                          <span className="font-mono text-green-400 bg-gray-800 px-2 py-1 rounded break-all flex-1 text-xs">
                             {selectedUserForAction.wallet_address}
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => navigator.clipboard.writeText(selectedUserForAction.wallet_address || '')}
-                            className="text-gray-400 hover:text-white p-1"
+                            className="text-gray-400 hover:text-white p-1 flex-shrink-0"
                             title="Copy address"
                           >
                             📋
