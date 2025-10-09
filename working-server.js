@@ -1,3 +1,4 @@
+console.log('🚀 Starting METACHROME server...');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -345,6 +346,9 @@ async function getUsers() {
         role: 'user',
         status: 'active',
         trading_mode: 'normal',
+        verification_status: 'verified',
+        has_uploaded_documents: true,
+        verified_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       },
@@ -357,6 +361,9 @@ async function getUsers() {
         role: 'super_admin',
         status: 'active',
         trading_mode: 'normal',
+        verification_status: 'verified',
+        has_uploaded_documents: true,
+        verified_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       }
@@ -1088,14 +1095,14 @@ app.get('/api/auth', async (req, res) => {
             role: user.role || 'user',
             firstName: user.firstName || '',
             lastName: user.lastName || '',
-            verification_status: normalizeVerificationStatus(user.verification_status || 'unverified'),
-            has_uploaded_documents: user.has_uploaded_documents || false
+            verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
+            hasUploadedDocuments: user.has_uploaded_documents || false
           };
 
           console.log('📤 Sending user data to frontend:', {
             username: responseData.username,
-            verification_status: responseData.verification_status,
-            has_uploaded_documents: responseData.has_uploaded_documents
+            verificationStatus: responseData.verificationStatus,
+            hasUploadedDocuments: responseData.hasUploadedDocuments
           });
 
           return res.json(responseData);
@@ -1448,8 +1455,8 @@ app.get('/api/auth/user', async (req, res) => {
       restrictions: currentUser.restrictions || [],
       firstName: currentUser.firstName || '',
       lastName: currentUser.lastName || '',
-      verification_status: currentUser.verification_status || 'unverified',
-      has_uploaded_documents: currentUser.has_uploaded_documents || false
+      verificationStatus: currentUser.verification_status || 'unverified',
+      hasUploadedDocuments: currentUser.has_uploaded_documents || false
     });
   } catch (error) {
     console.error('❌ Error getting current user:', error);
@@ -7216,8 +7223,8 @@ app.post('/api/user/force-refresh', async (req, res) => {
           email: freshUserData.email,
           balance: freshUserData.balance,
           role: freshUserData.role || 'user',
-          verification_status: freshUserData.verification_status || 'unverified',
-          has_uploaded_documents: freshUserData.has_uploaded_documents || false
+          verificationStatus: freshUserData.verification_status || 'unverified',
+          hasUploadedDocuments: freshUserData.has_uploaded_documents || false
         },
         message: 'User data refreshed successfully'
       });
@@ -7255,13 +7262,13 @@ app.get('/api/user/verification-status', async (req, res) => {
       if (error) throw error;
 
       res.json({
-        verification_status: user.verification_status || 'unverified',
+        verificationStatus: user.verification_status || 'unverified',
         documents: documents || []
       });
     } else {
       // Mock data for development
       res.json({
-        verification_status: user.verification_status || 'unverified',
+        verificationStatus: user.verification_status || 'unverified',
         documents: []
       });
     }
@@ -7314,8 +7321,8 @@ app.post('/api/auth/refresh', async (req, res) => {
             role: user.role || 'user',
             firstName: user.firstName || '',
             lastName: user.lastName || '',
-            verification_status: user.verification_status || 'unverified',
-            has_uploaded_documents: user.has_uploaded_documents || false
+            verificationStatus: user.verification_status || 'unverified',
+            hasUploadedDocuments: user.has_uploaded_documents || false
           });
         } else {
           return res.status(404).json({ error: 'User not found' });
