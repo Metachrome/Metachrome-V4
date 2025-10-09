@@ -1283,20 +1283,28 @@ function OptionsPageContent() {
                 Max ({Math.floor(balance || 0)} USDT)
               </button>
 
-              {/* Custom Amount Input - ENABLED */}
+              {/* Custom Amount Input - FULLY WRITABLE */}
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={selectedAmount}
                 onChange={(e) => {
-                  const value = parseFloat(e.target.value) || 0;
-                  const clampedValue = Math.max(100, Math.min(value, balance || 0));
-                  setSelectedAmount(clampedValue);
+                  const inputValue = e.target.value.replace(/[^0-9.]/g, ''); // Only allow numbers and decimal
+                  const value = parseFloat(inputValue) || 0;
+                  setSelectedAmount(value); // Don't clamp during typing, allow free input
                 }}
-                className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+                onBlur={(e) => {
+                  // Only clamp when user finishes typing (on blur)
+                  const value = parseFloat(e.target.value) || 0;
+                  if (value < 100) {
+                    setSelectedAmount(100);
+                  } else if (value > (balance || 0)) {
+                    setSelectedAmount(Math.floor(balance || 0));
+                  }
+                }}
+                className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder={`Enter amount (Min: 100, Max: ${Math.floor(balance || 0)})`}
-                min="100"
-                max={balance || 0}
-                step="1"
               />
             </div>
 
@@ -1747,21 +1755,29 @@ function OptionsPageContent() {
                 </button>
               </div>
 
-              {/* Custom Amount Input - ENABLED */}
+              {/* Custom Amount Input - FULLY WRITABLE */}
               <div className="mt-2">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={selectedAmount}
                   onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    const clampedValue = Math.max(100, Math.min(value, balance || 0));
-                    setSelectedAmount(clampedValue);
+                    const inputValue = e.target.value.replace(/[^0-9.]/g, ''); // Only allow numbers and decimal
+                    const value = parseFloat(inputValue) || 0;
+                    setSelectedAmount(value); // Don't clamp during typing, allow free input
                   }}
-                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+                  onBlur={(e) => {
+                    // Only clamp when user finishes typing (on blur)
+                    const value = parseFloat(e.target.value) || 0;
+                    if (value < 100) {
+                      setSelectedAmount(100);
+                    } else if (value > (balance || 0)) {
+                      setSelectedAmount(Math.floor(balance || 0));
+                    }
+                  }}
+                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   placeholder={`Enter amount (Min: 100, Max: ${Math.floor(balance || 0)})`}
-                  min="100"
-                  max={balance || 0}
-                  step="1"
                 />
               </div>
             </div>
