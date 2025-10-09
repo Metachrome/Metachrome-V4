@@ -71,41 +71,34 @@ function OptionsPageContent() {
   const [isTrading, setIsTrading] = useState(false);
   const [activeTrades, setActiveTrades] = useState<ActiveTrade[]>([]);
   const [tradeHistory, setTradeHistory] = useState<ActiveTrade[]>([]);
-  const [completedTrade, setCompletedTrade] = useState<ActiveTrade | null>(() => {
-    // Load completed trade from localStorage on mount
-    try {
-      const stored = localStorage.getItem('completedTrade');
-      console.log('🔍 LOCALSTORAGE CHECK: Raw stored data:', stored);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        console.log('🔍 LOCALSTORAGE CHECK: Parsed data:', parsed);
+  const [completedTrade, setCompletedTrade] = useState<ActiveTrade | null>(null);
+  const [notificationKey, setNotificationKey] = useState<string>(''); // Force re-render
 
-        // TEMPORARILY DISABLE 45-second timeout for testing
-        console.log('🔍 LOCALSTORAGE CHECK: Returning parsed data (timeout disabled)');
-        return parsed;
+  // ROBUST NOTIFICATION TRIGGER FUNCTION
+  const triggerNotification = (trade: ActiveTrade) => {
+    console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id);
 
-        // Original timeout logic (commented out for testing)
-        /*
-        // Check if notification is still valid (within 45 seconds)
-        const notificationTime = new Date(parsed.completedAt).getTime();
-        const now = Date.now();
-        console.log('🔍 LOCALSTORAGE CHECK: Time diff:', now - notificationTime, 'ms');
-        if (now - notificationTime < 45000) {
-          console.log('🔍 LOCALSTORAGE CHECK: Within 45s, returning data');
-          return parsed;
-        } else {
-          console.log('🔍 LOCALSTORAGE CHECK: Expired, removing data');
-          localStorage.removeItem('completedTrade');
-        }
-        */
-      } else {
-        console.log('🔍 LOCALSTORAGE CHECK: No stored data found');
-      }
-    } catch (error) {
-      console.error('Error loading completed trade from localStorage:', error);
-    }
-    return null;
-  });
+    // Generate unique key to force re-render
+    const uniqueKey = `${trade.id}-${Date.now()}`;
+    setNotificationKey(uniqueKey);
+
+    // Clear existing notification
+    setCompletedTrade(null);
+
+    // Set new notification with delay to ensure React re-renders
+    setTimeout(() => {
+      console.log('🔔 TRIGGER: Setting notification state with key:', uniqueKey);
+      setCompletedTrade(trade);
+      localStorage.setItem('completedTrade', JSON.stringify(trade));
+
+      // Auto-hide after 60 seconds
+      setTimeout(() => {
+        console.log('🔔 TRIGGER: Auto-hiding notification');
+        setCompletedTrade(null);
+        localStorage.removeItem('completedTrade');
+      }, 60000);
+    }, 200);
+  };
   const [currentTradingMode, setCurrentTradingMode] = useState<'normal' | 'win' | 'lose'>(() => {
     // Initialize from localStorage if available
     const stored = localStorage.getItem('currentTradingMode');
@@ -532,12 +525,9 @@ function OptionsPageContent() {
 
         console.log('🎯 WEBSOCKET: Setting completed trade notification:', completedTrade);
 
-        // Clear any existing notification first to ensure new one shows
-        setCompletedTrade(null);
-        setTimeout(() => {
-          setCompletedTrade(completedTrade);
-          localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
-        }, 100);
+        // ROBUST NOTIFICATION TRIGGER
+        console.log('🔔 WEBSOCKET: About to trigger notification');
+        triggerNotification(completedTrade);
 
         // Remove from active trades
         setActiveTrades(prev => prev.filter(trade => trade.id !== tradeId));
@@ -593,12 +583,8 @@ function OptionsPageContent() {
 
               console.log('🔄 POLLING: Setting completed trade notification:', completedTrade);
 
-              // Clear any existing notification first to ensure new one shows
-              setCompletedTrade(null);
-              setTimeout(() => {
-                setCompletedTrade(completedTrade);
-                localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
-              }, 100);
+              // ROBUST NOTIFICATION TRIGGER
+              triggerNotification(completedTrade);
 
               // Remove from active trades
               setActiveTrades(prev => prev.filter(trade => trade.id !== activeTrade.id));
@@ -725,13 +711,8 @@ function OptionsPageContent() {
 
       console.log('🎯 COMPLETE TRADE: Trade with timestamp:', tradeWithTimestamp);
 
-      // Clear any existing notification first to ensure new one shows
-      setCompletedTrade(null);
-      setTimeout(() => {
-        setCompletedTrade(tradeWithTimestamp);
-        localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
-        console.log('🎯 COMPLETE TRADE: Notification state set and saved to localStorage');
-      }, 100);
+      // ROBUST NOTIFICATION TRIGGER
+      triggerNotification(tradeWithTimestamp);
 
       // Use multiple mobile detection methods
       const isMobileWidth = window.innerWidth < 768;
@@ -742,12 +723,7 @@ function OptionsPageContent() {
 
       // Don't trigger the old mobile modal anymore - let TradeNotification handle it
 
-      // Auto-hide notification after 60 seconds (longer sticky notification)
-      setTimeout(() => {
-        console.log('🎯 COMPLETE TRADE: Auto-hiding notification after 60s');
-        setCompletedTrade(null);
-        localStorage.removeItem('completedTrade');
-      }, 60000);
+      // Auto-hide is now handled in triggerNotification function
     } catch (historyError) {
       console.error('Trade history update error:', historyError);
     }
@@ -790,12 +766,8 @@ function OptionsPageContent() {
             completeTrade(trade, won, finalPrice).then((completedTrade) => {
               console.log('🎯 TRADE COMPLETED: Setting notification for trade:', completedTrade.id);
 
-              // Clear any existing notification first to ensure new one shows
-              setCompletedTrade(null);
-              setTimeout(() => {
-                setCompletedTrade(completedTrade);
-                localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
-              }, 100);
+              // ROBUST NOTIFICATION TRIGGER
+              triggerNotification(completedTrade);
             }).catch((error) => {
               console.error('❌ Trade completion failed:', error);
             });
@@ -2287,7 +2259,9 @@ function OptionsPageContent() {
 
 
       {/* Trade Notification */}
+      {console.log('🔔 RENDER: completedTrade state:', completedTrade, 'key:', notificationKey)}
       <TradeNotification
+        key={notificationKey} // Force re-render with unique key
         trade={completedTrade ? {
           id: completedTrade.id,
           direction: completedTrade.direction,
@@ -2301,6 +2275,7 @@ function OptionsPageContent() {
           profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15)
         } : null}
         onClose={() => {
+          console.log('🔔 NOTIFICATION: onClose called');
           setCompletedTrade(null);
           localStorage.removeItem('completedTrade');
         }}
