@@ -8504,8 +8504,9 @@ app.put('/api/user/password-hotfix', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password updated successfully',
-      hotfix: true
+      message: isFirstTimePassword ? 'Login password set successfully' : 'Password updated successfully',
+      hotfix: true,
+      isFirstTimePassword: !!isFirstTimePassword
     });
 
   } catch (error) {
@@ -8603,7 +8604,8 @@ app.put('/api/user/password', async (req, res) => {
 
     res.json({
       success: true,
-      message: isFirstTimePassword ? 'Login password set successfully' : 'Password changed successfully'
+      message: isFirstTimePassword ? 'Login password set successfully' : 'Password changed successfully',
+      isFirstTimePassword: !!isFirstTimePassword
     });
 
   } catch (error) {
