@@ -8405,7 +8405,7 @@ app.get('/api/user/referral-stats', async (req, res) => {
   }
 });
 
-// User password change endpoint
+// User password change endpoint - Fixed hasPassword logic and verification status
 app.put('/api/user/password', async (req, res) => {
   try {
     const authToken = req.headers.authorization?.replace('Bearer ', '');

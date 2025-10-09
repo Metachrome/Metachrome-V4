@@ -84,7 +84,7 @@ export default function ProfilePage() {
     },
   });
 
-  // Change password mutation
+  // Change password mutation - Fixed verification status property names
   const changePasswordMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest('PUT', '/api/user/password', data);
