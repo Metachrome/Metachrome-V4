@@ -503,6 +503,7 @@ function OptionsPageContent() {
 
   // Handle WebSocket trade completion notifications for reliable notifications
   useEffect(() => {
+    console.log('🔍 WEBSOCKET DEBUG: Checking message:', lastMessage?.type, 'userId match:', lastMessage?.data?.userId === user?.id);
     if (lastMessage?.type === 'trade_completed' && lastMessage.data?.userId === user?.id) {
       console.log('🎯 WEBSOCKET: Trade completion notification received:', lastMessage.data);
 
@@ -699,9 +700,40 @@ function OptionsPageContent() {
       console.error('Error updating balance:', balanceError);
     }
 
-    // NOTE: Notification will be triggered by WebSocket with server's actual result
-    // Don't trigger notification here to avoid showing wrong result before server applies trading controls
-    console.log('🎯 COMPLETE TRADE: Trade completed, waiting for WebSocket notification with server result');
+    // FALLBACK NOTIFICATION: Wait for server response, then check actual result
+    console.log('🎯 COMPLETE TRADE: Setting up fallback notification check');
+
+    // Wait a bit for server to process, then check the actual result from database
+    setTimeout(async () => {
+      try {
+        console.log('🔄 FALLBACK: Checking server result for trade:', trade.id);
+        const response = await fetch(`/api/users/${user?.id}/trades`);
+        if (response.ok) {
+          const trades = await response.json();
+          const serverTrade = trades.find((t: any) => t.id === trade.id);
+
+          if (serverTrade && serverTrade.status === 'completed') {
+            console.log('🔄 FALLBACK: Found completed trade with server result:', serverTrade);
+
+            const actualWon = serverTrade.result === 'win';
+            const profitPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
+
+            const fallbackTrade: ActiveTrade = {
+              ...trade,
+              status: actualWon ? 'won' : 'lost',
+              currentPrice: serverTrade.exit_price || finalPrice,
+              payout: actualWon ? trade.amount * (1 + profitPercentage / 100) : 0,
+              profit: actualWon ? (trade.amount * profitPercentage / 100) : -trade.amount
+            };
+
+            console.log('🔄 FALLBACK: Triggering notification with server result:', fallbackTrade);
+            triggerNotification(fallbackTrade);
+          }
+        }
+      } catch (error) {
+        console.error('🔄 FALLBACK: Error checking server result:', error);
+      }
+    }, 2000); // Wait 2 seconds for server processing
 
     return updatedTrade;
   };
