@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useIsMobile } from "../hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -34,6 +34,18 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+
+  // Show loading if user is not loaded yet
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Form states
   const [isEditing, setIsEditing] = useState(false);
@@ -263,7 +275,7 @@ export default function ProfilePage() {
   };
 
   // Fetch referral stats
-  const fetchReferralStats = async () => {
+  const fetchReferralStats = useCallback(async () => {
     try {
       console.log('🔗 Fetching referral stats for user:', user?.username);
       const response = await apiRequest('GET', '/api/user/referral-stats');
@@ -278,14 +290,14 @@ export default function ProfilePage() {
         referrals: []
       });
     }
-  };
+  }, [user?.username]);
 
   // Load referral stats on component mount
   useEffect(() => {
     if (user?.id) {
       fetchReferralStats();
     }
-  }, [user?.id]);
+  }, [user?.id, fetchReferralStats]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
