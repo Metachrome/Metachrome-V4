@@ -1283,23 +1283,14 @@ function OptionsPageContent() {
                 Max ({Math.floor(balance || 0)} USDT)
               </button>
 
-              {/* Custom Amount Input */}
+              {/* Custom Amount Input - DISABLED */}
               <input
                 type="number"
-                min={getMinimumAmount(selectedDuration)}
-                max={Math.floor(balance || 0)}
-                step="1"
                 value={selectedAmount}
-                onChange={(e) => {
-                  const minAmount = getMinimumAmount(selectedDuration);
-                  const maxAmount = Math.floor(balance || 0);
-                  const inputValue = parseFloat(e.target.value) || minAmount;
-                  const clampedValue = Math.max(minAmount, Math.min(maxAmount, inputValue));
-                  setSelectedAmount(Math.floor(clampedValue));
-                }}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
-                placeholder={`Enter amount (min ${getMinimumAmount(selectedDuration)}, max ${Math.floor(balance || 0)})`}
-                disabled={isTrading}
+                readOnly
+                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
+                placeholder="Use buttons above to select amount"
+                disabled
               />
             </div>
 
@@ -1750,24 +1741,15 @@ function OptionsPageContent() {
                 </button>
               </div>
 
-              {/* Custom Amount Input */}
+              {/* Custom Amount Input - DISABLED */}
               <div className="mt-2">
                 <input
                   type="number"
-                  min={getMinimumAmount(selectedDuration)}
-                  max={Math.floor(balance || 0)}
-                  step="1"
                   value={selectedAmount}
-                  onChange={(e) => {
-                    const minAmount = getMinimumAmount(selectedDuration);
-                    const maxAmount = Math.floor(balance || 0);
-                    const inputValue = parseFloat(e.target.value) || minAmount;
-                    const clampedValue = Math.max(minAmount, Math.min(maxAmount, inputValue));
-                    setSelectedAmount(Math.floor(clampedValue));
-                  }}
-                  className="w-full bg-gray-800 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
-                  placeholder={`Custom amount (min ${getMinimumAmount(selectedDuration).toLocaleString()}, max ${Math.floor(balance || 0).toLocaleString()} USDT)`}
-                  disabled={isTrading}
+                  readOnly
+                  className="w-full bg-gray-700 text-gray-400 px-3 py-2 rounded border border-gray-600 cursor-not-allowed"
+                  placeholder="Use buttons above to select amount"
+                  disabled
                 />
               </div>
             </div>
