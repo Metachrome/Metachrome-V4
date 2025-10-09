@@ -1283,14 +1283,20 @@ function OptionsPageContent() {
                 Max ({Math.floor(balance || 0)} USDT)
               </button>
 
-              {/* Custom Amount Input - DISABLED */}
+              {/* Custom Amount Input - ENABLED */}
               <input
                 type="number"
                 value={selectedAmount}
-                readOnly
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
-                placeholder="Use buttons above to select amount"
-                disabled
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value) || 0;
+                  const clampedValue = Math.max(100, Math.min(value, balance || 0));
+                  setSelectedAmount(clampedValue);
+                }}
+                className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+                placeholder={`Enter amount (Min: 100, Max: ${Math.floor(balance || 0)})`}
+                min="100"
+                max={balance || 0}
+                step="1"
               />
             </div>
 
@@ -1741,15 +1747,21 @@ function OptionsPageContent() {
                 </button>
               </div>
 
-              {/* Custom Amount Input - DISABLED */}
+              {/* Custom Amount Input - ENABLED */}
               <div className="mt-2">
                 <input
                   type="number"
                   value={selectedAmount}
-                  readOnly
-                  className="w-full bg-gray-700 text-gray-400 px-3 py-2 rounded border border-gray-600 cursor-not-allowed"
-                  placeholder="Use buttons above to select amount"
-                  disabled
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const clampedValue = Math.max(100, Math.min(value, balance || 0));
+                    setSelectedAmount(clampedValue);
+                  }}
+                  className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+                  placeholder={`Enter amount (Min: 100, Max: ${Math.floor(balance || 0)})`}
+                  min="100"
+                  max={balance || 0}
+                  step="1"
                 />
               </div>
             </div>

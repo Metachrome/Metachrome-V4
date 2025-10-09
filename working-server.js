@@ -1,4 +1,3 @@
-console.log('🚀 Starting METACHROME server...');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -7141,6 +7140,64 @@ app.post('/api/user/upload-verification', upload.single('document'), async (req,
   } catch (error) {
     console.error('❌ Error uploading verification document:', error);
     res.status(500).json({ error: 'Failed to upload verification document' });
+  }
+});
+
+// Debug current user endpoint (no auth required for testing)
+app.get('/api/debug/current-user', async (req, res) => {
+  try {
+    console.log('🔍 DEBUG: Current user request');
+
+    // Get user from auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    console.log('🔍 DEBUG: Auth token:', authToken?.substring(0, 30) + '...');
+
+    if (!authToken) {
+      return res.json({ error: 'No auth token provided', token: null });
+    }
+
+    const users = await getUsers();
+    let currentUser = null;
+
+    // Try to find user by token (same logic as balance endpoint)
+    if (authToken.startsWith('user-session-')) {
+      const tokenParts = authToken.replace('user-session-', '').split('-');
+      const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+      currentUser = users.find(u => u.id === userId);
+    } else if (authToken.startsWith('admin-session-')) {
+      const tokenParts = authToken.replace('admin-session-', '').split('-');
+      const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+      currentUser = users.find(u => u.id === userId);
+    } else if (authToken.includes('.')) {
+      const recentUser = users[users.length - 1];
+      if (recentUser) {
+        currentUser = recentUser;
+      }
+    }
+
+    if (!currentUser) {
+      return res.json({
+        error: 'User not found',
+        token: authToken?.substring(0, 30) + '...',
+        availableUsers: users.map(u => ({ id: u.id, username: u.username, balance: u.balance }))
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email,
+        balance: currentUser.balance,
+        role: currentUser.role,
+        verificationStatus: currentUser.verification_status
+      },
+      token: authToken?.substring(0, 30) + '...'
+    });
+  } catch (error) {
+    console.error('❌ Debug current user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
