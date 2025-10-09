@@ -4365,22 +4365,59 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
       const currentBalance = parseFloat(user.balance || 0);
       const withdrawalAmount = parseFloat(withdrawal.amount);
 
-      // Check if user still has sufficient balance
-      if (currentBalance < withdrawalAmount) {
-        withdrawal.status = 'rejected';
-        withdrawal.rejection_reason = 'Insufficient balance';
-        withdrawal.updated_at = new Date().toISOString();
+      // DEBUG: Check if balance was already deducted during withdrawal request
+      console.log('💸 WITHDRAWAL APPROVAL DEBUG:');
+      console.log('💸 User ID:', user.id);
+      console.log('💸 Username:', user.username);
+      console.log('💸 Current user balance:', currentBalance);
+      console.log('💸 Withdrawal amount:', withdrawalAmount);
+      console.log('💸 Withdrawal original balance:', withdrawal.user_balance);
 
-        return res.status(400).json({
-          error: 'Insufficient balance',
-          available: currentBalance,
-          requested: withdrawalAmount
-        });
+      // Check if balance was already deducted (current balance should be less than original)
+      const originalBalance = parseFloat(withdrawal.user_balance || currentBalance);
+      const expectedBalanceAfterDeduction = originalBalance - withdrawalAmount;
+
+      console.log('💸 Original balance (from withdrawal):', originalBalance);
+      console.log('💸 Expected balance after deduction:', expectedBalanceAfterDeduction);
+      console.log('💸 Actual current balance:', currentBalance);
+
+      // If current balance matches expected balance, it was already deducted
+      const balanceAlreadyDeducted = Math.abs(currentBalance - expectedBalanceAfterDeduction) < 0.01;
+
+      if (balanceAlreadyDeducted) {
+        console.log('✅ Balance was already deducted during withdrawal request - no additional deduction needed');
+      } else {
+        console.log('⚠️ Balance was NOT deducted during withdrawal request - deducting now');
+        const newBalance = currentBalance - withdrawalAmount;
+        user.balance = newBalance.toString();
+
+        // Update balance in database
+        if (isProduction && supabase) {
+          try {
+            console.log('🔄 Deducting balance in Supabase:', user.id, newBalance);
+            const { data: updateData, error: updateError } = await supabase
+              .from('users')
+              .update({
+                balance: parseFloat(user.balance),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', user.id)
+              .select();
+
+            if (updateError) {
+              console.error('❌ Error updating user balance in Supabase:', updateError);
+              throw updateError;
+            } else {
+              console.log('✅ User balance deducted in Supabase:', user.balance);
+            }
+          } catch (dbError) {
+            console.error('❌ Database balance update failed:', dbError);
+            await saveUsers(users);
+          }
+        } else {
+          await saveUsers(users);
+        }
       }
-
-      // Deduct balance
-      const newBalance = currentBalance - withdrawalAmount;
-      user.balance = newBalance.toString();
 
       // Update withdrawal status
       withdrawal.status = 'approved';
@@ -4392,53 +4429,31 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
       pendingData.withdrawals = pendingWithdrawals;
       savePendingData();
 
-      // Save user data
-      if (isProduction && supabase) {
-        try {
-          console.log('🔄 Updating balance in Supabase for withdrawal approval:', user.id, user.balance);
-          const { data: updateData, error: updateError } = await supabase
-            .from('users')
-            .update({
-              balance: parseFloat(user.balance),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id)
-            .select();
+      // NO BALANCE UPDATE NEEDED: Balance was already deducted when withdrawal was requested
+      // Just update the withdrawal status in the database, not the user balance
+      console.log('💸 Withdrawal approval: No balance update needed - already deducted during request');
 
-          if (updateError) {
-            console.error('❌ Error updating user balance in Supabase:', updateError);
-            throw updateError;
-          } else {
-            console.log('✅ User balance updated in Supabase for withdrawal:', user.balance);
-          }
-        } catch (dbError) {
-          console.error('❌ Database balance update failed:', dbError);
-          await saveUsers(users);
-        }
-      } else {
-        await saveUsers(users);
-      }
+      console.log(`✅ Withdrawal approved: ${withdrawalAmount} USDT (balance was already deducted during request)`);
 
-      console.log(`✅ Withdrawal approved: ${withdrawalAmount} USDT deducted from ${user.username}`);
-
-      // Broadcast balance update
+      // Broadcast withdrawal approval notification (no balance change needed)
       if (global.wss) {
-        const balanceUpdate = {
-          type: 'balance_update',
+        const withdrawalUpdate = {
+          type: 'withdrawal_approved',
           data: {
             userId: user.id,
-            newBalance: parseFloat(user.balance),
-            reason: 'withdrawal_approved',
-            amount: withdrawalAmount
+            withdrawalId: withdrawal.id,
+            amount: withdrawalAmount,
+            currency: withdrawal.currency,
+            message: 'Your withdrawal has been approved and processed'
           }
         };
 
         global.wss.clients.forEach(client => {
           if (client.readyState === 1) {
             try {
-              client.send(JSON.stringify(balanceUpdate));
+              client.send(JSON.stringify(withdrawalUpdate));
             } catch (error) {
-              console.error('❌ Failed to broadcast balance update:', error);
+              console.error('❌ Failed to broadcast withdrawal update:', error);
             }
           }
         });
