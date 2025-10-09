@@ -8330,6 +8330,90 @@ app.get('/api/user/referral-stats', async (req, res) => {
   }
 });
 
+// User password change endpoint
+app.put('/api/user/password', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    const { currentPassword, newPassword, isFirstTimePassword } = req.body;
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    // Validate new password
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    // For MetaMask/Google users setting password for the first time
+    if (isFirstTimePassword) {
+      console.log('🔐 Setting first-time password for user:', user.id);
+
+      // Check if user is MetaMask or Google user (no existing password)
+      if (user.password_hash && user.password_hash.length > 0) {
+        return res.status(400).json({ error: 'User already has a password. Use change password instead.' });
+      }
+    } else {
+      // For users changing existing password
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required' });
+      }
+
+      // Verify current password
+      if (!user.password_hash || !(await bcrypt.compare(currentPassword, user.password_hash))) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password in database
+    if (isProduction && supabase) {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          password_hash: hashedPassword,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('❌ Supabase password update error:', error);
+        throw error;
+      }
+      console.log('✅ Password updated in Supabase for user:', user.id);
+    } else {
+      // Development mode - update local file
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === user.id);
+
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      users[userIndex].password_hash = hashedPassword;
+      users[userIndex].updated_at = new Date().toISOString();
+      await saveUsers(users);
+      console.log('✅ Password updated in local file for user:', user.id);
+    }
+
+    res.json({
+      success: true,
+      message: isFirstTimePassword ? 'Login password set successfully' : 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Error changing user password:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
 // ===== REDEEM CODE ENDPOINTS =====
 
 // Test redeem code endpoint (no auth required for testing)

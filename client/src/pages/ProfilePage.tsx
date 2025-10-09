@@ -825,72 +825,161 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword" className="text-gray-300">Current Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.currentPassword}
-                        onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white pr-10"
-                        placeholder="Enter current password"
-                      />
+                {/* Check if user logged in via MetaMask/Google (no password set) */}
+                {(user?.walletAddress || (user?.email && !user?.password)) ? (
+                  <div className="space-y-4">
+                    {/* Info box for MetaMask/Google users */}
+                    <div className="p-4 bg-blue-900/20 border border-blue-600 rounded-lg">
+                      <h3 className="text-blue-400 font-medium mb-2">
+                        {user?.walletAddress ? '🔗 MetaMask Login' : '🔐 Google Login'}
+                      </h3>
+                      <p className="text-blue-300 text-sm mb-3">
+                        {user?.walletAddress
+                          ? 'You logged in using MetaMask. Set a password to enable traditional login as well.'
+                          : 'You logged in using Google. Set a password to enable traditional login as well.'
+                        }
+                      </p>
+                    </div>
+
+                    {/* Set Login Password Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-white font-medium">Set Login Password</h3>
+                      <p className="text-gray-400 text-sm">
+                        Create a password to access your account without {user?.walletAddress ? 'MetaMask' : 'Google'}.
+                      </p>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={formData.newPassword}
+                          onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white"
+                          placeholder="Enter new password"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword" className="text-gray-300">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={formData.confirmPassword}
+                          onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white"
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={() => {
+                          // Handle setting password for MetaMask/Google users
+                          if (formData.newPassword !== formData.confirmPassword) {
+                            toast({
+                              title: "Password Mismatch",
+                              description: "New password and confirmation don't match",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          if (formData.newPassword.length < 6) {
+                            toast({
+                              title: "Password Too Short",
+                              description: "Password must be at least 6 characters long",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          // Use a different mutation for setting password (no current password required)
+                          changePasswordMutation.mutate({
+                            newPassword: formData.newPassword,
+                            isFirstTimePassword: true
+                          });
+                        }}
+                        disabled={
+                          changePasswordMutation.isPending ||
+                          !formData.newPassword ||
+                          !formData.confirmPassword
+                        }
+                        className="bg-purple-600 hover:bg-purple-700"
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-gray-400" />
-                        )}
+                        <Shield className="w-4 h-4 mr-2" />
+                        {changePasswordMutation.isPending ? "Setting..." : "Set Login Password"}
                       </Button>
                     </div>
                   </div>
+                ) : (
+                  /* Traditional password change for users with existing passwords */
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword" className="text-gray-300">Current Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showPassword ? "text" : "password"}
+                          value={formData.currentPassword}
+                          onChange={(e) => handleInputChange('currentPassword', e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white pr-10"
+                          placeholder="Enter current password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      value={formData.newPassword}
-                      onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
-                      placeholder="Enter new password"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={formData.newPassword}
+                        onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-white"
+                        placeholder="Enter new password"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-gray-300">Confirm New Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-white"
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleChangePassword}
+                      disabled={
+                        changePasswordMutation.isPending ||
+                        !formData.currentPassword ||
+                        !formData.newPassword ||
+                        !formData.confirmPassword
+                      }
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
+                    </Button>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-gray-300">Confirm New Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white"
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleChangePassword}
-                    disabled={
-                      changePasswordMutation.isPending ||
-                      !formData.currentPassword ||
-                      !formData.newPassword ||
-                      !formData.confirmPassword
-                    }
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    <Shield className="w-4 h-4 mr-2" />
-                    {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
-                  </Button>
-                </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -906,19 +995,19 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-gray-400" />
-                    <div>
+                  <div className="flex items-start space-x-3">
+                    <Mail className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm text-gray-400">Email</p>
-                      <p className="text-white">{user?.email}</p>
+                      <p className="text-white break-words break-all text-sm leading-relaxed">{user?.email}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-3">
-                    <User className="w-5 h-5 text-gray-400" />
-                    <div>
+                  <div className="flex items-start space-x-3">
+                    <User className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm text-gray-400">User ID</p>
-                      <p className="text-white font-mono text-sm">{user?.id}</p>
+                      <p className="text-white font-mono text-sm break-all leading-relaxed">{user?.id}</p>
                     </div>
                   </div>
 
@@ -941,6 +1030,34 @@ export default function ProfilePage() {
                       </Badge>
                     </div>
                   </div>
+                </div>
+
+                <Separator className="bg-gray-600" />
+
+                {/* Referral Code Section */}
+                <div className="space-y-4">
+                  <h3 className="text-white font-medium">Referral Code</h3>
+                  <div className="flex items-center space-x-3">
+                    <Input
+                      value={referralStats?.referralCode || user?.referral_code || 'Loading...'}
+                      readOnly
+                      className="bg-gray-900 border-gray-600 text-white font-mono"
+                    />
+                    <Button
+                      onClick={() => {
+                        const codeToShare = referralStats?.referralCode || user?.referral_code || '';
+                        navigator.clipboard.writeText(codeToShare);
+                        toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                      }}
+                      variant="outline"
+                      className="border-gray-600"
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Share this code with friends to earn referral bonuses!
+                  </p>
                 </div>
               </CardContent>
             </Card>
