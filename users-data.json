@@ -39,6 +39,22 @@
     "total_trades": 1
   },
   {
+    "id": "user-metamask-test",
+    "username": "metamask.user",
+    "email": "metamask.user@metachrome.io",
+    "password_hash": "",
+    "balance": 5000,
+    "role": "user",
+    "status": "active",
+    "trading_mode": "normal",
+    "created_at": "2025-09-16T06:17:04.220Z",
+    "last_login": "2025-09-16T06:17:04.220Z",
+    "updated_at": "2025-09-16T06:17:04.220Z",
+    "wallet_address": "0xMETAMASK123456789abcdef",
+    "verification_status": "verified",
+    "has_uploaded_documents": true
+  },
+  {
     "id": "superadmin-1",
     "username": "superadmin",
     "email": "superadmin@metachrome.io",

@@ -826,7 +826,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Check if user logged in via MetaMask/Google (no password set) */}
-                {(user?.walletAddress || (user?.email && !user?.password)) ? (
+                {(user?.walletAddress || !user?.hasPassword) ? (
                   <div className="space-y-4">
                     {/* Info box for MetaMask/Google users */}
                     <div className="p-4 bg-blue-900/20 border border-blue-600 rounded-lg">

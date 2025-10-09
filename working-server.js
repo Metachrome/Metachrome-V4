@@ -1455,7 +1455,9 @@ app.get('/api/auth/user', async (req, res) => {
       firstName: currentUser.firstName || '',
       lastName: currentUser.lastName || '',
       verificationStatus: currentUser.verification_status || 'unverified',
-      hasUploadedDocuments: currentUser.has_uploaded_documents || false
+      hasUploadedDocuments: currentUser.has_uploaded_documents || false,
+      walletAddress: currentUser.wallet_address || null,
+      hasPassword: !!(currentUser.password_hash && currentUser.password_hash.length > 0)
     });
   } catch (error) {
     console.error('❌ Error getting current user:', error);
