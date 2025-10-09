@@ -8428,6 +8428,32 @@ app.get('/api/user/referral-stats', async (req, res) => {
       return res.status(401).json({ error: 'Invalid authentication' });
     }
 
+    // Generate referral code if user doesn't have one
+    let referralCode = user.referral_code;
+    if (!referralCode) {
+      referralCode = `REF${user.username.toUpperCase().substring(0, 4)}${Date.now().toString().slice(-4)}`;
+      console.log('🔗 Generated new referral code for user:', user.username, '→', referralCode);
+
+      if (isProduction && supabase) {
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ referral_code: referralCode })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('❌ Failed to save referral code:', updateError);
+        }
+      } else {
+        // Update local user data
+        const users = JSON.parse(fs.readFileSync(usersFilePath, 'utf8'));
+        const userIndex = users.findIndex(u => u.id === user.id);
+        if (userIndex !== -1) {
+          users[userIndex].referral_code = referralCode;
+          fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
+        }
+      }
+    }
+
     if (isProduction && supabase) {
       const { data: referrals, error } = await supabase
         .from('user_referrals')
@@ -8445,14 +8471,14 @@ app.get('/api/user/referral-stats', async (req, res) => {
       if (error) throw error;
 
       res.json({
-        referralCode: user.referral_code,
+        referralCode: referralCode,
         totalReferrals: referrals?.length || 0,
         referrals: referrals || []
       });
     } else {
       // Mock data for development
       res.json({
-        referralCode: user.referral_code || 'MOCK1234',
+        referralCode: referralCode,
         totalReferrals: 0,
         referrals: []
       });

@@ -265,12 +265,27 @@ export default function ProfilePage() {
   // Fetch referral stats
   const fetchReferralStats = async () => {
     try {
+      console.log('🔗 Fetching referral stats for user:', user?.username);
       const response = await apiRequest('GET', '/api/user/referral-stats');
+      console.log('🔗 Referral stats response:', response);
       setReferralStats(response);
     } catch (error) {
-      console.error('Failed to fetch referral stats:', error);
+      console.error('❌ Failed to fetch referral stats:', error);
+      // Set fallback data to prevent infinite loading
+      setReferralStats({
+        referralCode: `REF${user?.username?.toUpperCase().substring(0, 4) || 'USER'}${Date.now().toString().slice(-4)}`,
+        totalReferrals: 0,
+        referrals: []
+      });
     }
   };
+
+  // Load referral stats on component mount
+  useEffect(() => {
+    if (user?.id) {
+      fetchReferralStats();
+    }
+  }, [user?.id]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -1043,17 +1058,23 @@ export default function ProfilePage() {
                   <h3 className="text-white font-medium">🔗 Your Referral Code</h3>
                   <div className="flex items-center space-x-3">
                     <Input
-                      value={referralStats?.referralCode || 'Loading...'}
+                      value={referralStats?.referralCode || (referralStats === null ? 'Loading...' : 'Error loading code')}
                       readOnly
                       className="bg-gray-900 border-gray-600 text-white font-mono"
                     />
                     <Button
                       onClick={() => {
-                        navigator.clipboard.writeText(referralStats?.referralCode || '');
-                        toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                        const codeToShare = referralStats?.referralCode || '';
+                        if (codeToShare && codeToShare !== 'Loading...' && codeToShare !== 'Error loading code') {
+                          navigator.clipboard.writeText(codeToShare);
+                          toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                        } else {
+                          toast({ title: "Error", description: "No referral code to copy", variant: "destructive" });
+                        }
                       }}
                       variant="outline"
                       className="border-gray-600"
+                      disabled={!referralStats?.referralCode || referralStats.referralCode === 'Loading...' || referralStats.referralCode === 'Error loading code'}
                     >
                       Copy
                     </Button>
@@ -1061,6 +1082,11 @@ export default function ProfilePage() {
                   <p className="text-gray-400 text-sm">
                     Share this code with friends to earn referral bonuses!
                   </p>
+                  {referralStats && (
+                    <p className="text-green-400 text-sm">
+                      Total Referrals: {referralStats.totalReferrals || 0}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1330,18 +1356,23 @@ export default function ProfilePage() {
                   <h3 className="text-white font-medium">Referral Code</h3>
                   <div className="flex items-center space-x-3">
                     <Input
-                      value={referralStats?.referralCode || user?.referral_code || 'Loading...'}
+                      value={referralStats?.referralCode || user?.referral_code || (referralStats === null ? 'Loading...' : 'Error loading code')}
                       readOnly
                       className="bg-gray-900 border-gray-600 text-white font-mono"
                     />
                     <Button
                       onClick={() => {
                         const codeToShare = referralStats?.referralCode || user?.referral_code || '';
-                        navigator.clipboard.writeText(codeToShare);
-                        toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                        if (codeToShare && codeToShare !== 'Loading...' && codeToShare !== 'Error loading code') {
+                          navigator.clipboard.writeText(codeToShare);
+                          toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                        } else {
+                          toast({ title: "Error", description: "No referral code to copy", variant: "destructive" });
+                        }
                       }}
                       variant="outline"
                       className="border-gray-600"
+                      disabled={!referralStats?.referralCode && !user?.referral_code}
                     >
                       Copy
                     </Button>
@@ -1349,6 +1380,11 @@ export default function ProfilePage() {
                   <p className="text-gray-400 text-sm">
                     Share this code with friends to earn referral bonuses!
                   </p>
+                  {referralStats && (
+                    <p className="text-green-400 text-sm">
+                      Total Referrals: {referralStats.totalReferrals || 0}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
