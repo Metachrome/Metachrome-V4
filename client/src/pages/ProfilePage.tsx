@@ -559,6 +559,96 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Password Status Information */}
+                <Card className="bg-gray-800 border-gray-700">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gray-600/20 rounded-lg">
+                        <Shield className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-white text-lg">Password Status</CardTitle>
+                        <CardDescription className="text-gray-400">
+                          Current login methods and password status for your account
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Current Login Methods */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* MetaMask Status */}
+                      {user?.walletAddress && (
+                        <div className="p-4 bg-green-900/20 border border-green-600/50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <h3 className="text-green-400 font-medium">MetaMask Connected</h3>
+                          </div>
+                          <p className="text-green-300 text-sm">
+                            Wallet: {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Google Status */}
+                      {user?.email?.includes('@gmail.com') && (
+                        <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                            <h3 className="text-blue-400 font-medium">Google Connected</h3>
+                          </div>
+                          <p className="text-blue-300 text-sm">
+                            Email: {user.email}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Password Status */}
+                      <div className={`p-4 border rounded-lg ${
+                        (() => {
+                          const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
+                          return hasPassword
+                            ? 'bg-green-900/20 border-green-600/50'
+                            : 'bg-yellow-900/20 border-yellow-600/50';
+                        })()
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            (() => {
+                              const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
+                              return hasPassword ? 'bg-green-400' : 'bg-yellow-400';
+                            })()
+                          }`}></div>
+                          <h3 className={`font-medium ${
+                            (() => {
+                              const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
+                              return hasPassword ? 'text-green-400' : 'text-yellow-400';
+                            })()
+                          }`}>
+                            {(() => {
+                              const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
+                              return hasPassword ? 'Password Set' : 'No Password';
+                            })()}
+                          </h3>
+                        </div>
+                        <p className={`text-sm ${
+                          (() => {
+                            const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
+                            return hasPassword ? 'text-green-300' : 'text-yellow-300';
+                          })()
+                        }`}>
+                          {(() => {
+                            const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
+                            return hasPassword
+                              ? 'You can log in with username/password'
+                              : 'Username/password login not available';
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Set Login Password for MetaMask/Google Users */}
                 {(() => {
                   const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
@@ -574,8 +664,8 @@ export default function ProfilePage() {
                           <CardTitle className="text-white text-lg">Set Login Password</CardTitle>
                           <CardDescription className="text-purple-200">
                             {user?.walletAddress
-                              ? 'You logged in via MetaMask. Set a password to enable traditional login as well.'
-                              : 'You logged in via Google. Set a password to enable traditional login as well.'
+                              ? 'Add password login to your MetaMask account'
+                              : 'Add password login to your Google account'
                             }
                           </CardDescription>
                         </div>
@@ -584,38 +674,82 @@ export default function ProfilePage() {
                     <CardContent className="space-y-4">
                       <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
                         <h3 className="text-blue-400 font-medium mb-2">
-                          {user?.walletAddress ? '🔗 MetaMask Login Detected' : '🔐 Google Login Detected'}
+                          ℹ️ Why Set a Password?
                         </h3>
-                        <p className="text-blue-300 text-sm">
-                          Currently, you can only access your account through {user?.walletAddress ? 'MetaMask' : 'Google'}.
-                          Setting a password will allow you to log in using your username and password as well.
-                        </p>
+                        <ul className="text-blue-300 text-sm space-y-1">
+                          <li>• Access your account without {user?.walletAddress ? 'MetaMask' : 'Google'}</li>
+                          <li>• Faster login on any device</li>
+                          <li>• Backup access method for security</li>
+                          <li>• No current password needed - this is your first password</li>
+                        </ul>
                       </div>
 
                       <div className="space-y-4">
+                        {/* Password Requirements */}
+                        <div className="p-3 bg-gray-700/50 border border-gray-600 rounded-lg">
+                          <h4 className="text-gray-300 font-medium mb-2">Password Requirements:</h4>
+                          <ul className="text-gray-400 text-sm space-y-1">
+                            <li className={`flex items-center gap-2 ${formData.newPassword.length >= 6 ? 'text-green-400' : ''}`}>
+                              {formData.newPassword.length >= 6 ? '✓' : '•'} At least 6 characters
+                            </li>
+                            <li className={`flex items-center gap-2 ${formData.newPassword && formData.confirmPassword && formData.newPassword === formData.confirmPassword ? 'text-green-400' : ''}`}>
+                              {formData.newPassword && formData.confirmPassword && formData.newPassword === formData.confirmPassword ? '✓' : '•'} Passwords match
+                            </li>
+                            <li className="flex items-center gap-2 text-blue-400">
+                              ℹ️ No current password required (this is your first password)
+                            </li>
+                          </ul>
+                        </div>
+
                         <div className="space-y-2">
-                          <Label htmlFor="newPasswordVerification" className="text-gray-300">New Password</Label>
+                          <Label htmlFor="newPasswordVerification" className="text-gray-300">Create Your Password</Label>
                           <Input
                             id="newPasswordVerification"
                             type="password"
                             value={formData.newPassword}
                             onChange={(e) => handleInputChange('newPassword', e.target.value)}
                             className="bg-gray-700 border-gray-600 text-white"
-                            placeholder="Enter new password (minimum 6 characters)"
+                            placeholder="Enter your new password (minimum 6 characters)"
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="confirmPasswordVerification" className="text-gray-300">Confirm New Password</Label>
+                          <Label htmlFor="confirmPasswordVerification" className="text-gray-300">Confirm Your Password</Label>
                           <Input
                             id="confirmPasswordVerification"
                             type="password"
                             value={formData.confirmPassword}
                             onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                             className="bg-gray-700 border-gray-600 text-white"
-                            placeholder="Confirm new password"
+                            placeholder="Confirm your new password"
                           />
                         </div>
+
+                        {/* Real-time validation feedback */}
+                        {formData.newPassword && (
+                          <div className="space-y-2">
+                            {formData.newPassword.length < 6 && (
+                              <p className="text-yellow-400 text-sm flex items-center gap-2">
+                                ⚠️ Password must be at least 6 characters
+                              </p>
+                            )}
+                            {formData.newPassword.length >= 6 && (
+                              <p className="text-green-400 text-sm flex items-center gap-2">
+                                ✓ Password length is good
+                              </p>
+                            )}
+                            {formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
+                              <p className="text-red-400 text-sm flex items-center gap-2">
+                                ✗ Passwords don't match
+                              </p>
+                            )}
+                            {formData.confirmPassword && formData.newPassword === formData.confirmPassword && formData.newPassword.length >= 6 && (
+                              <p className="text-green-400 text-sm flex items-center gap-2">
+                                ✓ Passwords match - ready to set!
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         <Button
                           onClick={() => {
@@ -647,13 +781,29 @@ export default function ProfilePage() {
                           disabled={
                             changePasswordMutation.isPending ||
                             !formData.newPassword ||
-                            !formData.confirmPassword
+                            !formData.confirmPassword ||
+                            formData.newPassword !== formData.confirmPassword ||
+                            formData.newPassword.length < 6
                           }
-                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                         >
                           <Shield className="w-4 h-4 mr-2" />
-                          {changePasswordMutation.isPending ? "Setting Password..." : "Set Login Password"}
+                          {changePasswordMutation.isPending ? "Setting Password..." : "Set My First Login Password"}
                         </Button>
+
+                        {/* Success Preview */}
+                        {formData.newPassword && formData.confirmPassword && formData.newPassword === formData.confirmPassword && formData.newPassword.length >= 6 && (
+                          <div className="p-3 bg-green-900/20 border border-green-600/50 rounded-lg">
+                            <p className="text-green-300 text-sm">
+                              🎉 Once set, you'll be able to log in with:
+                            </p>
+                            <ul className="text-green-400 text-sm mt-2 space-y-1">
+                              <li>• Username: {user?.username || 'Your username'}</li>
+                              <li>• Password: (the password you're creating)</li>
+                              <li>• Plus your existing {user?.walletAddress ? 'MetaMask' : 'Google'} login</li>
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -946,60 +1096,115 @@ export default function ProfilePage() {
                   <div className="space-y-4">
                     <div className="p-4 bg-green-900/20 border border-green-600/50 rounded-lg">
                       <h3 className="text-green-400 font-medium mb-2">🔐 Password Protection Enabled</h3>
-                      <p className="text-green-300 text-sm">
+                      <p className="text-green-300 text-sm mb-3">
                         Your account is secured with a password. You can change it below if needed.
                       </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword" className="text-gray-300">Current Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="currentPassword"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.currentPassword}
-                          onChange={(e) => handleInputChange('currentPassword', e.target.value)}
-                          className="bg-gray-700 border-gray-600 text-white pr-10"
-                          placeholder="Enter current password"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-400" />
-                          )}
-                        </Button>
+                      <div className="flex items-center gap-2 text-green-400 text-sm">
+                        <Shield className="w-4 h-4" />
+                        <span>You can log in with username and password</span>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="newPasswordSecurity" className="text-gray-300">New Password</Label>
-                      <Input
-                        id="newPasswordSecurity"
-                        type="password"
-                        value={formData.newPassword}
-                        onChange={(e) => handleInputChange('newPassword', e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white"
-                        placeholder="Enter new password"
-                      />
+                    {/* Current Login Methods Summary */}
+                    <div className="p-4 bg-gray-700/50 border border-gray-600 rounded-lg">
+                      <h4 className="text-gray-300 font-medium mb-3">Available Login Methods:</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-green-400 text-sm">
+                          ✓ Username & Password
+                        </div>
+                        {user?.walletAddress && (
+                          <div className="flex items-center gap-2 text-green-400 text-sm">
+                            ✓ MetaMask Wallet ({user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)})
+                          </div>
+                        )}
+                        {user?.email?.includes('@gmail.com') && (
+                          <div className="flex items-center gap-2 text-green-400 text-sm">
+                            ✓ Google Account ({user.email})
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPasswordSecurity" className="text-gray-300">Confirm New Password</Label>
-                      <Input
-                        id="confirmPasswordSecurity"
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white"
-                        placeholder="Confirm new password"
-                      />
+                    {/* Password Change Form */}
+                    <div className="p-4 bg-gray-800/50 border border-gray-600 rounded-lg">
+                      <h4 className="text-white font-medium mb-4">Change Your Password</h4>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="currentPassword" className="text-gray-300">Current Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="currentPassword"
+                              type={showPassword ? "text" : "password"}
+                              value={formData.currentPassword}
+                              onChange={(e) => handleInputChange('currentPassword', e.target.value)}
+                              className="bg-gray-700 border-gray-600 text-white pr-10"
+                              placeholder="Enter your current password"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-400" />
+                              )}
+                            </Button>
+                          </div>
+                          <p className="text-gray-400 text-xs">
+                            This is the password you currently use to log in
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="newPasswordSecurity" className="text-gray-300">New Password</Label>
+                          <Input
+                            id="newPasswordSecurity"
+                            type="password"
+                            value={formData.newPassword}
+                            onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                            className="bg-gray-700 border-gray-600 text-white"
+                            placeholder="Enter your new password (minimum 6 characters)"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPasswordSecurity" className="text-gray-300">Confirm New Password</Label>
+                          <Input
+                            id="confirmPasswordSecurity"
+                            type="password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                            className="bg-gray-700 border-gray-600 text-white"
+                            placeholder="Confirm your new password"
+                          />
+                        </div>
+
+                        {/* Real-time validation for password change */}
+                        {formData.newPassword && (
+                          <div className="space-y-1">
+                            {formData.newPassword.length < 6 && (
+                              <p className="text-yellow-400 text-sm flex items-center gap-2">
+                                ⚠️ New password must be at least 6 characters
+                              </p>
+                            )}
+                            {formData.confirmPassword && formData.newPassword !== formData.confirmPassword && (
+                              <p className="text-red-400 text-sm flex items-center gap-2">
+                                ✗ New passwords don't match
+                              </p>
+                            )}
+                            {formData.confirmPassword && formData.newPassword === formData.confirmPassword && formData.newPassword.length >= 6 && (
+                              <p className="text-green-400 text-sm flex items-center gap-2">
+                                ✓ New passwords match and meet requirements
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <Button
@@ -1019,14 +1224,64 @@ export default function ProfilePage() {
                 ) : (
                   /* Info for users without passwords - direct them to Verification tab */
                   <div className="space-y-4">
-                    <div className="p-4 bg-yellow-900/20 border border-yellow-600/50 rounded-lg">
-                      <h3 className="text-yellow-400 font-medium mb-2">⚠️ No Password Set</h3>
-                      <p className="text-yellow-300 text-sm mb-3">
-                        You logged in using {user?.walletAddress ? 'MetaMask' : 'Google'} and haven't set a password yet.
+                    {/* Current Status */}
+                    <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
+                      <h3 className="text-blue-400 font-medium mb-3">🔐 No Password Set</h3>
+
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                          <div>
+                            <p className="text-blue-300 text-sm font-medium">Current Login Method:</p>
+                            <p className="text-blue-200 text-sm">
+                              {user?.walletAddress ? `MetaMask Wallet (${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)})` : 'Google Account'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
+                          <div>
+                            <p className="text-yellow-300 text-sm font-medium">Password Status:</p>
+                            <p className="text-yellow-200 text-sm">
+                              <strong>You don't have a current password</strong> because you've never set one.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* What this means */}
+                    <div className="p-4 bg-gray-700/50 border border-gray-600 rounded-lg">
+                      <h4 className="text-gray-300 font-medium mb-3">What This Means:</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                          ✗ Cannot log in with username & password
+                        </div>
+                        <div className="flex items-center gap-2 text-green-400 text-sm">
+                          ✓ Can log in with {user?.walletAddress ? 'MetaMask' : 'Google'}
+                        </div>
+                        <div className="flex items-center gap-2 text-blue-400 text-sm">
+                          ℹ️ No "current password" to remember or enter
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action needed */}
+                    <div className="p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-600/50 rounded-lg">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Shield className="w-5 h-5 text-purple-400" />
+                        <h4 className="text-purple-300 font-medium">Want to Add Password Login?</h4>
+                      </div>
+                      <p className="text-purple-200 text-sm mb-3">
+                        Set your first login password to access your account with username & password.
                       </p>
-                      <p className="text-yellow-300 text-sm">
-                        To set a login password, please go to the <strong>Verification</strong> tab above.
-                      </p>
+                      <div className="flex items-center gap-2 p-3 bg-purple-900/40 border border-purple-500/50 rounded-lg">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                        <p className="text-purple-300 text-sm">
+                          Go to the <strong>Verification</strong> tab above to set your first password.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
