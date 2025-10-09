@@ -1095,13 +1095,17 @@ app.get('/api/auth', async (req, res) => {
             firstName: user.firstName || '',
             lastName: user.lastName || '',
             verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
-            hasUploadedDocuments: user.has_uploaded_documents || false
+            hasUploadedDocuments: user.has_uploaded_documents || false,
+            walletAddress: user.wallet_address || null,
+            hasPassword: !!(user.password_hash && user.password_hash.length > 0)
           };
 
           console.log('📤 Sending user data to frontend:', {
             username: responseData.username,
             verificationStatus: responseData.verificationStatus,
-            hasUploadedDocuments: responseData.hasUploadedDocuments
+            hasUploadedDocuments: responseData.hasUploadedDocuments,
+            walletAddress: responseData.walletAddress,
+            hasPassword: responseData.hasPassword
           });
 
           return res.json(responseData);
