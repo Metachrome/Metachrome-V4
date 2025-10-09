@@ -315,7 +315,7 @@ export default function WalletPage() {
 
   // Withdraw mutation
   const withdrawMutation = useMutation({
-    mutationFn: async (data: { amount: string; currency: string; address: string }) => {
+    mutationFn: async (data: { amount: string; currency: string; address: string; password: string }) => {
       // Get auth token from localStorage
       const authToken = localStorage.getItem('authToken');
       if (!authToken) {
@@ -331,22 +331,24 @@ export default function WalletPage() {
         body: JSON.stringify({
           amount: data.amount,
           currency: data.currency,
-          address: data.address
+          address: data.address,
+          password: data.password
         }),
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Withdrawal failed');
+        throw new Error(errorData.error || errorData.message || 'Withdrawal failed');
       }
       return response.json();
     },
     onSuccess: (data) => {
       toast({
         title: 'Withdrawal Initiated',
-        description: `Withdrawal of ${data.amount} ${data.currency} has been initiated`,
+        description: `Withdrawal of ${data.amount} ${data.currency} has been initiated and is pending approval`,
       });
       setWithdrawAddress('');
       setWithdrawAmount('');
+      setFundPassword('');
       queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
     },
     onError: (error: any) => {
@@ -822,20 +824,20 @@ export default function WalletPage() {
                           </div>
                         </div>
 
-                        {/* Fund Password */}
+                        {/* Login Password for Security */}
                         <div>
-                          <Label className="text-gray-300 text-sm font-medium">Fund Password</Label>
+                          <Label className="text-gray-300 text-sm font-medium">Login Password</Label>
                           <Input
                             id="fundPassword"
                             name="fundPassword"
                             type="password"
-                            placeholder="Enter your fund password"
+                            placeholder="Enter your login password"
                             value={fundPassword}
                             onChange={(e) => setFundPassword(e.target.value)}
                             className="mt-2 bg-gray-700 border-gray-600 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                           />
                           <div className="text-xs text-gray-400 mt-1">
-                            Fund password is required for security verification
+                            Your login password is required for security verification
                           </div>
                         </div>
 
@@ -853,7 +855,8 @@ export default function WalletPage() {
                             withdrawMutation.mutate({
                               address: withdrawAddress,
                               amount: withdrawAmount,
-                              currency: selectedCrypto
+                              currency: selectedCrypto,
+                              password: fundPassword
                             });
                           }}
                           disabled={!withdrawAddress || !withdrawAmount || !fundPassword || withdrawMutation.isPending}

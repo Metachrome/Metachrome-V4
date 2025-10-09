@@ -4190,11 +4190,11 @@ app.post('/api/withdrawals', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const { amount, currency, address } = req.body;
+    const { amount, currency, address, password } = req.body;
 
     // Validate input
-    if (!amount || !currency || !address) {
-      return res.status(400).json({ error: 'Amount, currency, and address are required' });
+    if (!amount || !currency || !address || !password) {
+      return res.status(400).json({ error: 'Amount, currency, address, and password are required' });
     }
 
     const withdrawalAmount = parseFloat(amount);
@@ -4208,6 +4208,13 @@ app.post('/api/withdrawals', async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify user's login password
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(password, user.password || '');
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Check balance
