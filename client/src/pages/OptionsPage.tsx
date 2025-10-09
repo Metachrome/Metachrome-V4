@@ -29,6 +29,9 @@ interface ActiveTrade {
   currentPrice?: number;
   payout?: number;
   profit?: number;
+  expiryTime?: number;
+  exitPrice?: number;
+  symbol?: string;
 }
 
 // Inner component that uses price context
@@ -162,29 +165,35 @@ function OptionsPageContent() {
           console.log('📈 Loaded trade history from server:', serverTrades.length);
           console.log('📈 Raw server trades:', serverTrades);
 
-          // Convert server trades to ActiveTrade format - FIXED FILTERING
+          // Convert server trades to ActiveTrade format - IMPROVED FILTERING
+          console.log('📈 Raw server trades before filtering:', serverTrades);
           const formattedTrades = serverTrades
-            .filter(trade => {
-              // Only filter out truly incomplete trades (pending status or no result)
-              const hasValidResult = trade.result && (trade.result === 'win' || trade.result === 'lose');
-              const isCompleted = trade.status === 'completed';
-              return hasValidResult && isCompleted;
+            .filter((trade: any) => {
+              // More lenient filtering - include any trade with a result
+              const hasResult = trade.result && (trade.result === 'win' || trade.result === 'lose' || trade.result === 'won' || trade.result === 'lost');
+              const notPending = trade.status !== 'pending' && trade.result !== 'pending';
+              console.log(`📈 Trade ${trade.id}: result=${trade.result}, status=${trade.status}, hasResult=${hasResult}, notPending=${notPending}`);
+              return hasResult && notPending;
             })
-            .map(trade => ({
-              id: trade.id,
-              symbol: trade.symbol || 'BTCUSDT',
-              amount: parseFloat(trade.amount),
-              direction: trade.direction,
-              duration: trade.duration || 30,
-              entryPrice: parseFloat(trade.entry_price || '0'),
-              currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
-              payout: trade.result === 'win' ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
-              status: trade.result === 'win' ? 'won' : 'lost',
-              endTime: trade.updated_at || trade.created_at,
-              startTime: trade.created_at,
-              profit: parseFloat(trade.profit_loss || '0'),
-              profitPercentage: trade.duration === 30 ? 10 : 15
-            }));
+            .map((trade: any) => {
+              const formattedTrade = {
+                id: trade.id,
+                symbol: trade.symbol || 'BTCUSDT',
+                amount: parseFloat(trade.amount),
+                direction: trade.direction,
+                duration: trade.duration || 30,
+                entryPrice: parseFloat(trade.entry_price || '0'),
+                currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
+                payout: (trade.result === 'win' || trade.result === 'won') ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
+                status: (trade.result === 'win' || trade.result === 'won') ? 'won' : 'lost',
+                endTime: trade.updated_at || trade.created_at,
+                startTime: trade.created_at,
+                profit: parseFloat(trade.profit_loss || '0'),
+                profitPercentage: trade.duration === 30 ? 10 : 15
+              };
+              console.log(`📈 Formatted trade ${trade.id}:`, formattedTrade);
+              return formattedTrade;
+            });
 
           console.log('📈 Formatted trades count:', formattedTrades.length);
           setTradeHistory(formattedTrades);
@@ -454,7 +463,7 @@ function OptionsPageContent() {
       sendMessage({
         type: 'subscribe_user_balance',
         userId: user.id
-      });
+      } as any);
       console.log('🔌 Subscribed to balance updates for user:', user.id);
     }
   }, [connected, subscribe, sendMessage, user?.id]);
@@ -561,7 +570,7 @@ function OptionsPageContent() {
 
           // Find recently completed trades that were active
           activeTrades.forEach(activeTrade => {
-            const serverTrade = serverTrades.find(st => st.id === activeTrade.id);
+            const serverTrade = serverTrades.find((st: any) => st.id === activeTrade.id);
 
             if (serverTrade && serverTrade.status === 'completed' && serverTrade.result !== 'pending') {
               console.log('🔄 POLLING: Found completed trade:', serverTrade);
@@ -704,8 +713,10 @@ function OptionsPageContent() {
         completedAt: new Date().toISOString()
       };
 
+      console.log('🎯 COMPLETE TRADE: Trade with timestamp:', tradeWithTimestamp);
       setCompletedTrade(tradeWithTimestamp);
       localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
+      console.log('🎯 COMPLETE TRADE: Notification state set and saved to localStorage');
 
       // Use multiple mobile detection methods
       const isMobileWidth = window.innerWidth < 768;
@@ -1080,7 +1091,7 @@ function OptionsPageContent() {
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {activeTrades.length > 0 ? (
                 activeTrades.map((trade) => {
-                  const timeLeft = Math.max(0, Math.ceil((trade.expiryTime - Date.now()) / 1000));
+                  const timeLeft = Math.max(0, Math.ceil(((trade.expiryTime || trade.endTime) - Date.now()) / 1000));
                   const progress = timeLeft > 0 ? (timeLeft / trade.duration) * 100 : 0;
 
                   return (
@@ -1127,12 +1138,12 @@ function OptionsPageContent() {
                       ) : (
                         <div className="text-center">
                           <span className={`text-sm font-bold ${
-                            (trade.direction === 'up' && trade.exitPrice > trade.entryPrice) ||
-                            (trade.direction === 'down' && trade.exitPrice < trade.entryPrice)
+                            (trade.direction === 'up' && (trade.exitPrice || trade.currentPrice || 0) > trade.entryPrice) ||
+                            (trade.direction === 'down' && (trade.exitPrice || trade.currentPrice || 0) < trade.entryPrice)
                               ? 'text-green-400' : 'text-red-400'
                           }`}>
-                            {(trade.direction === 'up' && trade.exitPrice > trade.entryPrice) ||
-                             (trade.direction === 'down' && trade.exitPrice < trade.entryPrice)
+                            {(trade.direction === 'up' && (trade.exitPrice || trade.currentPrice || 0) > trade.entryPrice) ||
+                             (trade.direction === 'down' && (trade.exitPrice || trade.currentPrice || 0) < trade.entryPrice)
                               ? 'WON' : 'LOST'}
                           </span>
                         </div>
@@ -2067,8 +2078,8 @@ function OptionsPageContent() {
                           const serverTrades = await response.json();
                           console.log('🔄 Refreshed trade history:', serverTrades.length);
                           const formattedTrades = serverTrades
-                            .filter(trade => trade.result && trade.result !== 'pending' && trade.status === 'completed')
-                            .map(trade => ({
+                            .filter((trade: any) => trade.result && trade.result !== 'pending' && trade.status === 'completed')
+                            .map((trade: any) => ({
                               id: trade.id,
                               symbol: trade.symbol || 'BTCUSDT',
                               amount: parseFloat(trade.amount),
