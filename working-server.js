@@ -1191,7 +1191,9 @@ app.post('/api/auth', async (req, res) => {
               role: existingUser.role,
               balance: existingUser.balance,
               firstName: existingUser.firstName || '',
-              lastName: existingUser.lastName || ''
+              lastName: existingUser.lastName || '',
+              verificationStatus: normalizeVerificationStatus(existingUser.verification_status || 'unverified'),
+              hasUploadedDocuments: existingUser.has_uploaded_documents || false
             }
           });
         } else {
@@ -1240,7 +1242,9 @@ app.post('/api/auth', async (req, res) => {
               role: newUser.role,
               balance: newUser.balance,
               firstName: newUser.firstName || '',
-              lastName: newUser.lastName || ''
+              lastName: newUser.lastName || '',
+              verificationStatus: normalizeVerificationStatus(newUser.verification_status || 'unverified'),
+              hasUploadedDocuments: newUser.has_uploaded_documents || false
             }
           });
         }
@@ -1380,7 +1384,9 @@ app.post('/api/auth', async (req, res) => {
             username: user.username,
             email: user.email,
             balance: user.balance,
-            role: user.role
+            role: user.role,
+            verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
+            hasUploadedDocuments: user.has_uploaded_documents || false
           }
         });
       } else {
@@ -1799,7 +1805,9 @@ app.post('/api/auth/login', async (req, res) => {
           username: user.username,
           email: user.email,
           role: user.role,
-          balance: user.balance
+          balance: user.balance,
+          verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
+          hasUploadedDocuments: user.has_uploaded_documents || false
         }
       });
     } else {
@@ -1847,7 +1855,9 @@ app.post('/api/auth/user/login', async (req, res) => {
           id: user.id,
           username: user.username,
           email: user.email,
-          balance: user.balance
+          balance: user.balance,
+          verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
+          hasUploadedDocuments: user.has_uploaded_documents || false
         }
       });
     } else {
@@ -1976,7 +1986,9 @@ app.get('/api/auth/google/callback', async (req, res) => {
       role: user.role,
       balance: user.balance,
       firstName: user.firstName || '',
-      lastName: user.lastName || ''
+      lastName: user.lastName || '',
+      verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
+      hasUploadedDocuments: user.has_uploaded_documents || false
     }))}`);
 
   } catch (error) {
