@@ -559,6 +559,15 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Debug Password Status - Remove in production */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="p-3 bg-gray-900/50 border border-gray-600 rounded text-xs text-gray-400">
+                    <strong>Debug Info:</strong> hasPassword: {String(user?.hasPassword)},
+                    walletAddress: {user?.walletAddress ? 'Yes' : 'No'},
+                    isGmail: {user?.email?.includes('@gmail.com') ? 'Yes' : 'No'}
+                  </div>
+                )}
+
                 {/* Password Status Information */}
                 <Card className="bg-gray-800 border-gray-700">
                   <CardHeader>
@@ -605,44 +614,27 @@ export default function ProfilePage() {
 
                       {/* Password Status */}
                       <div className={`p-4 border rounded-lg ${
-                        (() => {
-                          const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                          return hasPassword
-                            ? 'bg-green-900/20 border-green-600/50'
-                            : 'bg-yellow-900/20 border-yellow-600/50';
-                        })()
+                        user?.hasPassword
+                          ? 'bg-green-900/20 border-green-600/50'
+                          : 'bg-yellow-900/20 border-yellow-600/50'
                       }`}>
                         <div className="flex items-center gap-2 mb-2">
                           <div className={`w-2 h-2 rounded-full ${
-                            (() => {
-                              const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                              return hasPassword ? 'bg-green-400' : 'bg-yellow-400';
-                            })()
+                            user?.hasPassword ? 'bg-green-400' : 'bg-yellow-400'
                           }`}></div>
                           <h3 className={`font-medium ${
-                            (() => {
-                              const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                              return hasPassword ? 'text-green-400' : 'text-yellow-400';
-                            })()
+                            user?.hasPassword ? 'text-green-400' : 'text-yellow-400'
                           }`}>
-                            {(() => {
-                              const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                              return hasPassword ? 'Password Set' : 'No Password';
-                            })()}
+                            {user?.hasPassword ? 'Password Set' : 'No Password'}
                           </h3>
                         </div>
                         <p className={`text-sm ${
-                          (() => {
-                            const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                            return hasPassword ? 'text-green-300' : 'text-yellow-300';
-                          })()
+                          user?.hasPassword ? 'text-green-300' : 'text-yellow-300'
                         }`}>
-                          {(() => {
-                            const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                            return hasPassword
-                              ? 'You can log in with username/password'
-                              : 'Username/password login not available';
-                          })()}
+                          {user?.hasPassword
+                            ? 'You can log in with username/password'
+                            : 'Username/password login not available'
+                          }
                         </p>
                       </div>
                     </div>
@@ -650,10 +642,7 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* Set Login Password for MetaMask/Google Users */}
-                {(() => {
-                  const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                  return !hasPassword && (user?.walletAddress || user?.email?.includes('@gmail.com'));
-                })() && (
+                {!user?.hasPassword && (user?.walletAddress || user?.email?.includes('@gmail.com')) && (
                   <Card className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-600/50">
                     <CardHeader>
                       <div className="flex items-center gap-3">
@@ -1088,10 +1077,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Check if user has a password set */}
-                {(() => {
-                  const hasPassword = user?.username === 'angela.soenoko' ? true : user?.hasPassword;
-                  return hasPassword;
-                })() ? (
+                {user?.hasPassword ? (
                   /* Traditional password change for users with existing passwords */
                   <div className="space-y-4">
                     <div className="p-4 bg-green-900/20 border border-green-600/50 rounded-lg">
