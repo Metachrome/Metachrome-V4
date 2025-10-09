@@ -183,7 +183,7 @@ function OptionsPageContent() {
                 direction: trade.direction,
                 duration: trade.duration || 30,
                 entryPrice: parseFloat(trade.entry_price || '0'),
-                currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
+                currentPrice: priceData?.price || parseFloat(trade.entry_price || '0'), // Use live current price, not exit price
                 payout: (trade.result === 'win' || trade.result === 'won') ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
                 status: (trade.result === 'win' || trade.result === 'won') ? 'won' : 'lost',
                 endTime: trade.updated_at || trade.created_at,
@@ -531,8 +531,13 @@ function OptionsPageContent() {
         };
 
         console.log('🎯 WEBSOCKET: Setting completed trade notification:', completedTrade);
-        setCompletedTrade(completedTrade);
-        localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+
+        // Clear any existing notification first to ensure new one shows
+        setCompletedTrade(null);
+        setTimeout(() => {
+          setCompletedTrade(completedTrade);
+          localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+        }, 100);
 
         // Remove from active trades
         setActiveTrades(prev => prev.filter(trade => trade.id !== tradeId));
@@ -587,8 +592,13 @@ function OptionsPageContent() {
               };
 
               console.log('🔄 POLLING: Setting completed trade notification:', completedTrade);
-              setCompletedTrade(completedTrade);
-              localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+
+              // Clear any existing notification first to ensure new one shows
+              setCompletedTrade(null);
+              setTimeout(() => {
+                setCompletedTrade(completedTrade);
+                localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+              }, 100);
 
               // Remove from active trades
               setActiveTrades(prev => prev.filter(trade => trade.id !== activeTrade.id));
@@ -714,9 +724,14 @@ function OptionsPageContent() {
       };
 
       console.log('🎯 COMPLETE TRADE: Trade with timestamp:', tradeWithTimestamp);
-      setCompletedTrade(tradeWithTimestamp);
-      localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
-      console.log('🎯 COMPLETE TRADE: Notification state set and saved to localStorage');
+
+      // Clear any existing notification first to ensure new one shows
+      setCompletedTrade(null);
+      setTimeout(() => {
+        setCompletedTrade(tradeWithTimestamp);
+        localStorage.setItem('completedTrade', JSON.stringify(tradeWithTimestamp));
+        console.log('🎯 COMPLETE TRADE: Notification state set and saved to localStorage');
+      }, 100);
 
       // Use multiple mobile detection methods
       const isMobileWidth = window.innerWidth < 768;
@@ -727,12 +742,12 @@ function OptionsPageContent() {
 
       // Don't trigger the old mobile modal anymore - let TradeNotification handle it
 
-      // Auto-hide notification after 45 seconds (sticky notification)
+      // Auto-hide notification after 60 seconds (longer sticky notification)
       setTimeout(() => {
-        console.log('🎯 COMPLETE TRADE: Auto-hiding notification after 45s');
+        console.log('🎯 COMPLETE TRADE: Auto-hiding notification after 60s');
         setCompletedTrade(null);
         localStorage.removeItem('completedTrade');
-      }, 45000);
+      }, 60000);
     } catch (historyError) {
       console.error('Trade history update error:', historyError);
     }
@@ -774,8 +789,13 @@ function OptionsPageContent() {
             // Complete the trade asynchronously and ensure notification shows
             completeTrade(trade, won, finalPrice).then((completedTrade) => {
               console.log('🎯 TRADE COMPLETED: Setting notification for trade:', completedTrade.id);
-              setCompletedTrade(completedTrade);
-              localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+
+              // Clear any existing notification first to ensure new one shows
+              setCompletedTrade(null);
+              setTimeout(() => {
+                setCompletedTrade(completedTrade);
+                localStorage.setItem('completedTrade', JSON.stringify(completedTrade));
+              }, 100);
             }).catch((error) => {
               console.error('❌ Trade completion failed:', error);
             });
@@ -2086,7 +2106,7 @@ function OptionsPageContent() {
                               direction: trade.direction,
                               duration: trade.duration || 30,
                               entryPrice: parseFloat(trade.entry_price || '0'),
-                              currentPrice: parseFloat(trade.exit_price || trade.entry_price || '0'),
+                              currentPrice: priceData?.price || parseFloat(trade.entry_price || '0'), // Use live current price, not exit price
                               payout: trade.result === 'win' ? parseFloat(trade.amount) + parseFloat(trade.profit_loss || '0') : 0,
                               status: trade.result === 'win' ? 'won' : 'lost',
                               endTime: trade.updated_at || trade.created_at,
