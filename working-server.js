@@ -3293,40 +3293,28 @@ app.get('/api/admin/pending-requests', async (req, res) => {
       }
     }
 
-    // ALWAYS include local pending data (for development/testing)
-    console.log('📊 Local pending data check:');
-    console.log('- Local withdrawals:', pendingWithdrawals.length);
-    console.log('- Local deposits:', pendingDeposits.length);
+    // PRODUCTION FIX: Only use database data, ignore local storage to prevent phantom requests
+    console.log('📊 Using ONLY database data (no local storage merge):');
+    console.log('- Database withdrawals:', realWithdrawals.length);
+    console.log('- Database deposits:', realDeposits.length);
 
-    // DEBUG: Log deposit details
-    if (pendingDeposits.length > 0) {
-      console.log('📊 Local deposit details:');
-      pendingDeposits.forEach((deposit, index) => {
-        console.log(`  ${index + 1}. ID: ${deposit.id}, User: ${deposit.username}, Amount: ${deposit.amount} ${deposit.currency}, Status: ${deposit.status}`);
+    // DEBUG: Log any local data that would have been merged (for debugging)
+    if (pendingWithdrawals.length > 0) {
+      console.log('⚠️ Local withdrawals found but IGNORED:', pendingWithdrawals.length);
+      pendingWithdrawals.forEach((w, i) => {
+        console.log(`  ${i+1}. ${w.id}: ${w.amount} ${w.currency} - ${w.status} (IGNORED)`);
       });
     }
 
-    // Combine real database data with local pending data
-    const localWithdrawals = pendingWithdrawals.filter(w => w.status === 'pending');
-    const localDeposits = pendingDeposits.filter(d => d.status === 'pending' || d.status === 'verifying');
+    if (pendingDeposits.length > 0) {
+      console.log('⚠️ Local deposits found but IGNORED:', pendingDeposits.length);
+      pendingDeposits.forEach((d, i) => {
+        console.log(`  ${i+1}. ${d.id}: ${d.amount} ${d.currency} - ${d.status} (IGNORED)`);
+      });
+    }
 
-    // Merge arrays, avoiding duplicates by ID
-    const allWithdrawals = [...realWithdrawals];
-    localWithdrawals.forEach(local => {
-      if (!allWithdrawals.find(real => real.id === local.id)) {
-        allWithdrawals.push(local);
-      }
-    });
-
-    const allDeposits = [...realDeposits];
-    localDeposits.forEach(local => {
-      if (!allDeposits.find(real => real.id === local.id)) {
-        allDeposits.push(local);
-      }
-    });
-
-    realWithdrawals = allWithdrawals;
-    realDeposits = allDeposits;
+    // Use ONLY database data - no local storage merge
+    // This prevents phantom/old requests from appearing in admin dashboard
 
     console.log('📊 Final counts:');
     console.log('- Total withdrawals:', realWithdrawals.length);
