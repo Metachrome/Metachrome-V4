@@ -1383,6 +1383,44 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
+// HOTFIX: Emergency user data endpoint
+app.get('/api/auth/user-hotfix', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const currentUser = await getUserFromToken(authToken);
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    console.log('🚨 HOTFIX User data request for:', currentUser.username, {
+      hasPasswordHash: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
+      verificationStatus: currentUser.verification_status
+    });
+
+    res.json({
+      id: currentUser.id,
+      username: currentUser.username,
+      email: currentUser.email,
+      balance: parseFloat(currentUser.balance) || 0,
+      firstName: currentUser.firstName || '',
+      lastName: currentUser.lastName || '',
+      verificationStatus: currentUser.verification_status || 'unverified',
+      hasUploadedDocuments: currentUser.has_uploaded_documents || false,
+      walletAddress: currentUser.wallet_address || null,
+      hasPassword: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
+      hotfix: true
+    });
+  } catch (error) {
+    console.error('❌ HOTFIX Error getting current user:', error);
+    res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
 // Get current authenticated user (for frontend compatibility)
 app.get('/api/auth/user', async (req, res) => {
   try {
@@ -8402,6 +8440,73 @@ app.get('/api/user/referral-stats', async (req, res) => {
   } catch (error) {
     console.error('❌ Error getting referral stats:', error);
     res.status(500).json({ error: 'Failed to get referral stats' });
+  }
+});
+
+// HOTFIX: Emergency password change endpoint
+app.put('/api/user/password-hotfix', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    const { currentPassword, newPassword, isFirstTimePassword } = req.body;
+
+    console.log('🚨 HOTFIX Password change request:', {
+      userId: authToken ? 'present' : 'missing',
+      hasCurrentPassword: !!currentPassword,
+      hasNewPassword: !!newPassword,
+      isFirstTimePassword: !!isFirstTimePassword
+    });
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    // Validate new password
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    // For users changing existing password
+    if (!isFirstTimePassword && currentPassword) {
+      // Verify current password if provided
+      if (user.password_hash && !(await bcrypt.compare(currentPassword, user.password_hash))) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password in database
+    if (isProduction && supabase) {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          password_hash: hashedPassword,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('❌ HOTFIX Supabase password update error:', error);
+        throw error;
+      }
+      console.log('✅ HOTFIX Password updated in Supabase for user:', user.id);
+    }
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully',
+      hotfix: true
+    });
+
+  } catch (error) {
+    console.error('❌ HOTFIX Password change error:', error);
+    res.status(500).json({ error: 'Failed to update password' });
   }
 });
 
