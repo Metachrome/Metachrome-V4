@@ -8411,6 +8411,14 @@ app.put('/api/user/password', async (req, res) => {
     const authToken = req.headers.authorization?.replace('Bearer ', '');
     const { currentPassword, newPassword, isFirstTimePassword } = req.body;
 
+    console.log('🔐 Password change request:', {
+      userId: authToken ? 'present' : 'missing',
+      hasCurrentPassword: !!currentPassword,
+      hasNewPassword: !!newPassword,
+      isFirstTimePassword: !!isFirstTimePassword,
+      requestBody: req.body
+    });
+
     if (!authToken) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -8419,6 +8427,12 @@ app.put('/api/user/password', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid authentication' });
     }
+
+    console.log('🔍 User password status:', {
+      username: user.username,
+      hasPasswordHash: !!(user.password_hash && user.password_hash.length > 0),
+      passwordHashLength: user.password_hash?.length || 0
+    });
 
     // Validate new password
     if (!newPassword || newPassword.length < 6) {
