@@ -1443,6 +1443,15 @@ app.get('/api/auth/user', async (req, res) => {
       source: isProduction ? 'Supabase' : 'File'
     });
 
+    // Debug logging for password and verification status
+    console.log('🔍 Debug user data:', {
+      username: currentUser.username,
+      hasPasswordHash: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
+      passwordHashLength: currentUser.password_hash?.length || 0,
+      verificationStatus: currentUser.verification_status,
+      walletAddress: currentUser.wallet_address
+    });
+
     res.json({
       id: currentUser.id,
       username: currentUser.username,

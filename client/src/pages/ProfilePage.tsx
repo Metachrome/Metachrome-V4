@@ -205,7 +205,7 @@ export default function ProfilePage() {
         description: "Your account verification status has been updated.",
       });
 
-      setTestResults(`✅ Verification refresh successful! Status: ${user?.verification_status || 'Unknown'}`);
+      setTestResults(`✅ Verification refresh successful! Status: ${user?.verificationStatus || 'Unknown'}`);
     } catch (error) {
       console.error('Failed to refresh verification status:', error);
       toast({
@@ -240,7 +240,7 @@ export default function ProfilePage() {
 ✅ Mobile verification fix test completed!
 📱 Screen width: ${window.innerWidth}px (Mobile: ${window.innerWidth < 768 ? 'Yes' : 'No'})
 👤 Current user: ${user?.username || 'Unknown'}
-🔐 Verification status: ${user?.verification_status || 'Unknown'}
+🔐 Verification status: ${user?.verificationStatus || 'Unknown'}
 💾 LocalStorage cleared and refetched: ${currentUserData ? 'Yes' : 'No'} → ${updatedUserData ? 'Yes' : 'No'}
 🔄 Refresh completed successfully!
       `);
@@ -548,7 +548,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Mobile Verification Refresh Notice */}
-                {isMobile && user?.verification_status !== 'verified' && (
+                {isMobile && user?.verificationStatus !== 'verified' && (
                   <div className="p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
@@ -592,35 +592,35 @@ export default function ProfilePage() {
                       </Button>
                     </div>
                     <p className="text-gray-400 text-sm">
-                      {user?.verification_status === 'verified' ? 'Your account is verified' :
-                       user?.verification_status === 'pending' ? 'Verification pending review' :
-                       user?.verification_status === 'rejected' ? 'Verification rejected' :
+                      {user?.verificationStatus === 'verified' ? 'Your account is verified' :
+                       user?.verificationStatus === 'pending' ? 'Verification pending review' :
+                       user?.verificationStatus === 'rejected' ? 'Verification rejected' :
                        'Account not verified'}
                     </p>
                   </div>
                   <Badge
                     variant={
-                      user?.verification_status === 'verified' ? 'default' :
-                      user?.verification_status === 'pending' ? 'secondary' :
-                      user?.verification_status === 'rejected' ? 'destructive' :
+                      user?.verificationStatus === 'verified' ? 'default' :
+                      user?.verificationStatus === 'pending' ? 'secondary' :
+                      user?.verificationStatus === 'rejected' ? 'destructive' :
                       'outline'
                     }
                     className={
-                      user?.verification_status === 'verified' ? 'bg-green-600' :
-                      user?.verification_status === 'pending' ? 'bg-yellow-600' :
-                      user?.verification_status === 'rejected' ? 'bg-red-600' :
+                      user?.verificationStatus === 'verified' ? 'bg-green-600' :
+                      user?.verificationStatus === 'pending' ? 'bg-yellow-600' :
+                      user?.verificationStatus === 'rejected' ? 'bg-red-600' :
                       'bg-gray-600'
                     }
                   >
-                    {user?.verification_status === 'verified' ? '✓ Verified' :
-                     user?.verification_status === 'pending' ? '⏳ Pending' :
-                     user?.verification_status === 'rejected' ? '✗ Rejected' :
+                    {user?.verificationStatus === 'verified' ? '✓ Verified' :
+                     user?.verificationStatus === 'pending' ? '⏳ Pending' :
+                     user?.verificationStatus === 'rejected' ? '✗ Rejected' :
                      '⚠ Unverified'}
                   </Badge>
                 </div>
 
                 {/* Upload Section */}
-                {user?.verification_status !== 'verified' && (
+                {user?.verificationStatus !== 'verified' && (
                   <div className="space-y-4 p-4 bg-gray-700 rounded-lg">
                     <h3 className="text-white font-medium">Upload Verification Document</h3>
                     <p className="text-gray-400 text-sm">
@@ -686,7 +686,7 @@ export default function ProfilePage() {
                 )}
 
                 {/* Trading Restrictions */}
-                {user?.verification_status !== 'verified' && (
+                {user?.verificationStatus !== 'verified' && (
                   <div className="p-4 bg-yellow-900/20 border border-yellow-600 rounded-lg">
                     <h3 className="text-yellow-400 font-medium mb-2">⚠ Account Restrictions</h3>
                     <ul className="text-yellow-300 text-sm space-y-1">
@@ -825,6 +825,14 @@ export default function ProfilePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Debug logging for password status */}
+                {console.log('🔍 ProfilePage Security Tab Debug:', {
+                  hasPassword: user?.hasPassword,
+                  shouldShowSetPassword: !user?.hasPassword,
+                  walletAddress: user?.walletAddress,
+                  verificationStatus: user?.verificationStatus
+                })}
+
                 {/* Check if user has no password set (MetaMask/Google users without password) */}
                 {!user?.hasPassword ? (
                   <div className="space-y-4">
