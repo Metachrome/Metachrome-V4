@@ -3411,7 +3411,20 @@ app.get('/api/admin/pending-requests', async (req, res) => {
     return depositWithBalance;
   });
 
-  const withdrawalsWithBalance = realWithdrawals.map(withdrawal => {
+  // FILTER OUT PROCESSED WITHDRAWALS - Only show truly pending ones
+  const pendingOnlyWithdrawals = realWithdrawals.filter(w =>
+    w.status === 'pending' || w.status === 'verifying'
+  );
+
+  console.log('🔍 Filtering withdrawals:');
+  console.log('- Total withdrawals:', realWithdrawals.length);
+  console.log('- Pending only:', pendingOnlyWithdrawals.length);
+
+  realWithdrawals.forEach(w => {
+    console.log(`  ${w.id}: ${w.amount} ${w.currency} - Status: ${w.status}`);
+  });
+
+  const withdrawalsWithBalance = pendingOnlyWithdrawals.map(withdrawal => {
     let user = users.find(u => u.username === withdrawal.username || u.id === withdrawal.user_id);
     return {
       ...withdrawal,
@@ -3912,14 +3925,23 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
         }
       }
 
-      // Remove from pending withdrawals
-      pendingWithdrawals.splice(withdrawalIndex, 1);
-      pendingData.withdrawals = pendingWithdrawals;
-      savePendingData();
+      // DON'T REMOVE - Just update status so it shows in UI as processed
+      // Keep the withdrawal in the list but mark it as processed
+      console.log('✅ Withdrawal status updated in local storage');
+      console.log('📝 Withdrawal details:', {
+        id: withdrawal.id,
+        status: withdrawal.status,
+        amount: withdrawal.amount,
+        currency: withdrawal.currency,
+        username: withdrawal.username
+      });
 
-      console.log('✅ Withdrawal updated in local storage');
       withdrawalUpdated = true;
       updatedWithdrawal = withdrawal;
+
+      // Save the updated pending data
+      pendingData.withdrawals = pendingWithdrawals;
+      savePendingData();
     }
 
     if (withdrawalUpdated) {
@@ -6360,6 +6382,55 @@ app.post('/api/trades/complete', async (req, res) => {
       message: "Trade completion failed",
       error: error.message
     });
+  }
+});
+
+// ===== CLEAR PROCESSED WITHDRAWALS =====
+app.post('/api/admin/clear-processed', async (req, res) => {
+  try {
+    console.log('🧹 CLEARING PROCESSED WITHDRAWALS');
+
+    if (supabase) {
+      // Get all processed withdrawals
+      const { data: processedWithdrawals, error } = await supabase
+        .from('withdrawals')
+        .select('*')
+        .in('status', ['approved', 'rejected']);
+
+      if (!error && processedWithdrawals) {
+        console.log(`🗑️ Found ${processedWithdrawals.length} processed withdrawals to clear`);
+
+        // Delete processed withdrawals
+        const { error: deleteError } = await supabase
+          .from('withdrawals')
+          .delete()
+          .in('status', ['approved', 'rejected']);
+
+        if (!deleteError) {
+          console.log('✅ Processed withdrawals cleared from database');
+        }
+      }
+    }
+
+    // Also clear from local storage
+    pendingWithdrawals = pendingWithdrawals.filter(w =>
+      w.status === 'pending' || w.status === 'verifying'
+    );
+
+    pendingData.withdrawals = pendingWithdrawals;
+    savePendingData();
+
+    console.log('✅ Processed withdrawals cleared from local storage');
+
+    res.json({
+      success: true,
+      message: 'Processed withdrawals cleared',
+      remaining: pendingWithdrawals.length
+    });
+
+  } catch (error) {
+    console.error('❌ Clear processed failed:', error);
+    res.status(500).json({ error: 'Failed to clear processed withdrawals' });
   }
 });
 
