@@ -4481,6 +4481,42 @@ app.post('/api/withdrawals', async (req, res) => {
 
     console.log('✅ Withdrawal request created:', withdrawalRequest.id);
 
+    // CRITICAL FIX: Deduct balance when withdrawal is requested (not when approved)
+    const newBalance = userBalance - withdrawalAmount;
+    user.balance = newBalance;
+
+    // Update balance in database and file storage
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.id === user.id);
+    if (userIndex !== -1) {
+      users[userIndex].balance = newBalance;
+      users[userIndex].updated_at = new Date().toISOString();
+
+      // Update in Supabase database
+      if (supabase) {
+        try {
+          const { error: balanceError } = await supabase
+            .from('users')
+            .update({
+              balance: newBalance,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+
+          if (balanceError) {
+            console.error('❌ Failed to update user balance in database:', balanceError);
+          } else {
+            console.log(`✅ User balance updated: ${userBalance} → ${newBalance} (deducted ${withdrawalAmount})`);
+          }
+        } catch (dbError) {
+          console.error('⚠️ Database balance update error:', dbError);
+        }
+      }
+
+      // Save to file storage as backup
+      await saveUsers(users);
+    }
+
     // CRITICAL FIX: Also save to Supabase database for admin dashboard
     if (supabase) {
       try {
@@ -4686,12 +4722,48 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
       withdrawal.rejected_at = new Date().toISOString();
       withdrawal.updated_at = new Date().toISOString();
 
+      // CRITICAL FIX: Refund balance when withdrawal is rejected
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === withdrawal.user_id);
+      if (userIndex !== -1) {
+        const currentBalance = parseFloat(users[userIndex].balance || 0);
+        const refundAmount = parseFloat(withdrawal.amount);
+        const newBalance = currentBalance + refundAmount;
+
+        users[userIndex].balance = newBalance;
+        users[userIndex].updated_at = new Date().toISOString();
+
+        // Update in Supabase database
+        if (supabase) {
+          try {
+            const { error: refundError } = await supabase
+              .from('users')
+              .update({
+                balance: newBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', withdrawal.user_id);
+
+            if (refundError) {
+              console.error('❌ Failed to refund balance in database:', refundError);
+            } else {
+              console.log(`✅ Balance refunded: ${currentBalance} → ${newBalance} (refunded ${refundAmount})`);
+            }
+          } catch (dbError) {
+            console.error('⚠️ Database refund error:', dbError);
+          }
+        }
+
+        // Save to file storage as backup
+        await saveUsers(users);
+      }
+
       // Remove from pending list and save
       pendingWithdrawals.splice(withdrawalIndex, 1);
       pendingData.withdrawals = pendingWithdrawals;
       savePendingData();
 
-      console.log(`❌ Withdrawal rejected: ${withdrawal.id}`);
+      console.log(`❌ Withdrawal rejected: ${withdrawal.id} (balance refunded)`);
     } else {
       return res.status(400).json({ error: 'Invalid action. Use "approve" or "reject"' });
     }
