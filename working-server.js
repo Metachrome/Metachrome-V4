@@ -3278,57 +3278,9 @@ app.get('/api/admin/pending-requests', async (req, res) => {
           console.log('✅ Found real pending withdrawals:', realWithdrawals.length);
         }
 
-        // EMERGENCY FALLBACK: If no withdrawals found, add the missing ones
-        if (realWithdrawals.length === 0) {
-          console.log('🚨 EMERGENCY: No withdrawals found, adding missing ones');
-
-          const emergencyWithdrawals = [
-            {
-              id: `withdrawal-emergency-${Date.now()}-1997btc`,
-              user_id: 'angela-soenoko-001',
-              username: 'angela.soenoko',
-              amount: 1997,
-              currency: 'BTC',
-              wallet_address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-              status: 'pending',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            },
-            {
-              id: `withdrawal-emergency-${Date.now()}-2000btc`,
-              user_id: 'angela-soenoko-001',
-              username: 'angela.soenoko',
-              amount: 2000,
-              currency: 'BTC',
-              wallet_address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-              status: 'pending',
-              created_at: new Date(Date.now() - 3600000).toISOString(),
-              updated_at: new Date(Date.now() - 3600000).toISOString()
-            }
-          ];
-
-          // Try to insert into database
-          for (const withdrawal of emergencyWithdrawals) {
-            try {
-              const { error: insertError } = await supabase
-                .from('withdrawals')
-                .insert([withdrawal]);
-
-              if (!insertError) {
-                realWithdrawals.push(withdrawal);
-                console.log(`✅ Emergency added: ${withdrawal.amount} ${withdrawal.currency}`);
-              } else {
-                console.log(`❌ Failed to add ${withdrawal.amount} ${withdrawal.currency}:`, insertError);
-                // Add to response anyway for immediate display
-                realWithdrawals.push(withdrawal);
-              }
-            } catch (addError) {
-              console.log('❌ Emergency add error:', addError.message);
-              // Add to response anyway for immediate display
-              realWithdrawals.push(withdrawal);
-            }
-          }
-        }
+        // NO MORE EMERGENCY FALLBACK - Let the system work naturally
+        // If no pending withdrawals, that's correct - don't add fake ones
+        console.log('✅ Database query complete - no emergency fallback needed');
 
         const { data: depositsData, error: depositsError } = await supabase
           .from('deposits')
@@ -3764,6 +3716,9 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     console.log('💸 Action:', action);
     console.log('💸 Reason:', reason);
 
+    // FORCE DATABASE-FIRST APPROACH
+    console.log('🔍 STEP 1: Checking if withdrawal exists in database...');
+
     // Try database first, then fallback to local storage
     let withdrawalUpdated = false;
     let updatedWithdrawal = null;
@@ -3786,11 +3741,27 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
           .single();
 
         if (!updateError && dbWithdrawal) {
-          console.log('✅ Withdrawal updated in database:', dbWithdrawal);
+          console.log('✅ SUCCESS: Withdrawal updated in database');
+          console.log('✅ Updated withdrawal:', {
+            id: dbWithdrawal.id,
+            status: dbWithdrawal.status,
+            amount: dbWithdrawal.amount,
+            currency: dbWithdrawal.currency
+          });
           withdrawalUpdated = true;
           updatedWithdrawal = dbWithdrawal;
+
+          // IMPORTANT: Return immediately - no need for local storage fallback
+          console.log('🎯 Database update successful - returning response');
+          return res.json({
+            success: true,
+            message: `Withdrawal ${action}d successfully`,
+            withdrawal: dbWithdrawal
+          });
         } else {
-          console.log('⚠️ Withdrawal not found in database, trying emergency fix');
+          console.log('⚠️ Withdrawal not found in database');
+          console.log('⚠️ Update error:', updateError);
+          console.log('⚠️ Trying emergency fix...');
 
           // EMERGENCY FIX: Try to create the withdrawal in database first
           if (withdrawalId.includes('1997') || withdrawalId.includes('2000') || withdrawalId.includes('emergency') || withdrawalId.includes('force')) {
