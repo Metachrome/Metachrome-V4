@@ -4480,42 +4480,7 @@ app.post('/api/withdrawals', async (req, res) => {
     savePendingData();
 
     console.log('✅ Withdrawal request created:', withdrawalRequest.id);
-
-    // CRITICAL FIX: Deduct balance when withdrawal is requested (not when approved)
-    const newBalance = userBalance - withdrawalAmount;
-    user.balance = newBalance;
-
-    // Update balance in database and file storage
-    const users = await getUsers();
-    const userIndex = users.findIndex(u => u.id === user.id);
-    if (userIndex !== -1) {
-      users[userIndex].balance = newBalance;
-      users[userIndex].updated_at = new Date().toISOString();
-
-      // Update in Supabase database
-      if (supabase) {
-        try {
-          const { error: balanceError } = await supabase
-            .from('users')
-            .update({
-              balance: newBalance,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
-
-          if (balanceError) {
-            console.error('❌ Failed to update user balance in database:', balanceError);
-          } else {
-            console.log(`✅ User balance updated: ${userBalance} → ${newBalance} (deducted ${withdrawalAmount})`);
-          }
-        } catch (dbError) {
-          console.error('⚠️ Database balance update error:', dbError);
-        }
-      }
-
-      // Save to file storage as backup
-      await saveUsers(users);
-    }
+    console.log('💰 Balance NOT deducted yet - will be deducted only when approved');
 
     // CRITICAL FIX: Also save to Supabase database for admin dashboard
     if (supabase) {
@@ -4630,50 +4595,36 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
       console.log('💸 Withdrawal amount:', withdrawalAmount);
       console.log('💸 Withdrawal original balance:', withdrawal.user_balance);
 
-      // Check if balance was already deducted (current balance should be less than original)
-      const originalBalance = parseFloat(withdrawal.user_balance || currentBalance);
-      const expectedBalanceAfterDeduction = originalBalance - withdrawalAmount;
+      // FIXED LOGIC: Always deduct balance on approval (not during request)
+      console.log('💸 Deducting balance on withdrawal approval');
+      const newBalance = currentBalance - withdrawalAmount;
+      user.balance = newBalance.toString();
 
-      console.log('💸 Original balance (from withdrawal):', originalBalance);
-      console.log('💸 Expected balance after deduction:', expectedBalanceAfterDeduction);
-      console.log('💸 Actual current balance:', currentBalance);
+      // Update balance in database
+      if (isProduction && supabase) {
+        try {
+          console.log('🔄 Deducting balance in Supabase:', user.id, newBalance);
+          const { data: updateData, error: updateError } = await supabase
+            .from('users')
+            .update({
+              balance: parseFloat(user.balance),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .select();
 
-      // If current balance matches expected balance, it was already deducted
-      const balanceAlreadyDeducted = Math.abs(currentBalance - expectedBalanceAfterDeduction) < 0.01;
-
-      if (balanceAlreadyDeducted) {
-        console.log('✅ Balance was already deducted during withdrawal request - no additional deduction needed');
-      } else {
-        console.log('⚠️ Balance was NOT deducted during withdrawal request - deducting now');
-        const newBalance = currentBalance - withdrawalAmount;
-        user.balance = newBalance.toString();
-
-        // Update balance in database
-        if (isProduction && supabase) {
-          try {
-            console.log('🔄 Deducting balance in Supabase:', user.id, newBalance);
-            const { data: updateData, error: updateError } = await supabase
-              .from('users')
-              .update({
-                balance: parseFloat(user.balance),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', user.id)
-              .select();
-
-            if (updateError) {
-              console.error('❌ Error updating user balance in Supabase:', updateError);
-              throw updateError;
-            } else {
-              console.log('✅ User balance deducted in Supabase:', user.balance);
-            }
-          } catch (dbError) {
-            console.error('❌ Database balance update failed:', dbError);
-            await saveUsers(users);
+          if (updateError) {
+            console.error('❌ Error updating user balance in Supabase:', updateError);
+            throw updateError;
+          } else {
+            console.log('✅ User balance deducted in Supabase:', user.balance);
           }
-        } else {
+        } catch (dbError) {
+          console.error('❌ Database balance update failed:', dbError);
           await saveUsers(users);
         }
+      } else {
+        await saveUsers(users);
       }
 
       // Update withdrawal status
@@ -4686,9 +4637,7 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
       pendingData.withdrawals = pendingWithdrawals;
       savePendingData();
 
-      // NO BALANCE UPDATE NEEDED: Balance was already deducted when withdrawal was requested
-      // Just update the withdrawal status in the database, not the user balance
-      console.log('💸 Withdrawal approval: No balance update needed - already deducted during request');
+      console.log('💸 Withdrawal approval: Balance deduction handled above');
 
       console.log(`✅ Withdrawal approved: ${withdrawalAmount} USDT (balance was already deducted during request)`);
 
@@ -4722,48 +4671,15 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
       withdrawal.rejected_at = new Date().toISOString();
       withdrawal.updated_at = new Date().toISOString();
 
-      // CRITICAL FIX: Refund balance when withdrawal is rejected
-      const users = await getUsers();
-      const userIndex = users.findIndex(u => u.id === withdrawal.user_id);
-      if (userIndex !== -1) {
-        const currentBalance = parseFloat(users[userIndex].balance || 0);
-        const refundAmount = parseFloat(withdrawal.amount);
-        const newBalance = currentBalance + refundAmount;
-
-        users[userIndex].balance = newBalance;
-        users[userIndex].updated_at = new Date().toISOString();
-
-        // Update in Supabase database
-        if (supabase) {
-          try {
-            const { error: refundError } = await supabase
-              .from('users')
-              .update({
-                balance: newBalance,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', withdrawal.user_id);
-
-            if (refundError) {
-              console.error('❌ Failed to refund balance in database:', refundError);
-            } else {
-              console.log(`✅ Balance refunded: ${currentBalance} → ${newBalance} (refunded ${refundAmount})`);
-            }
-          } catch (dbError) {
-            console.error('⚠️ Database refund error:', dbError);
-          }
-        }
-
-        // Save to file storage as backup
-        await saveUsers(users);
-      }
+      // NO REFUND NEEDED: Balance was never deducted during withdrawal request
+      console.log('💰 No balance refund needed - balance was never deducted');
 
       // Remove from pending list and save
       pendingWithdrawals.splice(withdrawalIndex, 1);
       pendingData.withdrawals = pendingWithdrawals;
       savePendingData();
 
-      console.log(`❌ Withdrawal rejected: ${withdrawal.id} (balance refunded)`);
+      console.log(`❌ Withdrawal rejected: ${withdrawal.id} (no balance change needed)`);
     } else {
       return res.status(400).json({ error: 'Invalid action. Use "approve" or "reject"' });
     }
