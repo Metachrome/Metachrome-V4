@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Withdrawal Creation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+            width: 100%;
+        }
+        button:hover {
+            background: #5855eb;
+        }
+        .success {
+            background: #10b981;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ef4444;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #3b82f6;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Withdrawal Creation</h1>
+        <p>This will create a test withdrawal that you can then approve/reject in the admin dashboard.</p>
+        
+        <button onclick="createTestWithdrawal()">Create Test Withdrawal</button>
+        
+        <div id="result"></div>
+        
+        <div class="info">
+            <h3>📋 Testing Steps:</h3>
+            <ol>
+                <li><strong>Click "Create Test Withdrawal"</strong> above</li>
+                <li><strong>Go to Admin Dashboard</strong>: <a href="https://metachrome-v2-production.up.railway.app/admin/dashboard" target="_blank">Open Admin Dashboard</a></li>
+                <li><strong>Refresh the dashboard</strong> - you should see the test withdrawal</li>
+                <li><strong>Click Approve or Reject</strong> - it should work immediately</li>
+                <li><strong>Withdrawal should disappear</strong> from the pending list</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        async function createTestWithdrawal() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="info">🔄 Creating test withdrawal...</div>';
+            
+            try {
+                const response = await fetch('https://metachrome-v2-production.up.railway.app/api/admin/add-test-requests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ <strong>Test withdrawal created successfully!</strong><br>
+                            Message: ${result.message}<br><br>
+                            <strong>Next steps:</strong><br>
+                            1. Go to <a href="https://metachrome-v2-production.up.railway.app/admin/dashboard" target="_blank">Admin Dashboard</a><br>
+                            2. Refresh the page<br>
+                            3. Test approve/reject functionality
+                        </div>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ <strong>Failed to create test withdrawal</strong><br>
+                            ${result.error || result.message || 'Unknown error'}
+                        </div>
+                        <pre>${JSON.stringify(result, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Network error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
