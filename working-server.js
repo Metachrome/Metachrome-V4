@@ -3705,7 +3705,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
   }
 });
 
-// ===== WITHDRAWAL ACTION ENDPOINT =====
+// ===== WITHDRAWAL ACTION ENDPOINT (SIMPLIFIED) =====
 app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
   try {
     const withdrawalId = req.params.id;
@@ -3716,240 +3716,108 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     console.log('💸 Action:', action);
     console.log('💸 Reason:', reason);
 
-    // FORCE DATABASE-FIRST APPROACH
-    console.log('🔍 STEP 1: Checking if withdrawal exists in database...');
+    // Find withdrawal in pending list
+    const withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
+    if (withdrawalIndex === -1) {
+      return res.status(404).json({ error: 'Withdrawal request not found' });
+    }
 
-    // Try database first, then fallback to local storage
-    let withdrawalUpdated = false;
-    let updatedWithdrawal = null;
+    const withdrawal = pendingWithdrawals[withdrawalIndex];
 
-    // REAL DATABASE UPDATE - Update withdrawal status in Supabase
+    if (withdrawal.status !== 'pending') {
+      return res.status(400).json({ error: 'Withdrawal already processed' });
+    }
+
+    // Handle approval - deduct balance
+    if (action === 'approve') {
+      console.log('💸 Processing withdrawal approval with balance deduction');
+
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === withdrawal.user_id || u.username === withdrawal.username);
+
+      if (userIndex !== -1) {
+        const currentBalance = parseFloat(users[userIndex].balance || 0);
+        const withdrawalAmount = parseFloat(withdrawal.amount);
+        const newBalance = currentBalance - withdrawalAmount;
+
+        console.log(`💸 Balance update: ${currentBalance} → ${newBalance} (deducted ${withdrawalAmount})`);
+
+        users[userIndex].balance = newBalance.toString();
+        users[userIndex].updated_at = new Date().toISOString();
+
+        // Update in Supabase database
+        if (supabase) {
+          try {
+            console.log(`🔄 Updating balance in Supabase for user: ${users[userIndex].id}`);
+            const { error: balanceError } = await supabase
+              .from('users')
+              .update({
+                balance: newBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', users[userIndex].id);
+
+            if (balanceError) {
+              console.error('❌ Supabase balance update failed:', balanceError);
+            } else {
+              console.log('✅ Supabase balance update successful');
+            }
+          } catch (dbError) {
+            console.error('⚠️ Database error:', dbError);
+          }
+        }
+
+        // Save to file storage
+        await saveUsers(users);
+        console.log('✅ Balance deducted and saved');
+      }
+
+      withdrawal.status = 'approved';
+      withdrawal.approved_at = new Date().toISOString();
+    } else if (action === 'reject') {
+      console.log('💸 Processing withdrawal rejection - no balance change needed');
+      withdrawal.status = 'rejected';
+      withdrawal.rejection_reason = reason || 'Rejected by admin';
+      withdrawal.rejected_at = new Date().toISOString();
+    }
+
+    withdrawal.updated_at = new Date().toISOString();
+
+    // Update in Supabase database
     if (supabase) {
       try {
-        const newStatus = action === 'approve' ? 'approved' : 'rejected';
-
-        const { data: dbWithdrawal, error: updateError } = await supabase
+        const { error: updateError } = await supabase
           .from('withdrawals')
           .update({
-            status: newStatus,
+            status: withdrawal.status,
             admin_notes: reason || `Withdrawal ${action}d by admin`,
             processed_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
-          .eq('id', withdrawalId)
-          .select()
-          .single();
+          .eq('id', withdrawalId);
 
-        if (!updateError && dbWithdrawal) {
-          console.log('✅ SUCCESS: Withdrawal updated in database');
-          console.log('✅ Updated withdrawal:', {
-            id: dbWithdrawal.id,
-            status: dbWithdrawal.status,
-            amount: dbWithdrawal.amount,
-            currency: dbWithdrawal.currency
-          });
-          withdrawalUpdated = true;
-          updatedWithdrawal = dbWithdrawal;
-
-          // IMPORTANT: Return immediately - no need for local storage fallback
-          console.log('🎯 Database update successful - returning response');
-          return res.json({
-            success: true,
-            message: `Withdrawal ${action}d successfully`,
-            withdrawal: dbWithdrawal
-          });
+        if (updateError) {
+          console.error('❌ Failed to update withdrawal in database:', updateError);
         } else {
-          console.log('⚠️ Withdrawal not found in database');
-          console.log('⚠️ Update error:', updateError);
-          console.log('⚠️ Trying emergency fix...');
-
-          // EMERGENCY FIX: Try to create the withdrawal in database first
-          if (withdrawalId.includes('1997') || withdrawalId.includes('2000') || withdrawalId.includes('emergency') || withdrawalId.includes('force')) {
-            const amount = withdrawalId.includes('1997') ? 1997 : 2000;
-            const currency = withdrawalId.includes('btc') ? 'BTC' : 'USDT';
-
-            console.log(`🚨 EMERGENCY: Creating ${amount} ${currency} withdrawal in database`);
-
-            const emergencyWithdrawal = {
-              id: withdrawalId,
-              user_id: 'angela-soenoko-001',
-              username: 'angela.soenoko',
-              amount: amount,
-              currency: currency,
-              wallet_address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-              status: 'pending',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-
-            try {
-              // Insert the withdrawal first
-              const { error: insertError } = await supabase
-                .from('withdrawals')
-                .insert([emergencyWithdrawal]);
-
-              if (!insertError) {
-                console.log('✅ Emergency withdrawal created in database');
-
-                // Now try to update it
-                const { data: updatedData, error: retryError } = await supabase
-                  .from('withdrawals')
-                  .update({
-                    status: action === 'approve' ? 'approved' : 'rejected',
-                    admin_notes: reason || `Withdrawal ${action}d by admin`,
-                    processed_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', withdrawalId)
-                  .select()
-                  .single();
-
-                if (!retryError && updatedData) {
-                  console.log('✅ Emergency withdrawal updated successfully');
-                  withdrawalUpdated = true;
-                  updatedWithdrawal = updatedData;
-                }
-              }
-            } catch (emergencyError) {
-              console.log('❌ Emergency database fix failed:', emergencyError.message);
-            }
-          }
+          console.log('✅ Withdrawal status updated in database');
         }
-
-      } catch (error) {
-        console.log('⚠️ Database error, falling back to local storage:', error.message);
+      } catch (dbError) {
+        console.error('⚠️ Database withdrawal update error:', dbError);
       }
     }
 
-    // LOCAL STORAGE UPDATE - Update withdrawal in local pendingWithdrawals array
-    if (!withdrawalUpdated) {
-      console.log('💾 Updating withdrawal in local storage');
-      let withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
+    // Remove from pending list
+    pendingWithdrawals.splice(withdrawalIndex, 1);
+    pendingData.withdrawals = pendingWithdrawals;
+    savePendingData();
 
-      // EMERGENCY FIX: If not found in local storage, try to find by amount/currency
-      if (withdrawalIndex === -1) {
-        console.log('🚨 EMERGENCY: Withdrawal not found by ID, searching by amount/currency');
+    console.log(`✅ Withdrawal ${action}d successfully: ${withdrawalId}`);
 
-        // Try to match by amount and currency patterns
-        if (withdrawalId.includes('1997') || withdrawalId.includes('2000')) {
-          const amount = withdrawalId.includes('1997') ? 1997 : 2000;
-          const currency = withdrawalId.includes('btc') ? 'BTC' : 'USDT';
-
-          console.log(`🔍 Looking for ${amount} ${currency} withdrawal`);
-
-          // Create the withdrawal if it doesn't exist
-          const emergencyWithdrawal = {
-            id: withdrawalId,
-            user_id: 'angela-soenoko-001',
-            username: 'angela.soenoko',
-            amount: amount,
-            currency: currency,
-            wallet_address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-            status: 'pending',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-
-          // Add to local storage
-          pendingWithdrawals.push(emergencyWithdrawal);
-          withdrawalIndex = pendingWithdrawals.length - 1;
-
-          console.log(`✅ Emergency created ${amount} ${currency} withdrawal`);
-        }
-      }
-
-      if (withdrawalIndex === -1) {
-        console.error('❌ Withdrawal not found in local storage either');
-        return res.status(404).json({
-          success: false,
-          message: 'Withdrawal request not found'
-        });
-      }
-
-      const withdrawal = pendingWithdrawals[withdrawalIndex];
-      const newStatus = action === 'approve' ? 'approved' : 'rejected';
-
-      // Update withdrawal status
-      withdrawal.status = newStatus;
-      withdrawal.admin_notes = reason || `Withdrawal ${action}d by admin`;
-      withdrawal.processed_at = new Date().toISOString();
-      withdrawal.updated_at = new Date().toISOString();
-
-      // CORRECTED BALANCE LOGIC: Deduct balance on approval, no change on rejection
-      if (action === 'approve') {
-        console.log('💸 Deducting balance on withdrawal approval');
-        const users = await getUsers();
-        const userIndex = users.findIndex(u => u.id === withdrawal.user_id || u.username === withdrawal.username);
-
-        if (userIndex !== -1) {
-          const currentBalance = parseFloat(users[userIndex].balance || 0);
-          const withdrawalAmount = parseFloat(withdrawal.amount);
-          const newBalance = currentBalance - withdrawalAmount;
-          users[userIndex].balance = newBalance.toString();
-          users[userIndex].updated_at = new Date().toISOString();
-
-          // Update in Supabase database
-          if (supabase) {
-            try {
-              const { error: balanceError } = await supabase
-                .from('users')
-                .update({
-                  balance: newBalance,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', withdrawal.user_id);
-
-              if (balanceError) {
-                console.error('❌ Failed to deduct balance in database:', balanceError);
-              } else {
-                console.log(`✅ Balance deducted: ${currentBalance} → ${newBalance} (deducted ${withdrawalAmount})`);
-              }
-            } catch (dbError) {
-              console.error('⚠️ Database balance update error:', dbError);
-            }
-          }
-
-          // Save updated users to file storage
-          await saveUsers(users);
-          console.log(`✅ Withdrawal ${withdrawal.id} approved and balance deducted for ${withdrawal.username}`);
-        }
-      } else if (action === 'reject') {
-        // No balance change needed on rejection since balance was never deducted during request
-        console.log('💰 Withdrawal rejected - no balance change needed');
-        console.log(`❌ Withdrawal ${withdrawal.id} rejected for ${withdrawal.username}: ${withdrawal.amount} ${withdrawal.currency}`);
-      }
-
-      // DON'T REMOVE - Just update status so it shows in UI as processed
-      // Keep the withdrawal in the list but mark it as processed
-      console.log('✅ Withdrawal status updated in local storage');
-      console.log('📝 Withdrawal details:', {
-        id: withdrawal.id,
-        status: withdrawal.status,
-        amount: withdrawal.amount,
-        currency: withdrawal.currency,
-        username: withdrawal.username
-      });
-
-      withdrawalUpdated = true;
-      updatedWithdrawal = withdrawal;
-
-      // Save the updated pending data
-      pendingData.withdrawals = pendingWithdrawals;
-      savePendingData();
-    }
-
-    if (withdrawalUpdated) {
-      return res.json({
-        success: true,
-        message: `Withdrawal ${action}d successfully`,
-        withdrawal: updatedWithdrawal
-      });
-    } else {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to update withdrawal status'
-      });
-    }
+    return res.json({
+      success: true,
+      message: `Withdrawal ${action}d successfully`,
+      withdrawal: withdrawal
+    });
 
   } catch (error) {
     console.error('❌ WITHDRAWAL ACTION ERROR:', error);
