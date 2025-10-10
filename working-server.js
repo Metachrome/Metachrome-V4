@@ -4240,6 +4240,7 @@ app.get('/api/user/data', async (req, res) => {
 });
 
 // ===== USER WITHDRAWAL REQUEST ENDPOINT =====
+// Force Railway deployment - 2025-01-10
 app.post('/api/withdrawals', async (req, res) => {
   try {
     console.log('💸 User withdrawal request received:', req.body);
