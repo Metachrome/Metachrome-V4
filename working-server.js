@@ -3875,25 +3875,48 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
       withdrawal.processed_at = new Date().toISOString();
       withdrawal.updated_at = new Date().toISOString();
 
-      // BALANCE FIX: Don't deduct balance again on approval - it was already deducted when requested
+      // CORRECTED BALANCE LOGIC: Deduct balance on approval, no change on rejection
       if (action === 'approve') {
-        console.log('✅ Withdrawal approved - balance was already deducted when requested');
-        console.log(`✅ Withdrawal ${withdrawal.id} for ${withdrawal.username}: ${withdrawal.amount} ${withdrawal.currency}`);
-      } else if (action === 'reject') {
-        // If rejecting, we need to refund the balance that was deducted when requested
-        console.log('💰 Refunding balance for rejected withdrawal');
+        console.log('💸 Deducting balance on withdrawal approval');
         const users = await getUsers();
         const userIndex = users.findIndex(u => u.id === withdrawal.user_id || u.username === withdrawal.username);
 
         if (userIndex !== -1) {
           const currentBalance = parseFloat(users[userIndex].balance || 0);
-          const refundedBalance = currentBalance + withdrawal.amount;
-          users[userIndex].balance = refundedBalance.toString();
+          const withdrawalAmount = parseFloat(withdrawal.amount);
+          const newBalance = currentBalance - withdrawalAmount;
+          users[userIndex].balance = newBalance.toString();
+          users[userIndex].updated_at = new Date().toISOString();
 
-          // Save updated users
+          // Update in Supabase database
+          if (supabase) {
+            try {
+              const { error: balanceError } = await supabase
+                .from('users')
+                .update({
+                  balance: newBalance,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', withdrawal.user_id);
+
+              if (balanceError) {
+                console.error('❌ Failed to deduct balance in database:', balanceError);
+              } else {
+                console.log(`✅ Balance deducted: ${currentBalance} → ${newBalance} (deducted ${withdrawalAmount})`);
+              }
+            } catch (dbError) {
+              console.error('⚠️ Database balance update error:', dbError);
+            }
+          }
+
+          // Save updated users to file storage
           await saveUsers(users);
-          console.log(`💰 User ${withdrawal.username} balance refunded: ${currentBalance} -> ${refundedBalance}`);
+          console.log(`✅ Withdrawal ${withdrawal.id} approved and balance deducted for ${withdrawal.username}`);
         }
+      } else if (action === 'reject') {
+        // No balance change needed on rejection since balance was never deducted during request
+        console.log('💰 Withdrawal rejected - no balance change needed');
+        console.log(`❌ Withdrawal ${withdrawal.id} rejected for ${withdrawal.username}: ${withdrawal.amount} ${withdrawal.currency}`);
       }
 
       // DON'T REMOVE - Just update status so it shows in UI as processed
