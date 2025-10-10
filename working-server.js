@@ -4225,15 +4225,15 @@ app.post('/api/withdrawals', async (req, res) => {
       return res.status(400).json({ error: 'Invalid withdrawal amount' });
     }
 
-    // Get user from token - for testing, use testuser
-    const users = await getUsers();
-    console.log('🔍 Available users:', users.map(u => ({ username: u.username, balance: u.balance, role: u.role })));
-    const user = users.find(u => u.username === 'testuser') || users.find(u => u.role === 'user') || users.find(u => u.username === 'angela.soenoko');
-    console.log('🔍 Selected user for withdrawal:', user ? { username: user.username, balance: user.balance } : 'NOT FOUND');
-
+    // Get user from token - use proper authentication like other endpoints
+    const user = await getUserFromToken(authToken);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
+      return res.status(401).json({ error: 'Invalid authentication' });
     }
+
+    console.log('💸 Processing withdrawal for authenticated user:', user.username, '(ID:', user.id, ')');
+    console.log('💰 User balance:', user.balance);
 
     // Verify user's login password - check both possible column names
     const bcrypt = require('bcryptjs');
