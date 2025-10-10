@@ -4202,6 +4202,43 @@ app.delete('/api/admin/transactions/:transactionId', async (req, res) => {
   }
 });
 
+// ===== USER DATA ENDPOINT (for balance display) =====
+app.get('/api/user/data', async (req, res) => {
+  try {
+    console.log('👤 User data request received');
+
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Get user from token
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    console.log('👤 Returning user data for:', user.username);
+
+    // Return user data with current balance
+    res.json({
+      success: true,
+      id: user.id,
+      username: user.username,
+      balance: parseFloat(user.balance || 0),
+      email: user.email,
+      role: user.role,
+      verification_status: user.verification_status || 'unverified'
+    });
+
+  } catch (error) {
+    console.error('❌ User data error:', error);
+    res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
 // ===== USER WITHDRAWAL REQUEST ENDPOINT =====
 app.post('/api/withdrawals', async (req, res) => {
   try {
@@ -4283,7 +4320,7 @@ app.post('/api/withdrawals', async (req, res) => {
       username: user.username,
       amount: withdrawalAmount,
       currency: currency.toUpperCase(),
-      wallet_address: address,
+      address: address,
       status: 'pending',
       user_balance: userBalance,
       created_at: new Date().toISOString(),
@@ -4306,7 +4343,7 @@ app.post('/api/withdrawals', async (req, res) => {
           username: withdrawalRequest.username,
           amount: parseFloat(withdrawalRequest.amount),
           currency: withdrawalRequest.currency,
-          wallet_address: withdrawalRequest.wallet_address,
+          address: withdrawalRequest.address,
           status: 'pending',
           user_balance: parseFloat(withdrawalRequest.user_balance),
           created_at: withdrawalRequest.created_at,
