@@ -4285,6 +4285,36 @@ app.post('/api/withdrawals', async (req, res) => {
 
     console.log('✅ Withdrawal request created:', withdrawalRequest.id);
 
+    // CRITICAL FIX: Also save to Supabase database for admin dashboard
+    if (supabase) {
+      try {
+        const supabaseWithdrawal = {
+          id: withdrawalRequest.id,
+          user_id: withdrawalRequest.user_id,
+          username: withdrawalRequest.username,
+          amount: parseFloat(withdrawalRequest.amount),
+          currency: withdrawalRequest.currency,
+          wallet_address: withdrawalRequest.wallet_address,
+          status: 'pending',
+          user_balance: parseFloat(withdrawalRequest.user_balance),
+          created_at: withdrawalRequest.created_at,
+          updated_at: withdrawalRequest.updated_at
+        };
+
+        const { error } = await supabase
+          .from('withdrawals')
+          .insert([supabaseWithdrawal]);
+
+        if (error) {
+          console.error('⚠️ Failed to save withdrawal to Supabase:', error);
+        } else {
+          console.log('✅ Withdrawal saved to Supabase database for admin dashboard');
+        }
+      } catch (dbError) {
+        console.error('⚠️ Supabase withdrawal sync error:', dbError);
+      }
+    }
+
     // Broadcast to admin dashboard for real-time updates
     if (global.wss) {
       const adminUpdate = {
@@ -9376,6 +9406,35 @@ app.post('/api/user/withdraw', async (req, res) => {
 
     console.log('✅ Withdrawal request created:', withdrawal.id);
 
+    // CRITICAL FIX: Also save to Supabase database for admin dashboard
+    if (supabase) {
+      try {
+        const supabaseWithdrawal = {
+          id: withdrawal.id,
+          user_id: withdrawal.user_id,
+          username: withdrawal.username,
+          amount: parseFloat(withdrawal.amount),
+          currency: withdrawal.currency,
+          wallet_address: withdrawal.walletAddress,
+          status: 'pending',
+          created_at: withdrawal.created_at,
+          updated_at: withdrawal.created_at
+        };
+
+        const { error } = await supabase
+          .from('withdrawals')
+          .insert([supabaseWithdrawal]);
+
+        if (error) {
+          console.error('⚠️ Failed to save withdrawal to Supabase (endpoint 2):', error);
+        } else {
+          console.log('✅ Withdrawal saved to Supabase database (endpoint 2)');
+        }
+      } catch (dbError) {
+        console.error('⚠️ Supabase withdrawal sync error (endpoint 2):', dbError);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Withdrawal request submitted successfully',
@@ -9492,6 +9551,35 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
     savePendingData();
 
     console.log('✅ Withdrawal request created:', withdrawal.id);
+
+    // CRITICAL FIX: Also save to Supabase database for admin dashboard
+    if (supabase) {
+      try {
+        const supabaseWithdrawal = {
+          id: withdrawal.id,
+          user_id: withdrawal.user_id,
+          username: withdrawal.username,
+          amount: parseFloat(withdrawal.amount),
+          currency: withdrawal.currency,
+          wallet_address: withdrawal.wallet_address,
+          status: 'pending',
+          created_at: withdrawal.created_at,
+          updated_at: withdrawal.created_at
+        };
+
+        const { error } = await supabase
+          .from('withdrawals')
+          .insert([supabaseWithdrawal]);
+
+        if (error) {
+          console.error('⚠️ Failed to save withdrawal to Supabase (endpoint 3):', error);
+        } else {
+          console.log('✅ Withdrawal saved to Supabase database (endpoint 3)');
+        }
+      } catch (dbError) {
+        console.error('⚠️ Supabase withdrawal sync error (endpoint 3):', dbError);
+      }
+    }
 
     res.json({
       success: true,
