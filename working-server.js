@@ -4490,9 +4490,9 @@ app.post('/api/withdrawals', async (req, res) => {
           username: withdrawalRequest.username,
           amount: parseFloat(withdrawalRequest.amount),
           currency: withdrawalRequest.currency,
-          wallet_address: withdrawalRequest.address, // FIX: Use wallet_address for database
+          address: withdrawalRequest.address, // FIX: Use address column that exists in database
           status: 'pending',
-          user_balance: parseFloat(withdrawalRequest.user_balance),
+          // user_balance: parseFloat(withdrawalRequest.user_balance), // REMOVED: Column doesn't exist in database
           created_at: withdrawalRequest.created_at,
           updated_at: withdrawalRequest.updated_at
         };
@@ -9814,7 +9814,7 @@ app.post('/api/user/withdraw', async (req, res) => {
           username: withdrawal.username,
           amount: parseFloat(withdrawal.amount),
           currency: withdrawal.currency,
-          wallet_address: withdrawal.walletAddress,
+          address: withdrawal.walletAddress, // FIX: Use address column that exists in database
           status: 'pending',
           created_at: withdrawal.created_at,
           updated_at: withdrawal.created_at
@@ -9960,7 +9960,7 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
           username: withdrawal.username,
           amount: parseFloat(withdrawal.amount),
           currency: withdrawal.currency,
-          wallet_address: withdrawal.wallet_address,
+          address: withdrawal.wallet_address, // FIX: Use address column that exists in database
           status: 'pending',
           created_at: withdrawal.created_at,
           updated_at: withdrawal.created_at
