@@ -3938,45 +3938,61 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
 });
 
 // ===== ADD NEW PENDING REQUEST (FOR TESTING) =====
-app.post('/api/admin/add-test-requests', (req, res) => {
+app.post('/api/admin/add-test-requests', async (req, res) => {
   console.log('🧪 Adding test pending requests');
 
-  // Add a new test deposit if none exist
-  if (pendingDeposits.length === 0) {
-    pendingDeposits.push({
-      id: `dep-${Date.now()}`,
-      user_id: 'user-3',
-      username: 'trader3',
-      amount: 750,
+  try {
+    // Create test withdrawal in DATABASE (not just local storage)
+    const testWithdrawal = {
+      id: `test-withdrawal-${Date.now()}`,
+      user_id: 'test-user-001',
+      username: 'testuser',
+      amount: 500,
       currency: 'USDT',
-      network: 'TRC20',
-      status: 'pending',
       wallet_address: '0x742d35Cc6634C0532925a3b8D4C9db96590b4165',
-      created_at: new Date().toISOString()
-    });
-  }
-
-  // Add a new test withdrawal if none exist
-  if (pendingWithdrawals.length === 0) {
-    pendingWithdrawals.push({
-      id: `with-${Date.now()}`,
-      user_id: 'user-4',
-      username: 'trader4',
-      amount: 300,
-      currency: 'USDT',
-      network: 'ERC20',
       status: 'pending',
-      wallet_address: '0x8ba1f109551bD432803012645Hac136c22C501e5',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (supabase) {
+      console.log('💾 Creating test withdrawal in database...');
+      const { data, error } = await supabase
+        .from('withdrawals')
+        .insert([testWithdrawal])
+        .select();
+
+      if (!error && data) {
+        console.log('✅ Test withdrawal created in database:', data[0]);
+        return res.json({
+          success: true,
+          message: 'Test withdrawal created in database',
+          withdrawal: data[0]
+        });
+      } else {
+        console.log('❌ Database insert failed:', error);
+      }
+    }
+
+    // Fallback to local storage
+    console.log('💾 Creating test withdrawal in local storage...');
+    pendingWithdrawals.push(testWithdrawal);
+    pendingData.withdrawals = pendingWithdrawals;
+    savePendingData();
+
+    res.json({
+      success: true,
+      message: 'Test withdrawal created in local storage',
+      withdrawal: testWithdrawal
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating test withdrawal:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create test withdrawal'
     });
   }
-
-  res.json({
-    success: true,
-    message: 'Test requests added',
-    deposits: pendingDeposits.length,
-    withdrawals: pendingWithdrawals.length
-  });
 });
 
 // ===== TRANSACTION ENDPOINTS =====
