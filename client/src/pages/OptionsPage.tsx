@@ -1625,19 +1625,10 @@ function OptionsPageContent({
           <div className="p-2 border-b border-gray-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                {/* Debug: Manual symbol change buttons */}
-                <button
-                  onClick={() => handleTradingViewSymbolChange('ETHUSDT')}
-                  className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded"
-                >
-                  Test ETH
-                </button>
-                <button
-                  onClick={() => handleTradingViewSymbolChange('BNBUSDT')}
-                  className="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded"
-                >
-                  Test BNB
-                </button>
+                {/* Symbol sync status indicator */}
+                <div className="text-xs text-gray-400">
+                  Symbol Sync: <span className="text-green-400">Active</span>
+                </div>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
