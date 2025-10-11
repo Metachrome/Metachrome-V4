@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
@@ -48,6 +48,7 @@ function SpotPageContent() {
   // Order management states
   const [openOrders, setOpenOrders] = useState<any[]>([]);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
+  const hasLoadedInitialData = useRef(false);
 
   // Use price context for synchronized price data - SINGLE SOURCE OF TRUTH
   const { priceData } = usePrice();
@@ -62,19 +63,23 @@ function SpotPageContent() {
   const currentPrice = selectedSymbolPriceData?.price || priceData?.price || 0;
   const formattedPrice = currentPrice.toFixed(2);
 
-  // Debug logging and load order history
+  // Debug logging
   useEffect(() => {
     console.log('🔍 SpotPage mounted');
     console.log('🔍 User:', user);
     console.log('💰 SpotPage - Price from context:', priceData?.price);
-
-    // Load mock order history for demonstration
-    loadOrderHistory();
-
     return () => {
       console.log('🔍 SpotPage unmounted');
     };
   }, [user, priceData]);
+
+  // Load initial mock order history only once
+  useEffect(() => {
+    if (user && !hasLoadedInitialData.current) {
+      loadOrderHistory();
+      hasLoadedInitialData.current = true;
+    }
+  }, [user]); // Only run when user changes, and only once
 
   // Load order history (mock data for now)
   const loadOrderHistory = async () => {
