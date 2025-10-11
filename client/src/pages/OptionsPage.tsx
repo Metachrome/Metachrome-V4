@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/use-mobile';
+import { useMultiSymbolPrice } from '../hooks/useMultiSymbolPrice';
 import { apiRequest } from '../lib/queryClient';
 
 import type { MarketData } from '../../../shared/schema';
@@ -36,7 +37,13 @@ interface ActiveTrade {
 }
 
 // Inner component that uses price context
-function OptionsPageContent() {
+function OptionsPageContent({
+  selectedSymbol,
+  setSelectedSymbol
+}: {
+  selectedSymbol: string;
+  setSelectedSymbol: (symbol: string) => void;
+}) {
   const { user } = useAuth();
   const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
   const queryClient = useQueryClient();
@@ -46,6 +53,9 @@ function OptionsPageContent() {
   const { priceData } = usePrice();
   const { changeText, changeColor, isPositive } = usePriceChange();
   const { high, low, volume } = use24hStats();
+
+  // Multi-symbol price data for all trading pairs
+  const { priceData: multiSymbolPriceData, getPriceForSymbol } = useMultiSymbolPrice();
 
   // Chart view state
   const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('basic');
@@ -74,7 +84,6 @@ function OptionsPageContent() {
   const [tradeHistory, setTradeHistory] = useState<ActiveTrade[]>([]);
   const [completedTrade, setCompletedTrade] = useState<ActiveTrade | null>(null);
   const [notificationKey, setNotificationKey] = useState<string>(''); // Force re-render
-  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
 
 
 
@@ -247,19 +256,42 @@ function OptionsPageContent() {
   // This ensures ALL numbers across the page are SYNCHRONIZED
   const displayPrice = priceData?.price || currentPrice || 166373.87;
 
-  // Trading pairs data
+  // Trading pairs data - Dynamic with real-time prices
   const tradingPairs = [
-    { symbol: 'BTC/USDT', coin: 'BTC', rawSymbol: 'BTCUSDT', price: displayPrice.toString(), priceChangePercent24h: changeText || '+1.44%' },
-    { symbol: 'ETH/USDT', coin: 'ETH', rawSymbol: 'ETHUSDT', price: '3550.21', priceChangePercent24h: '+1.06%' },
-    { symbol: 'BNB/USDT', coin: 'BNB', rawSymbol: 'BNBUSDT', price: '698.45', priceChangePercent24h: '+2.15%' },
-    { symbol: 'SOL/USDT', coin: 'SOL', rawSymbol: 'SOLUSDT', price: '245.67', priceChangePercent24h: '+3.42%' },
-    { symbol: 'XRP/USDT', coin: 'XRP', rawSymbol: 'XRPUSDT', price: '3.18', priceChangePercent24h: '+1.47%' },
-    { symbol: 'ADA/USDT', coin: 'ADA', rawSymbol: 'ADAUSDT', price: '0.8272', priceChangePercent24h: '+0.60%' },
-    { symbol: 'DOGE/USDT', coin: 'DOGE', rawSymbol: 'DOGEUSDT', price: '0.2388', priceChangePercent24h: '+0.80%' },
-    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', price: '0.5234', priceChangePercent24h: '+1.23%' },
-    { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', price: '7.89', priceChangePercent24h: '-0.45%' },
-    { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', price: '42.56', priceChangePercent24h: '+2.78%' }
-  ];
+    'BTCUSDT',
+    'ETHUSDT',
+    'BNBUSDT',
+    'SOLUSDT',
+    'XRPUSDT',
+    'ADAUSDT',
+    'DOGEUSDT',
+    'MATICUSDT',
+    'DOTUSDT',
+    'AVAXUSDT'
+  ].map(rawSymbol => {
+    // Get real-time price data for this symbol
+    const symbolPriceData = getPriceForSymbol(rawSymbol);
+
+    // For the currently selected symbol, use the PriceContext data (more frequent updates)
+    const isCurrentSymbol = rawSymbol === selectedSymbol;
+    const price = isCurrentSymbol && priceData ? priceData.price : (symbolPriceData?.price || 0);
+    const priceChangePercent = isCurrentSymbol && priceData ?
+      priceData.priceChangePercent24h :
+      (symbolPriceData?.priceChangePercent24h || 0);
+
+    // Format price change percentage
+    const formattedChange = priceChangePercent >= 0 ?
+      `+${priceChangePercent.toFixed(2)}%` :
+      `${priceChangePercent.toFixed(2)}%`;
+
+    return {
+      symbol: rawSymbol.replace('USDT', '/USDT'),
+      coin: rawSymbol.replace('USDT', ''),
+      rawSymbol,
+      price: price.toString(),
+      priceChangePercent24h: formattedChange
+    };
+  });
 
   // Filter trading pairs based on search term
   const filteredTradingPairs = tradingPairs.filter(pair =>
@@ -276,6 +308,28 @@ function OptionsPageContent() {
     setSelectedSymbol(rawSymbol);
     // Clear search when a pair is selected
     setSearchTerm("");
+  };
+
+  // Handle symbol change from TradingView widget
+  const handleTradingViewSymbolChange = (newSymbol: string) => {
+    console.log('📈 TradingView symbol changed to:', newSymbol);
+
+    // Convert TradingView symbol format to our format
+    // e.g., "ETHUSDT" -> "ETHUSDT"
+    const cleanSymbol = newSymbol.replace('BINANCE:', '');
+
+    // Check if this symbol exists in our trading pairs
+    const matchingPair = tradingPairs.find(pair => pair.rawSymbol === cleanSymbol);
+
+    if (matchingPair) {
+      console.log('✅ Found matching pair:', matchingPair);
+      setSelectedSymbol(cleanSymbol);
+      // Clear search when symbol changes
+      setSearchTerm("");
+    } else {
+      console.log('⚠️ Symbol not found in trading pairs:', cleanSymbol);
+      // Optionally, you could add the symbol to trading pairs or show a notification
+    }
   };
 
   // Handle search with auto-selection
@@ -968,7 +1022,7 @@ function OptionsPageContent() {
         },
         body: JSON.stringify({
           userId: tradingUserId,
-          symbol: 'BTCUSDT',
+          symbol: selectedSymbol,
           direction,
           amount: selectedAmount.toString(),
           duration: durationSeconds,
@@ -1050,7 +1104,7 @@ function OptionsPageContent() {
           <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700 sticky top-0 z-40">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-white font-bold text-lg">BTC/USDT</div>
+                <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
                 <div className="text-white text-xl font-bold">{displayPrice.toFixed(2)} USDT</div>
                 <div className={`text-sm font-semibold ${changeColor}`}>
                   {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
@@ -1099,7 +1153,7 @@ function OptionsPageContent() {
             />
             <div className="w-full h-full">
               <LightweightChart
-                symbol="BTCUSDT"
+                symbol={selectedSymbol}
                 interval="1m"
                 height={375}
                 containerId="options_mobile_chart"
@@ -1148,7 +1202,7 @@ function OptionsPageContent() {
                       <div className="flex justify-between items-center mb-2">
                         <div className="flex items-center space-x-2">
                           <div className={`w-2 h-2 rounded-full ${trade.direction === 'up' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                          <span className="text-white text-sm font-medium">BTC/USDT</span>
+                          <span className="text-white text-sm font-medium">{currentPairData.symbol}</span>
                           <span className={`text-xs px-2 py-1 rounded ${
                             trade.direction === 'up' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'
                           }`}>
@@ -1612,7 +1666,7 @@ function OptionsPageContent() {
 
             {chartView === 'basic' && (
               <LightweightChart
-                symbol="BTCUSDT"
+                symbol={selectedSymbol}
                 interval="1m"
                 height={400}
                 containerId="options_desktop_chart"
@@ -1628,6 +1682,7 @@ function OptionsPageContent() {
                   interval="1"
                   theme="dark"
                   container_id="options_tradingview_chart"
+                  onSymbolChange={handleTradingViewSymbolChange}
                 />
               </ErrorBoundary>
             )}
@@ -2277,7 +2332,7 @@ function OptionsPageContent() {
                   <div className="border-t border-gray-800 pt-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-semibold text-white">Market Chart</h3>
-                      <div className="text-xs text-gray-400">BTCUSDT • Live</div>
+                      <div className="text-xs text-gray-400">{selectedSymbol} • Live</div>
                     </div>
                     <div className="h-[300px] bg-[#10121E] rounded-lg overflow-hidden">
                       <TradingViewWidget
@@ -2287,7 +2342,8 @@ function OptionsPageContent() {
                         interval="1"
                         theme="dark"
                         container_id="trade_history_chart"
-                        allow_symbol_change={false}
+                        allow_symbol_change={true}
+                        onSymbolChange={handleTradingViewSymbolChange}
                       />
                     </div>
                   </div>
@@ -2420,11 +2476,21 @@ function OptionsPageContent() {
   }
 }
 
-// Wrapper component with PriceProvider for synchronized price data
+// Main component with dynamic PriceProvider
 export default function OptionsPage() {
+  return <OptionsPageWithProvider />;
+}
+
+// Component that manages symbol state and provides it to PriceProvider
+function OptionsPageWithProvider() {
+  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
+
   return (
-    <PriceProvider symbol="BTCUSDT" updateInterval={2000}>
-      <OptionsPageContent />
+    <PriceProvider symbol={selectedSymbol} updateInterval={2000}>
+      <OptionsPageContent
+        selectedSymbol={selectedSymbol}
+        setSelectedSymbol={setSelectedSymbol}
+      />
     </PriceProvider>
   );
 }

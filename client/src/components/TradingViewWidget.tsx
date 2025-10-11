@@ -122,6 +122,47 @@ function TradingViewWidget({
       script.innerHTML = JSON.stringify(config);
 
       script.onload = () => {
+        console.log('✅ TradingView widget loaded successfully');
+
+        // Set up symbol change monitoring
+        if (onSymbolChange) {
+          try {
+            // Monitor for symbol changes in TradingView widget
+            const checkSymbolChange = () => {
+              try {
+                const iframe = containerRef.current?.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                  // Try to detect symbol changes from the iframe URL or title
+                  const iframeSrc = iframe.src;
+                  if (iframeSrc) {
+                    // Extract symbol from TradingView iframe URL
+                    const symbolMatch = iframeSrc.match(/symbol=([^&]+)/);
+                    if (symbolMatch && symbolMatch[1]) {
+                      const detectedSymbol = decodeURIComponent(symbolMatch[1]);
+                      // Convert BINANCE:ETHUSDT to ETHUSDT format
+                      const cleanSymbol = detectedSymbol.replace('BINANCE:', '');
+                      if (cleanSymbol !== symbol.replace('BINANCE:', '')) {
+                        console.log('🔄 Symbol change detected:', cleanSymbol);
+                        onSymbolChange(cleanSymbol);
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                console.log('Symbol monitoring error:', error);
+              }
+            };
+
+            // Check for symbol changes every 2 seconds
+            const symbolInterval = setInterval(checkSymbolChange, 2000);
+
+            // Cleanup interval on unmount
+            return () => clearInterval(symbolInterval);
+          } catch (error) {
+            console.log('TradingView symbol monitoring setup error:', error);
+          }
+        }
+
         // Set up price monitoring if callback provided
         if (onPriceUpdate && window.TradingView) {
           try {

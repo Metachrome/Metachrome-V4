@@ -997,6 +997,11 @@ function SpotPageContent() {
                     interval="1"
                     theme="dark"
                     container_id="spot_tradingview_chart"
+                    onSymbolChange={(newSymbol) => {
+                      console.log('📈 SpotPage TradingView symbol changed to:', newSymbol);
+                      const cleanSymbol = newSymbol.replace('BINANCE:', '');
+                      setSelectedSymbol(cleanSymbol);
+                    }}
                   />
                 </ErrorBoundary>
               )}
