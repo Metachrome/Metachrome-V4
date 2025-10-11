@@ -81,12 +81,22 @@ function SpotPageContent() {
     }
   }, [user]); // Only run when user changes, and only once
 
-  // Load order history (mock data for now)
+  // Load order history with persistence
   const loadOrderHistory = async () => {
     if (!user) return;
 
     try {
-      // For now, create mock order history data
+      // First, try to load from localStorage
+      const savedOrders = localStorage.getItem(`orderHistory_${user.id || 'user-1'}`);
+
+      if (savedOrders) {
+        const parsedOrders = JSON.parse(savedOrders);
+        setOrderHistory(parsedOrders);
+        console.log('📋 Loaded order history from localStorage:', parsedOrders.length, 'orders');
+        return;
+      }
+
+      // If no saved orders, create initial mock data
       const mockOrderHistory = [
         {
           id: '1',
@@ -151,9 +161,22 @@ function SpotPageContent() {
       ];
 
       setOrderHistory(mockOrderHistory);
-      console.log('📋 Loaded order history:', mockOrderHistory.length, 'orders');
+      // Save initial mock data to localStorage
+      localStorage.setItem(`orderHistory_${user.id || 'user-1'}`, JSON.stringify(mockOrderHistory));
+      console.log('📋 Created initial order history:', mockOrderHistory.length, 'orders');
     } catch (error) {
       console.error('❌ Error loading order history:', error);
+    }
+  };
+
+  // Save order history to localStorage whenever it changes
+  const saveOrderHistory = (orders: any[]) => {
+    if (!user) return;
+    try {
+      localStorage.setItem(`orderHistory_${user.id || 'user-1'}`, JSON.stringify(orders));
+      console.log('💾 Saved order history to localStorage:', orders.length, 'orders');
+    } catch (error) {
+      console.error('❌ Error saving order history:', error);
     }
   };
 
@@ -303,8 +326,22 @@ function SpotPageContent() {
   const [usdtBalance, setUsdtBalance] = useState(0);
   const [btcBalance, setBtcBalance] = useState(0.5);
 
-  // Initialize balances from API data
+  // Initialize balances from localStorage or API data
   useEffect(() => {
+    if (!user) return;
+
+    // Try to load balances from localStorage first
+    const savedBalances = localStorage.getItem(`balances_${user.id || 'user-1'}`);
+
+    if (savedBalances) {
+      const { usdt, btc } = JSON.parse(savedBalances);
+      setUsdtBalance(usdt);
+      setBtcBalance(btc);
+      console.log('💾 Loaded balances from localStorage:', { usdt, btc });
+      return;
+    }
+
+    // If no saved balances, use API data or defaults
     if (balances && Array.isArray(balances)) {
       // Format: [{ symbol: "USDT", available: "700610", locked: "0" }, ...]
       const usdtData = balances.find((b: any) => b.symbol === 'USDT');
@@ -316,14 +353,34 @@ function SpotPageContent() {
       setUsdtBalance(newUsdtBalance);
       setBtcBalance(newBtcBalance);
 
-      console.log('🔍 SPOT: Updated balances from API:', {
+      // Save initial balances to localStorage
+      localStorage.setItem(`balances_${user.id || 'user-1'}`, JSON.stringify({
+        usdt: newUsdtBalance,
+        btc: newBtcBalance
+      }));
+
+      console.log('🔍 SPOT: Updated balances from API and saved to localStorage:', {
         usdtData,
         btcData,
         newUsdtBalance,
         newBtcBalance
       });
     }
-  }, [balances]);
+  }, [balances, user]);
+
+  // Save balances to localStorage
+  const saveBalances = (usdtBal: number, btcBal: number) => {
+    if (!user) return;
+    try {
+      localStorage.setItem(`balances_${user.id || 'user-1'}`, JSON.stringify({
+        usdt: usdtBal,
+        btc: btcBal
+      }));
+      console.log('💾 Saved balances to localStorage:', { usdt: usdtBal, btc: btcBal });
+    } catch (error) {
+      console.error('❌ Error saving balances:', error);
+    }
+  };
 
   // ENHANCED Debug logging for balance sync
   console.log('🔍 SPOT PAGE BALANCE DEBUG:', {
@@ -422,12 +479,19 @@ function SpotPageContent() {
     onSuccess: (data) => {
       const { order, executionPrice, amount, total } = data;
 
-      // Add to order history
-      setOrderHistory(prev => [order, ...prev]);
+      // Add to order history and save to localStorage
+      setOrderHistory(prev => {
+        const newHistory = [order, ...prev];
+        saveOrderHistory(newHistory);
+        return newHistory;
+      });
 
-      // Update balances
-      setUsdtBalance(prev => prev - total);
-      setBtcBalance(prev => prev + amount);
+      // Update balances and save to localStorage
+      const newUsdtBalance = usdtBalance - total;
+      const newBtcBalance = btcBalance + amount;
+      setUsdtBalance(newUsdtBalance);
+      setBtcBalance(newBtcBalance);
+      saveBalances(newUsdtBalance, newBtcBalance);
 
       toast({
         title: "Buy order completed!",
@@ -478,12 +542,19 @@ function SpotPageContent() {
     onSuccess: (data) => {
       const { order, executionPrice, amount, total } = data;
 
-      // Add to order history
-      setOrderHistory(prev => [order, ...prev]);
+      // Add to order history and save to localStorage
+      setOrderHistory(prev => {
+        const newHistory = [order, ...prev];
+        saveOrderHistory(newHistory);
+        return newHistory;
+      });
 
-      // Update balances
-      setBtcBalance(prev => prev - amount);
-      setUsdtBalance(prev => prev + total);
+      // Update balances and save to localStorage
+      const newBtcBalance = btcBalance - amount;
+      const newUsdtBalance = usdtBalance + total;
+      setBtcBalance(newBtcBalance);
+      setUsdtBalance(newUsdtBalance);
+      saveBalances(newUsdtBalance, newBtcBalance);
 
       toast({
         title: "Sell order completed!",
