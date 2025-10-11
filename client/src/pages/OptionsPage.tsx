@@ -1143,6 +1143,42 @@ function OptionsPageContent({
             </div>
           </div>
 
+          {/* Mobile Symbol Selector */}
+          <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-600">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-300">Symbol:</span>
+              <select
+                value={selectedSymbol}
+                onChange={(e) => {
+                  const newSymbol = e.target.value;
+                  setSelectedSymbol(newSymbol);
+                  handleTradingViewSymbolChange(newSymbol);
+                }}
+                className="bg-gray-700 text-white text-sm font-medium rounded-md px-3 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="BTCUSDT">BTC/USDT</option>
+                <option value="ETHUSDT">ETH/USDT</option>
+                <option value="XRPUSDT">XRP/USDT</option>
+                <option value="LTCUSDT">LTC/USDT</option>
+                <option value="BNBUSDT">BNB/USDT</option>
+                <option value="SOLUSDT">SOL/USDT</option>
+                <option value="TONUSDT">TON/USDT</option>
+                <option value="DOGEUSDT">DOGE/USDT</option>
+                <option value="ADAUSDT">ADA/USDT</option>
+                <option value="TRXUSDT">TRX/USDT</option>
+                <option value="HYPEUSDT">HYPE/USDT</option>
+                <option value="LINKUSDT">LINK/USDT</option>
+                <option value="AVAXUSDT">AVAX/USDT</option>
+                <option value="SUIUSDT">SUI/USDT</option>
+                <option value="SHIBUSDT">SHIB/USDT</option>
+                <option value="BCHUSDT">BCH/USDT</option>
+                <option value="DOTUSDT">DOT/USDT</option>
+                <option value="MATICUSDT">MATIC/USDT</option>
+                <option value="XLMUSDT">XLM/USDT</option>
+              </select>
+            </div>
+          </div>
+
           {/* Mobile Chart - Full Vertical Layout */}
           <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '375px' }}>
             <TradeOverlay
@@ -1720,17 +1756,58 @@ function OptionsPageContent({
             )}
 
             {chartView === 'tradingview' && (
-              <ErrorBoundary>
-                <TradingViewWidget
-                  type="chart"
-                  symbol={`BINANCE:${selectedSymbol}`}
-                  height={400}
-                  interval="1"
-                  theme="dark"
-                  container_id="options_tradingview_chart"
-                  onSymbolChange={handleTradingViewSymbolChange}
-                />
-              </ErrorBoundary>
+              <div className="space-y-4">
+                {/* Symbol Selector for TradingView */}
+                <div className="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 border border-gray-600">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-300">Chart Symbol:</span>
+                    <select
+                      value={selectedSymbol}
+                      onChange={(e) => {
+                        const newSymbol = e.target.value;
+                        setSelectedSymbol(newSymbol);
+                        handleTradingViewSymbolChange(newSymbol);
+                      }}
+                      className="bg-gray-700 text-white text-sm font-medium rounded-md px-3 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[120px]"
+                    >
+                      <option value="BTCUSDT">BTC/USDT</option>
+                      <option value="ETHUSDT">ETH/USDT</option>
+                      <option value="XRPUSDT">XRP/USDT</option>
+                      <option value="LTCUSDT">LTC/USDT</option>
+                      <option value="BNBUSDT">BNB/USDT</option>
+                      <option value="SOLUSDT">SOL/USDT</option>
+                      <option value="TONUSDT">TON/USDT</option>
+                      <option value="DOGEUSDT">DOGE/USDT</option>
+                      <option value="ADAUSDT">ADA/USDT</option>
+                      <option value="TRXUSDT">TRX/USDT</option>
+                      <option value="HYPEUSDT">HYPE/USDT</option>
+                      <option value="LINKUSDT">LINK/USDT</option>
+                      <option value="AVAXUSDT">AVAX/USDT</option>
+                      <option value="SUIUSDT">SUI/USDT</option>
+                      <option value="SHIBUSDT">SHIB/USDT</option>
+                      <option value="BCHUSDT">BCH/USDT</option>
+                      <option value="DOTUSDT">DOT/USDT</option>
+                      <option value="MATICUSDT">MATIC/USDT</option>
+                      <option value="XLMUSDT">XLM/USDT</option>
+                    </select>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Live TradingView Chart
+                  </div>
+                </div>
+
+                <ErrorBoundary>
+                  <TradingViewWidget
+                    type="chart"
+                    symbol={`BINANCE:${selectedSymbol}`}
+                    height={400}
+                    interval="1"
+                    theme="dark"
+                    container_id="options_tradingview_chart"
+                    onSymbolChange={handleTradingViewSymbolChange}
+                  />
+                </ErrorBoundary>
+              </div>
             )}
 
             {chartView === 'depth' && (
@@ -2378,7 +2455,35 @@ function OptionsPageContent({
                   <div className="border-t border-gray-800 pt-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-semibold text-white">Market Chart</h3>
-                      <div className="text-xs text-gray-400">{selectedSymbol} • Live</div>
+                      <select
+                        value={selectedSymbol}
+                        onChange={(e) => {
+                          const newSymbol = e.target.value;
+                          setSelectedSymbol(newSymbol);
+                          handleTradingViewSymbolChange(newSymbol);
+                        }}
+                        className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="XRPUSDT">XRP/USDT</option>
+                        <option value="LTCUSDT">LTC/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="TONUSDT">TON/USDT</option>
+                        <option value="DOGEUSDT">DOGE/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                        <option value="TRXUSDT">TRX/USDT</option>
+                        <option value="HYPEUSDT">HYPE/USDT</option>
+                        <option value="LINKUSDT">LINK/USDT</option>
+                        <option value="AVAXUSDT">AVAX/USDT</option>
+                        <option value="SUIUSDT">SUI/USDT</option>
+                        <option value="SHIBUSDT">SHIB/USDT</option>
+                        <option value="BCHUSDT">BCH/USDT</option>
+                        <option value="DOTUSDT">DOT/USDT</option>
+                        <option value="MATICUSDT">MATIC/USDT</option>
+                        <option value="XLMUSDT">XLM/USDT</option>
+                      </select>
                     </div>
                     <div className="h-[300px] bg-[#10121E] rounded-lg overflow-hidden">
                       <TradingViewWidget
