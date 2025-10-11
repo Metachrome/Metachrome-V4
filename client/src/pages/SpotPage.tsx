@@ -68,10 +68,13 @@ function SpotPageContent() {
     console.log('🔍 SpotPage mounted');
     console.log('🔍 User:', user);
     console.log('💰 SpotPage - Price from context:', priceData?.price);
+    console.log('💰 SpotPage - Selected symbol:', selectedSymbol);
+    console.log('💰 SpotPage - Selected symbol price data:', selectedSymbolPriceData);
+    console.log('💰 SpotPage - Current price:', currentPrice);
     return () => {
       console.log('🔍 SpotPage unmounted');
     };
-  }, [user, priceData]);
+  }, [user, priceData, selectedSymbol, selectedSymbolPriceData, currentPrice]);
 
   // Load initial mock order history only once
   useEffect(() => {
@@ -744,8 +747,15 @@ function SpotPageContent() {
 
   // Generate dynamic order book data based on current price
   const generateOrderBookData = (basePrice: number) => {
-    // Safety check for valid price
-    const safeBasePrice = (basePrice && !isNaN(basePrice) && basePrice > 0) ? basePrice : 166373.87;
+    // Safety check for valid price - use current price for selected symbol
+    let safeBasePrice = basePrice;
+    if (!safeBasePrice || isNaN(safeBasePrice) || safeBasePrice <= 0) {
+      // Get price for selected symbol or use default
+      const symbolPrice = getPriceForSymbol(selectedSymbol)?.price;
+      safeBasePrice = symbolPrice || priceData?.price || 166373.87;
+    }
+
+    console.log('📊 Order Book - Base price:', basePrice, 'Safe price:', safeBasePrice, 'Symbol:', selectedSymbol);
 
     const sellOrders = [];
     const buyOrders = [];
@@ -901,7 +911,7 @@ function SpotPageContent() {
             <div>
               <div className="text-red-400 text-sm font-medium mb-2">Sell Orders</div>
               <div className="space-y-1">
-                {generateOrderBookData(currentPrice || 124119.71).sellOrders.slice(0, 5).map((order, index) => (
+                {generateOrderBookData(currentPrice).sellOrders.slice(0, 5).map((order, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span className="text-red-400">{order.price}</span>
                     <span className="text-gray-400">{order.amount}</span>
@@ -914,7 +924,7 @@ function SpotPageContent() {
             <div>
               <div className="text-green-400 text-sm font-medium mb-2">Buy Orders</div>
               <div className="space-y-1">
-                {generateOrderBookData(currentPrice || 124119.71).buyOrders.slice(0, 5).map((order, index) => (
+                {generateOrderBookData(currentPrice).buyOrders.slice(0, 5).map((order, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span className="text-green-400">{order.price}</span>
                     <span className="text-gray-400">{order.amount}</span>
@@ -1176,7 +1186,7 @@ function SpotPageContent() {
           <div className="flex-1 min-h-[650px] overflow-y-auto">
             {/* Sell Orders (Red) - Using TradingView Price */}
             <div className="space-y-0">
-              {generateOrderBookData(currentPrice || 124119.71).sellOrders.map((order, index) => (
+              {generateOrderBookData(currentPrice).sellOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
                   <span className="text-red-400">{order.price}</span>
                   <span className="text-gray-300">{order.volume}</span>
@@ -1200,7 +1210,7 @@ function SpotPageContent() {
 
             {/* Buy Orders (Green) - Using TradingView Price */}
             <div className="space-y-0">
-              {generateOrderBookData(currentPrice || 124119.71).buyOrders.map((order, index) => (
+              {generateOrderBookData(currentPrice).buyOrders.map((order, index) => (
                 <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
                   <span className="text-green-400">{order.price}</span>
                   <span className="text-gray-300">{order.volume}</span>
