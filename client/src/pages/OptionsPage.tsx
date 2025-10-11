@@ -1757,19 +1757,17 @@ function OptionsPageContent({
 
             {chartView === 'tradingview' && (
               <div className="relative h-full">
-                {/* Symbol Selector Overlay - Positioned over the chart */}
-                <div className="absolute top-2 left-2 z-10 bg-gray-800/90 backdrop-blur-sm rounded-lg p-2 border border-gray-600/50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-300">Symbol:</span>
-                    <select
-                      value={selectedSymbol}
-                      onChange={(e) => {
-                        const newSymbol = e.target.value;
-                        setSelectedSymbol(newSymbol);
-                        handleTradingViewSymbolChange(newSymbol);
-                      }}
-                      className="bg-gray-700/90 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none min-w-[100px]"
-                    >
+                {/* Symbol Selector Overlay - Positioned in top-right corner */}
+                <div className="absolute top-2 right-2 z-10 bg-gray-900/95 backdrop-blur-sm rounded-md p-1.5 border border-gray-600/30 shadow-lg">
+                  <select
+                    value={selectedSymbol}
+                    onChange={(e) => {
+                      const newSymbol = e.target.value;
+                      setSelectedSymbol(newSymbol);
+                      handleTradingViewSymbolChange(newSymbol);
+                    }}
+                    className="bg-gray-800/95 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px]"
+                  >
                       <option value="BTCUSDT">BTC/USDT</option>
                       <option value="ETHUSDT">ETH/USDT</option>
                       <option value="XRPUSDT">XRP/USDT</option>
