@@ -1612,6 +1612,149 @@ function OptionsPageContent({
             )}
           </div>
 
+          {/* Mobile Trading History Section */}
+          <div className="bg-[#10121E] border-t border-gray-700 min-h-[200px]">
+            {/* Tabs Header */}
+            <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
+              <div className="flex items-center space-x-6">
+                <button
+                  onClick={() => setActiveTab("open")}
+                  className={`pb-1 text-sm font-medium ${
+                    activeTab === "open"
+                      ? "text-blue-400 border-b-2 border-blue-400"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Active Trades({activeTrades.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("history")}
+                  className={`pb-1 text-sm font-medium ${
+                    activeTab === "history"
+                      ? "text-blue-400 border-b-2 border-blue-400"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Trade History({tradeHistory.length})
+                </button>
+                {activeTab === "history" && (
+                  <button
+                    onClick={() => {
+                      console.log('🔄 MANUAL REFRESH: User clicked refresh button');
+                      setIsLoadingHistory(true);
+                      loadTradeHistory();
+                    }}
+                    disabled={isLoadingHistory}
+                    className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    <svg className={`w-4 h-4 ${isLoadingHistory ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>{isLoadingHistory ? 'Refreshing...' : 'Refresh'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile Trade Content - Simplified for smaller screens */}
+            <div className="px-4 py-2 max-h-[300px] overflow-y-auto">
+              {activeTab === "open" && (
+                <>
+                  {activeTrades.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16">
+                      <div className="w-16 h-16 mb-4 opacity-50">
+                        <svg viewBox="0 0 64 64" className="w-full h-full text-gray-600">
+                          <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M32 16v16l8 8" stroke="currentColor" strokeWidth="2" fill="none"/>
+                        </svg>
+                      </div>
+                      <div className="text-gray-400 text-sm">No active trades</div>
+                    </div>
+                  ) : (
+                    activeTrades.map(trade => {
+                      const timeRemaining = Math.max(0, Math.ceil((trade.endTime - Date.now()) / 1000));
+                      const priceChange = safeCurrentPrice - trade.entryPrice;
+                      const isWinning = (trade.direction === 'up' && priceChange > 0) ||
+                                       (trade.direction === 'down' && priceChange < 0);
+                      const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -trade.amount;
+
+                      return (
+                        <div key={trade.id} className="bg-gray-800 rounded p-3 mb-2">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                              {trade.direction.toUpperCase()} • {trade.amount} USDT
+                            </span>
+                            <span className="text-yellow-400 font-bold text-sm">{timeRemaining}s</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-300">
+                            <span>Entry: {trade.entryPrice.toFixed(2)}</span>
+                            <span>Current: {currentPrice.toFixed(2)}</span>
+                            <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
+                              {potentialPayout > 0 ? '+' : ''}{potentialPayout.toFixed(2)} USDT
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
+
+              {activeTab === "history" && (
+                <>
+                  {isLoadingHistory ? (
+                    <div className="flex flex-col items-center justify-center py-16">
+                      <div className="w-8 h-8 mb-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="text-gray-400 text-sm">Loading trade history...</div>
+                    </div>
+                  ) : tradeHistory.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16">
+                      <div className="w-16 h-16 mb-4 opacity-50">
+                        <svg viewBox="0 0 64 64" className="w-full h-full text-gray-600">
+                          <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M32 16v16l8 8" stroke="currentColor" strokeWidth="2" fill="none"/>
+                        </svg>
+                      </div>
+                      <div className="text-gray-400 text-sm">No trade history</div>
+                      <div className="text-gray-500 text-xs mt-2">Complete some trades to see your history here</div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {tradeHistory.map(trade => {
+                        const profitPercentage = trade.duration === 30 ? 10 : 15;
+                        const pnl = trade.profit !== undefined ? trade.profit :
+                                   (trade.status === 'won' ?
+                                     (trade.amount * profitPercentage / 100) :
+                                     -trade.amount);
+                        const endTime = new Date(trade.endTime).toLocaleTimeString();
+
+                        return (
+                          <div key={trade.id} className="bg-gray-800 rounded p-3">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                                {trade.direction.toUpperCase()} • {trade.amount} USDT
+                              </span>
+                              <span className={`font-bold text-sm ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                                {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-300">
+                              <span>Entry: {trade.entryPrice.toFixed(2)}</span>
+                              <span>Time: {endTime}</span>
+                              <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                                {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)} USDT
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
           <MobileBottomNav />
         </div>
       );
