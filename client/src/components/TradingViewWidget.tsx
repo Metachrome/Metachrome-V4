@@ -275,6 +275,36 @@ function TradingViewWidget({
                       }
                     }
 
+                    // Pattern 2.7: Enhanced detection for TradingView native symbol changes
+                    // Look for any symbol pattern in the URL that might indicate a change
+                    const allSymbolMatches = iframe.src.match(/symbol=([A-Z]{3,10})/g);
+                    if (allSymbolMatches && allSymbolMatches.length > 0) {
+                      for (const match of allSymbolMatches) {
+                        const symbolPart = match.replace('symbol=', '');
+                        let detectedSymbol = symbolPart;
+
+                        // Handle various formats
+                        if (detectedSymbol.includes('BINANCE%3A')) {
+                          detectedSymbol = detectedSymbol.replace('BINANCE%3A', '');
+                        }
+                        if (detectedSymbol.includes('COINBASE%3A')) {
+                          detectedSymbol = detectedSymbol.replace('COINBASE%3A', '');
+                        }
+
+                        // Normalize USD to USDT
+                        if (detectedSymbol.endsWith('USD') && !detectedSymbol.endsWith('USDT')) {
+                          detectedSymbol = detectedSymbol.replace('USD', 'USDT');
+                        }
+
+                        if (detectedSymbol !== currentSymbol && detectedSymbol.length >= 6) {
+                          console.log('🔄 Enhanced symbol detection from URL parameter:', detectedSymbol, 'from', symbolPart);
+                          currentSymbol = detectedSymbol;
+                          onSymbolChange(detectedSymbol);
+                          return;
+                        }
+                      }
+                    }
+
                     // Pattern 3: Check for any crypto symbols in the entire URL
                     const cryptoSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT', 'XRPUSDT', 'DOGEUSDT', 'DOTUSDT', 'LINKUSDT', 'LTCUSDT'];
                     for (const cryptoSymbol of cryptoSymbols) {
@@ -329,8 +359,8 @@ function TradingViewWidget({
               }
             };
 
-            // Check every 200ms for very fast detection
-            const symbolInterval = setInterval(checkSymbolChange, 200);
+            // Check every 100ms for ultra-fast detection of TradingView native changes
+            const symbolInterval = setInterval(checkSymbolChange, 100);
 
             // Immediate check
             setTimeout(checkSymbolChange, 100);
@@ -413,20 +443,28 @@ function TradingViewWidget({
             // Monitor hash changes every 500ms
             const hashInterval = setInterval(monitorHashChanges, 500);
 
-            // Additional aggressive monitoring - check for TradingView widget state
+            // Enhanced monitoring for TradingView native symbol changes
             const monitorWidgetState = () => {
               try {
                 const iframe = containerRef.current?.querySelector('iframe');
                 if (iframe && iframe.contentWindow) {
-                  // Try to access TradingView widget if available
+                  // Monitor for DOM changes in the iframe (symbol display changes)
                   try {
+                    // Check if the iframe URL has changed (indicates symbol change)
+                    const currentUrl = iframe.src;
+                    if (currentUrl !== lastKnownUrl) {
+                      lastKnownUrl = currentUrl;
+                      console.log('🔄 TradingView iframe URL changed:', currentUrl);
+                      checkSymbolChange(); // Trigger immediate symbol check
+                    }
+
                     // Post a message to the iframe to request current symbol
                     iframe.contentWindow.postMessage({
                       type: 'get_symbol',
                       source: 'metachrome'
                     }, '*');
                   } catch (e) {
-                    // Silent error handling
+                    // Silent error handling for CORS
                   }
                 }
               } catch (error) {
@@ -434,12 +472,48 @@ function TradingViewWidget({
               }
             };
 
-            // Monitor widget state every 2 seconds
-            const widgetInterval = setInterval(monitorWidgetState, 2000);
+            let lastKnownUrl = '';
+
+            // Monitor widget state every 500ms for faster detection
+            const widgetInterval = setInterval(monitorWidgetState, 500);
+
+            // Additional monitoring for TradingView's postMessage events
+            const handleTradingViewMessage = (event: MessageEvent) => {
+              try {
+                if (event.origin.includes('tradingview.com') || event.origin.includes('tradingview-widget.com')) {
+                  console.log('📨 TradingView message received:', event.data);
+
+                  // Check if the message contains symbol information
+                  if (event.data && typeof event.data === 'object') {
+                    if (event.data.symbol || event.data.name) {
+                      const symbolFromMessage = event.data.symbol || event.data.name;
+                      const cleanSymbol = symbolFromMessage.replace('BINANCE:', '').replace('COINBASE:', '');
+
+                      if (cleanSymbol && cleanSymbol !== currentSymbol) {
+                        let normalizedSymbol = cleanSymbol;
+                        if (cleanSymbol.endsWith('USD') && !cleanSymbol.endsWith('USDT')) {
+                          normalizedSymbol = cleanSymbol.replace('USD', 'USDT');
+                        }
+
+                        console.log('🔄 Symbol change from TradingView message:', normalizedSymbol);
+                        currentSymbol = normalizedSymbol;
+                        onSymbolChange(normalizedSymbol);
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                // Silent error handling
+              }
+            };
+
+            // Listen for TradingView postMessage events
+            window.addEventListener('message', handleTradingViewMessage);
 
             // Cleanup function
             return () => {
               window.removeEventListener('message', handleMessage);
+              window.removeEventListener('message', handleTradingViewMessage);
               clearInterval(symbolInterval);
               clearInterval(cryptoInterval);
               clearInterval(hashInterval);
