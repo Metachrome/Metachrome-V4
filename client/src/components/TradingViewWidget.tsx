@@ -93,11 +93,17 @@ function TradingViewWidget({
       // Check if mobile for specific mobile chart settings
       const isMobile = window.innerWidth <= 768;
 
-      // Minimal configuration to avoid schema validation errors
+      // Working configuration for TradingView widget
+      // Convert USDT symbols to proper TradingView format
+      const tradingViewSymbol = symbol.includes('USDT')
+        ? `BINANCE:${symbol}`
+        : symbol.includes('USD')
+        ? `COINBASE:${symbol}`
+        : `BINANCE:${symbol}`;
+
       const config = {
-        width: "100%",
-        height: "100%",
-        symbol: symbol,
+        autosize: true,
+        symbol: tradingViewSymbol,
         interval: interval,
         timezone: timezone,
         theme: theme,
@@ -106,9 +112,6 @@ function TradingViewWidget({
         toolbar_bg: "#f1f3f6",
         enable_publishing: false,
         allow_symbol_change: false, // Disable TradingView's native symbol selector
-        hide_top_toolbar: true, // Hide the top toolbar with symbol selector
-        hide_legend: false, // Keep legend for price info
-        hide_side_toolbar: false, // Keep drawing tools
         container_id: container_id
       };
 
@@ -600,9 +603,12 @@ function TradingViewWidget({
                   const iframe = containerRef.current?.querySelector('iframe');
                   if (iframe) {
                     try {
-                      // Update the iframe src to change symbol
+                      // Update the iframe src to change symbol with proper exchange prefix
+                      const tradingViewSymbol = newSymbol.includes('USDT')
+                        ? `BINANCE:${newSymbol}`
+                        : `COINBASE:${newSymbol}`;
                       const currentSrc = iframe.src;
-                      const newSrc = currentSrc.replace(/symbol=[^&]*/, `symbol=${newSymbol.replace('USDT', 'USD')}`);
+                      const newSrc = currentSrc.replace(/symbol=[^&]*/, `symbol=${encodeURIComponent(tradingViewSymbol)}`);
                       iframe.src = newSrc;
                     } catch (error) {
                       console.log('Could not update TradingView symbol:', error);
