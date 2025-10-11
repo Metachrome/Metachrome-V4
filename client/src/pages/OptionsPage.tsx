@@ -46,8 +46,8 @@ function OptionsPageContent() {
   const { changeText, changeColor, isPositive } = usePriceChange();
   const { high, low, volume } = use24hStats();
 
-  // Chart view state
-  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('basic');
+  // Chart view state - Default to TradingView for better user experience
+  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
   // Debug user data
   console.log('🔍 OPTIONS PAGE - User data:', {
@@ -1621,7 +1621,7 @@ function OptionsPageContent() {
             {chartView === 'tradingview' && (
               <TradingViewWidget
                 type="chart"
-                symbol="BINANCE:BTCUSDT"
+                symbol={`BINANCE:${selectedSymbol}`}
                 height={400}
                 interval="1"
                 theme="dark"
@@ -2279,7 +2279,7 @@ function OptionsPageContent() {
                     <div className="h-[300px] bg-[#10121E] rounded-lg overflow-hidden">
                       <TradingViewWidget
                         type="chart"
-                        symbol="BINANCE:BTCUSDT"
+                        symbol={`BINANCE:${selectedSymbol}`}
                         height={300}
                         interval="1"
                         theme="dark"

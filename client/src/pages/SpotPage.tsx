@@ -5,6 +5,7 @@ import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import { Button } from "../components/ui/button";
 import LightweightChart from "../components/LightweightChart";
+import TradingViewWidget from "../components/TradingViewWidget";
 import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
@@ -58,6 +59,7 @@ function SpotPageContent() {
   const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
+  const [chartView, setChartView] = useState<'basic' | 'tradingview'>('tradingview'); // Chart view state
 
   // Trading pairs data
   const tradingPairs = [
@@ -581,7 +583,7 @@ function SpotPageContent() {
         <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '375px' }}>
           <div className="w-full h-full">
             <LightweightChart
-              symbol="BTCUSDT"
+              symbol={selectedSymbol}
               interval="1m"
               height={375}
               containerId="spot_mobile_chart"
@@ -946,14 +948,56 @@ function SpotPageContent() {
             </div>
           </div>
 
-          {/* Chart Area - Lightweight Charts with Binance Data */}
+          {/* Chart Area - Dynamic chart based on selected view */}
           <div className="min-h-[500px] flex-1 bg-[#10121E] p-2">
-            <LightweightChart
-              symbol="BTCUSDT"
-              interval="1m"
-              height={500}
-              containerId="spot_desktop_chart"
-            />
+            {/* Chart View Controls */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setChartView('basic')}
+                  className={`text-xs transition-colors ${
+                    chartView === 'basic'
+                      ? 'text-white bg-blue-600 px-2 py-1 rounded'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Basic version
+                </button>
+                <button
+                  onClick={() => setChartView('tradingview')}
+                  className={`text-xs transition-colors ${
+                    chartView === 'tradingview'
+                      ? 'text-white bg-blue-600 px-2 py-1 rounded'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Trading view
+                </button>
+              </div>
+            </div>
+
+            {/* Chart Content */}
+            <div className="h-[480px] relative">
+              {chartView === 'basic' && (
+                <LightweightChart
+                  symbol={selectedSymbol}
+                  interval="1m"
+                  height={480}
+                  containerId="spot_desktop_chart"
+                />
+              )}
+
+              {chartView === 'tradingview' && (
+                <TradingViewWidget
+                  type="chart"
+                  symbol={`BINANCE:${selectedSymbol}`}
+                  height={480}
+                  interval="1"
+                  theme="dark"
+                  container_id="spot_tradingview_chart"
+                />
+              )}
+            </div>
           </div>
 
           {/* Bottom Trading Section */}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 
 interface TradingViewWidgetProps {
   type?: 'chart' | 'ticker';
@@ -30,12 +30,16 @@ function TradingViewWidget({
   onSymbolChange
 }: TradingViewWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     // Clear any existing widget
     containerRef.current.innerHTML = '';
+    setIsLoading(true);
+    setError(null);
 
     if (type === 'ticker') {
       // Ticker tape widget for homepage
@@ -101,23 +105,28 @@ function TradingViewWidget({
         calendar: false,
         support_host: "https://www.tradingview.com",
         container_id: container_id,
-        hide_side_toolbar: isMobile && container_id === 'options_mobile_chart',
+        hide_side_toolbar: isMobile,
         hide_top_toolbar: false,
-        hide_legend: isMobile && container_id === 'options_mobile_chart',
+        hide_legend: isMobile,
         save_image: false,
         backgroundColor: theme === 'dark' ? "#0F0F0F" : "#FFFFFF",
         gridColor: theme === 'dark' ? "rgba(242, 242, 242, 0.06)" : "rgba(0, 0, 0, 0.06)",
         studies: [],
         watchlist: [],
-        details: !isMobile || container_id !== 'options_mobile_chart',
+        details: !isMobile,
         hotlist: false,
-        withdateranges: !isMobile || container_id !== 'options_mobile_chart',
-        hide_volume: isMobile && container_id === 'options_mobile_chart'
+        withdateranges: !isMobile,
+        hide_volume: isMobile,
+        width: "100%",
+        height: typeof height === 'number' ? height : "100%"
       };
 
       script.innerHTML = JSON.stringify(config);
 
       script.onload = () => {
+        console.log('✅ TradingView script loaded successfully');
+        setIsLoading(false);
+
         // Set up price monitoring if callback provided
         if (onPriceUpdate && window.TradingView) {
           try {
@@ -147,6 +156,12 @@ function TradingViewWidget({
         }
       };
 
+      script.onerror = () => {
+        console.error('❌ Failed to load TradingView script');
+        setError('Failed to load TradingView chart');
+        setIsLoading(false);
+      };
+
       containerRef.current.appendChild(script);
     }
 
@@ -164,7 +179,8 @@ function TradingViewWidget({
       ref={containerRef}
       style={{
         height: type === 'ticker' ? '64px' : (typeof height === 'number' ? `${height}px` : height),
-        width: "100%"
+        width: "100%",
+        position: "relative"
       }}
     >
       {type === 'ticker' ? (
@@ -174,22 +190,33 @@ function TradingViewWidget({
         </div>
       ) : (
         <>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[#10121E]/80 z-10">
+              <div className="text-gray-400 text-sm">
+                <div className="animate-pulse">Loading TradingView chart...</div>
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[#10121E]/80 z-10">
+              <div className="text-red-400 text-sm">
+                {error}
+              </div>
+            </div>
+          )}
+
+          {/* Chart container - TradingView will inject content here */}
           <div
+            id={container_id}
             className="tradingview-widget-container__widget"
             style={{
-              height: "calc(100% - 32px)",
+              height: "100%",
               width: "100%"
             }}
           />
-          <div className="tradingview-widget-copyright">
-            <a
-              href={`https://www.tradingview.com/symbols/${symbol.replace(':', '-')}/?exchange=${symbol.split(':')[0]}`}
-              rel="noopener nofollow"
-              target="_blank"
-            >
-              <span className="blue-text">{symbol} chart by TradingView</span>
-            </a>
-          </div>
         </>
       )}
     </div>
