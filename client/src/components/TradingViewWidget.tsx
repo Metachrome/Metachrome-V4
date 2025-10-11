@@ -582,6 +582,48 @@ function TradingViewWidget({
         position: "relative"
       }}
     >
+      {/* Symbol Sync Overlay - Only show for main chart, not ticker */}
+      {type !== 'ticker' && onSymbolChange && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-2 border border-gray-700">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">Sync:</span>
+              <select
+                value={symbol}
+                onChange={(e) => {
+                  const newSymbol = e.target.value;
+                  onSymbolChange(newSymbol);
+                  // Also try to update TradingView widget
+                  const iframe = containerRef.current?.querySelector('iframe');
+                  if (iframe) {
+                    try {
+                      // Update the iframe src to change symbol
+                      const currentSrc = iframe.src;
+                      const newSrc = currentSrc.replace(/symbol=[^&]*/, `symbol=${newSymbol.replace('USDT', 'USD')}`);
+                      iframe.src = newSrc;
+                    } catch (error) {
+                      console.log('Could not update TradingView symbol:', error);
+                    }
+                  }
+                }}
+                className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="BTCUSDT">BTC/USDT</option>
+                <option value="ETHUSDT">ETH/USDT</option>
+                <option value="SOLUSDT">SOL/USDT</option>
+                <option value="BNBUSDT">BNB/USDT</option>
+                <option value="ADAUSDT">ADA/USDT</option>
+                <option value="XRPUSDT">XRP/USDT</option>
+                <option value="DOGEUSDT">DOGE/USDT</option>
+                <option value="DOTUSDT">DOT/USDT</option>
+                <option value="LINKUSDT">LINK/USDT</option>
+                <option value="LTCUSDT">LTC/USDT</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       {type === 'ticker' ? (
         // Fallback content for ticker while widget loads
         <div className="flex items-center justify-center h-full text-gray-400 text-sm">
