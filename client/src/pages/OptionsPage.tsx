@@ -313,21 +313,25 @@ function OptionsPageContent({
   // Handle symbol change from TradingView widget
   const handleTradingViewSymbolChange = (newSymbol: string) => {
     console.log('📈 TradingView symbol changed to:', newSymbol);
+    console.log('📈 Current selected symbol:', selectedSymbol);
+    console.log('📈 Available trading pairs:', tradingPairs.map(p => p.rawSymbol));
 
     // Convert TradingView symbol format to our format
     // e.g., "ETHUSDT" -> "ETHUSDT"
-    const cleanSymbol = newSymbol.replace('BINANCE:', '');
+    const cleanSymbol = newSymbol.replace('BINANCE:', '').replace('COINBASE:', '');
 
     // Check if this symbol exists in our trading pairs
     const matchingPair = tradingPairs.find(pair => pair.rawSymbol === cleanSymbol);
 
     if (matchingPair) {
       console.log('✅ Found matching pair:', matchingPair);
+      console.log('✅ Setting selected symbol to:', cleanSymbol);
       setSelectedSymbol(cleanSymbol);
       // Clear search when symbol changes
       setSearchTerm("");
     } else {
       console.log('⚠️ Symbol not found in trading pairs:', cleanSymbol);
+      console.log('⚠️ Available symbols:', tradingPairs.map(p => p.rawSymbol).join(', '));
       // Optionally, you could add the symbol to trading pairs or show a notification
     }
   };
@@ -1619,7 +1623,22 @@ function OptionsPageContent({
         <div className="flex-1 flex flex-col">
           {/* Chart Controls - Chart view switching */}
           <div className="p-2 border-b border-gray-700">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                {/* Debug: Manual symbol change buttons */}
+                <button
+                  onClick={() => handleTradingViewSymbolChange('ETHUSDT')}
+                  className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded"
+                >
+                  Test ETH
+                </button>
+                <button
+                  onClick={() => handleTradingViewSymbolChange('BNBUSDT')}
+                  className="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded"
+                >
+                  Test BNB
+                </button>
+              </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <button
