@@ -72,7 +72,7 @@ export default function TradingChart({ symbol, height = 400 }: TradingChartProps
       save_image: false,
       container_id: tradingViewRef.current.id,
       studies: [
-        "Volume@tv-basicstudies",
+        // "Volume@tv-basicstudies", // Volume bars disabled
         "MACD@tv-basicstudies",
         "RSI@tv-basicstudies"
       ],

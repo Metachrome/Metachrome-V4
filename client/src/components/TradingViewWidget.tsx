@@ -117,7 +117,16 @@ function TradingViewWidget({
         toolbar_bg: "#f1f3f6",
         enable_publishing: false,
         allow_symbol_change: false, // Disable TradingView's native symbol selector
-        container_id: container_id
+        container_id: container_id,
+        // Hide volume bars and studies
+        studies: [],
+        hide_volume: true,
+        volume: false,
+        studies_overrides: {
+          "volume.volume.color.0": "rgba(0,0,0,0)",
+          "volume.volume.color.1": "rgba(0,0,0,0)",
+          "volume.volume.transparency": 100
+        }
       };
 
       script.innerHTML = JSON.stringify(config);

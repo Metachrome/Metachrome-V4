@@ -26,7 +26,7 @@ export default function LightweightChart({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  // const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null); // Volume disabled
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,16 +108,16 @@ export default function LightweightChart({
 
     candlestickSeriesRef.current = candlestickSeries;
 
-    // Add volume series
-    const volumeSeries = chart.addHistogramSeries({
-      color: '#6B7280',
-      priceFormat: {
-        type: 'volume',
-      },
-      priceScaleId: '', // Set as overlay
-    });
+    // Volume series disabled - no volume bars displayed
+    // const volumeSeries = chart.addHistogramSeries({
+    //   color: '#6B7280',
+    //   priceFormat: {
+    //     type: 'volume',
+    //   },
+    //   priceScaleId: '', // Set as overlay
+    // });
 
-    volumeSeriesRef.current = volumeSeries;
+    // volumeSeriesRef.current = volumeSeries;
 
     // Handle resize
     const handleResize = () => {
@@ -181,15 +181,15 @@ export default function LightweightChart({
           candlestickSeriesRef.current.setData(klines);
         }
 
-        // Update volume series
-        if (volumeSeriesRef.current) {
-          const volumeData = klines.map((candle: any) => ({
-            time: candle.time,
-            value: candle.volume,
-            color: candle.close >= candle.open ? '#10B98180' : '#EF444480' // Semi-transparent
-          }));
-          volumeSeriesRef.current.setData(volumeData);
-        }
+        // Volume series disabled - no volume data processing
+        // if (volumeSeriesRef.current) {
+        //   const volumeData = klines.map((candle: any) => ({
+        //     time: candle.time,
+        //     value: candle.volume,
+        //     color: candle.close >= candle.open ? '#10B98180' : '#EF444480' // Semi-transparent
+        //   }));
+        //   volumeSeriesRef.current.setData(volumeData);
+        // }
 
         // Fit content
         if (chartRef.current) {
