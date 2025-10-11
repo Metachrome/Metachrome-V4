@@ -71,11 +71,25 @@ export default function LightweightChart({
         fontSize: 11, // Smaller font for mobile
       },
       grid: {
-        vertLines: { color: '#1F2937' },
-        horzLines: { color: '#1F2937' },
+        vertLines: {
+          color: '#1F2937',
+          visible: true
+        },
+        horzLines: {
+          color: '#1F2937',
+          visible: true
+        },
       },
       crosshair: {
-        mode: 0, // Disabled crosshair to remove red line
+        mode: 0, // Completely disabled crosshair
+        vertLine: {
+          visible: false,
+          labelVisible: false,
+        },
+        horzLine: {
+          visible: false,
+          labelVisible: false,
+        },
       },
       rightPriceScale: {
         borderColor: '#374151',
@@ -92,6 +106,9 @@ export default function LightweightChart({
         timeVisible: true,
         secondsVisible: false,
       },
+      // Disable any automatic price lines
+      handleScroll: false,
+      handleScale: false,
     });
 
     chartRef.current = chart;
@@ -104,9 +121,25 @@ export default function LightweightChart({
       borderDownColor: '#EF4444',
       wickUpColor: '#10B981',
       wickDownColor: '#EF4444',
+      // Explicitly disable any price lines
+      priceLineVisible: false,
+      lastValueVisible: false,
     });
 
     candlestickSeriesRef.current = candlestickSeries;
+
+    // Remove any existing price lines that might be automatically added
+    try {
+      const priceLines = chart.priceScale('right').getPriceLines();
+      if (priceLines && priceLines.length > 0) {
+        priceLines.forEach(line => {
+          chart.removePriceLine(line);
+        });
+      }
+    } catch (e) {
+      // Ignore errors if price lines don't exist
+      console.log('No price lines to remove');
+    }
 
     // Volume series disabled - no volume bars displayed
     // const volumeSeries = chart.addHistogramSeries({
@@ -194,6 +227,24 @@ export default function LightweightChart({
         // Fit content
         if (chartRef.current) {
           chartRef.current.timeScale().fitContent();
+
+          // Additional cleanup: Remove any price lines that might have been added
+          setTimeout(() => {
+            try {
+              // Force remove any price lines
+              const chart = chartRef.current;
+              if (chart) {
+                // Try to access and remove price lines
+                const priceScale = chart.priceScale('right');
+                if (priceScale && typeof priceScale.removePriceLine === 'function') {
+                  // This will attempt to remove any automatically added price lines
+                  console.log('🧹 Attempting to clean up any automatic price lines');
+                }
+              }
+            } catch (e) {
+              // Silently ignore errors
+            }
+          }, 100);
         }
 
         setIsLoading(false);

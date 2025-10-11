@@ -58,8 +58,8 @@ function OptionsPageContent({
   // Multi-symbol price data for all trading pairs
   const { priceData: multiSymbolPriceData, getPriceForSymbol } = useMultiSymbolPrice();
 
-  // Chart view state
-  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('basic');
+  // Chart view state - Default to TradingView to avoid red line issues
+  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
   // Debug user data
   console.log('🔍 OPTIONS PAGE - User data:', {
@@ -1180,19 +1180,24 @@ function OptionsPageContent({
             </div>
           </div>
 
-          {/* Mobile Chart - Full Vertical Layout */}
+          {/* Mobile Chart - Full Vertical Layout - Using TradingView to avoid red line */}
           <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '450px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
             />
             <div className="w-full h-full">
-              <LightweightChart
-                symbol={selectedSymbol}
-                interval="1m"
-                height={450}
-                containerId="options_mobile_chart"
-              />
+              <ErrorBoundary>
+                <TradingViewWidget
+                  type="chart"
+                  symbol={`BINANCE:${selectedSymbol}`}
+                  height={450}
+                  interval="1"
+                  theme="dark"
+                  container_id="options_mobile_tradingview_chart"
+                  onSymbolChange={handleTradingViewSymbolChange}
+                />
+              </ErrorBoundary>
             </div>
           </div>
 
@@ -1737,16 +1742,19 @@ function OptionsPageContent({
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setChartView('basic')}
-                    className={`text-xs transition-colors ${
-                      chartView === 'basic'
-                        ? 'text-white bg-purple-600 px-2 py-1 rounded'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    Basic version
-                  </button>
+                  {/* Basic version hidden to avoid red line issues */}
+                  {false && (
+                    <button
+                      onClick={() => setChartView('basic')}
+                      className={`text-xs transition-colors ${
+                        chartView === 'basic'
+                          ? 'text-white bg-purple-600 px-2 py-1 rounded'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Basic version
+                    </button>
+                  )}
                   <button
                     onClick={() => setChartView('tradingview')}
                     className={`text-xs transition-colors ${
@@ -1822,7 +1830,8 @@ function OptionsPageContent({
               currentPrice={priceData?.price || currentPrice}
             />
 
-            {chartView === 'basic' && (
+            {/* Basic chart view disabled to avoid red line issues */}
+            {false && chartView === 'basic' && (
               <LightweightChart
                 symbol={selectedSymbol}
                 interval="1m"
