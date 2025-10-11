@@ -1651,6 +1651,49 @@ function OptionsPageContent({
                   >
                     Trading view
                   </button>
+
+                  {/* Manual Symbol Selector for Testing */}
+                  {chartView === 'tradingview' && (
+                    <div className="flex items-center gap-2 ml-4">
+                      <span className="text-xs text-gray-400">Quick select:</span>
+                      <button
+                        onClick={() => {
+                          console.log('🔄 Manual symbol change to BTCUSDT');
+                          const matchingPair = tradingPairs.find(pair => pair.rawSymbol === 'BTCUSDT');
+                          if (matchingPair) {
+                            setSelectedSymbol('BTCUSDT');
+                          }
+                        }}
+                        className="text-xs text-orange-400 hover:text-orange-300 px-1"
+                      >
+                        BTC
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log('🔄 Manual symbol change to ETHUSDT');
+                          const matchingPair = tradingPairs.find(pair => pair.rawSymbol === 'ETHUSDT');
+                          if (matchingPair) {
+                            setSelectedSymbol('ETHUSDT');
+                          }
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300 px-1"
+                      >
+                        ETH
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log('🔄 Manual symbol change to SOLUSDT');
+                          const matchingPair = tradingPairs.find(pair => pair.rawSymbol === 'SOLUSDT');
+                          if (matchingPair) {
+                            setSelectedSymbol('SOLUSDT');
+                          }
+                        }}
+                        className="text-xs text-green-400 hover:text-green-300 px-1"
+                      >
+                        SOL
+                      </button>
+                    </div>
+                  )}
                   <button
                     onClick={() => setChartView('depth')}
                     className={`text-xs transition-colors ${

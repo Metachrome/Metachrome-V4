@@ -85,6 +85,7 @@ function TradingViewWidget({
     } else {
       // Advanced chart widget for trading pages
       const script = document.createElement("script");
+      // Use advanced chart with minimal configuration
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
       script.type = "text/javascript";
       script.async = true;
@@ -92,22 +93,20 @@ function TradingViewWidget({
       // Check if mobile for specific mobile chart settings
       const isMobile = window.innerWidth <= 768;
 
-      // Simplified configuration to avoid schema validation errors
+      // Minimal configuration to avoid schema validation errors
       const config = {
-        autosize: true,
+        width: "100%",
+        height: "100%",
         symbol: symbol,
         interval: interval,
         timezone: timezone,
         theme: theme,
-        style: style,
+        style: "1",
         locale: locale,
+        toolbar_bg: "#f1f3f6",
         enable_publishing: false,
         allow_symbol_change: allow_symbol_change,
-        container_id: container_id,
-        hide_top_toolbar: false,
-        save_image: false,
-        withdateranges: true,
-        hide_volume: false
+        container_id: container_id
       };
 
       script.innerHTML = JSON.stringify(config);
