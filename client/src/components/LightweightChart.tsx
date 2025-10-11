@@ -75,7 +75,7 @@ export default function LightweightChart({
         horzLines: { color: '#1F2937' },
       },
       crosshair: {
-        mode: 1, // Normal crosshair
+        mode: 0, // Disabled crosshair to remove red line
       },
       rightPriceScale: {
         borderColor: '#374151',

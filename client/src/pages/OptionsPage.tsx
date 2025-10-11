@@ -1881,29 +1881,60 @@ function OptionsPageContent({
             )}
 
             {chartView === 'depth' && (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-white text-lg font-bold mb-2">Market Depth Chart</div>
-                  <div className="text-gray-400 text-sm mb-4">Order book visualization</div>
-                  <div className="bg-gray-800 rounded-lg p-4 max-w-md">
-                    <div className="text-green-400 text-sm mb-2">Buy Orders (Bids)</div>
-                    <div className="space-y-1 mb-4">
-                      {Array.from({length: 5}, (_, i) => (
-                        <div key={i} className="flex justify-between text-xs">
-                          <span className="text-green-400">{(displayPrice - (i + 1) * 10).toFixed(2)}</span>
-                          <span className="text-gray-300">{(Math.random() * 5 + 1).toFixed(3)}</span>
+              <div className="w-full h-full p-4">
+                <div className="text-center mb-4">
+                  <div className="text-white text-lg font-bold mb-1">Market Depth Chart</div>
+                  <div className="text-gray-400 text-sm">Real-time order book visualization for {selectedSymbol}</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 h-[400px]">
+                  {/* Buy Orders (Bids) */}
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <div className="text-green-400 text-sm font-bold mb-3 text-center">Buy Orders (Bids)</div>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 text-xs text-gray-400 border-b border-gray-600 pb-1">
+                        <span>Price</span>
+                        <span className="text-center">Amount</span>
+                        <span className="text-right">Total</span>
+                      </div>
+                      {orderBookData.buyOrders.slice(0, 15).map((order, i) => (
+                        <div key={i} className="grid grid-cols-3 text-xs hover:bg-gray-700/50 p-1 rounded">
+                          <span className="text-green-400 font-mono">{order.price}</span>
+                          <span className="text-gray-300 font-mono text-center">{order.volume}</span>
+                          <span className="text-gray-300 font-mono text-right">{order.turnover}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="text-red-400 text-sm mb-2">Sell Orders (Asks)</div>
-                    <div className="space-y-1">
-                      {Array.from({length: 5}, (_, i) => (
-                        <div key={i} className="flex justify-between text-xs">
-                          <span className="text-red-400">{(displayPrice + (i + 1) * 10).toFixed(2)}</span>
-                          <span className="text-gray-300">{(Math.random() * 5 + 1).toFixed(3)}</span>
+                  </div>
+
+                  {/* Sell Orders (Asks) */}
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <div className="text-red-400 text-sm font-bold mb-3 text-center">Sell Orders (Asks)</div>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 text-xs text-gray-400 border-b border-gray-600 pb-1">
+                        <span>Price</span>
+                        <span className="text-center">Amount</span>
+                        <span className="text-right">Total</span>
+                      </div>
+                      {orderBookData.sellOrders.slice(0, 15).map((order, i) => (
+                        <div key={i} className="grid grid-cols-3 text-xs hover:bg-gray-700/50 p-1 rounded">
+                          <span className="text-red-400 font-mono">{order.price}</span>
+                          <span className="text-gray-300 font-mono text-center">{order.volume}</span>
+                          <span className="text-gray-300 font-mono text-right">{order.turnover}</span>
                         </div>
                       ))}
                     </div>
+                  </div>
+                </div>
+
+                {/* Current Price Indicator */}
+                <div className="text-center mt-4">
+                  <div className="inline-flex items-center space-x-2 bg-gray-700/50 px-4 py-2 rounded-lg">
+                    <span className="text-gray-400 text-sm">Current Price:</span>
+                    <span className="text-white font-bold text-lg">{displayPrice.toFixed(2)} USDT</span>
+                    <span className={`text-sm ${priceData?.priceChangePercent24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {priceData?.priceChangePercent24h >= 0 ? '+' : ''}{priceData?.priceChangePercent24h?.toFixed(2) || '0.00'}%
+                    </span>
                   </div>
                 </div>
               </div>
