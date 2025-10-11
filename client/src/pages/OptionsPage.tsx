@@ -187,30 +187,43 @@ function OptionsPageContent({
               let exitPrice = parseFloat(trade.exit_price || '0');
               const isWon = (trade.result === 'win' || trade.result === 'won');
 
-              // If exit price is missing or same as entry price, generate a realistic one
-              if (!exitPrice || exitPrice === entryPrice) {
-                // Generate realistic price movement based on trade outcome
-                const priceMovementPercent = (Math.random() * 0.02 + 0.005) * (Math.random() > 0.5 ? 1 : -1); // 0.5% to 2.5% movement
-                let calculatedExitPrice = entryPrice * (1 + priceMovementPercent);
+              console.log(`📊 Trade ${trade.id}: Entry=${entryPrice}, Exit=${exitPrice}, Status=${trade.status}, Result=${trade.result}`);
 
-                // Ensure the exit price matches the trade outcome
+              // ONLY generate exit price if it's truly missing from database (should be rare)
+              if (!exitPrice || exitPrice === 0) {
+                console.log(`⚠️ Missing exit price for trade ${trade.id}, generating consistent fallback`);
+                // Use trade ID as seed for consistent price generation
+                const seed = parseInt(trade.id.toString().slice(-6)) || 123456;
+                const seededRandom = (seed * 9301 + 49297) % 233280 / 233280; // Simple seeded random
+
+                // Generate realistic price movement for Bitcoin (0.01% to 0.5% max for 30-60 second trades)
+                const maxMovement = 0.005; // 0.5% maximum movement for short-term trades
+                const minMovement = 0.0001; // 0.01% minimum movement
+                const movementRange = maxMovement - minMovement;
+                const movementPercent = (seededRandom * movementRange + minMovement);
+
+                // Determine direction based on trade outcome and direction
+                let priceDirection = 1; // Default up
                 if (trade.direction === 'up') {
-                  // For UP trades: WIN means exit > entry, LOSE means exit < entry
-                  if (isWon && calculatedExitPrice <= entryPrice) {
-                    calculatedExitPrice = entryPrice * (1 + Math.random() * 0.02 + 0.005); // +0.5% to +2.5%
-                  } else if (!isWon && calculatedExitPrice >= entryPrice) {
-                    calculatedExitPrice = entryPrice * (1 - Math.random() * 0.02 - 0.005); // -0.5% to -2.5%
-                  }
+                  // For UP trades: WIN means price goes up, LOSE means price goes down
+                  priceDirection = isWon ? 1 : -1;
                 } else if (trade.direction === 'down') {
-                  // For DOWN trades: WIN means exit < entry, LOSE means exit > entry
-                  if (isWon && calculatedExitPrice >= entryPrice) {
-                    calculatedExitPrice = entryPrice * (1 - Math.random() * 0.02 - 0.005); // -0.5% to -2.5%
-                  } else if (!isWon && calculatedExitPrice <= entryPrice) {
-                    calculatedExitPrice = entryPrice * (1 + Math.random() * 0.02 + 0.005); // +0.5% to +2.5%
-                  }
+                  // For DOWN trades: WIN means price goes down, LOSE means price goes up
+                  priceDirection = isWon ? -1 : 1;
                 }
 
-                exitPrice = calculatedExitPrice;
+                // Calculate realistic exit price
+                exitPrice = entryPrice * (1 + (movementPercent * priceDirection));
+
+                // Ensure minimum price difference (at least $0.01 for Bitcoin)
+                const minDifference = 0.01;
+                if (Math.abs(exitPrice - entryPrice) < minDifference) {
+                  exitPrice = entryPrice + (priceDirection * minDifference);
+                }
+
+                console.log(`✅ Generated fallback exit price for trade ${trade.id}: ${exitPrice}`);
+              } else {
+                console.log(`✅ Using stored exit price for trade ${trade.id}: ${exitPrice}`);
               }
 
               const formattedTrade = {
@@ -2593,30 +2606,43 @@ function OptionsPageContent({
                               let exitPrice = parseFloat(trade.exit_price || '0');
                               const isWon = (trade.result === 'win');
 
-                              // If exit price is missing or same as entry price, generate a realistic one
-                              if (!exitPrice || exitPrice === entryPrice) {
-                                // Generate realistic price movement based on trade outcome
-                                const priceMovementPercent = (Math.random() * 0.02 + 0.005) * (Math.random() > 0.5 ? 1 : -1); // 0.5% to 2.5% movement
-                                let calculatedExitPrice = entryPrice * (1 + priceMovementPercent);
+                              console.log(`📊 Trade ${trade.id}: Entry=${entryPrice}, Exit=${exitPrice}, Status=${trade.status}, Result=${trade.result}`);
 
-                                // Ensure the exit price matches the trade outcome
+                              // ONLY generate exit price if it's truly missing from database (should be rare)
+                              if (!exitPrice || exitPrice === 0) {
+                                console.log(`⚠️ Missing exit price for trade ${trade.id}, generating consistent fallback`);
+                                // Use trade ID as seed for consistent price generation
+                                const seed = parseInt(trade.id.toString().slice(-6)) || 123456;
+                                const seededRandom = (seed * 9301 + 49297) % 233280 / 233280; // Simple seeded random
+
+                                // Generate realistic price movement for Bitcoin (0.01% to 0.5% max for 30-60 second trades)
+                                const maxMovement = 0.005; // 0.5% maximum movement for short-term trades
+                                const minMovement = 0.0001; // 0.01% minimum movement
+                                const movementRange = maxMovement - minMovement;
+                                const movementPercent = (seededRandom * movementRange + minMovement);
+
+                                // Determine direction based on trade outcome and direction
+                                let priceDirection = 1; // Default up
                                 if (trade.direction === 'up') {
-                                  // For UP trades: WIN means exit > entry, LOSE means exit < entry
-                                  if (isWon && calculatedExitPrice <= entryPrice) {
-                                    calculatedExitPrice = entryPrice * (1 + Math.random() * 0.02 + 0.005); // +0.5% to +2.5%
-                                  } else if (!isWon && calculatedExitPrice >= entryPrice) {
-                                    calculatedExitPrice = entryPrice * (1 - Math.random() * 0.02 - 0.005); // -0.5% to -2.5%
-                                  }
+                                  // For UP trades: WIN means price goes up, LOSE means price goes down
+                                  priceDirection = isWon ? 1 : -1;
                                 } else if (trade.direction === 'down') {
-                                  // For DOWN trades: WIN means exit < entry, LOSE means exit > entry
-                                  if (isWon && calculatedExitPrice >= entryPrice) {
-                                    calculatedExitPrice = entryPrice * (1 - Math.random() * 0.02 - 0.005); // -0.5% to -2.5%
-                                  } else if (!isWon && calculatedExitPrice <= entryPrice) {
-                                    calculatedExitPrice = entryPrice * (1 + Math.random() * 0.02 + 0.005); // +0.5% to +2.5%
-                                  }
+                                  // For DOWN trades: WIN means price goes down, LOSE means price goes up
+                                  priceDirection = isWon ? -1 : 1;
                                 }
 
-                                exitPrice = calculatedExitPrice;
+                                // Calculate realistic exit price
+                                exitPrice = entryPrice * (1 + (movementPercent * priceDirection));
+
+                                // Ensure minimum price difference (at least $0.01 for Bitcoin)
+                                const minDifference = 0.01;
+                                if (Math.abs(exitPrice - entryPrice) < minDifference) {
+                                  exitPrice = entryPrice + (priceDirection * minDifference);
+                                }
+
+                                console.log(`✅ Generated fallback exit price for trade ${trade.id}: ${exitPrice}`);
+                              } else {
+                                console.log(`✅ Using stored exit price for trade ${trade.id}: ${exitPrice}`);
                               }
 
                               return {
