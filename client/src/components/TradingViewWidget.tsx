@@ -583,6 +583,9 @@ function TradingViewWidget({
     };
   }, [type, symbol, height, interval, theme, style, locale, timezone, allow_symbol_change, container_id]);
 
+  // Debug: Log component props
+  console.log('🎯 TradingViewWidget render - type:', type, 'onSymbolChange:', !!onSymbolChange, 'symbol:', symbol);
+
   return (
     <div
       className={`tradingview-widget-container ${type === 'ticker' ? 'w-full h-16 overflow-hidden bg-transparent' : ''}`}
@@ -595,8 +598,8 @@ function TradingViewWidget({
     >
       {/* Custom Symbol Selector - Only show for main chart, not ticker */}
       {type !== 'ticker' && onSymbolChange && (
-        <div className="absolute top-4 left-4 z-20">
-          <div className="bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-gray-600 shadow-lg">
+        <div className="absolute top-4 left-4 z-50" style={{ zIndex: 9999 }}>
+          <div className="bg-red-600 backdrop-blur-sm rounded-lg p-3 border border-gray-600 shadow-lg">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-300">Symbol:</span>
               <select
