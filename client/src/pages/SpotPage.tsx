@@ -60,7 +60,8 @@ function SpotPageContent() {
   const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
-  const [chartView, setChartView] = useState<'basic' | 'tradingview'>('basic'); // Chart view state
+  // Chart view state - Default to TradingView to match options page
+  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
   // Trading pairs data - All 19 supported currencies
   const tradingPairs = [
@@ -116,6 +117,27 @@ function SpotPageContent() {
         console.log('🎯 Auto-selecting exact match:', exactMatches[0].rawSymbol);
         setSelectedSymbol(exactMatches[0].rawSymbol);
       }
+    }
+  };
+
+  // Handle symbol change from TradingView widget (like options page)
+  const handleTradingViewSymbolChange = (newSymbol: string) => {
+    console.log('📈 SPOT: TradingView symbol changed to:', newSymbol);
+    console.log('📈 SPOT: Current selected symbol:', selectedSymbol);
+    console.log('📈 SPOT: Available trading pairs:', tradingPairs.map(p => p.rawSymbol));
+
+    // Convert TradingView symbol format to our format
+    // e.g., "ETHUSDT" -> "ETHUSDT"
+    const cleanSymbol = newSymbol.replace('BINANCE:', '').replace('COINBASE:', '');
+
+    // Check if this symbol exists in our trading pairs
+    const matchingPair = tradingPairs.find(pair => pair.rawSymbol === cleanSymbol);
+
+    if (matchingPair) {
+      console.log('✅ SPOT: Found matching pair:', matchingPair);
+      setSelectedSymbol(cleanSymbol);
+    } else {
+      console.log('⚠️ SPOT: Symbol not found in trading pairs, keeping current:', selectedSymbol);
     }
   };
 
@@ -589,15 +611,39 @@ function SpotPageContent() {
           </div>
         </div>
 
-        {/* Mobile Chart - Full Vertical Layout */}
-        <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '375px' }}>
+        {/* Mobile Chart - Full Vertical Layout - Using TradingView like options page */}
+        <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '450px' }}>
+          {/* Symbol Selector Overlay */}
+          <div className="absolute top-2 right-2 z-10 bg-gray-900/95 backdrop-blur-sm rounded-md p-1.5 border border-gray-600/30 shadow-lg">
+            <select
+              value={selectedSymbol}
+              onChange={(e) => {
+                const newSymbol = e.target.value;
+                setSelectedSymbol(newSymbol);
+                handleTradingViewSymbolChange(newSymbol);
+              }}
+              className="bg-gray-800/95 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px]"
+            >
+              {tradingPairs.map((pair) => (
+                <option key={pair.rawSymbol} value={pair.rawSymbol}>
+                  {pair.coin}/USDT
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="w-full h-full">
-            <LightweightChart
-              symbol={selectedSymbol}
-              interval="1m"
-              height={375}
-              containerId="spot_mobile_chart"
-            />
+            <ErrorBoundary>
+              <TradingViewWidget
+                type="chart"
+                symbol={`BINANCE:${selectedSymbol}`}
+                height={450}
+                interval="1"
+                theme="dark"
+                container_id="spot_mobile_tradingview_chart"
+                onSymbolChange={handleTradingViewSymbolChange}
+              />
+            </ErrorBoundary>
           </div>
         </div>
 
@@ -940,14 +986,49 @@ function SpotPageContent() {
 
         {/* Center Panel - Chart and Trading Area */}
         <div className="flex-1 bg-[#10121E] flex flex-col">
-          {/* Chart Controls */}
-          <div className="bg-[#10121E] p-2">
-            <div className="flex items-center justify-end">
+          {/* Chart Controls - Chart view switching like options page */}
+          <div className="p-2 border-b border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="text-xs text-gray-400">
+                  Chart Sync: <span className="text-green-400">Active</span>
+                </div>
+              </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <button className="text-xs text-gray-400 hover:text-white">Basic version</button>
-                  <button className="text-xs text-gray-400 hover:text-white">Trading view</button>
-                  <button className="text-xs text-gray-400 hover:text-white">Depth</button>
+                  {/* Basic version hidden to avoid red line issues */}
+                  {false && (
+                    <button
+                      onClick={() => setChartView('basic')}
+                      className={`text-xs transition-colors ${
+                        chartView === 'basic'
+                          ? 'text-white bg-blue-600 px-2 py-1 rounded'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Basic version
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setChartView('tradingview')}
+                    className={`text-xs transition-colors ${
+                      chartView === 'tradingview'
+                        ? 'text-white bg-blue-600 px-2 py-1 rounded'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Trading view
+                  </button>
+                  <button
+                    onClick={() => setChartView('depth')}
+                    className={`text-xs transition-colors ${
+                      chartView === 'depth'
+                        ? 'text-white bg-blue-600 px-2 py-1 rounded'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Depth
+                  </button>
                 </div>
                 <button className="text-gray-400 hover:text-white">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -958,63 +1039,70 @@ function SpotPageContent() {
             </div>
           </div>
 
-          {/* Chart Area - Dynamic chart based on selected view */}
-          <div className="min-h-[500px] flex-1 bg-[#10121E] p-2">
-            {/* Chart View Controls */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setChartView('basic')}
-                  className={`text-xs transition-colors ${
-                    chartView === 'basic'
-                      ? 'text-white bg-blue-600 px-2 py-1 rounded'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Basic version
-                </button>
-                <button
-                  onClick={() => setChartView('tradingview')}
-                  className={`text-xs transition-colors ${
-                    chartView === 'tradingview'
-                      ? 'text-white bg-blue-600 px-2 py-1 rounded'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Trading view
-                </button>
-              </div>
-            </div>
+          {/* Chart Area - Dynamic chart based on selected view like options page */}
+          <div className="h-[500px] relative bg-[#10121E] p-1">
+            {/* Basic chart view disabled to avoid red line issues */}
+            {false && chartView === 'basic' && (
+              <LightweightChart
+                symbol={selectedSymbol}
+                interval="1m"
+                height={490}
+                containerId="spot_desktop_chart"
+              />
+            )}
 
-            {/* Chart Content */}
-            <div className="h-[480px] relative">
-              {chartView === 'basic' && (
-                <LightweightChart
-                  symbol={selectedSymbol}
-                  interval="1m"
-                  height={480}
-                  containerId="spot_desktop_chart"
-                />
-              )}
+            {chartView === 'tradingview' && (
+              <div className="relative h-full">
+                {/* Symbol Selector Overlay - Positioned in top-right corner */}
+                <div className="absolute top-2 right-2 z-10 bg-gray-900/95 backdrop-blur-sm rounded-md p-1.5 border border-gray-600/30 shadow-lg">
+                  <select
+                    value={selectedSymbol}
+                    onChange={(e) => {
+                      const newSymbol = e.target.value;
+                      setSelectedSymbol(newSymbol);
+                      handleTradingViewSymbolChange(newSymbol);
+                    }}
+                    className="bg-gray-800/95 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px]"
+                  >
+                    {tradingPairs.map((pair) => (
+                      <option key={pair.rawSymbol} value={pair.rawSymbol}>
+                        {pair.coin}/USDT
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {chartView === 'tradingview' && (
                 <ErrorBoundary>
                   <TradingViewWidget
                     type="chart"
                     symbol={`BINANCE:${selectedSymbol}`}
-                    height={480}
+                    height={490}
                     interval="1"
                     theme="dark"
                     container_id="spot_tradingview_chart"
-                    onSymbolChange={(newSymbol) => {
-                      console.log('📈 SpotPage TradingView symbol changed to:', newSymbol);
-                      const cleanSymbol = newSymbol.replace('BINANCE:', '');
-                      setSelectedSymbol(cleanSymbol);
-                    }}
+                    onSymbolChange={handleTradingViewSymbolChange}
                   />
                 </ErrorBoundary>
-              )}
-            </div>
+              </div>
+            )}
+
+            {chartView === 'depth' && (
+              <div className="w-full h-full p-4">
+                <div className="text-center mb-4">
+                  <div className="text-white text-lg font-bold mb-1">Market Depth Chart</div>
+                  <div className="text-gray-400 text-sm">Real-time order book visualization for {selectedSymbol}</div>
+                </div>
+
+                {/* Depth Chart Placeholder */}
+                <div className="w-full h-[400px] bg-gray-800 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-gray-400 text-lg mb-2">📊</div>
+                    <div className="text-gray-400 text-sm">Market Depth Chart</div>
+                    <div className="text-gray-500 text-xs mt-1">Coming Soon</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bottom Trading Section */}
