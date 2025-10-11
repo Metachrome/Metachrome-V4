@@ -1768,27 +1768,26 @@ function OptionsPageContent({
                     }}
                     className="bg-gray-800/95 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px]"
                   >
-                      <option value="BTCUSDT">BTC/USDT</option>
-                      <option value="ETHUSDT">ETH/USDT</option>
-                      <option value="XRPUSDT">XRP/USDT</option>
-                      <option value="LTCUSDT">LTC/USDT</option>
-                      <option value="BNBUSDT">BNB/USDT</option>
-                      <option value="SOLUSDT">SOL/USDT</option>
-                      <option value="TONUSDT">TON/USDT</option>
-                      <option value="DOGEUSDT">DOGE/USDT</option>
-                      <option value="ADAUSDT">ADA/USDT</option>
-                      <option value="TRXUSDT">TRX/USDT</option>
-                      <option value="HYPEUSDT">HYPE/USDT</option>
-                      <option value="LINKUSDT">LINK/USDT</option>
-                      <option value="AVAXUSDT">AVAX/USDT</option>
-                      <option value="SUIUSDT">SUI/USDT</option>
-                      <option value="SHIBUSDT">SHIB/USDT</option>
-                      <option value="BCHUSDT">BCH/USDT</option>
-                      <option value="DOTUSDT">DOT/USDT</option>
-                      <option value="MATICUSDT">MATIC/USDT</option>
-                      <option value="XLMUSDT">XLM/USDT</option>
-                    </select>
-                  </div>
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                    <option value="LTCUSDT">LTC/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="TONUSDT">TON/USDT</option>
+                    <option value="DOGEUSDT">DOGE/USDT</option>
+                    <option value="ADAUSDT">ADA/USDT</option>
+                    <option value="TRXUSDT">TRX/USDT</option>
+                    <option value="HYPEUSDT">HYPE/USDT</option>
+                    <option value="LINKUSDT">LINK/USDT</option>
+                    <option value="AVAXUSDT">AVAX/USDT</option>
+                    <option value="SUIUSDT">SUI/USDT</option>
+                    <option value="SHIBUSDT">SHIB/USDT</option>
+                    <option value="BCHUSDT">BCH/USDT</option>
+                    <option value="DOTUSDT">DOT/USDT</option>
+                    <option value="MATICUSDT">MATIC/USDT</option>
+                    <option value="XLMUSDT">XLM/USDT</option>
+                  </select>
                 </div>
 
                 <ErrorBoundary>
