@@ -33,14 +33,27 @@ interface UseMultiSymbolPriceReturn {
   getPriceForSymbol: (symbol: string) => PriceData | null;
 }
 
-// Default symbols to fetch
+// Default symbols to fetch - All supported trading pairs
 const DEFAULT_SYMBOLS = [
   'BTCUSDT',
-  'ETHUSDT', 
+  'ETHUSDT',
   'BNBUSDT',
   'SOLUSDT',
   'XRPUSDT',
-  'ADAUSDT'
+  'ADAUSDT',
+  'LTCUSDT',
+  'TONUSDT',
+  'DOGEUSDT',
+  'AVAXUSDT',
+  'DOTUSDT',
+  'LINKUSDT',
+  'MATICUSDT',
+  'UNIUSDT',
+  'ATOMUSDT',
+  'FILUSDT',
+  'TRXUSDT',
+  'ETCUSDT',
+  'XLMUSDT'
 ];
 
 export function useMultiSymbolPrice(

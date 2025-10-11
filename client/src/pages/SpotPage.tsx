@@ -41,7 +41,7 @@ function SpotPageContent() {
   const [activeTab, setActiveTab] = useState("open"); // "open" or "history"
   const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
-  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
+  const [selectedSymbol, setSelectedSymbol] = useState('LTCUSDT'); // Default to LTC to match chart
   // Chart view state - Default to TradingView to match options page
   const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
@@ -62,6 +62,24 @@ function SpotPageContent() {
   const selectedSymbolPriceData = getPriceForSymbol(selectedSymbol);
   const currentPrice = selectedSymbolPriceData?.price || priceData?.price || 0;
   const formattedPrice = currentPrice.toFixed(2);
+
+  // Helper function to get real price data for any symbol
+  const getRealPriceData = (rawSymbol: string) => {
+    const symbolData = getPriceForSymbol(rawSymbol);
+    if (symbolData) {
+      return {
+        price: symbolData.price.toFixed(rawSymbol.includes('SHIB') ? 8 : 2),
+        change: `${symbolData.priceChangePercent24h >= 0 ? '+' : ''}${symbolData.priceChangePercent24h.toFixed(2)}%`,
+        isPositive: symbolData.priceChangePercent24h >= 0
+      };
+    }
+    // Fallback to mock data if real data not available
+    return {
+      price: '0.00',
+      change: '+0.00%',
+      isPositive: true
+    };
+  };
 
   // Debug logging
   useEffect(() => {
@@ -183,27 +201,27 @@ function SpotPageContent() {
     }
   };
 
-  // Trading pairs data - All 19 supported currencies
+  // Trading pairs data - All 19 supported currencies with real price data
   const tradingPairs = [
-    { symbol: 'BTC/USDT', coin: 'BTC', rawSymbol: 'BTCUSDT', price: formattedPrice, change: changeText, isPositive: isPositive, icon: '₿', iconBg: 'bg-orange-500' },
-    { symbol: 'ETH/USDT', coin: 'ETH', rawSymbol: 'ETHUSDT', price: '3577.42', change: '-0.23%', isPositive: false, icon: 'Ξ', iconBg: 'bg-purple-500' },
-    { symbol: 'XRP/USDT', coin: 'XRP', rawSymbol: 'XRPUSDT', price: '3.1833', change: '-1.77%', isPositive: false, icon: '✕', iconBg: 'bg-gray-600' },
-    { symbol: 'LTC/USDT', coin: 'LTC', rawSymbol: 'LTCUSDT', price: '112.45', change: '+2.15%', isPositive: true, icon: 'Ł', iconBg: 'bg-gray-500' },
-    { symbol: 'BNB/USDT', coin: 'BNB', rawSymbol: 'BNBUSDT', price: '698.45', change: '+1.89%', isPositive: true, icon: 'B', iconBg: 'bg-yellow-600' },
-    { symbol: 'SOL/USDT', coin: 'SOL', rawSymbol: 'SOLUSDT', price: '245.67', change: '+3.42%', isPositive: true, icon: 'S', iconBg: 'bg-purple-600' },
-    { symbol: 'TON/USDT', coin: 'TON', rawSymbol: 'TONUSDT', price: '6.234', change: '+0.89%', isPositive: true, icon: 'T', iconBg: 'bg-blue-600' },
-    { symbol: 'DOGE/USDT', coin: 'DOGE', rawSymbol: 'DOGEUSDT', price: '0.23878', change: '+0.89%', isPositive: true, icon: 'D', iconBg: 'bg-yellow-500' },
-    { symbol: 'ADA/USDT', coin: 'ADA', rawSymbol: 'ADAUSDT', price: '0.8212', change: '+0.66%', isPositive: true, icon: 'A', iconBg: 'bg-blue-500' },
-    { symbol: 'TRX/USDT', coin: 'TRX', rawSymbol: 'TRXUSDT', price: '0.2456', change: '+1.23%', isPositive: true, icon: '⚡', iconBg: 'bg-red-600' },
-    { symbol: 'HYPE/USDT', coin: 'HYPE', rawSymbol: 'HYPEUSDT', price: '28.45', change: '+5.67%', isPositive: true, icon: 'H', iconBg: 'bg-green-600' },
-    { symbol: 'LINK/USDT', coin: 'LINK', rawSymbol: 'LINKUSDT', price: '22.34', change: '+2.45%', isPositive: true, icon: '🔗', iconBg: 'bg-blue-700' },
-    { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', price: '45.67', change: '+1.89%', isPositive: true, icon: 'A', iconBg: 'bg-red-500' },
-    { symbol: 'SUI/USDT', coin: 'SUI', rawSymbol: 'SUIUSDT', price: '4.123', change: '+3.21%', isPositive: true, icon: 'S', iconBg: 'bg-cyan-500' },
-    { symbol: 'SHIB/USDT', coin: 'SHIB', rawSymbol: 'SHIBUSDT', price: '0.00002345', change: '+2.34%', isPositive: true, icon: '🐕', iconBg: 'bg-orange-600' },
-    { symbol: 'BCH/USDT', coin: 'BCH', rawSymbol: 'BCHUSDT', price: '512.34', change: '+1.56%', isPositive: true, icon: '₿', iconBg: 'bg-green-500' },
-    { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', price: '8.456', change: '+0.78%', isPositive: true, icon: '●', iconBg: 'bg-pink-500' },
-    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', price: '0.4567', change: '+1.23%', isPositive: true, icon: 'M', iconBg: 'bg-purple-700' },
-    { symbol: 'XLM/USDT', coin: 'XLM', rawSymbol: 'XLMUSDT', price: '0.1234', change: '+2.45%', isPositive: true, icon: '⭐', iconBg: 'bg-indigo-500' }
+    { symbol: 'BTC/USDT', coin: 'BTC', rawSymbol: 'BTCUSDT', ...getRealPriceData('BTCUSDT'), icon: '₿', iconBg: 'bg-orange-500' },
+    { symbol: 'ETH/USDT', coin: 'ETH', rawSymbol: 'ETHUSDT', ...getRealPriceData('ETHUSDT'), icon: 'Ξ', iconBg: 'bg-purple-500' },
+    { symbol: 'XRP/USDT', coin: 'XRP', rawSymbol: 'XRPUSDT', ...getRealPriceData('XRPUSDT'), icon: '✕', iconBg: 'bg-gray-600' },
+    { symbol: 'LTC/USDT', coin: 'LTC', rawSymbol: 'LTCUSDT', ...getRealPriceData('LTCUSDT'), icon: 'Ł', iconBg: 'bg-gray-500' },
+    { symbol: 'BNB/USDT', coin: 'BNB', rawSymbol: 'BNBUSDT', ...getRealPriceData('BNBUSDT'), icon: 'B', iconBg: 'bg-yellow-600' },
+    { symbol: 'SOL/USDT', coin: 'SOL', rawSymbol: 'SOLUSDT', ...getRealPriceData('SOLUSDT'), icon: 'S', iconBg: 'bg-purple-600' },
+    { symbol: 'TON/USDT', coin: 'TON', rawSymbol: 'TONUSDT', ...getRealPriceData('TONUSDT'), icon: 'T', iconBg: 'bg-blue-600' },
+    { symbol: 'DOGE/USDT', coin: 'DOGE', rawSymbol: 'DOGEUSDT', ...getRealPriceData('DOGEUSDT'), icon: 'D', iconBg: 'bg-yellow-500' },
+    { symbol: 'ADA/USDT', coin: 'ADA', rawSymbol: 'ADAUSDT', ...getRealPriceData('ADAUSDT'), icon: 'A', iconBg: 'bg-blue-500' },
+    { symbol: 'TRX/USDT', coin: 'TRX', rawSymbol: 'TRXUSDT', ...getRealPriceData('TRXUSDT'), icon: '⚡', iconBg: 'bg-red-600' },
+    { symbol: 'LINK/USDT', coin: 'LINK', rawSymbol: 'LINKUSDT', ...getRealPriceData('LINKUSDT'), icon: '🔗', iconBg: 'bg-blue-700' },
+    { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', ...getRealPriceData('AVAXUSDT'), icon: 'A', iconBg: 'bg-red-500' },
+    { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', ...getRealPriceData('DOTUSDT'), icon: '●', iconBg: 'bg-pink-500' },
+    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', ...getRealPriceData('MATICUSDT'), icon: 'M', iconBg: 'bg-purple-700' },
+    { symbol: 'UNI/USDT', coin: 'UNI', rawSymbol: 'UNIUSDT', ...getRealPriceData('UNIUSDT'), icon: '🦄', iconBg: 'bg-pink-600' },
+    { symbol: 'ATOM/USDT', coin: 'ATOM', rawSymbol: 'ATOMUSDT', ...getRealPriceData('ATOMUSDT'), icon: '⚛', iconBg: 'bg-blue-600' },
+    { symbol: 'FIL/USDT', coin: 'FIL', rawSymbol: 'FILUSDT', ...getRealPriceData('FILUSDT'), icon: 'F', iconBg: 'bg-gray-600' },
+    { symbol: 'ETC/USDT', coin: 'ETC', rawSymbol: 'ETCUSDT', ...getRealPriceData('ETCUSDT'), icon: 'E', iconBg: 'bg-green-600' },
+    { symbol: 'XLM/USDT', coin: 'XLM', rawSymbol: 'XLMUSDT', ...getRealPriceData('XLMUSDT'), icon: '⭐', iconBg: 'bg-indigo-500' }
   ];
 
   // Filter trading pairs based on search term
@@ -252,6 +270,9 @@ function SpotPageContent() {
 
     // Check if this symbol exists in our trading pairs
     const matchingPair = tradingPairs.find(pair => pair.rawSymbol === cleanSymbol);
+
+    console.log('📈 SPOT: Clean symbol:', cleanSymbol);
+    console.log('📈 SPOT: Matching pair:', matchingPair);
 
     if (matchingPair) {
       console.log('✅ SPOT: Found matching pair:', matchingPair);
