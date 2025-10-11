@@ -36,6 +36,15 @@ function SpotPageContent() {
   const { lastMessage, subscribe, connected, sendMessage } = useWebSocket();
   const isMobile = useIsMobile();
 
+  // UI State - Define first to avoid initialization order issues
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("open"); // "open" or "history"
+  const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
+  const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
+  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
+  // Chart view state - Default to TradingView to match options page
+  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
+
   // Use price context for synchronized price data - SINGLE SOURCE OF TRUTH
   const { priceData } = usePrice();
   const { changeText, changeColor, isPositive } = usePriceChange();
@@ -44,7 +53,7 @@ function SpotPageContent() {
   // Multi-symbol price data for all trading pairs
   const { priceData: multiSymbolPriceData, getPriceForSymbol } = useMultiSymbolPrice();
 
-  // Get current price for selected symbol
+  // Get current price for selected symbol (now selectedSymbol is defined)
   const selectedSymbolPriceData = getPriceForSymbol(selectedSymbol);
   const currentPrice = selectedSymbolPriceData?.price || priceData?.price || 0;
   const formattedPrice = currentPrice.toFixed(2);
@@ -58,15 +67,6 @@ function SpotPageContent() {
       console.log('🔍 SpotPage unmounted');
     };
   }, [user, priceData]);
-
-  // UI State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("open"); // "open" or "history"
-  const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
-  const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
-  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
-  // Chart view state - Default to TradingView to match options page
-  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
   // Trading pairs data - All 19 supported currencies
   const tradingPairs = [
