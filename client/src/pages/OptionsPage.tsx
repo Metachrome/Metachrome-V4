@@ -1867,11 +1867,13 @@ function OptionsPageContent({
                 </div>
 
                 <ErrorBoundary>
-                  <CustomTradingChart
-                    symbol={selectedSymbol}
+                  <TradingViewWidget
+                    type="chart"
+                    symbol={`BINANCE:${selectedSymbol}`}
                     height={490}
                     interval="1"
                     theme="dark"
+                    container_id="options_tradingview_chart"
                     onSymbolChange={handleTradingViewSymbolChange}
                   />
                 </ErrorBoundary>
