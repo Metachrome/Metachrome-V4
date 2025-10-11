@@ -1180,7 +1180,7 @@ function OptionsPageContent({
           </div>
 
           {/* Mobile Chart - Full Vertical Layout */}
-          <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '375px' }}>
+          <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '450px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
@@ -1189,7 +1189,7 @@ function OptionsPageContent({
               <LightweightChart
                 symbol={selectedSymbol}
                 interval="1m"
-                height={375}
+                height={450}
                 containerId="options_mobile_chart"
               />
             </div>
@@ -1740,7 +1740,7 @@ function OptionsPageContent({
           </div>
 
           {/* Chart Area - Dynamic chart based on selected view */}
-          <div className="h-[400px] relative bg-[#10121E] p-2">
+          <div className="h-[500px] relative bg-[#10121E] p-1">
             <TradeOverlay
               trades={activeTrades}
               currentPrice={priceData?.price || currentPrice}
@@ -1750,13 +1750,13 @@ function OptionsPageContent({
               <LightweightChart
                 symbol={selectedSymbol}
                 interval="1m"
-                height={400}
+                height={490}
                 containerId="options_desktop_chart"
               />
             )}
 
             {chartView === 'tradingview' && (
-              <div className="relative">
+              <div className="relative h-full">
                 {/* Symbol Selector Overlay - Positioned over the chart */}
                 <div className="absolute top-2 left-2 z-10 bg-gray-800/90 backdrop-blur-sm rounded-lg p-2 border border-gray-600/50">
                   <div className="flex items-center gap-2">
@@ -1797,7 +1797,7 @@ function OptionsPageContent({
                   <TradingViewWidget
                     type="chart"
                     symbol={`BINANCE:${selectedSymbol}`}
-                    height={450}
+                    height={490}
                     interval="1"
                     theme="dark"
                     container_id="options_tradingview_chart"

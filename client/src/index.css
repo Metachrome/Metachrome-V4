@@ -598,3 +598,33 @@ span.price-neutral {
     overflow: hidden !important;
   }
 }
+
+/* Desktop Chart Styles - Ensure TradingView fills container */
+@media (min-width: 769px) {
+  /* Desktop chart containers */
+  #options_desktop_chart,
+  #options_tradingview_chart,
+  #spot_desktop_chart,
+  #spot_tradingview_chart {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* TradingView iframes on desktop */
+  #options_tradingview_chart iframe,
+  #spot_tradingview_chart iframe {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Desktop TradingView widget containers */
+  .tradingview-widget-container {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .tradingview-widget-container__widget {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
