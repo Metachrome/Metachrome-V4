@@ -94,12 +94,17 @@ function TradingViewWidget({
       const isMobile = window.innerWidth <= 768;
 
       // Working configuration for TradingView widget
-      // Convert USDT symbols to proper TradingView format
-      const tradingViewSymbol = symbol.includes('USDT')
-        ? `BINANCE:${symbol}`
-        : symbol.includes('USD')
-        ? `COINBASE:${symbol}`
-        : `BINANCE:${symbol}`;
+      // Handle symbol format - check if already has exchange prefix
+      let tradingViewSymbol = symbol;
+
+      // If symbol doesn't already have an exchange prefix, add one
+      if (!symbol.includes(':')) {
+        tradingViewSymbol = symbol.includes('USDT')
+          ? `BINANCE:${symbol}`
+          : symbol.includes('USD')
+          ? `COINBASE:${symbol}`
+          : `BINANCE:${symbol}`;
+      }
 
       const config = {
         autosize: true,
@@ -595,7 +600,7 @@ function TradingViewWidget({
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-300">Symbol:</span>
               <select
-                value={symbol}
+                value={symbol.replace('BINANCE:', '').replace('COINBASE:', '')}
                 onChange={(e) => {
                   const newSymbol = e.target.value;
                   onSymbolChange(newSymbol);
