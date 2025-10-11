@@ -1195,134 +1195,210 @@ function OptionsPageContent({
             </div>
           </div>
 
-          {/* Mobile Content - Scrollable Below Chart */}
-          <div className="bg-[#10121E] min-h-screen">
-          {/* Mobile Market Stats - Same as Desktop */}
-          <div className="px-4 py-2 border-b border-gray-700">
-            <h3 className="text-white font-bold mb-2">Market Statistics</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-gray-400">24h Change</div>
-                <div className={`font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {btcMarketData?.priceChange24h || '0.00'} ({btcMarketData?.priceChangePercent24h || '0.00%'})
+          {/* Mobile Content - Two Column Layout */}
+          <div className="bg-[#10121E] min-h-screen flex">
+            {/* Mobile Left Panel - Order Book & Price Data */}
+            <div className="w-1/2 border-r border-gray-700">
+              {/* Price Header */}
+              <div className="p-3 border-b border-gray-700">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-white font-bold text-sm">{currentPairData.symbol}</div>
+                  <div className="text-right">
+                    <div className="font-bold text-white text-base">
+                      {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
+                    </div>
+                    <div className={`text-xs ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                      {changeText} ({changeColor})
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="text-gray-400">24h High</div>
-                <div className="text-white font-semibold">{btcMarketData?.high24h || currentPrice.toFixed(2)}</div>
+
+              {/* Order Book Headers */}
+              <div className="grid grid-cols-3 gap-1 p-2 text-xs text-gray-400 border-b border-gray-700">
+                <span>Price</span>
+                <span>Volume</span>
+                <span>Total</span>
               </div>
-              <div>
-                <div className="text-gray-400">24h Low</div>
-                <div className="text-white font-semibold">{btcMarketData?.low24h || currentPrice.toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-gray-400">24h Volume</div>
-                <div className="text-white font-semibold">{btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(2) + 'M BTC' : '0.00'}</div>
+
+              {/* Order Book Data */}
+              <div className="h-[300px] overflow-y-auto">
+                {/* Sell Orders (Red) */}
+                <div className="space-y-0">
+                  {orderBookData.sellOrders.slice(0, 8).map((order, index) => (
+                    <div key={index} className="grid grid-cols-3 gap-1 px-2 py-1 text-xs hover:bg-gray-800">
+                      <span className="text-red-400 font-mono">{order.price}</span>
+                      <span className="text-gray-300 font-mono">{order.volume}</span>
+                      <span className="text-gray-400 font-mono">{order.turnover}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Current Price Separator */}
+                <div className="px-2 py-2 border-y border-gray-600">
+                  <div className="text-center">
+                    <span className={`text-sm font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                      {displayPrice.toFixed(2)} USDT
+                    </span>
+                  </div>
+                </div>
+
+                {/* Buy Orders (Green) */}
+                <div className="space-y-0">
+                  {orderBookData.buyOrders.slice(0, 8).map((order, index) => (
+                    <div key={index} className="grid grid-cols-3 gap-1 px-2 py-1 text-xs hover:bg-gray-800">
+                      <span className="text-green-400 font-mono">{order.price}</span>
+                      <span className="text-gray-300 font-mono">{order.volume}</span>
+                      <span className="text-gray-400 font-mono">{order.turnover}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* My Order Section */}
-          <div className="px-4 py-3 border-b border-gray-700">
-            <h3 className="text-white font-bold mb-3">My Orders</h3>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {activeTrades.length > 0 ? (
-                activeTrades.map((trade) => {
-                  const timeLeft = Math.max(0, Math.ceil(((trade.expiryTime || trade.endTime) - Date.now()) / 1000));
-                  const progress = timeLeft > 0 ? (timeLeft / trade.duration) * 100 : 0;
+            {/* Mobile Right Panel - Market Stats & Trading Info */}
+            <div className="w-1/2">
+              {/* Market Statistics */}
+              <div className="px-3 py-2 border-b border-gray-700">
+                <h3 className="text-white font-bold mb-2 text-sm">Market Statistics</h3>
+                <div className="grid grid-cols-1 gap-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">24h Change</span>
+                    <span className={`font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                      {btcMarketData?.priceChangePercent24h || '0.00%'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">24h High</span>
+                    <span className="text-white font-semibold">{btcMarketData?.high24h || currentPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">24h Low</span>
+                    <span className="text-white font-semibold">{btcMarketData?.low24h || currentPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">24h Volume</span>
+                    <span className="text-white font-semibold">{btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(2) + 'M' : '0.00'}</span>
+                  </div>
+                </div>
+              </div>
 
-                  return (
-                    <div key={trade.id} className="bg-gray-800 rounded-lg p-3">
-                      <div className="flex justify-between items-center mb-2">
+              {/* My Orders Section */}
+              <div className="px-3 py-2 border-b border-gray-700">
+                <h3 className="text-white font-bold mb-2 text-sm">My Orders</h3>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {activeTrades.length > 0 ? (
+                    activeTrades.map((trade) => {
+                      const timeLeft = Math.max(0, Math.ceil(((trade.expiryTime || trade.endTime) - Date.now()) / 1000));
+                      const progress = timeLeft > 0 ? (timeLeft / trade.duration) * 100 : 0;
+
+                      return (
+                        <div key={trade.id} className="bg-gray-800 rounded p-2">
+                          <div className="flex justify-between items-center mb-1">
+                            <div className="flex items-center space-x-1">
+                              <div className={`w-1.5 h-1.5 rounded-full ${trade.direction === 'up' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                              <span className="text-white text-xs font-medium">{currentPairData.symbol}</span>
+                              <span className={`text-xs px-1 py-0.5 rounded ${
+                                trade.direction === 'up' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'
+                              }`}>
+                                {trade.direction.toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="text-white font-bold text-xs">${trade.amount}</span>
+                          </div>
+
+                          <div className="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>Entry: ${trade.entryPrice}</span>
+                            <span>Current: ${displayPrice.toFixed(2)}</span>
+                          </div>
+
+                          {timeLeft > 0 ? (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-400">{timeLeft}s</span>
+                                <span className={`font-medium ${
+                                  (trade.direction === 'up' && displayPrice > trade.entryPrice) ||
+                                  (trade.direction === 'down' && displayPrice < trade.entryPrice)
+                                    ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                  {(trade.direction === 'up' && displayPrice > trade.entryPrice) ||
+                                   (trade.direction === 'down' && displayPrice < trade.entryPrice)
+                                    ? 'Winning' : 'Losing'}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-700 rounded-full h-0.5">
+                                <div
+                                  className="bg-blue-500 h-0.5 rounded-full transition-all duration-1000"
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <span className={`text-xs font-bold ${
+                                (trade.direction === 'up' && (trade.exitPrice || trade.currentPrice || 0) > trade.entryPrice) ||
+                                (trade.direction === 'down' && (trade.exitPrice || trade.currentPrice || 0) < trade.entryPrice)
+                                  ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {(trade.direction === 'up' && (trade.exitPrice || trade.currentPrice || 0) > trade.entryPrice) ||
+                                 (trade.direction === 'down' && (trade.exitPrice || trade.currentPrice || 0) < trade.entryPrice)
+                                  ? 'WON' : 'LOST'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-2">
+                      <div className="text-gray-400 text-xs">No active trades</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Trading Pairs */}
+              <div className="px-3 py-2">
+                <h3 className="text-white font-bold mb-2 text-sm">Trading Pairs</h3>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {filteredTradingPairs.slice(0, 6).map((pair, index) => {
+                    const isPositive = !pair.priceChangePercent24h?.startsWith('-');
+                    const iconMap: { [key: string]: { icon: string, bg: string } } = {
+                      'BTC': { icon: '₿', bg: 'bg-orange-500' },
+                      'ETH': { icon: 'Ξ', bg: 'bg-purple-500' },
+                      'BNB': { icon: 'B', bg: 'bg-yellow-600' },
+                      'SOL': { icon: 'S', bg: 'bg-purple-600' },
+                      'XRP': { icon: '✕', bg: 'bg-gray-600' },
+                      'ADA': { icon: 'A', bg: 'bg-blue-500' },
+                    };
+                    const iconInfo = iconMap[pair.coin] || { icon: pair.coin[0], bg: 'bg-gray-500' };
+                    const formattedPrice = parseFloat(pair.price).toFixed(pair.price.includes('.') && parseFloat(pair.price) < 1 ? 4 : 2);
+
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => handlePairSelect(pair.rawSymbol)}
+                        className={`flex items-center justify-between p-1.5 hover:bg-[#1a1b2e] rounded cursor-pointer transition-colors ${
+                          selectedSymbol === pair.rawSymbol ? 'bg-blue-600/20 border border-blue-500/30' : ''
+                        }`}
+                      >
                         <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${trade.direction === 'up' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                          <span className="text-white text-sm font-medium">{currentPairData.symbol}</span>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            trade.direction === 'up' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'
-                          }`}>
-                            {trade.direction.toUpperCase()}
-                          </span>
-                        </div>
-                        <span className="text-white font-bold">${trade.amount}</span>
-                      </div>
-
-                      <div className="flex justify-between text-xs text-gray-400 mb-2">
-                        <span>Entry: ${trade.entryPrice}</span>
-                        <span>Current: ${displayPrice.toFixed(2)}</span>
-                      </div>
-
-                      {timeLeft > 0 ? (
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-gray-400">Time left: {timeLeft}s</span>
-                            <span className={`font-medium ${
-                              (trade.direction === 'up' && displayPrice > trade.entryPrice) ||
-                              (trade.direction === 'down' && displayPrice < trade.entryPrice)
-                                ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                              {(trade.direction === 'up' && displayPrice > trade.entryPrice) ||
-                               (trade.direction === 'down' && displayPrice < trade.entryPrice)
-                                ? 'Winning' : 'Losing'}
-                            </span>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs ${iconInfo.bg}`}>
+                            {iconInfo.icon}
                           </div>
-                          <div className="w-full bg-gray-700 rounded-full h-1">
-                            <div
-                              className="bg-blue-500 h-1 rounded-full transition-all duration-1000"
-                              style={{ width: `${progress}%` }}
-                            ></div>
+                          <div>
+                            <div className="text-white text-xs font-medium">{pair.symbol}</div>
                           </div>
                         </div>
-                      ) : (
-                        <div className="text-center">
-                          <span className={`text-sm font-bold ${
-                            (trade.direction === 'up' && (trade.exitPrice || trade.currentPrice || 0) > trade.entryPrice) ||
-                            (trade.direction === 'down' && (trade.exitPrice || trade.currentPrice || 0) < trade.entryPrice)
-                              ? 'text-green-400' : 'text-red-400'
-                          }`}>
-                            {(trade.direction === 'up' && (trade.exitPrice || trade.currentPrice || 0) > trade.entryPrice) ||
-                             (trade.direction === 'down' && (trade.exitPrice || trade.currentPrice || 0) < trade.entryPrice)
-                              ? 'WON' : 'LOST'}
-                          </span>
+                        <div className="text-right">
+                          <div className="text-white text-xs">{formattedPrice}</div>
+                          <div className={`text-xs ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                            {pair.priceChangePercent24h}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-4">
-                  <div className="text-gray-400 text-sm">No active trades</div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile Order Book */}
-          <div className="px-4 py-3 border-b border-gray-700">
-            <h3 className="text-white font-bold mb-3">Order Book</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Sell Orders */}
-              <div>
-                <div className="text-red-400 text-sm font-medium mb-2">Sell Orders</div>
-                <div className="space-y-1">
-                  {generateOrderBookData(displayPrice).sellOrders.slice(0, 5).map((order, index) => (
-                    <div key={index} className="flex justify-between text-xs">
-                      <span className="text-red-400">{order.price}</span>
-                      <span className="text-gray-400">{order.amount}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Buy Orders */}
-              <div>
-                <div className="text-green-400 text-sm font-medium mb-2">Buy Orders</div>
-                <div className="space-y-1">
-                  {generateOrderBookData(displayPrice).buyOrders.slice(0, 5).map((order, index) => (
-                    <div key={index} className="flex justify-between text-xs">
-                      <span className="text-green-400">{order.price}</span>
-                      <span className="text-gray-400">{order.amount}</span>
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1520,7 +1596,6 @@ function OptionsPageContent({
                 </div>
               </div>
             )}
-          </div>
           </div>
 
           <MobileBottomNav />
