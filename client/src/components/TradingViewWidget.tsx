@@ -216,12 +216,13 @@ function TradingViewWidget({
                       console.log('🔍 Raw detected symbol:', detectedSymbol, '-> Clean:', cleanSymbol);
 
                       if (cleanSymbol !== currentSymbol && (cleanSymbol.includes('USDT') || cleanSymbol.includes('USD'))) {
-                        // Convert USD to USDT for consistency, but handle special cases
+                        // Convert USD to USDT for consistency
                         let normalizedSymbol = cleanSymbol;
                         if (cleanSymbol.endsWith('USD') && !cleanSymbol.endsWith('USDT')) {
-                          normalizedSymbol = cleanSymbol + 'T'; // ETHUSD -> ETHUSDT
+                          normalizedSymbol = cleanSymbol.replace('USD', 'USDT'); // ETHUSD -> ETHUSDT
                         }
-                        console.log('🔄 URL symbol change:', normalizedSymbol);
+                        console.log('🔄 URL symbol change detected:', normalizedSymbol);
+                        console.log('🔄 Current symbol was:', currentSymbol);
                         currentSymbol = normalizedSymbol;
                         onSymbolChange(normalizedSymbol);
                         return;
@@ -249,12 +250,26 @@ function TradingViewWidget({
                       for (const match of anySymbolMatch) {
                         let detectedSymbol = match;
                         if (detectedSymbol.endsWith('USD') && !detectedSymbol.endsWith('USDT')) {
-                          detectedSymbol = detectedSymbol + 'T'; // ETHUSD -> ETHUSDT
+                          detectedSymbol = detectedSymbol.replace('USD', 'USDT'); // ETHUSD -> ETHUSDT
                         }
                         if (detectedSymbol !== currentSymbol && detectedSymbol.length >= 6) {
-                          console.log('🔄 Any symbol pattern detected:', detectedSymbol);
+                          console.log('🔄 Any symbol pattern detected:', detectedSymbol, 'from URL pattern');
                           currentSymbol = detectedSymbol;
                           onSymbolChange(detectedSymbol);
+                          return;
+                        }
+                      }
+                    }
+
+                    // Pattern 2.6: Force detection for common symbols if we see them in URL
+                    const commonSymbols = ['ETHUSD', 'BTCUSD', 'SOLUSD', 'BNBUSD', 'ADAUSD', 'XRPUSD'];
+                    for (const commonSymbol of commonSymbols) {
+                      if (iframe.src.includes(commonSymbol)) {
+                        const normalizedSymbol = commonSymbol.replace('USD', 'USDT');
+                        if (normalizedSymbol !== currentSymbol) {
+                          console.log('🔄 Common symbol detected in URL:', normalizedSymbol, 'from', commonSymbol);
+                          currentSymbol = normalizedSymbol;
+                          onSymbolChange(normalizedSymbol);
                           return;
                         }
                       }
@@ -314,13 +329,19 @@ function TradingViewWidget({
               }
             };
 
-            // Check every 500ms for very fast detection
-            const symbolInterval = setInterval(checkSymbolChange, 500);
+            // Check every 200ms for very fast detection
+            const symbolInterval = setInterval(checkSymbolChange, 200);
 
-            // Initial check after 2 seconds
-            setTimeout(checkSymbolChange, 2000);
+            // Immediate check
+            setTimeout(checkSymbolChange, 100);
 
-            // Additional immediate check after 5 seconds
+            // Initial check after 1 second
+            setTimeout(checkSymbolChange, 1000);
+
+            // Additional check after 3 seconds
+            setTimeout(checkSymbolChange, 3000);
+
+            // Final check after 5 seconds
             setTimeout(checkSymbolChange, 5000);
 
             // Test symbol detection manually (for debugging)
