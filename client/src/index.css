@@ -628,3 +628,43 @@ span.price-neutral {
     height: 100% !important;
   }
 }
+
+/* Global Volume Bar Hiding Rules */
+/* Hide TradingView volume bars and related elements */
+[data-name="volume"],
+[data-name="Volume"],
+[data-name*="volume"],
+[data-name*="Volume"],
+.histogram-series,
+.volume-series,
+.tv-lightweight-charts .pane:last-child,
+.chart-markup-table .pane:last-child,
+.layout__area--bottom .pane,
+.chart-container .pane[data-name*="volume"],
+.chart-container .pane[data-name*="Volume"],
+[class*="volume-"],
+[class*="Volume-"],
+[id*="volume"],
+[id*="Volume"] {
+  display: none !important;
+  height: 0 !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Hide volume in TradingView iframes */
+iframe[src*="tradingview"] {
+  /* Additional iframe-specific hiding will be handled by JavaScript */
+}
+
+/* Ensure volume elements are completely removed from layout */
+.tv-lightweight-charts__volume,
+.tv-lightweight-charts__histogram,
+[data-series-type="histogram"],
+[data-series-type="volume"] {
+  display: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+}

@@ -118,15 +118,72 @@ function TradingViewWidget({
         enable_publishing: false,
         allow_symbol_change: false, // Disable TradingView's native symbol selector
         container_id: container_id,
-        // Hide volume bars and studies
+        // Comprehensive volume hiding configuration
         studies: [],
         hide_volume: true,
         volume: false,
+        disabled_features: [
+          "volume_force_overlay",
+          "create_volume_indicator_by_default",
+          "volume_force_overlay",
+          "study_templates",
+          "header_indicators",
+          "header_compare",
+          "header_undo_redo",
+          "header_screenshot",
+          "header_chart_type"
+        ],
+        enabled_features: [
+          "hide_last_na_study_output",
+          "remove_library_container_border"
+        ],
+        // Force chart to only show price without volume
+        loading_screen: { backgroundColor: "#10121E" },
+        custom_css_url: "",
+        overrides: {
+          // Hide volume completely
+          "volumePaneSize": "xtiny",
+          "paneProperties.background": "#10121E",
+          "paneProperties.vertGridProperties.color": "#1F2937",
+          "paneProperties.horzGridProperties.color": "#1F2937",
+          "symbolWatermarkProperties.transparency": 90,
+          "scalesProperties.textColor": "#D1D5DB",
+          "mainSeriesProperties.candleStyle.upColor": "#10B981",
+          "mainSeriesProperties.candleStyle.downColor": "#EF4444",
+          "mainSeriesProperties.candleStyle.borderUpColor": "#10B981",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#EF4444",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#10B981",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#EF4444"
+        },
         studies_overrides: {
+          // Make volume completely transparent
           "volume.volume.color.0": "rgba(0,0,0,0)",
           "volume.volume.color.1": "rgba(0,0,0,0)",
-          "volume.volume.transparency": 100
-        }
+          "volume.volume.transparency": 100,
+          "volume.volume ma.color": "rgba(0,0,0,0)",
+          "volume.volume ma.transparency": 100,
+          "volume.show ma": false,
+          "volume.options.showStudyArguments": false
+        },
+        // Try to force a chart layout without volume
+        saved_data: JSON.stringify({
+          "charts": [{
+            "panes": [{
+              "sources": [{
+                "type": "MainSeries",
+                "id": "main_series",
+                "state": {
+                  "style": 1,
+                  "esdShowDividends": true,
+                  "esdShowSplits": true,
+                  "esdShowEarnings": true,
+                  "esdShowBreaks": false,
+                  "esdFlagSize": 2
+                }
+              }]
+            }]
+          }]
+        })
       };
 
       script.innerHTML = JSON.stringify(config);
@@ -135,14 +192,65 @@ function TradingViewWidget({
         console.log('✅ TradingView widget loaded successfully');
         console.log('🔍 Widget config:', JSON.stringify(config, null, 2));
 
-        // Try to access TradingView widget instance for direct symbol monitoring
+        // Add CSS to hide volume bars after widget loads
+        setTimeout(() => {
+          const style = document.createElement('style');
+          style.textContent = `
+            /* Hide TradingView volume bars */
+            iframe[id*="tradingview"] {
+              /* This targets the TradingView iframe */
+            }
+
+            /* Hide volume-related elements */
+            [data-name="volume"],
+            [data-name="Volume"],
+            .chart-markup-table .pane:last-child,
+            .layout__area--bottom .pane,
+            .chart-container .pane[data-name*="volume"],
+            .chart-container .pane[data-name*="Volume"] {
+              display: none !important;
+              height: 0 !important;
+              visibility: hidden !important;
+            }
+
+            /* Hide volume histogram specifically */
+            .histogram-series,
+            .volume-series,
+            [class*="volume"],
+            [class*="Volume"] {
+              display: none !important;
+            }
+          `;
+          document.head.appendChild(style);
+          console.log('🎨 Applied CSS to hide volume bars');
+        }, 2000); // Wait 2 seconds for TradingView to fully load
+
+        // Try to access TradingView widget instance for direct volume removal
         setTimeout(() => {
           try {
+            // Try to access the iframe and remove volume elements
+            const iframe = document.querySelector(`#${container_id} iframe`);
+            if (iframe && iframe.contentDocument) {
+              const iframeDoc = iframe.contentDocument;
+
+              // Hide volume-related elements in the iframe
+              const volumeElements = iframeDoc.querySelectorAll(
+                '[data-name*="volume"], [data-name*="Volume"], .histogram-series, .volume-series'
+              );
+              volumeElements.forEach(el => {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+                el.style.height = '0';
+              });
+
+              console.log('🚫 Removed', volumeElements.length, 'volume elements from TradingView iframe');
+            }
+
             // Check if TradingView widget is available globally
             if (window.TradingView && window.TradingView.widget) {
               console.log('🔍 TradingView widget API detected, setting up direct monitoring');
 
-              // Try to get widget instance
+              // Try to get widget instance for symbol monitoring
               const widgetInstance = window.TradingView.widget({
                 container_id: container_id,
                 onSymbolChanged: function(symbolInfo: any) {
@@ -157,7 +265,7 @@ function TradingViewWidget({
           } catch (error) {
             console.log('Direct TradingView API access failed, using fallback methods');
           }
-        }, 2000);
+        }, 3000); // Wait 3 seconds for full load
 
         // Simplified and more aggressive symbol change monitoring
         if (onSymbolChange) {

@@ -76,6 +76,11 @@ export default function TradingChart({ symbol, height = 400 }: TradingChartProps
         "MACD@tv-basicstudies",
         "RSI@tv-basicstudies"
       ],
+      disabled_features: [
+        "volume_force_overlay",
+        "create_volume_indicator_by_default"
+      ],
+      hide_volume: true,
       overrides: {
         "paneProperties.background": "#0f0f0f",
         "paneProperties.vertGridProperties.color": "#1a1a1a",
@@ -87,7 +92,18 @@ export default function TradingChart({ symbol, height = 400 }: TradingChartProps
         "mainSeriesProperties.candleStyle.borderUpColor": "#10b981",
         "mainSeriesProperties.candleStyle.borderDownColor": "#ef4444",
         "mainSeriesProperties.candleStyle.wickUpColor": "#10b981",
-        "mainSeriesProperties.candleStyle.wickDownColor": "#ef4444"
+        "mainSeriesProperties.candleStyle.wickDownColor": "#ef4444",
+        // Hide volume completely
+        "volumePaneSize": "xtiny"
+      },
+      studies_overrides: {
+        // Make volume completely transparent
+        "volume.volume.color.0": "rgba(0,0,0,0)",
+        "volume.volume.color.1": "rgba(0,0,0,0)",
+        "volume.volume.transparency": 100,
+        "volume.volume ma.color": "rgba(0,0,0,0)",
+        "volume.volume ma.transparency": 100,
+        "volume.show ma": false
       },
       onChartReady: () => {
         setIsLoading(false);
