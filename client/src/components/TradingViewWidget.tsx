@@ -162,26 +162,45 @@ function TradingViewWidget({
             let currentSymbol = symbol.replace('BINANCE:', '').replace('COINBASE:', '');
             console.log('🔍 Setting up symbol monitoring for:', currentSymbol);
 
-            // Listen for ALL messages from TradingView iframe
+            // Enhanced message listener for TradingView events
             const handleMessage = (event: MessageEvent) => {
               try {
-                // Log all messages to see what TradingView is sending
-                if (event.data && event.origin && event.origin.includes('tradingview')) {
+                // Listen to all TradingView origins
+                if (event.data && event.origin && (event.origin.includes('tradingview') || event.origin.includes('charting_library'))) {
                   console.log('📨 TradingView message:', event.data);
-                }
 
-                // Check for symbol in any message format
-                if (event.data && typeof event.data === 'object') {
-                  const messageStr = JSON.stringify(event.data);
+                  // Handle string messages
+                  if (typeof event.data === 'string') {
+                    // Look for symbol patterns in string messages
+                    const symbolMatches = event.data.match(/([A-Z]{3,6}USD[T]?)/g);
+                    if (symbolMatches && symbolMatches.length > 0) {
+                      const detectedSymbol = symbolMatches[0].replace('USD', 'USDT');
+                      if (detectedSymbol !== currentSymbol) {
+                        console.log('🔄 Symbol detected in string message:', detectedSymbol);
+                        currentSymbol = detectedSymbol;
+                        onSymbolChange(detectedSymbol);
+                      }
+                    }
+                  }
 
-                  // Look for USDT symbols in any part of the message
-                  const symbolMatches = messageStr.match(/([A-Z]{2,10}USDT)/g);
-                  if (symbolMatches && symbolMatches.length > 0) {
-                    const detectedSymbol = symbolMatches[0];
-                    if (detectedSymbol !== currentSymbol) {
-                      console.log('🔄 Symbol detected in message:', detectedSymbol);
-                      currentSymbol = detectedSymbol;
-                      onSymbolChange(detectedSymbol);
+                  // Handle object messages
+                  if (event.data && typeof event.data === 'object') {
+                    const messageStr = JSON.stringify(event.data);
+
+                    // Look for USDT/USD symbols in any part of the message
+                    const symbolMatches = messageStr.match(/([A-Z]{2,10}USD[T]?)/g);
+                    if (symbolMatches && symbolMatches.length > 0) {
+                      const detectedSymbol = symbolMatches[0].replace('USD', 'USDT');
+                      if (detectedSymbol !== currentSymbol) {
+                        console.log('🔄 Symbol detected in object message:', detectedSymbol);
+                        currentSymbol = detectedSymbol;
+                        onSymbolChange(detectedSymbol);
+                      }
+                    }
+
+                    // Check for specific TradingView message types
+                    if (event.data.name === 'tv-widget-ready' || event.data.type === 'symbol_changed') {
+                      console.log('🎯 TradingView widget event detected:', event.data);
                     }
                   }
                 }
@@ -198,17 +217,45 @@ function TradingViewWidget({
               try {
                 const iframe = containerRef.current?.querySelector('iframe');
                 if (iframe) {
-                  // Method 1: Check iframe src URL
+                  // Method 1: Enhanced URL monitoring with multiple patterns
                   if (iframe.src) {
+                    // Pattern 1: symbol= parameter
                     const symbolMatch = iframe.src.match(/symbol=([^&]+)/);
                     if (symbolMatch && symbolMatch[1]) {
                       const detectedSymbol = decodeURIComponent(symbolMatch[1]);
-                      const cleanSymbol = detectedSymbol.replace('BINANCE:', '').replace('COINBASE:', '');
-                      if (cleanSymbol !== currentSymbol && cleanSymbol.includes('USDT')) {
-                        console.log('🔄 URL symbol change:', cleanSymbol);
-                        currentSymbol = cleanSymbol;
-                        onSymbolChange(cleanSymbol);
+                      const cleanSymbol = detectedSymbol.replace('BINANCE:', '').replace('COINBASE:', '').replace('CRYPTO:', '');
+                      if (cleanSymbol !== currentSymbol && (cleanSymbol.includes('USDT') || cleanSymbol.includes('USD'))) {
+                        // Convert USD to USDT for consistency
+                        const normalizedSymbol = cleanSymbol.replace('USD', 'USDT');
+                        console.log('🔄 URL symbol change:', normalizedSymbol);
+                        currentSymbol = normalizedSymbol;
+                        onSymbolChange(normalizedSymbol);
                         return;
+                      }
+                    }
+
+                    // Pattern 2: Direct symbol in URL path
+                    const pathSymbolMatch = iframe.src.match(/\/([A-Z]{3,6}USD[T]?)\//);
+                    if (pathSymbolMatch && pathSymbolMatch[1]) {
+                      const pathSymbol = pathSymbolMatch[1].replace('USD', 'USDT');
+                      if (pathSymbol !== currentSymbol) {
+                        console.log('🔄 Path symbol change:', pathSymbol);
+                        currentSymbol = pathSymbol;
+                        onSymbolChange(pathSymbol);
+                        return;
+                      }
+                    }
+
+                    // Pattern 3: Check for any crypto symbols in the entire URL
+                    const cryptoSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT', 'XRPUSDT', 'DOGEUSDT', 'DOTUSDT', 'LINKUSDT', 'LTCUSDT'];
+                    for (const cryptoSymbol of cryptoSymbols) {
+                      if (iframe.src.includes(cryptoSymbol) || iframe.src.includes(cryptoSymbol.replace('USDT', 'USD'))) {
+                        if (cryptoSymbol !== currentSymbol) {
+                          console.log('🔄 Crypto symbol found in URL:', cryptoSymbol);
+                          currentSymbol = cryptoSymbol;
+                          onSymbolChange(cryptoSymbol);
+                          return;
+                        }
                       }
                     }
                   }
@@ -251,11 +298,14 @@ function TradingViewWidget({
               }
             };
 
-            // Check every 1 second for faster detection
-            const symbolInterval = setInterval(checkSymbolChange, 1000);
+            // Check every 500ms for very fast detection
+            const symbolInterval = setInterval(checkSymbolChange, 500);
 
-            // Initial check after 3 seconds
-            setTimeout(checkSymbolChange, 3000);
+            // Initial check after 2 seconds
+            setTimeout(checkSymbolChange, 2000);
+
+            // Additional immediate check after 5 seconds
+            setTimeout(checkSymbolChange, 5000);
 
             // Additional method: Monitor for specific TradingView symbol patterns
             const detectSymbolFromChart = () => {
@@ -282,14 +332,46 @@ function TradingViewWidget({
               }
             };
 
-            // Run crypto detection every 2 seconds
-            const cryptoInterval = setInterval(detectSymbolFromChart, 2000);
+            // Run crypto detection every 1 second for faster response
+            const cryptoInterval = setInterval(detectSymbolFromChart, 1000);
+
+            // Monitor for hash changes in the iframe URL (TradingView uses hash routing)
+            let lastHash = '';
+            const monitorHashChanges = () => {
+              try {
+                const iframe = containerRef.current?.querySelector('iframe');
+                if (iframe && iframe.src) {
+                  const currentHash = iframe.src.split('#')[1] || '';
+                  if (currentHash !== lastHash) {
+                    lastHash = currentHash;
+                    console.log('🔗 TradingView hash changed:', currentHash);
+
+                    // Look for symbols in the hash
+                    const hashSymbolMatch = currentHash.match(/([A-Z]{3,6}USD[T]?)/);
+                    if (hashSymbolMatch && hashSymbolMatch[1]) {
+                      const hashSymbol = hashSymbolMatch[1].replace('USD', 'USDT');
+                      if (hashSymbol !== currentSymbol) {
+                        console.log('🔄 Symbol detected from hash change:', hashSymbol);
+                        currentSymbol = hashSymbol;
+                        onSymbolChange(hashSymbol);
+                      }
+                    }
+                  }
+                }
+              } catch (error) {
+                // Silent error handling
+              }
+            };
+
+            // Monitor hash changes every 500ms
+            const hashInterval = setInterval(monitorHashChanges, 500);
 
             // Cleanup function
             return () => {
               window.removeEventListener('message', handleMessage);
               clearInterval(symbolInterval);
               clearInterval(cryptoInterval);
+              clearInterval(hashInterval);
             };
           } catch (error) {
             console.log('TradingView symbol monitoring setup error:', error);

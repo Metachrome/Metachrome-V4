@@ -1625,29 +1625,8 @@ function OptionsPageContent({
           <div className="p-2 border-b border-gray-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                {/* Manual symbol selector */}
-                <select
-                  value={selectedSymbol}
-                  onChange={(e) => {
-                    const newSymbol = e.target.value;
-                    setSelectedSymbol(newSymbol);
-                    handleTradingViewSymbolChange(newSymbol);
-                  }}
-                  className="text-xs bg-gray-700 text-white border border-gray-600 rounded px-2 py-1"
-                >
-                  <option value="BTCUSDT">BTC/USDT</option>
-                  <option value="ETHUSDT">ETH/USDT</option>
-                  <option value="BNBUSDT">BNB/USDT</option>
-                  <option value="SOLUSDT">SOL/USDT</option>
-                  <option value="ADAUSDT">ADA/USDT</option>
-                  <option value="XRPUSDT">XRP/USDT</option>
-                  <option value="DOGEUSDT">DOGE/USDT</option>
-                  <option value="DOTUSDT">DOT/USDT</option>
-                  <option value="LINKUSDT">LINK/USDT</option>
-                  <option value="LTCUSDT">LTC/USDT</option>
-                </select>
                 <div className="text-xs text-gray-400">
-                  Auto-Sync: <span className="text-yellow-400">Monitoring</span>
+                  Chart Sync: <span className="text-green-400">Active</span>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
