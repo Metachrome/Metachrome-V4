@@ -1756,11 +1756,11 @@ function OptionsPageContent({
             )}
 
             {chartView === 'tradingview' && (
-              <div className="space-y-4">
-                {/* Symbol Selector for TradingView */}
-                <div className="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 border border-gray-600">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-300">Chart Symbol:</span>
+              <div className="relative">
+                {/* Symbol Selector Overlay - Positioned over the chart */}
+                <div className="absolute top-2 left-2 z-10 bg-gray-800/90 backdrop-blur-sm rounded-lg p-2 border border-gray-600/50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-gray-300">Symbol:</span>
                     <select
                       value={selectedSymbol}
                       onChange={(e) => {
@@ -1768,7 +1768,7 @@ function OptionsPageContent({
                         setSelectedSymbol(newSymbol);
                         handleTradingViewSymbolChange(newSymbol);
                       }}
-                      className="bg-gray-700 text-white text-sm font-medium rounded-md px-3 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[120px]"
+                      className="bg-gray-700/90 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none min-w-[100px]"
                     >
                       <option value="BTCUSDT">BTC/USDT</option>
                       <option value="ETHUSDT">ETH/USDT</option>
@@ -1791,16 +1791,13 @@ function OptionsPageContent({
                       <option value="XLMUSDT">XLM/USDT</option>
                     </select>
                   </div>
-                  <div className="text-xs text-gray-400">
-                    Live TradingView Chart
-                  </div>
                 </div>
 
                 <ErrorBoundary>
                   <TradingViewWidget
                     type="chart"
                     symbol={`BINANCE:${selectedSymbol}`}
-                    height={400}
+                    height={450}
                     interval="1"
                     theme="dark"
                     container_id="options_tradingview_chart"
