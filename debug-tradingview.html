@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingView Debug Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #0F0F0F;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .chart-container {
+            width: 100%;
+            height: 500px;
+            background-color: #10121E;
+            border: 1px solid #333;
+            margin: 20px 0;
+            position: relative;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #1a4d1a; }
+        .error { background-color: #4d1a1a; }
+        .info { background-color: #1a1a4d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 TradingView Widget Debug Test</h1>
+        
+        <div id="status" class="status info">
+            ⏳ Initializing TradingView widget test...
+        </div>
+
+        <div class="chart-container">
+            <div class="loading">Loading TradingView chart...</div>
+            <div id="tradingview_widget_container"></div>
+        </div>
+
+        <div id="console-output">
+            <h3>Console Output:</h3>
+            <div id="console-log" style="background: #222; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const logContainer = document.getElementById('console-log');
+        
+        function addLog(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.color = type === 'error' ? '#ff6b6b' : '#4ecdc4';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog(args.join(' '), 'error');
+        };
+
+        // Update status
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        // Test TradingView widget
+        function initTradingViewWidget() {
+            console.log('🚀 Starting TradingView widget initialization...');
+            updateStatus('🔄 Loading TradingView script...', 'info');
+
+            const container = document.getElementById('tradingview_widget_container');
+            
+            // Clear container
+            container.innerHTML = '';
+
+            // Create script element
+            const script = document.createElement('script');
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+            script.type = 'text/javascript';
+            script.async = true;
+
+            // Configuration
+            const config = {
+                autosize: true,
+                symbol: 'BINANCE:BTCUSDT',
+                interval: '1',
+                timezone: 'Etc/UTC',
+                theme: 'dark',
+                style: '1',
+                locale: 'en',
+                enable_publishing: false,
+                allow_symbol_change: true,
+                calendar: false,
+                support_host: 'https://www.tradingview.com',
+                container_id: 'tradingview_widget_container',
+                width: '100%',
+                height: '500'
+            };
+
+            script.innerHTML = JSON.stringify(config);
+
+            // Success handler
+            script.onload = function() {
+                console.log('✅ TradingView script loaded successfully');
+                updateStatus('✅ TradingView script loaded! Waiting for widget to render...', 'success');
+                
+                // Check if widget rendered after a delay
+                setTimeout(() => {
+                    const iframe = container.querySelector('iframe');
+                    if (iframe) {
+                        console.log('✅ TradingView widget iframe found - widget rendered successfully');
+                        updateStatus('🎉 TradingView widget loaded and rendered successfully!', 'success');
+                    } else {
+                        console.log('⚠️ TradingView script loaded but no iframe found');
+                        updateStatus('⚠️ Script loaded but widget not rendered', 'error');
+                    }
+                }, 3000);
+            };
+
+            // Error handler
+            script.onerror = function() {
+                console.error('❌ Failed to load TradingView script');
+                updateStatus('❌ Failed to load TradingView script', 'error');
+            };
+
+            // Append script to container
+            container.appendChild(script);
+            console.log('📝 TradingView script added to DOM');
+        }
+
+        // Start the test
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM loaded, starting TradingView test...');
+            setTimeout(initTradingViewWidget, 1000);
+        });
+
+        // Additional debugging
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error?.message || e.message);
+        });
+
+        // Check for TradingView global object
+        setInterval(() => {
+            if (window.TradingView) {
+                console.log('🔍 TradingView global object detected');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
