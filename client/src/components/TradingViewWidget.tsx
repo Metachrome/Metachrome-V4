@@ -156,139 +156,140 @@ function TradingViewWidget({
           }
         }, 2000);
 
-        // Set up symbol change monitoring using multiple approaches
+        // Simplified and more aggressive symbol change monitoring
         if (onSymbolChange) {
           try {
             let currentSymbol = symbol.replace('BINANCE:', '').replace('COINBASE:', '');
+            console.log('🔍 Setting up symbol monitoring for:', currentSymbol);
 
-            // Listen for messages from TradingView iframe
+            // Listen for ALL messages from TradingView iframe
             const handleMessage = (event: MessageEvent) => {
               try {
-                // TradingView sends various messages, we need to filter for symbol changes
+                // Log all messages to see what TradingView is sending
+                if (event.data && event.origin && event.origin.includes('tradingview')) {
+                  console.log('📨 TradingView message:', event.data);
+                }
+
+                // Check for symbol in any message format
                 if (event.data && typeof event.data === 'object') {
-                  console.log('📨 TradingView message received:', event.data);
+                  const messageStr = JSON.stringify(event.data);
 
-                  // Check for symbol change in various TradingView message formats
-                  let newSymbol = null;
-
-                  // Method 1: Direct symbol property
-                  if (event.data.symbol) {
-                    newSymbol = event.data.symbol;
-                  }
-                  // Method 2: Nested data.symbol
-                  else if (event.data.data && event.data.data.symbol) {
-                    newSymbol = event.data.data.symbol;
-                  }
-                  // Method 3: Symbol change event
-                  else if (event.data.type === 'symbol_changed' && event.data.payload) {
-                    newSymbol = event.data.payload.symbol || event.data.payload;
-                  }
-                  // Method 4: Widget ready with symbol
-                  else if (event.data.name === 'tv-widget-ready' && event.data.symbol) {
-                    newSymbol = event.data.symbol;
-                  }
-                  // Method 5: Chart symbol update
-                  else if (event.data.name === 'chart-symbol-changed') {
-                    newSymbol = event.data.symbol;
-                  }
-
-                  if (newSymbol && typeof newSymbol === 'string') {
-                    // Clean the symbol (remove exchange prefix)
-                    const cleanSymbol = newSymbol.replace('BINANCE:', '').replace('COINBASE:', '').replace('NASDAQ:', '');
-
-                    if (cleanSymbol !== currentSymbol && cleanSymbol.includes('USDT')) {
-                      console.log('🔄 TradingView symbol change detected via message:', cleanSymbol);
-                      currentSymbol = cleanSymbol;
-                      onSymbolChange(cleanSymbol);
+                  // Look for USDT symbols in any part of the message
+                  const symbolMatches = messageStr.match(/([A-Z]{2,10}USDT)/g);
+                  if (symbolMatches && symbolMatches.length > 0) {
+                    const detectedSymbol = symbolMatches[0];
+                    if (detectedSymbol !== currentSymbol) {
+                      console.log('🔄 Symbol detected in message:', detectedSymbol);
+                      currentSymbol = detectedSymbol;
+                      onSymbolChange(detectedSymbol);
                     }
                   }
                 }
               } catch (error) {
-                console.log('Symbol change message processing error:', error);
+                // Silent error handling
               }
             };
 
-            // Add message listener
+            // Add message listener for all origins
             window.addEventListener('message', handleMessage);
 
-            // Enhanced URL monitoring with more frequent checks
+            // Aggressive URL and DOM monitoring
             const checkSymbolChange = () => {
               try {
                 const iframe = containerRef.current?.querySelector('iframe');
-                if (iframe && iframe.src) {
-                  // Check URL for symbol parameter
-                  const symbolMatch = iframe.src.match(/symbol=([^&]+)/);
-                  if (symbolMatch && symbolMatch[1]) {
-                    const detectedSymbol = decodeURIComponent(symbolMatch[1]);
-                    const cleanSymbol = detectedSymbol.replace('BINANCE:', '').replace('COINBASE:', '').replace('NASDAQ:', '');
-                    if (cleanSymbol !== currentSymbol && cleanSymbol.includes('USDT')) {
-                      console.log('🔄 URL-based symbol change detected:', cleanSymbol);
-                      currentSymbol = cleanSymbol;
-                      onSymbolChange(cleanSymbol);
+                if (iframe) {
+                  // Method 1: Check iframe src URL
+                  if (iframe.src) {
+                    const symbolMatch = iframe.src.match(/symbol=([^&]+)/);
+                    if (symbolMatch && symbolMatch[1]) {
+                      const detectedSymbol = decodeURIComponent(symbolMatch[1]);
+                      const cleanSymbol = detectedSymbol.replace('BINANCE:', '').replace('COINBASE:', '');
+                      if (cleanSymbol !== currentSymbol && cleanSymbol.includes('USDT')) {
+                        console.log('🔄 URL symbol change:', cleanSymbol);
+                        currentSymbol = cleanSymbol;
+                        onSymbolChange(cleanSymbol);
+                        return;
+                      }
                     }
                   }
 
-                  // Also check iframe title for symbol changes
+                  // Method 2: Try to read iframe content (will fail due to CORS but worth trying)
                   try {
-                    if (iframe.contentDocument && iframe.contentDocument.title) {
-                      const titleSymbolMatch = iframe.contentDocument.title.match(/([A-Z]+USDT)/);
-                      if (titleSymbolMatch && titleSymbolMatch[1]) {
-                        const titleSymbol = titleSymbolMatch[1];
-                        if (titleSymbol !== currentSymbol) {
-                          console.log('🔄 Title-based symbol change detected:', titleSymbol);
-                          currentSymbol = titleSymbol;
-                          onSymbolChange(titleSymbol);
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                    if (iframeDoc) {
+                      const symbolElements = iframeDoc.querySelectorAll('[data-symbol], .symbol, .tv-symbol');
+                      symbolElements.forEach(el => {
+                        const symbolText = el.textContent || el.getAttribute('data-symbol');
+                        if (symbolText && symbolText.includes('USDT') && symbolText !== currentSymbol) {
+                          console.log('🔄 DOM symbol change:', symbolText);
+                          currentSymbol = symbolText;
+                          onSymbolChange(symbolText);
                         }
+                      });
+                    }
+                  } catch (corsError) {
+                    // Expected CORS error, continue with other methods
+                  }
+
+                  // Method 3: Monitor iframe title changes
+                  try {
+                    const title = iframe.contentDocument?.title;
+                    if (title) {
+                      const titleSymbol = title.match(/([A-Z]+USDT)/);
+                      if (titleSymbol && titleSymbol[1] !== currentSymbol) {
+                        console.log('🔄 Title symbol change:', titleSymbol[1]);
+                        currentSymbol = titleSymbol[1];
+                        onSymbolChange(titleSymbol[1]);
                       }
                     }
-                  } catch (crossOriginError) {
-                    // Expected for cross-origin iframes
+                  } catch (corsError) {
+                    // Expected CORS error
                   }
                 }
               } catch (error) {
-                // Silently handle cross-origin errors
+                // Silent error handling
               }
             };
 
-            // Check for symbol changes every 2 seconds for faster detection
-            const symbolInterval = setInterval(checkSymbolChange, 2000);
+            // Check every 1 second for faster detection
+            const symbolInterval = setInterval(checkSymbolChange, 1000);
 
-            // DOM observation for symbol changes in TradingView interface
-            const observeSymbolChanges = () => {
+            // Initial check after 3 seconds
+            setTimeout(checkSymbolChange, 3000);
+
+            // Additional method: Monitor for specific TradingView symbol patterns
+            const detectSymbolFromChart = () => {
               try {
                 const iframe = containerRef.current?.querySelector('iframe');
                 if (iframe) {
-                  // Observe changes to the iframe src attribute
-                  const observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                      if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
-                        checkSymbolChange();
+                  // Look for common crypto symbols in the current URL
+                  const url = iframe.src;
+                  const cryptoSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT', 'XRPUSDT', 'DOGEUSDT', 'DOTUSDT', 'LINKUSDT', 'LTCUSDT'];
+
+                  for (const cryptoSymbol of cryptoSymbols) {
+                    if (url.includes(cryptoSymbol) || url.includes(cryptoSymbol.replace('USDT', 'USD'))) {
+                      if (cryptoSymbol !== currentSymbol) {
+                        console.log('🔄 Crypto symbol detected in URL:', cryptoSymbol);
+                        currentSymbol = cryptoSymbol;
+                        onSymbolChange(cryptoSymbol);
+                        break;
                       }
-                    });
-                  });
-
-                  observer.observe(iframe, {
-                    attributes: true,
-                    attributeFilter: ['src']
-                  });
-
-                  return observer;
+                    }
+                  }
                 }
               } catch (error) {
-                console.log('DOM observation setup failed:', error);
+                // Silent error handling
               }
-              return null;
             };
 
-            const domObserver = observeSymbolChanges();
+            // Run crypto detection every 2 seconds
+            const cryptoInterval = setInterval(detectSymbolFromChart, 2000);
 
             // Cleanup function
             return () => {
               window.removeEventListener('message', handleMessage);
               clearInterval(symbolInterval);
-              if (domObserver) {
-                domObserver.disconnect();
-              }
+              clearInterval(cryptoInterval);
             };
           } catch (error) {
             console.log('TradingView symbol monitoring setup error:', error);
