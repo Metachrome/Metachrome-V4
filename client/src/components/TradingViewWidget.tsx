@@ -34,8 +34,12 @@ function TradingViewWidget({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear any existing widget
-    containerRef.current.innerHTML = '';
+    // Clear any existing widget safely
+    try {
+      containerRef.current.innerHTML = '';
+    } catch (error) {
+      console.log('Error clearing container:', error);
+    }
 
     if (type === 'ticker') {
       // Ticker tape widget for homepage
@@ -147,13 +151,21 @@ function TradingViewWidget({
         }
       };
 
-      containerRef.current.appendChild(script);
+      try {
+        containerRef.current.appendChild(script);
+      } catch (error) {
+        console.error('Error appending TradingView script:', error);
+      }
     }
 
     // Cleanup function
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      try {
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
+      } catch (error) {
+        console.log('Error during cleanup:', error);
       }
     };
   }, [type, symbol, height, interval, theme, style, locale, timezone, allow_symbol_change, container_id]);

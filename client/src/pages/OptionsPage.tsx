@@ -4,6 +4,7 @@ import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import TradingViewWidget from "../components/TradingViewWidget";
 import LightweightChart from "../components/LightweightChart";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import TradeNotification from "../components/TradeNotification";
 import TradeOverlay from "../components/TradeOverlay";
@@ -1619,14 +1620,16 @@ function OptionsPageContent() {
             )}
 
             {chartView === 'tradingview' && (
-              <TradingViewWidget
-                type="chart"
-                symbol={`BINANCE:${selectedSymbol}`}
-                height={400}
-                interval="1"
-                theme="dark"
-                container_id="options_tradingview_chart"
-              />
+              <ErrorBoundary>
+                <TradingViewWidget
+                  type="chart"
+                  symbol={`BINANCE:${selectedSymbol}`}
+                  height={400}
+                  interval="1"
+                  theme="dark"
+                  container_id="options_tradingview_chart"
+                />
+              </ErrorBoundary>
             )}
 
             {chartView === 'depth' && (

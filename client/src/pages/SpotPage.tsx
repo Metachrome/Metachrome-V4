@@ -6,6 +6,7 @@ import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import { Button } from "../components/ui/button";
 import LightweightChart from "../components/LightweightChart";
 import TradingViewWidget from "../components/TradingViewWidget";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
@@ -988,14 +989,16 @@ function SpotPageContent() {
               )}
 
               {chartView === 'tradingview' && (
-                <TradingViewWidget
-                  type="chart"
-                  symbol={`BINANCE:${selectedSymbol}`}
-                  height={480}
-                  interval="1"
-                  theme="dark"
-                  container_id="spot_tradingview_chart"
-                />
+                <ErrorBoundary>
+                  <TradingViewWidget
+                    type="chart"
+                    symbol={`BINANCE:${selectedSymbol}`}
+                    height={480}
+                    interval="1"
+                    theme="dark"
+                    container_id="spot_tradingview_chart"
+                  />
+                </ErrorBoundary>
               )}
             </div>
           </div>

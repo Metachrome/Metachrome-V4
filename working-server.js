@@ -115,12 +115,14 @@ app.use((req, res, next) => {
   // Set Content Security Policy to allow unsafe-eval for development
   res.setHeader('Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://accounts.google.com; " +
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://accounts.google.com https://s3.tradingview.com https://charting-library.tradingview.com https://www.tradingview.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data: https:; " +
-    "connect-src 'self' https://api.binance.com https://accounts.google.com wss: ws:; " +
-    "frame-src 'self' https://accounts.google.com;"
+    "connect-src 'self' https://api.binance.com https://accounts.google.com https://www.tradingview.com wss: ws:; " +
+    "frame-src 'self' https://accounts.google.com https://www.tradingview.com https://s3.tradingview.com; " +
+    "object-src 'none'; " +
+    "base-uri 'self';"
   );
 
   // Additional security headers
