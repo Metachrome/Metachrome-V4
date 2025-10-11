@@ -92,6 +92,7 @@ function TradingViewWidget({
       // Check if mobile for specific mobile chart settings
       const isMobile = window.innerWidth <= 768;
 
+      // Simplified configuration to avoid schema validation errors
       const config = {
         autosize: true,
         symbol: symbol,
@@ -102,35 +103,18 @@ function TradingViewWidget({
         locale: locale,
         enable_publishing: false,
         allow_symbol_change: allow_symbol_change,
-        calendar: false,
-        support_host: "https://www.tradingview.com",
         container_id: container_id,
-        hide_side_toolbar: isMobile && container_id === 'options_mobile_chart',
         hide_top_toolbar: false,
-        hide_legend: isMobile && container_id === 'options_mobile_chart',
         save_image: false,
-        backgroundColor: theme === 'dark' ? "#0F0F0F" : "#FFFFFF",
-        gridColor: theme === 'dark' ? "rgba(242, 242, 242, 0.06)" : "rgba(0, 0, 0, 0.06)",
-        studies: [],
-        watchlist: [],
-        details: !isMobile || container_id !== 'options_mobile_chart',
-        hotlist: false,
-        withdateranges: !isMobile || container_id !== 'options_mobile_chart',
-        hide_volume: isMobile && container_id === 'options_mobile_chart',
-        // Enable symbol change callbacks
-        onSymbolChanged: function(symbolInfo: any) {
-          if (onSymbolChange && symbolInfo && symbolInfo.name) {
-            console.log('🔄 TradingView onSymbolChanged callback:', symbolInfo.name);
-            const cleanSymbol = symbolInfo.name.replace('BINANCE:', '').replace('COINBASE:', '');
-            onSymbolChange(cleanSymbol);
-          }
-        }
+        withdateranges: true,
+        hide_volume: false
       };
 
       script.innerHTML = JSON.stringify(config);
 
       script.onload = () => {
         console.log('✅ TradingView widget loaded successfully');
+        console.log('🔍 Widget config:', JSON.stringify(config, null, 2));
 
         // Try to access TradingView widget instance for direct symbol monitoring
         setTimeout(() => {
@@ -339,6 +323,16 @@ function TradingViewWidget({
 
             // Additional immediate check after 5 seconds
             setTimeout(checkSymbolChange, 5000);
+
+            // Test symbol detection manually (for debugging)
+            setTimeout(() => {
+              console.log('🧪 Testing symbol detection...');
+              if (onSymbolChange) {
+                console.log('🧪 Simulating symbol change to BTCUSDT');
+                // This is just for testing - remove in production
+                // onSymbolChange('BTCUSDT');
+              }
+            }, 10000);
 
             // Additional method: Monitor for specific TradingView symbol patterns
             const detectSymbolFromChart = () => {

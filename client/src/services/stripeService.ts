@@ -6,8 +6,14 @@ class StripeService {
 
   constructor() {
     // In production, this should come from environment variables
-    this.publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here';
-    this.stripe = loadStripe(this.publishableKey);
+    this.publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+
+    // Only initialize Stripe if we have a valid publishable key
+    if (this.publishableKey && this.publishableKey !== 'pk_test_your_key_here') {
+      this.stripe = loadStripe(this.publishableKey);
+    } else {
+      this.stripe = Promise.resolve(null);
+    }
   }
 
   async createPaymentIntent(amount: string, currency: string) {

@@ -11,7 +11,9 @@ import { Label } from '../components/ui/label';
 import { useToast } from '../hooks/use-toast';
 import { stripeService } from '../services/stripeService';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here');
+// Only load Stripe if the publishable key is properly configured
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripeKey && stripeKey !== 'pk_test_your_key_here' ? loadStripe(stripeKey) : null;
 
 interface PaymentFormProps {
   amount: string;
@@ -133,13 +135,23 @@ interface StripePaymentProps {
 }
 
 export default function StripePayment({ amount, currency, onSuccess, onError }: StripePaymentProps) {
+  // If Stripe is not configured, show a message
+  if (!stripePromise) {
+    return (
+      <div className="text-center p-4 text-gray-400">
+        <p>Credit card payments are currently unavailable.</p>
+        <p className="text-sm mt-2">Please use cryptocurrency deposits instead.</p>
+      </div>
+    );
+  }
+
   return (
     <Elements stripe={stripePromise}>
-      <PaymentForm 
-        amount={amount} 
-        currency={currency} 
-        onSuccess={onSuccess} 
-        onError={onError} 
+      <PaymentForm
+        amount={amount}
+        currency={currency}
+        onSuccess={onSuccess}
+        onError={onError}
       />
     </Elements>
   );
