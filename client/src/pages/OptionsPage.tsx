@@ -46,8 +46,8 @@ function OptionsPageContent() {
   const { changeText, changeColor, isPositive } = usePriceChange();
   const { high, low, volume } = use24hStats();
 
-  // Chart view state - Default to TradingView for better user experience
-  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
+  // Chart view state
+  const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('basic');
 
   // Debug user data
   console.log('🔍 OPTIONS PAGE - User data:', {

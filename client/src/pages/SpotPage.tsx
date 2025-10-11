@@ -59,7 +59,7 @@ function SpotPageContent() {
   const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
-  const [chartView, setChartView] = useState<'basic' | 'tradingview'>('tradingview'); // Chart view state
+  const [chartView, setChartView] = useState<'basic' | 'tradingview'>('basic'); // Chart view state
 
   // Trading pairs data
   const tradingPairs = [
