@@ -2637,7 +2637,9 @@ function OptionsPageContent({
           payout: completedTrade.payout || (completedTrade.status === 'won' ?
             completedTrade.amount + (completedTrade.amount * (completedTrade.profitPercentage || 10) / 100) :
             0),
-          profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15)
+          profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15),
+          symbol: selectedSymbol.replace('USDT', '/USDT'), // Convert BTCUSDT to BTC/USDT format
+          duration: parseInt(selectedDuration.replace('s', '')) // Convert "30s" to 30
         } : null}
         onClose={() => {
           console.log('🔔 NOTIFICATION: onClose called');

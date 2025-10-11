@@ -11,6 +11,8 @@ interface TradeNotificationProps {
     status: 'won' | 'lost';
     payout?: number;
     profitPercentage: number;
+    symbol?: string;
+    duration?: number;
   } | null;
   onClose: () => void;
 }
@@ -93,38 +95,50 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
             {/* Trade Details */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Current price :</span>
-                <span className="text-white font-medium text-sm">{trade.finalPrice.toFixed(2)}</span>
+                <span className="text-gray-400 text-sm">Market :</span>
+                <span className="text-white font-medium text-sm">{trade.symbol || 'BTC/USDT'}</span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Time :</span>
-                <span className="text-white font-medium text-sm">30s</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Side :</span>
+                <span className="text-gray-400 text-sm">Trade :</span>
                 <span className={`font-medium text-sm ${
                   trade.direction === 'up' ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {trade.direction === 'up' ? 'Buy Up' : 'Sell Down'}
+                  {trade.direction === 'up' ? 'BUY' : 'SELL'}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">Amount :</span>
-                <span className="text-white font-medium text-sm">{trade.amount.toFixed(0)} USDT</span>
+                <span className="text-white font-medium text-sm">{trade.amount.toLocaleString()} USDT (bukan pakai $)</span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Price :</span>
-                <span className="text-white font-medium text-sm">{trade.entryPrice.toFixed(2)} USDT</span>
+                <span className="text-gray-400 text-sm">Entry Price:</span>
+                <span className="text-white font-medium text-sm">{trade.entryPrice.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Closed Price:</span>
+                <span className="text-white font-medium text-sm">{trade.finalPrice.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Duration :</span>
+                <span className="text-white font-medium text-sm">{trade.duration || 30} seconds</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Profit :</span>
+                <span className={`font-medium text-sm ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+                  {isWin ? `+${pnl.toFixed(0)}` : pnl.toFixed(0)}
+                </span>
               </div>
             </div>
 
             {/* Footer Text */}
             <div className="text-gray-400 text-xs leading-relaxed pt-3">
-              The ultimate price for each option contract is determined by the system's settlement process.
+              Pay out nya di hilangkan aja.
             </div>
           </div>
         </div>
@@ -208,15 +222,15 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
             : 'bg-gradient-to-br from-red-400/5 to-transparent'
         } animate-pulse`} />
 
-        {/* Enhanced sparkle effects */}
+        {/* Enhanced sparkle effects - Emojis removed */}
         <div className="absolute top-2 right-2 text-2xl animate-enhanced-bounce">
-          {isWin ? '✨' : '💥'}
+          {/* Sparkle effects removed */}
         </div>
         <div className="absolute bottom-2 left-2 text-lg animate-float-sparkle">
-          {isWin ? '🎯' : '⚡'}
+          {/* Sparkle effects removed */}
         </div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs opacity-30 animate-pulse">
-          {isWin ? '🌟' : '💫'}
+          {/* Sparkle effects removed */}
         </div>
 
         <div className="relative z-10">
@@ -228,7 +242,7 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
                 isWin ? 'ring-emerald-300/50' : 'ring-red-300/50'
               }`} />
               <span className="font-bold text-xl tracking-wide drop-shadow-lg">
-                {isWin ? '🎉 TRADE WON!' : '💔 TRADE LOST'}
+                {isWin ? 'TRADE WON!' : 'TRADE LOST'}
               </span>
               <div className={`px-3 py-1 rounded-full text-xs font-bold ${
                 isWin ? 'bg-gradient-to-r from-emerald-400/30 to-green-400/30 text-emerald-200 border border-emerald-300/50' : 'bg-gradient-to-r from-red-400/30 to-rose-400/30 text-red-200 border border-red-300/50'
@@ -252,9 +266,18 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
           } rounded-xl border ${
             isWin ? 'border-emerald-600/30' : 'border-red-600/30'
           } shadow-lg backdrop-blur-sm`}>
-            <span className="text-gray-200 font-medium">Direction:</span>
+            <span className="text-gray-200 font-medium">Market:</span>
+            <span className="font-bold text-lg text-blue-300 drop-shadow-lg">{trade.symbol || 'BTC/USDT'}</span>
+          </div>
+
+          <div className={`flex justify-between items-center py-3 px-4 ${
+            isWin ? 'bg-gradient-to-r from-emerald-800/40 to-green-800/40' : 'bg-gradient-to-r from-red-800/40 to-rose-800/40'
+          } rounded-xl border ${
+            isWin ? 'border-emerald-600/30' : 'border-red-600/30'
+          } shadow-lg backdrop-blur-sm`}>
+            <span className="text-gray-200 font-medium">Trade:</span>
             <span className={`font-bold text-lg ${trade.direction === 'up' ? 'text-emerald-300' : 'text-red-300'} drop-shadow-lg`}>
-              {trade.direction === 'up' ? '📈 UP' : '📉 DOWN'}
+              {trade.direction === 'up' ? 'BUY' : 'SELL'}
             </span>
           </div>
 
@@ -264,7 +287,7 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
             isWin ? 'border-emerald-600/30' : 'border-red-600/30'
           } shadow-lg backdrop-blur-sm`}>
             <span className="text-gray-200 font-medium">Amount:</span>
-            <span className="font-bold text-lg text-yellow-300 drop-shadow-lg">{trade.amount} USDT</span>
+            <span className="font-bold text-lg text-yellow-300 drop-shadow-lg">{trade.amount.toLocaleString()} USDT (bukan pakai $)</span>
           </div>
 
           <div className={`flex justify-between items-center py-3 px-4 ${
@@ -273,7 +296,7 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
             isWin ? 'border-emerald-600/30' : 'border-red-600/30'
           } shadow-lg backdrop-blur-sm`}>
             <span className="text-gray-200 font-medium">Entry Price:</span>
-            <span className="font-mono text-lg text-blue-300 drop-shadow-lg">${trade.entryPrice.toFixed(2)}</span>
+            <span className="font-mono text-lg text-blue-300 drop-shadow-lg">{trade.entryPrice.toFixed(2)}</span>
           </div>
 
           <div className={`flex justify-between items-center py-3 px-4 ${
@@ -281,8 +304,17 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
           } rounded-xl border ${
             isWin ? 'border-emerald-600/30' : 'border-red-600/30'
           } shadow-lg backdrop-blur-sm`}>
-            <span className="text-gray-200 font-medium">Final Price:</span>
-            <span className="font-mono text-lg text-blue-300 drop-shadow-lg">${trade.finalPrice.toFixed(2)}</span>
+            <span className="text-gray-200 font-medium">Closed Price:</span>
+            <span className="font-mono text-lg text-blue-300 drop-shadow-lg">{trade.finalPrice.toFixed(2)}</span>
+          </div>
+
+          <div className={`flex justify-between items-center py-3 px-4 ${
+            isWin ? 'bg-gradient-to-r from-emerald-800/40 to-green-800/40' : 'bg-gradient-to-r from-red-800/40 to-rose-800/40'
+          } rounded-xl border ${
+            isWin ? 'border-emerald-600/30' : 'border-red-600/30'
+          } shadow-lg backdrop-blur-sm`}>
+            <span className="text-gray-200 font-medium">Duration:</span>
+            <span className="font-bold text-lg text-purple-300 drop-shadow-lg">{trade.duration || 30} seconds</span>
           </div>
 
           <div className={`flex justify-between items-center py-3 px-4 ${
@@ -336,7 +368,7 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
                     ? 'bg-gradient-to-r from-emerald-400/30 to-green-400/30 text-emerald-200 border-2 border-emerald-300/50 shadow-lg shadow-emerald-400/30'
                     : 'bg-gradient-to-r from-red-400/30 to-rose-400/30 text-red-200 border-2 border-red-300/50 shadow-lg shadow-red-400/30'
                 } backdrop-blur-sm`}>
-                  {isWin ? '🎊 Congratulations! 🎊' : '😔 Better luck next time'}
+                  {isWin ? 'Congratulations!' : 'Better luck next time'}
                 </div>
               </div>
             </div>
