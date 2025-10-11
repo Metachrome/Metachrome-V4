@@ -1052,14 +1052,14 @@ function SpotPageContent() {
         <div className="px-4 py-4">
           <h3 className="text-white font-bold mb-3">Recent Orders</h3>
           <div className="space-y-2 max-h-40 overflow-y-auto">
-            {(orders || []).slice(0, 5).map((order) => (
+            {orderHistory.slice(0, 5).map((order) => (
               <div key={order.id} className="bg-gray-800 rounded-lg p-3">
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className={`text-sm font-medium ${order.side === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                      {order.side.toUpperCase()} {order.symbol}
+                    <span className={`text-sm font-medium ${order.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                      {order.type.toUpperCase()} {order.symbol}
                     </span>
-                    <div className="text-xs text-gray-400">{order.amount} @ ${order.price || 'Market'}</div>
+                    <div className="text-xs text-gray-400">{order.amount} @ ${order.price}</div>
                   </div>
                   <div className="text-right">
                     <div className={`text-sm font-medium ${
@@ -1071,8 +1071,14 @@ function SpotPageContent() {
                     <div className="text-xs text-gray-400">${order.total}</div>
                   </div>
                 </div>
+                <div className="text-xs text-gray-500 mt-1">{order.time}</div>
               </div>
             ))}
+            {orderHistory.length === 0 && (
+              <div className="text-center text-gray-400 py-4">
+                No recent orders
+              </div>
+            )}
           </div>
         </div>
         </div>
