@@ -105,7 +105,10 @@ function TradingViewWidget({
         locale: locale,
         toolbar_bg: "#f1f3f6",
         enable_publishing: false,
-        allow_symbol_change: allow_symbol_change,
+        allow_symbol_change: false, // Disable TradingView's native symbol selector
+        hide_top_toolbar: true, // Hide the top toolbar with symbol selector
+        hide_legend: false, // Keep legend for price info
+        hide_side_toolbar: false, // Keep drawing tools
         container_id: container_id
       };
 
@@ -582,12 +585,12 @@ function TradingViewWidget({
         position: "relative"
       }}
     >
-      {/* Symbol Sync Overlay - Only show for main chart, not ticker */}
+      {/* Custom Symbol Selector - Only show for main chart, not ticker */}
       {type !== 'ticker' && onSymbolChange && (
-        <div className="absolute top-2 right-2 z-10">
-          <div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-2 border border-gray-700">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">Sync:</span>
+        <div className="absolute top-4 left-4 z-20">
+          <div className="bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-gray-600 shadow-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-300">Symbol:</span>
               <select
                 value={symbol}
                 onChange={(e) => {
@@ -606,18 +609,27 @@ function TradingViewWidget({
                     }
                   }
                 }}
-                className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                className="bg-gray-800 text-white text-sm font-medium rounded-md px-3 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[100px]"
               >
                 <option value="BTCUSDT">BTC/USDT</option>
                 <option value="ETHUSDT">ETH/USDT</option>
-                <option value="SOLUSDT">SOL/USDT</option>
-                <option value="BNBUSDT">BNB/USDT</option>
-                <option value="ADAUSDT">ADA/USDT</option>
                 <option value="XRPUSDT">XRP/USDT</option>
-                <option value="DOGEUSDT">DOGE/USDT</option>
-                <option value="DOTUSDT">DOT/USDT</option>
-                <option value="LINKUSDT">LINK/USDT</option>
                 <option value="LTCUSDT">LTC/USDT</option>
+                <option value="BNBUSDT">BNB/USDT</option>
+                <option value="SOLUSDT">SOL/USDT</option>
+                <option value="TONUSDT">TON/USDT</option>
+                <option value="DOGEUSDT">DOGE/USDT</option>
+                <option value="ADAUSDT">ADA/USDT</option>
+                <option value="TRXUSDT">TRX/USDT</option>
+                <option value="HYPEUSDT">HYPE/USDT</option>
+                <option value="LINKUSDT">LINK/USDT</option>
+                <option value="AVAXUSDT">AVAX/USDT</option>
+                <option value="SUIUSDT">SUI/USDT</option>
+                <option value="SHIBUSDT">SHIB/USDT</option>
+                <option value="BCHUSDT">BCH/USDT</option>
+                <option value="DOTUSDT">DOT/USDT</option>
+                <option value="MATICUSDT">MATIC/USDT</option>
+                <option value="XLMUSDT">XLM/USDT</option>
               </select>
             </div>
           </div>
