@@ -45,6 +45,10 @@ function SpotPageContent() {
   // Chart view state - Default to TradingView to match options page
   const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
+  // Order management states
+  const [openOrders, setOpenOrders] = useState<any[]>([]);
+  const [orderHistory, setOrderHistory] = useState<any[]>([]);
+
   // Use price context for synchronized price data - SINGLE SOURCE OF TRUTH
   const { priceData } = usePrice();
   const { changeText, changeColor, isPositive } = usePriceChange();
@@ -58,15 +62,95 @@ function SpotPageContent() {
   const currentPrice = selectedSymbolPriceData?.price || priceData?.price || 0;
   const formattedPrice = currentPrice.toFixed(2);
 
-  // Debug logging
+  // Debug logging and load order history
   useEffect(() => {
     console.log('🔍 SpotPage mounted');
     console.log('🔍 User:', user);
     console.log('💰 SpotPage - Price from context:', priceData?.price);
+
+    // Load mock order history for demonstration
+    loadOrderHistory();
+
     return () => {
       console.log('🔍 SpotPage unmounted');
     };
   }, [user, priceData]);
+
+  // Load order history (mock data for now)
+  const loadOrderHistory = async () => {
+    if (!user) return;
+
+    try {
+      // For now, create mock order history data
+      const mockOrderHistory = [
+        {
+          id: '1',
+          symbol: 'BTC/USDT',
+          type: 'buy',
+          orderType: 'limit',
+          amount: '0.001',
+          price: '110,750.00',
+          total: '110.75',
+          status: 'filled',
+          time: new Date(Date.now() - 3600000).toLocaleString(), // 1 hour ago
+          fee: '0.11'
+        },
+        {
+          id: '2',
+          symbol: 'ETH/USDT',
+          type: 'sell',
+          orderType: 'market',
+          amount: '0.05',
+          price: '3,577.42',
+          total: '178.87',
+          status: 'filled',
+          time: new Date(Date.now() - 7200000).toLocaleString(), // 2 hours ago
+          fee: '0.18'
+        },
+        {
+          id: '3',
+          symbol: 'BTC/USDT',
+          type: 'buy',
+          orderType: 'limit',
+          amount: '0.0005',
+          price: '110,500.00',
+          total: '55.25',
+          status: 'filled',
+          time: new Date(Date.now() - 10800000).toLocaleString(), // 3 hours ago
+          fee: '0.06'
+        },
+        {
+          id: '4',
+          symbol: 'SOL/USDT',
+          type: 'buy',
+          orderType: 'market',
+          amount: '2.5',
+          price: '245.67',
+          total: '614.18',
+          status: 'filled',
+          time: new Date(Date.now() - 14400000).toLocaleString(), // 4 hours ago
+          fee: '0.61'
+        },
+        {
+          id: '5',
+          symbol: 'XRP/USDT',
+          type: 'sell',
+          orderType: 'limit',
+          amount: '100',
+          price: '3.18',
+          total: '318.00',
+          status: 'filled',
+          time: new Date(Date.now() - 18000000).toLocaleString(), // 5 hours ago
+          fee: '0.32'
+        }
+      ];
+
+      setOrderHistory(mockOrderHistory);
+      console.log('📋 Loaded order history:', mockOrderHistory.length, 'orders');
+    } catch (error) {
+      console.error('❌ Error loading order history:', error);
+    }
+  };
 
   // Trading pairs data - All 19 supported currencies
   const tradingPairs = [
@@ -1574,7 +1658,7 @@ function SpotPageContent() {
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                Open orders(0)
+                Open orders({openOrders.length})
               </button>
               <button
                 onClick={() => setActiveTab("history")}
@@ -1584,7 +1668,7 @@ function SpotPageContent() {
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                Order history(0)
+                Order history({orderHistory.length})
               </button>
             </div>
           </div>
@@ -1614,40 +1698,65 @@ function SpotPageContent() {
 
         {/* Orders Content */}
         <div className="min-h-[200px]">
-          {orders && orders.length > 0 ? (
-            <div className="space-y-2">
-              {orders
-                .filter(order => activeTab === 'open' ? order.status === 'pending' : order.status !== 'pending')
-                .map((order) => (
+          {activeTab === 'open' ? (
+            // Open Orders Tab
+            openOrders.length > 0 ? (
+              <div className="space-y-2">
+                {openOrders.map((order) => (
                   <div key={order.id} className="grid grid-cols-7 gap-4 px-4 py-3 text-sm hover:bg-gray-800/50">
                     <div className="text-white">{order.symbol}</div>
-                    <div className={`${order.side === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                      {order.side.toUpperCase()} / {order.type.toUpperCase()}
+                    <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                      {order.type.toUpperCase()} / {order.orderType.toUpperCase()}
                     </div>
-                    <div className="text-white">{order.price || 'Market'}</div>
+                    <div className="text-white">{order.price}</div>
                     <div className="text-white">{order.amount}</div>
                     <div className="text-white">{order.total}</div>
-                    <div className={`${
-                      order.status === 'filled' ? 'text-green-400' :
-                      order.status === 'cancelled' ? 'text-red-400' : 'text-yellow-400'
-                    }`}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </div>
-                    <div className="text-gray-400">{new Date(order.createdAt).toLocaleString()}</div>
+                    <div className="text-yellow-400">Pending</div>
+                    <div className="text-gray-400">{order.time}</div>
                   </div>
                 ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="w-16 h-16 mb-4 opacity-50">
-                <svg viewBox="0 0 64 64" className="w-full h-full text-gray-500">
-                  <path fill="currentColor" d="M32 8C18.7 8 8 18.7 8 32s10.7 24 24 24 24-10.7 24-24S45.3 8 32 8zm0 44c-11 0-20-9-20-20s9-20 20-20 20 9 20 20-9 20-20 20z"/>
-                  <path fill="currentColor" d="M32 16c-8.8 0-16 7.2-16 16s7.2 16 16 16 16-7.2 16-16-7.2-16-16-16zm0 28c-6.6 0-12-5.4-12-12s5.4-12 12-12 12 5.4 12 12-5.4 12-12 12z"/>
-                  <circle fill="currentColor" cx="32" cy="32" r="4"/>
-                </svg>
               </div>
-              <div className="text-gray-400 text-sm">No {activeTab === 'open' ? 'open orders' : 'order history'}</div>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="w-16 h-16 mb-4 opacity-50">
+                  <svg viewBox="0 0 64 64" className="w-full h-full text-gray-500">
+                    <circle cx="32" cy="32" r="30" fill="none" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M32 16v16l8 8" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  </svg>
+                </div>
+                <div className="text-gray-400 text-sm">No open orders</div>
+              </div>
+            )
+          ) : (
+            // Order History Tab
+            orderHistory.length > 0 ? (
+              <div className="space-y-2">
+                {orderHistory.map((order) => (
+                  <div key={order.id} className="grid grid-cols-7 gap-4 px-4 py-3 text-sm hover:bg-gray-800/50">
+                    <div className="text-white">{order.symbol}</div>
+                    <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                      {order.type.toUpperCase()} / {order.orderType.toUpperCase()}
+                    </div>
+                    <div className="text-white">${order.price}</div>
+                    <div className="text-white">{order.amount}</div>
+                    <div className="text-white">${order.total}</div>
+                    <div className="text-green-400">Filled</div>
+                    <div className="text-gray-400">{order.time}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="w-16 h-16 mb-4 opacity-50">
+                  <svg viewBox="0 0 64 64" className="w-full h-full text-gray-500">
+                    <path fill="currentColor" d="M32 8C18.7 8 8 18.7 8 32s10.7 24 24 24 24-10.7 24-24S45.3 8 32 8zm0 44c-11 0-20-9-20-20s9-20 20-20 20 9 20 20-9 20-20 20z"/>
+                    <path fill="currentColor" d="M32 16c-8.8 0-16 7.2-16 16s7.2 16 16 16 16-7.2 16-16-7.2-16-16-16zm0 28c-6.6 0-12-5.4-12-12s5.4-12 12-12 12 5.4 12 12-5.4 12-12 12z"/>
+                    <circle fill="currentColor" cx="32" cy="32" r="4"/>
+                  </svg>
+                </div>
+                <div className="text-gray-400 text-sm">No order history</div>
+              </div>
+            )
           )}
         </div>
       </div>
