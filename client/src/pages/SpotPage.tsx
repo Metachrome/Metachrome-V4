@@ -59,6 +59,54 @@ function SpotPageContent() {
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
 
+  // Trading pairs data
+  const tradingPairs = [
+    { symbol: 'BTC/USDT', coin: 'BTC', rawSymbol: 'BTCUSDT', price: formattedPrice, change: changeText, isPositive: isPositive, icon: '₿', iconBg: 'bg-orange-500' },
+    { symbol: 'ETH/USDT', coin: 'ETH', rawSymbol: 'ETHUSDT', price: '3550.21', change: '+1.06%', isPositive: true, icon: 'Ξ', iconBg: 'bg-purple-500' },
+    { symbol: 'BNB/USDT', coin: 'BNB', rawSymbol: 'BNBUSDT', price: '698.45', change: '+2.15%', isPositive: true, icon: 'B', iconBg: 'bg-yellow-600' },
+    { symbol: 'SOL/USDT', coin: 'SOL', rawSymbol: 'SOLUSDT', price: '245.67', change: '+3.42%', isPositive: true, icon: 'S', iconBg: 'bg-purple-600' },
+    { symbol: 'XRP/USDT', coin: 'XRP', rawSymbol: 'XRPUSDT', price: '3.18', change: '+1.47%', isPositive: true, icon: '✕', iconBg: 'bg-gray-600' },
+    { symbol: 'ADA/USDT', coin: 'ADA', rawSymbol: 'ADAUSDT', price: '0.8272', change: '+0.60%', isPositive: true, icon: 'A', iconBg: 'bg-blue-500' },
+    { symbol: 'DOGE/USDT', coin: 'DOGE', rawSymbol: 'DOGEUSDT', price: '0.2388', change: '+0.80%', isPositive: true, icon: 'D', iconBg: 'bg-yellow-500' },
+    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', price: '0.5234', change: '+1.23%', isPositive: true, icon: 'M', iconBg: 'bg-purple-700' },
+    { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', price: '7.89', change: '-0.45%', isPositive: false, icon: '●', iconBg: 'bg-pink-500' },
+    { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', price: '42.56', change: '+2.78%', isPositive: true, icon: 'A', iconBg: 'bg-red-500' }
+  ];
+
+  // Filter trading pairs based on search term
+  const filteredTradingPairs = tradingPairs.filter(pair =>
+    pair.coin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pair.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Get current selected pair data
+  const currentPairData = tradingPairs.find(pair => pair.rawSymbol === selectedSymbol) || tradingPairs[0];
+
+  // Handle trading pair selection
+  const handlePairSelect = (rawSymbol: string) => {
+    console.log('🔄 Selected trading pair:', rawSymbol);
+    setSelectedSymbol(rawSymbol);
+    // Clear search when a pair is selected
+    setSearchTerm("");
+  };
+
+  // Handle search with auto-selection
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+
+    // Auto-select if search matches exactly one coin
+    if (value.length > 0) {
+      const exactMatches = tradingPairs.filter(pair =>
+        pair.coin.toLowerCase() === value.toLowerCase()
+      );
+
+      if (exactMatches.length === 1) {
+        console.log('🎯 Auto-selecting exact match:', exactMatches[0].rawSymbol);
+        setSelectedSymbol(exactMatches[0].rawSymbol);
+      }
+    }
+  };
+
   // Legacy price states - REMOVED (now using PriceContext as single source of truth)
   // const [currentPrice, setCurrentPrice] = useState<number>(166373.87);
   // const [realTimePrice, setRealTimePrice] = useState<string>('');
@@ -486,14 +534,14 @@ function SpotPageContent() {
       <div className="min-h-screen bg-[#10121E] text-white pb-20">
         <Navigation />
 
-        {/* Mobile Header - Using TradingView Price */}
+        {/* Mobile Header - Dynamic Trading Pair */}
         <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700 sticky top-0 z-40">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-white font-bold text-lg">BTC/USDT</div>
-              <div className="text-white text-xl font-bold">${formattedPrice}</div>
-              <div className={`text-sm font-semibold ${changeColor}`} style={{ color: changeColor }}>
-                {changeText}
+              <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
+              <div className="text-white text-xl font-bold">${currentPairData.price}</div>
+              <div className={`text-sm font-semibold`} style={{ color: currentPairData.isPositive ? '#10b981' : '#ef4444' }}>
+                {currentPairData.change}
               </div>
             </div>
             <div className="text-right">
@@ -767,36 +815,36 @@ function SpotPageContent() {
           {/* Top Header with BTC/USDT and Controls */}
           <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700">
             <div className="flex items-center justify-between">
-              {/* Left - BTC/USDT Info - Using TradingView Price */}
+              {/* Left - Dynamic Trading Pair Info - Using TradingView Price */}
               <div className="flex items-center space-x-6">
                 <div>
-                  <div className="text-white font-bold text-lg">BTC/USDT</div>
-                  <div className="text-white text-2xl font-bold">${formattedPrice}</div>
-                  <div className="text-gray-400 text-sm">$ {formattedPrice}</div>
+                  <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
+                  <div className="text-white text-2xl font-bold">${currentPairData.price}</div>
+                  <div className="text-gray-400 text-sm">$ {currentPairData.price}</div>
                 </div>
-                <div className="text-lg font-semibold" style={{ color: changeColor }}>
-                  {changeText}
+                <div className="text-lg font-semibold" style={{ color: currentPairData.isPositive ? '#10b981' : '#ef4444' }}>
+                  {currentPairData.change}
                 </div>
                 <div className="flex items-center space-x-4 text-sm">
                   <div>
                     <div className="text-gray-400">Change 24h</div>
-                    <div className="text-white" style={{ color: changeColor }}>{changeText}</div>
+                    <div className="text-white" style={{ color: currentPairData.isPositive ? '#10b981' : '#ef4444' }}>{currentPairData.change}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">24h High</div>
-                    <div className="text-white">{high ? high.toFixed(2) : '119558.19'}</div>
+                    <div className="text-white">{selectedSymbol === 'BTCUSDT' ? (high ? high.toFixed(2) : '119558.19') : (parseFloat(currentPairData.price) * 1.02).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">24h Low</div>
-                    <div className="text-white">{low ? low.toFixed(2) : '117204.65'}</div>
+                    <div className="text-white">{selectedSymbol === 'BTCUSDT' ? (low ? low.toFixed(2) : '117204.65') : (parseFloat(currentPairData.price) * 0.98).toFixed(2)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Volume 24h (BTC)</div>
-                    <div className="text-white">{volume ? volume.toFixed(2) : '681.35'}</div>
+                    <div className="text-gray-400">Volume 24h ({currentPairData.coin})</div>
+                    <div className="text-white">{selectedSymbol === 'BTCUSDT' ? (volume ? volume.toFixed(2) : '681.35') : (Math.random() * 1000 + 500).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">Turnover 24h (USDT)</div>
-                    <div className="text-white">80520202.92</div>
+                    <div className="text-white">{selectedSymbol === 'BTCUSDT' ? '80520202.92' : (parseFloat(currentPairData.price) * (Math.random() * 1000000 + 500000)).toFixed(2)}</div>
                   </div>
                 </div>
               </div>
@@ -1247,9 +1295,9 @@ function SpotPageContent() {
               </svg>
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search coins (e.g. ETH, BTC, SOL)"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full bg-[#1a1b2e] text-white pl-10 pr-4 py-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none text-sm"
               />
             </div>
@@ -1266,36 +1314,38 @@ function SpotPageContent() {
 
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto flex-shrink-0">
-            {[
-              { symbol: 'BTC/USDT', coin: 'BTC', price: formattedPrice, change: changeText, isPositive: isPositive, icon: '₿', iconBg: 'bg-orange-500' },
-              { symbol: 'ETH/USDT', coin: 'ETH', price: '3550.21', change: '+1.06%', isPositive: true, icon: 'Ξ', iconBg: 'bg-purple-500' },
-              { symbol: 'BNB/USDT', coin: 'BNB', price: '698.45', change: '+2.15%', isPositive: true, icon: 'B', iconBg: 'bg-yellow-600' },
-              { symbol: 'SOL/USDT', coin: 'SOL', price: '245.67', change: '+3.42%', isPositive: true, icon: 'S', iconBg: 'bg-purple-600' },
-              { symbol: 'XRP/USDT', coin: 'XRP', price: '3.18', change: '+1.47%', isPositive: true, icon: '✕', iconBg: 'bg-gray-600' },
-              { symbol: 'ADA/USDT', coin: 'ADA', price: '0.8272', change: '+0.60%', isPositive: true, icon: 'A', iconBg: 'bg-blue-500' },
-              { symbol: 'DOGE/USDT', coin: 'DOGE', price: '0.2388', change: '+0.80%', isPositive: true, icon: 'D', iconBg: 'bg-yellow-500' },
-              { symbol: 'MATIC/USDT', coin: 'MATIC', price: '0.5234', change: '+1.23%', isPositive: true, icon: 'M', iconBg: 'bg-purple-700' },
-              { symbol: 'DOT/USDT', coin: 'DOT', price: '7.89', change: '-0.45%', isPositive: false, icon: '●', iconBg: 'bg-pink-500' },
-              { symbol: 'AVAX/USDT', coin: 'AVAX', price: '42.56', change: '+2.78%', isPositive: true, icon: 'A', iconBg: 'bg-red-500' }
-            ].map((pair, index) => (
-              <div key={index} className="flex items-center justify-between p-2 hover:bg-[#1a1b2e] rounded cursor-pointer">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${pair.iconBg}`}>
-                    {pair.icon}
+            {filteredTradingPairs.length > 0 ? (
+              filteredTradingPairs.map((pair, index) => (
+                <div
+                  key={index}
+                  onClick={() => handlePairSelect(pair.rawSymbol)}
+                  className={`flex items-center justify-between p-2 hover:bg-[#1a1b2e] rounded cursor-pointer transition-colors ${
+                    selectedSymbol === pair.rawSymbol ? 'bg-blue-600/20 border border-blue-500/30' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${pair.iconBg}`}>
+                      {pair.icon}
+                    </div>
+                    <div>
+                      <div className="text-white text-sm font-medium">{pair.symbol}</div>
+                      <div className="text-gray-400 text-xs">{pair.coin}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-white text-sm font-medium">{pair.symbol}</div>
-                    <div className="text-gray-400 text-xs">{pair.coin}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-white text-sm">{pair.price}</div>
-                  <div className={`text-xs ${pair.isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                    {pair.change}
+                  <div className="text-right">
+                    <div className="text-white text-sm">{pair.price}</div>
+                    <div className={`text-xs ${pair.isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                      {pair.change}
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-400 py-4">
+                <div className="text-sm">No coins found</div>
+                <div className="text-xs mt-1">Try searching for BTC, ETH, SOL, etc.</div>
               </div>
-            ))}
+            )}
           </div>
 
           {/* Latest Transactions - Full remaining height */}

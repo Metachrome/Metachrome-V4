@@ -73,6 +73,9 @@ function OptionsPageContent() {
   const [tradeHistory, setTradeHistory] = useState<ActiveTrade[]>([]);
   const [completedTrade, setCompletedTrade] = useState<ActiveTrade | null>(null);
   const [notificationKey, setNotificationKey] = useState<string>(''); // Force re-render
+  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
+
+
 
   // ROBUST NOTIFICATION TRIGGER FUNCTION
   const triggerNotification = (trade: ActiveTrade) => {
@@ -242,6 +245,54 @@ function OptionsPageContent() {
   // SINGLE SOURCE OF TRUTH for display price - ALWAYS use priceData from context
   // This ensures ALL numbers across the page are SYNCHRONIZED
   const displayPrice = priceData?.price || currentPrice || 166373.87;
+
+  // Trading pairs data
+  const tradingPairs = [
+    { symbol: 'BTC/USDT', coin: 'BTC', rawSymbol: 'BTCUSDT', price: displayPrice.toString(), priceChangePercent24h: changeText || '+1.44%' },
+    { symbol: 'ETH/USDT', coin: 'ETH', rawSymbol: 'ETHUSDT', price: '3550.21', priceChangePercent24h: '+1.06%' },
+    { symbol: 'BNB/USDT', coin: 'BNB', rawSymbol: 'BNBUSDT', price: '698.45', priceChangePercent24h: '+2.15%' },
+    { symbol: 'SOL/USDT', coin: 'SOL', rawSymbol: 'SOLUSDT', price: '245.67', priceChangePercent24h: '+3.42%' },
+    { symbol: 'XRP/USDT', coin: 'XRP', rawSymbol: 'XRPUSDT', price: '3.18', priceChangePercent24h: '+1.47%' },
+    { symbol: 'ADA/USDT', coin: 'ADA', rawSymbol: 'ADAUSDT', price: '0.8272', priceChangePercent24h: '+0.60%' },
+    { symbol: 'DOGE/USDT', coin: 'DOGE', rawSymbol: 'DOGEUSDT', price: '0.2388', priceChangePercent24h: '+0.80%' },
+    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', price: '0.5234', priceChangePercent24h: '+1.23%' },
+    { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', price: '7.89', priceChangePercent24h: '-0.45%' },
+    { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', price: '42.56', priceChangePercent24h: '+2.78%' }
+  ];
+
+  // Filter trading pairs based on search term
+  const filteredTradingPairs = tradingPairs.filter(pair =>
+    pair.coin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pair.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Get current selected pair data
+  const currentPairData = tradingPairs.find(pair => pair.rawSymbol === selectedSymbol) || tradingPairs[0];
+
+  // Handle trading pair selection
+  const handlePairSelect = (rawSymbol: string) => {
+    console.log('🔄 Selected trading pair:', rawSymbol);
+    setSelectedSymbol(rawSymbol);
+    // Clear search when a pair is selected
+    setSearchTerm("");
+  };
+
+  // Handle search with auto-selection
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+
+    // Auto-select if search matches exactly one coin
+    if (value.length > 0) {
+      const exactMatches = tradingPairs.filter(pair =>
+        pair.coin.toLowerCase() === value.toLowerCase()
+      );
+
+      if (exactMatches.length === 1) {
+        console.log('🎯 Auto-selecting exact match:', exactMatches[0].rawSymbol);
+        setSelectedSymbol(exactMatches[0].rawSymbol);
+      }
+    }
+  };
 
   const [orderBookData, setOrderBookData] = useState<{sellOrders: any[], buyOrders: any[]}>({sellOrders: [], buyOrders: []}); // Cache order book data
 
@@ -1361,14 +1412,14 @@ function OptionsPageContent() {
                   disabled={!user || countdown > 0}
                   className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-6 px-6 rounded-xl transition-colors text-xl"
                 >
-                  BUY BTC
+                  BUY {currentPairData.coin}
                 </button>
                 <button
                   onClick={() => handleTrade('down')}
                   disabled={!user || countdown > 0}
                   className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-6 px-6 rounded-xl transition-colors text-xl"
                 >
-                  SELL BTC
+                  SELL {currentPairData.coin}
                 </button>
               </div>
             )}
@@ -1393,16 +1444,16 @@ function OptionsPageContent() {
       <div className="min-h-screen bg-gray-900">
         <Navigation />
       
-      {/* Top Header with BTC/USDT Info - Using TradingView Price */}
+      {/* Top Header with Dynamic Trading Pair Info - Using TradingView Price */}
       <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700">
         <div className="flex items-center space-x-6">
           <div>
-            <div className="text-white font-bold text-lg">BTC/USDT</div>
-            <div className="text-white text-2xl font-bold">{displayPrice.toFixed(2)}</div>
-            <div className="text-gray-400 text-sm">{displayPrice.toFixed(2)} USDT</div>
+            <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
+            <div className="text-white text-2xl font-bold">{parseFloat(currentPairData.price).toFixed(2)}</div>
+            <div className="text-gray-400 text-sm">{parseFloat(currentPairData.price).toFixed(2)} USDT</div>
           </div>
-          <div className={`text-lg font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-            {btcMarketData?.priceChangePercent24h || '+0.00%'}
+          <div className={`text-lg font-semibold ${currentPairData.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+            {currentPairData.priceChangePercent24h || '+0.00%'}
           </div>
           <div className="flex items-center space-x-4 text-sm">
             <div>
@@ -1433,19 +1484,16 @@ function OptionsPageContent() {
       <div className="bg-[#10121E] flex">
         {/* Left Panel - Order Book */}
         <div className="w-64 border-r border-gray-700">
-          {/* Order Book Header - Using TradingView Price */}
+          {/* Order Book Header - Dynamic Trading Pair */}
           <div className="p-3 border-b border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-white font-bold">BTC/USDT</div>
+              <div className="text-white font-bold">{currentPairData.symbol}</div>
               <div className="text-right">
                 <div className="font-bold text-white text-lg">
-                  {displayPrice.toFixed(2)}
+                  {parseFloat(currentPairData.price).toFixed(2)}
                 </div>
-                <div className={`text-sm font-semibold ${changeColor === '#10B981' ? 'text-green-400' : 'text-red-400'}`}>
-                  {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
-                </div>
-                <div className={`text-sm ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
-                  {btcMarketData?.priceChange24h || '0.00'} {btcMarketData?.priceChangePercent24h || '0.00%'}
+                <div className={`text-sm font-semibold ${currentPairData.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                  {currentPairData.priceChangePercent24h || '+0.00%'}
                 </div>
               </div>
             </div>
@@ -1888,9 +1936,9 @@ function OptionsPageContent() {
               </svg>
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search coins (e.g. ETH, BTC, SOL)"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full bg-[#1a1b2e] text-white pl-10 pr-4 py-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none text-sm"
               />
             </div>
@@ -1907,64 +1955,56 @@ function OptionsPageContent() {
 
           {/* Trading Pairs */}
           <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto">
-            {[
-              { symbol: 'BTCUSDT', price: displayPrice.toString(), priceChangePercent24h: changeText || '+1.44%' },
-              { symbol: 'ETHUSDT', price: '3550.21', priceChangePercent24h: '+1.06%' },
-              { symbol: 'BNBUSDT', price: '698.45', priceChangePercent24h: '+2.15%' },
-              { symbol: 'SOLUSDT', price: '245.67', priceChangePercent24h: '+3.42%' },
-              { symbol: 'XRPUSDT', price: '3.18', priceChangePercent24h: '+1.47%' },
-              { symbol: 'ADAUSDT', price: '0.8272', priceChangePercent24h: '+0.60%' },
-              { symbol: 'DOGEUSDT', price: '0.2388', priceChangePercent24h: '+0.80%' },
-              { symbol: 'MATICUSDT', price: '0.5234', priceChangePercent24h: '+1.23%' },
-              { symbol: 'DOTUSDT', price: '7.89', priceChangePercent24h: '-0.45%' },
-              { symbol: 'AVAXUSDT', price: '42.56', priceChangePercent24h: '+2.78%' }
-            ].slice(0, 10).map((marketItem, index) => {
-              const symbol = marketItem.symbol.replace('USDT', '/USDT');
-              const coin = marketItem.symbol.replace('USDT', '');
-              const isPositive = !marketItem.priceChangePercent24h?.startsWith('-');
-              const iconMap: { [key: string]: { icon: string, bg: string } } = {
-                'BTC': { icon: '₿', bg: 'bg-orange-500' },
-                'ETH': { icon: 'Ξ', bg: 'bg-purple-500' },
-                'BNB': { icon: 'B', bg: 'bg-yellow-600' },
-                'SOL': { icon: 'S', bg: 'bg-purple-600' },
-                'XRP': { icon: '✕', bg: 'bg-gray-600' },
-                'ADA': { icon: 'A', bg: 'bg-blue-500' },
-                'DOGE': { icon: 'D', bg: 'bg-yellow-500' },
-                'MATIC': { icon: 'M', bg: 'bg-purple-700' },
-                'DOT': { icon: '●', bg: 'bg-pink-500' },
-                'AVAX': { icon: 'A', bg: 'bg-red-500' },
-              };
-              const iconInfo = iconMap[coin] || { icon: coin[0], bg: 'bg-gray-500' };
-              const pair = {
-                symbol,
-                coin,
-                price: parseFloat(marketItem.price).toFixed(marketItem.price.includes('.') && parseFloat(marketItem.price) < 1 ? 6 : 2),
-                change: marketItem.priceChangePercent24h || '+0.00%',
-                isPositive,
-                icon: iconInfo.icon,
-                iconBg: iconInfo.bg
-              };
+            {filteredTradingPairs.length > 0 ? (
+              filteredTradingPairs.map((pair, index) => {
+                const isPositive = !pair.priceChangePercent24h?.startsWith('-');
+                const iconMap: { [key: string]: { icon: string, bg: string } } = {
+                  'BTC': { icon: '₿', bg: 'bg-orange-500' },
+                  'ETH': { icon: 'Ξ', bg: 'bg-purple-500' },
+                  'BNB': { icon: 'B', bg: 'bg-yellow-600' },
+                  'SOL': { icon: 'S', bg: 'bg-purple-600' },
+                  'XRP': { icon: '✕', bg: 'bg-gray-600' },
+                  'ADA': { icon: 'A', bg: 'bg-blue-500' },
+                  'DOGE': { icon: 'D', bg: 'bg-yellow-500' },
+                  'MATIC': { icon: 'M', bg: 'bg-purple-700' },
+                  'DOT': { icon: '●', bg: 'bg-pink-500' },
+                  'AVAX': { icon: 'A', bg: 'bg-red-500' },
+                };
+                const iconInfo = iconMap[pair.coin] || { icon: pair.coin[0], bg: 'bg-gray-500' };
+                const formattedPrice = parseFloat(pair.price).toFixed(pair.price.includes('.') && parseFloat(pair.price) < 1 ? 6 : 2);
 
-              return (
-                <div key={index} className="flex items-center justify-between p-2 hover:bg-[#1a1b2e] rounded cursor-pointer">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${pair.iconBg}`}>
-                      {pair.icon}
+                return (
+                  <div
+                    key={index}
+                    onClick={() => handlePairSelect(pair.rawSymbol)}
+                    className={`flex items-center justify-between p-2 hover:bg-[#1a1b2e] rounded cursor-pointer transition-colors ${
+                      selectedSymbol === pair.rawSymbol ? 'bg-blue-600/20 border border-blue-500/30' : ''
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${iconInfo.bg}`}>
+                        {iconInfo.icon}
+                      </div>
+                      <div>
+                        <div className="text-white text-sm font-medium">{pair.symbol}</div>
+                        <div className="text-gray-400 text-xs">{pair.coin}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-white text-sm font-medium">{pair.symbol}</div>
-                      <div className="text-gray-400 text-xs">{pair.coin}</div>
+                    <div className="text-right">
+                      <div className="text-white text-sm">{formattedPrice}</div>
+                      <div className={`text-xs ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                        {pair.priceChangePercent24h}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-white text-sm">{pair.price}</div>
-                    <div className={`text-xs ${pair.isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                      {pair.change}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-center text-gray-400 py-4">
+                <div className="text-sm">No coins found</div>
+                <div className="text-xs mt-1">Try searching for BTC, ETH, SOL, etc.</div>
+              </div>
+            )}
           </div>
 
           {/* Latest Transactions */}
