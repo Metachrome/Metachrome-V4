@@ -10,6 +10,7 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useMultiSymbolPrice } from "../hooks/useMultiSymbolPrice";
 import { useToast } from "../hooks/use-toast";
 import { useIsMobile } from "../hooks/use-mobile";
 import { apiRequest } from "../lib/queryClient";
@@ -40,8 +41,12 @@ function SpotPageContent() {
   const { changeText, changeColor, isPositive } = usePriceChange();
   const { high, low, volume } = use24hStats();
 
-  // Get current price from context (single source of truth)
-  const currentPrice = priceData?.price || 0;
+  // Multi-symbol price data for all trading pairs
+  const { priceData: multiSymbolPriceData, getPriceForSymbol } = useMultiSymbolPrice();
+
+  // Get current price for selected symbol
+  const selectedSymbolPriceData = getPriceForSymbol(selectedSymbol);
+  const currentPrice = selectedSymbolPriceData?.price || priceData?.price || 0;
   const formattedPrice = currentPrice.toFixed(2);
 
   // Debug logging
@@ -916,7 +921,9 @@ function SpotPageContent() {
           {/* Header */}
           <div className="p-3 border-b border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-white font-bold text-lg">BTC/USDT</div>
+              <div className="text-white font-bold text-lg">
+                {selectedSymbol.replace('USDT', '/USDT')}
+              </div>
               <div className="text-right">
                 <div className="font-bold" style={{ color: changeColor }}>${formattedPrice}</div>
                 <div className="text-gray-400 text-sm">Change 24h</div>
@@ -938,10 +945,10 @@ function SpotPageContent() {
             </div>
           </div>
 
-          {/* Column Headers */}
+          {/* Column Headers - Dynamic based on selected symbol */}
           <div className="grid grid-cols-3 gap-2 p-2 text-xs text-gray-400 border-b border-gray-700">
             <span>Price (USDT)</span>
-            <span>Volume (BTC)</span>
+            <span>Volume ({selectedSymbol.replace('USDT', '')})</span>
             <span>Turnover</span>
           </div>
 
