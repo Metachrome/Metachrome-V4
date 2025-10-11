@@ -4,6 +4,7 @@ import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import TradingViewWidget from "../components/TradingViewWidget";
 import LightweightChart from "../components/LightweightChart";
+import CustomTradingChart from "../components/CustomTradingChart";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { PriceProvider, usePrice, usePriceChange, use24hStats } from "../contexts/PriceContext";
 import TradeNotification from "../components/TradeNotification";
@@ -1866,13 +1867,11 @@ function OptionsPageContent({
                 </div>
 
                 <ErrorBoundary>
-                  <TradingViewWidget
-                    type="chart"
-                    symbol={`BINANCE:${selectedSymbol}`}
+                  <CustomTradingChart
+                    symbol={selectedSymbol}
                     height={490}
                     interval="1"
                     theme="dark"
-                    container_id="options_tradingview_chart"
                     onSymbolChange={handleTradingViewSymbolChange}
                   />
                 </ErrorBoundary>

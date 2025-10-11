@@ -85,7 +85,7 @@ function TradingViewWidget({
     } else {
       // Advanced chart widget for trading pages
       const script = document.createElement("script");
-      // Use advanced chart with minimal configuration
+      // Use advanced chart with aggressive volume removal
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
       script.type = "text/javascript";
       script.async = true;
@@ -116,32 +116,41 @@ function TradingViewWidget({
         locale: locale,
         toolbar_bg: "#f1f3f6",
         enable_publishing: false,
-        allow_symbol_change: false, // Disable TradingView's native symbol selector
+        allow_symbol_change: false,
         container_id: container_id,
-        // Comprehensive volume hiding configuration
+        // AGGRESSIVE VOLUME REMOVAL
         studies: [],
         hide_volume: true,
         volume: false,
+        hide_top_toolbar: false,
+        hide_legend: false,
+        save_image: false,
         disabled_features: [
           "volume_force_overlay",
           "create_volume_indicator_by_default",
-          "volume_force_overlay",
           "study_templates",
           "header_indicators",
           "header_compare",
           "header_undo_redo",
           "header_screenshot",
-          "header_chart_type"
+          "header_chart_type",
+          "timeframes_toolbar",
+          "edit_buttons_in_legend",
+          "context_menus",
+          "control_bar",
+          "left_toolbar",
+          "header_saveload",
+          "header_settings",
+          "use_localstorage_for_settings",
+          "volume_force_overlay"
         ],
         enabled_features: [
           "hide_last_na_study_output",
-          "remove_library_container_border"
+          "remove_library_container_border",
+          "disable_resolution_rebuild"
         ],
-        // Force chart to only show price without volume
         loading_screen: { backgroundColor: "#10121E" },
-        custom_css_url: "",
         overrides: {
-          // Hide volume completely
           "volumePaneSize": "xtiny",
           "paneProperties.background": "#10121E",
           "paneProperties.vertGridProperties.color": "#1F2937",
@@ -156,17 +165,16 @@ function TradingViewWidget({
           "mainSeriesProperties.candleStyle.wickDownColor": "#EF4444"
         },
         studies_overrides: {
-          // Make volume completely transparent
           "volume.volume.color.0": "rgba(0,0,0,0)",
           "volume.volume.color.1": "rgba(0,0,0,0)",
           "volume.volume.transparency": 100,
           "volume.volume ma.color": "rgba(0,0,0,0)",
           "volume.volume ma.transparency": 100,
-          "volume.show ma": false,
-          "volume.options.showStudyArguments": false
+          "volume.show ma": false
         },
-        // Try to force a chart layout without volume
+        // Force a chart layout without volume pane
         saved_data: JSON.stringify({
+          "version": 1,
           "charts": [{
             "panes": [{
               "sources": [{
@@ -182,7 +190,8 @@ function TradingViewWidget({
                 }
               }]
             }]
-          }]
+          }],
+          "studies": []
         })
       };
 
@@ -225,27 +234,73 @@ function TradingViewWidget({
           console.log('🎨 Applied CSS to hide volume bars');
         }, 2000); // Wait 2 seconds for TradingView to fully load
 
-        // Try to access TradingView widget instance for direct volume removal
-        setTimeout(() => {
-          try {
-            // Try to access the iframe and remove volume elements
-            const iframe = document.querySelector(`#${container_id} iframe`);
-            if (iframe && iframe.contentDocument) {
-              const iframeDoc = iframe.contentDocument;
+        // AGGRESSIVE volume removal - try multiple approaches
+        const removeVolumeAttempts = [1000, 2000, 3000, 5000, 7000]; // Multiple timing attempts
 
-              // Hide volume-related elements in the iframe
-              const volumeElements = iframeDoc.querySelectorAll(
-                '[data-name*="volume"], [data-name*="Volume"], .histogram-series, .volume-series'
-              );
-              volumeElements.forEach(el => {
+        removeVolumeAttempts.forEach((delay, index) => {
+          setTimeout(() => {
+            try {
+              console.log(`🚫 Volume removal attempt ${index + 1} at ${delay}ms`);
+
+              // Method 1: Direct iframe access
+              const iframe = document.querySelector(`#${container_id} iframe`);
+              if (iframe && iframe.contentDocument) {
+                const iframeDoc = iframe.contentDocument;
+
+                // Hide volume-related elements in the iframe
+                const volumeSelectors = [
+                  '[data-name*="volume"]', '[data-name*="Volume"]',
+                  '.histogram-series', '.volume-series',
+                  '[class*="volume"]', '[class*="Volume"]',
+                  '.pane:last-child', '.chart-markup-table .pane:last-child',
+                  '[data-series-type="histogram"]', '[data-series-type="volume"]',
+                  '.tv-lightweight-charts__volume', '.tv-lightweight-charts__histogram'
+                ];
+
+                volumeSelectors.forEach(selector => {
+                  const elements = iframeDoc.querySelectorAll(selector);
+                  elements.forEach(el => {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                    el.style.height = '0';
+                    el.style.opacity = '0';
+                    el.remove(); // Actually remove the element
+                  });
+                });
+
+                console.log('🚫 Applied iframe volume removal');
+              }
+
+              // Method 2: Global document selectors
+              const globalVolumeElements = document.querySelectorAll(`
+                #${container_id} [data-name*="volume"],
+                #${container_id} [data-name*="Volume"],
+                #${container_id} .histogram-series,
+                #${container_id} .volume-series,
+                #${container_id} [class*="volume"],
+                #${container_id} [class*="Volume"]
+              `);
+
+              globalVolumeElements.forEach(el => {
                 el.style.display = 'none';
                 el.style.visibility = 'hidden';
                 el.style.height = '0';
+                el.style.opacity = '0';
               });
 
-              console.log('🚫 Removed', volumeElements.length, 'volume elements from TradingView iframe');
-            }
+              if (globalVolumeElements.length > 0) {
+                console.log('🚫 Removed', globalVolumeElements.length, 'global volume elements');
+              }
 
+            } catch (error) {
+              console.log('Volume removal attempt failed:', error);
+            }
+          }, delay);
+        });
+
+        // Additional widget setup after volume removal attempts
+        setTimeout(() => {
+          try {
             // Check if TradingView widget is available globally
             if (window.TradingView && window.TradingView.widget) {
               console.log('🔍 TradingView widget API detected, setting up direct monitoring');
