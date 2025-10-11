@@ -30,10 +30,12 @@ class PriceService {
   private lastPrices: Map<string, PriceData> = new Map();
   private updateCount: number = 0;
 
-  // Major trading pairs to track
+  // Major trading pairs to track - Updated to match TradingViewWidget currencies
   private readonly MAJOR_PAIRS = [
-    'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT',
-    'DOGEUSDT', 'XRPUSDT', 'TRUMPUSDT', 'MATICUSDT', 'AVAXUSDT'
+    'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
+    'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
+    'HYPEUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
+    'BCHUSDT', 'DOTUSDT', 'MATICUSDT', 'XLMUSDT'
   ];
 
   constructor() {

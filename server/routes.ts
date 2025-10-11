@@ -2672,36 +2672,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get real market data from database or external API
       let marketData = await storage.getAllMarketData();
 
-      // If no market data exists, create some default data
+      // If no market data exists, create some default data for all supported currencies
       if (!marketData || marketData.length === 0) {
         const defaultMarketData = [
-          {
-            symbol: 'BTCUSDT',
-            price: '43250.00',
-            change24h: '2.34',
-            volume24h: '1234567890',
-            high24h: '44000.00',
-            low24h: '42500.00',
-            timestamp: new Date(),
-          },
-          {
-            symbol: 'ETHUSDT',
-            price: '2650.00',
-            change24h: '-1.23',
-            volume24h: '987654321',
-            high24h: '2700.00',
-            low24h: '2600.00',
-            timestamp: new Date(),
-          },
-          {
-            symbol: 'BNBUSDT',
-            price: '315.50',
-            change24h: '0.89',
-            volume24h: '456789123',
-            high24h: '320.00',
-            low24h: '310.00',
-            timestamp: new Date(),
-          }
+          { symbol: 'BTCUSDT', price: '117860.08', change24h: '1.44', volume24h: '1234567890', high24h: '119000.00', low24h: '116500.00', timestamp: new Date() },
+          { symbol: 'ETHUSDT', price: '3577.42', change24h: '-0.23', volume24h: '987654321', high24h: '3600.00', low24h: '3550.00', timestamp: new Date() },
+          { symbol: 'XRPUSDT', price: '3.1833', change24h: '-1.77', volume24h: '456789123', high24h: '3.25', low24h: '3.15', timestamp: new Date() },
+          { symbol: 'LTCUSDT', price: '112.45', change24h: '2.15', volume24h: '234567890', high24h: '115.00', low24h: '110.00', timestamp: new Date() },
+          { symbol: 'BNBUSDT', price: '698.45', change24h: '1.89', volume24h: '345678901', high24h: '705.00', low24h: '690.00', timestamp: new Date() },
+          { symbol: 'SOLUSDT', price: '245.67', change24h: '3.42', volume24h: '567890123', high24h: '250.00', low24h: '240.00', timestamp: new Date() },
+          { symbol: 'TONUSDT', price: '6.234', change24h: '0.89', volume24h: '123456789', high24h: '6.35', low24h: '6.15', timestamp: new Date() },
+          { symbol: 'DOGEUSDT', price: '0.23878', change24h: '0.89', volume24h: '678901234', high24h: '0.245', low24h: '0.235', timestamp: new Date() },
+          { symbol: 'ADAUSDT', price: '0.8212', change24h: '0.66', volume24h: '789012345', high24h: '0.835', low24h: '0.810', timestamp: new Date() },
+          { symbol: 'TRXUSDT', price: '0.2456', change24h: '1.23', volume24h: '890123456', high24h: '0.250', low24h: '0.240', timestamp: new Date() },
+          { symbol: 'HYPEUSDT', price: '28.45', change24h: '5.67', volume24h: '123456789', high24h: '30.00', low24h: '27.00', timestamp: new Date() },
+          { symbol: 'LINKUSDT', price: '22.34', change24h: '2.45', volume24h: '234567890', high24h: '23.00', low24h: '21.50', timestamp: new Date() },
+          { symbol: 'AVAXUSDT', price: '45.67', change24h: '1.89', volume24h: '345678901', high24h: '47.00', low24h: '44.00', timestamp: new Date() },
+          { symbol: 'SUIUSDT', price: '4.123', change24h: '3.21', volume24h: '456789012', high24h: '4.25', low24h: '4.00', timestamp: new Date() },
+          { symbol: 'SHIBUSDT', price: '0.00002345', change24h: '2.34', volume24h: '567890123', high24h: '0.000024', low24h: '0.000023', timestamp: new Date() },
+          { symbol: 'BCHUSDT', price: '512.34', change24h: '1.56', volume24h: '678901234', high24h: '520.00', low24h: '505.00', timestamp: new Date() },
+          { symbol: 'DOTUSDT', price: '8.456', change24h: '0.78', volume24h: '789012345', high24h: '8.60', low24h: '8.30', timestamp: new Date() },
+          { symbol: 'MATICUSDT', price: '0.4567', change24h: '1.23', volume24h: '890123456', high24h: '0.470', low24h: '0.445', timestamp: new Date() },
+          { symbol: 'XLMUSDT', price: '0.1234', change24h: '2.45', volume24h: '901234567', high24h: '0.127', low24h: '0.120', timestamp: new Date() }
         ];
 
         // Store default market data

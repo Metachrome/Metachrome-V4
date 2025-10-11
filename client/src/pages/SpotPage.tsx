@@ -62,18 +62,27 @@ function SpotPageContent() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
   const [chartView, setChartView] = useState<'basic' | 'tradingview'>('basic'); // Chart view state
 
-  // Trading pairs data
+  // Trading pairs data - All 19 supported currencies
   const tradingPairs = [
     { symbol: 'BTC/USDT', coin: 'BTC', rawSymbol: 'BTCUSDT', price: formattedPrice, change: changeText, isPositive: isPositive, icon: '₿', iconBg: 'bg-orange-500' },
-    { symbol: 'ETH/USDT', coin: 'ETH', rawSymbol: 'ETHUSDT', price: '3550.21', change: '+1.06%', isPositive: true, icon: 'Ξ', iconBg: 'bg-purple-500' },
-    { symbol: 'BNB/USDT', coin: 'BNB', rawSymbol: 'BNBUSDT', price: '698.45', change: '+2.15%', isPositive: true, icon: 'B', iconBg: 'bg-yellow-600' },
+    { symbol: 'ETH/USDT', coin: 'ETH', rawSymbol: 'ETHUSDT', price: '3577.42', change: '-0.23%', isPositive: false, icon: 'Ξ', iconBg: 'bg-purple-500' },
+    { symbol: 'XRP/USDT', coin: 'XRP', rawSymbol: 'XRPUSDT', price: '3.1833', change: '-1.77%', isPositive: false, icon: '✕', iconBg: 'bg-gray-600' },
+    { symbol: 'LTC/USDT', coin: 'LTC', rawSymbol: 'LTCUSDT', price: '112.45', change: '+2.15%', isPositive: true, icon: 'Ł', iconBg: 'bg-gray-500' },
+    { symbol: 'BNB/USDT', coin: 'BNB', rawSymbol: 'BNBUSDT', price: '698.45', change: '+1.89%', isPositive: true, icon: 'B', iconBg: 'bg-yellow-600' },
     { symbol: 'SOL/USDT', coin: 'SOL', rawSymbol: 'SOLUSDT', price: '245.67', change: '+3.42%', isPositive: true, icon: 'S', iconBg: 'bg-purple-600' },
-    { symbol: 'XRP/USDT', coin: 'XRP', rawSymbol: 'XRPUSDT', price: '3.18', change: '+1.47%', isPositive: true, icon: '✕', iconBg: 'bg-gray-600' },
-    { symbol: 'ADA/USDT', coin: 'ADA', rawSymbol: 'ADAUSDT', price: '0.8272', change: '+0.60%', isPositive: true, icon: 'A', iconBg: 'bg-blue-500' },
-    { symbol: 'DOGE/USDT', coin: 'DOGE', rawSymbol: 'DOGEUSDT', price: '0.2388', change: '+0.80%', isPositive: true, icon: 'D', iconBg: 'bg-yellow-500' },
-    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', price: '0.5234', change: '+1.23%', isPositive: true, icon: 'M', iconBg: 'bg-purple-700' },
-    { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', price: '7.89', change: '-0.45%', isPositive: false, icon: '●', iconBg: 'bg-pink-500' },
-    { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', price: '42.56', change: '+2.78%', isPositive: true, icon: 'A', iconBg: 'bg-red-500' }
+    { symbol: 'TON/USDT', coin: 'TON', rawSymbol: 'TONUSDT', price: '6.234', change: '+0.89%', isPositive: true, icon: 'T', iconBg: 'bg-blue-600' },
+    { symbol: 'DOGE/USDT', coin: 'DOGE', rawSymbol: 'DOGEUSDT', price: '0.23878', change: '+0.89%', isPositive: true, icon: 'D', iconBg: 'bg-yellow-500' },
+    { symbol: 'ADA/USDT', coin: 'ADA', rawSymbol: 'ADAUSDT', price: '0.8212', change: '+0.66%', isPositive: true, icon: 'A', iconBg: 'bg-blue-500' },
+    { symbol: 'TRX/USDT', coin: 'TRX', rawSymbol: 'TRXUSDT', price: '0.2456', change: '+1.23%', isPositive: true, icon: '⚡', iconBg: 'bg-red-600' },
+    { symbol: 'HYPE/USDT', coin: 'HYPE', rawSymbol: 'HYPEUSDT', price: '28.45', change: '+5.67%', isPositive: true, icon: 'H', iconBg: 'bg-green-600' },
+    { symbol: 'LINK/USDT', coin: 'LINK', rawSymbol: 'LINKUSDT', price: '22.34', change: '+2.45%', isPositive: true, icon: '🔗', iconBg: 'bg-blue-700' },
+    { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', price: '45.67', change: '+1.89%', isPositive: true, icon: 'A', iconBg: 'bg-red-500' },
+    { symbol: 'SUI/USDT', coin: 'SUI', rawSymbol: 'SUIUSDT', price: '4.123', change: '+3.21%', isPositive: true, icon: 'S', iconBg: 'bg-cyan-500' },
+    { symbol: 'SHIB/USDT', coin: 'SHIB', rawSymbol: 'SHIBUSDT', price: '0.00002345', change: '+2.34%', isPositive: true, icon: '🐕', iconBg: 'bg-orange-600' },
+    { symbol: 'BCH/USDT', coin: 'BCH', rawSymbol: 'BCHUSDT', price: '512.34', change: '+1.56%', isPositive: true, icon: '₿', iconBg: 'bg-green-500' },
+    { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', price: '8.456', change: '+0.78%', isPositive: true, icon: '●', iconBg: 'bg-pink-500' },
+    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', price: '0.4567', change: '+1.23%', isPositive: true, icon: 'M', iconBg: 'bg-purple-700' },
+    { symbol: 'XLM/USDT', coin: 'XLM', rawSymbol: 'XLMUSDT', price: '0.1234', change: '+2.45%', isPositive: true, icon: '⭐', iconBg: 'bg-indigo-500' }
   ];
 
   // Filter trading pairs based on search term

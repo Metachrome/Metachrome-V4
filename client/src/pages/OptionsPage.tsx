@@ -256,18 +256,12 @@ function OptionsPageContent({
   // This ensures ALL numbers across the page are SYNCHRONIZED
   const displayPrice = priceData?.price || currentPrice || 166373.87;
 
-  // Trading pairs data - Dynamic with real-time prices
+  // Trading pairs data - Dynamic with real-time prices (All 19 supported currencies)
   const tradingPairs = [
-    'BTCUSDT',
-    'ETHUSDT',
-    'BNBUSDT',
-    'SOLUSDT',
-    'XRPUSDT',
-    'ADAUSDT',
-    'DOGEUSDT',
-    'MATICUSDT',
-    'DOTUSDT',
-    'AVAXUSDT'
+    'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
+    'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
+    'HYPEUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
+    'BCHUSDT', 'DOTUSDT', 'MATICUSDT', 'XLMUSDT'
   ].map(rawSymbol => {
     // Get real-time price data for this symbol
     const symbolPriceData = getPriceForSymbol(rawSymbol);

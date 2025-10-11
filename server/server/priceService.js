@@ -15,10 +15,12 @@ class PriceService {
         this.priceCallbacks = new Map();
         this.lastPrices = new Map();
         this.updateCount = 0;
-        // Major trading pairs to track
+        // Major trading pairs to track - Updated to match TradingViewWidget currencies
         this.MAJOR_PAIRS = [
-            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT',
-            'DOGEUSDT', 'XRPUSDT', 'TRUMPUSDT', 'MATICUSDT', 'AVAXUSDT'
+            'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
+            'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
+            'HYPEUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
+            'BCHUSDT', 'DOTUSDT', 'MATICUSDT', 'XLMUSDT'
         ];
         // Skip external connections in development mode for faster startup
         if (process.env.NODE_ENV === 'development') {
