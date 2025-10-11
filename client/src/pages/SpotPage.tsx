@@ -294,25 +294,31 @@ function SpotPageContent() {
     },
   });
 
-  // Get available balances - FIXED: Use same parsing logic as Wallet page
-  let usdtBalance = 0;
-  let btcBalance = 0.5; // Default BTC balance
+  // Balance state variables for real-time updates
+  const [usdtBalance, setUsdtBalance] = useState(0);
+  const [btcBalance, setBtcBalance] = useState(0.5);
 
-  if (balances && Array.isArray(balances)) {
-    // Format: [{ symbol: "USDT", available: "700610", locked: "0" }, ...]
-    const usdtData = balances.find((b: any) => b.symbol === 'USDT');
-    const btcData = balances.find((b: any) => b.symbol === 'BTC');
+  // Initialize balances from API data
+  useEffect(() => {
+    if (balances && Array.isArray(balances)) {
+      // Format: [{ symbol: "USDT", available: "700610", locked: "0" }, ...]
+      const usdtData = balances.find((b: any) => b.symbol === 'USDT');
+      const btcData = balances.find((b: any) => b.symbol === 'BTC');
 
-    usdtBalance = parseFloat(usdtData?.available || '0');
-    btcBalance = parseFloat(btcData?.available || '0.5');
+      const newUsdtBalance = parseFloat(usdtData?.available || '0');
+      const newBtcBalance = parseFloat(btcData?.available || '0.5');
 
-    console.log('🔍 SPOT: Parsed balances from array format:', {
-      usdtData,
-      btcData,
-      usdtBalance,
-      btcBalance
-    });
-  }
+      setUsdtBalance(newUsdtBalance);
+      setBtcBalance(newBtcBalance);
+
+      console.log('🔍 SPOT: Updated balances from API:', {
+        usdtData,
+        btcData,
+        newUsdtBalance,
+        newBtcBalance
+      });
+    }
+  }, [balances]);
 
   // ENHANCED Debug logging for balance sync
   console.log('🔍 SPOT PAGE BALANCE DEBUG:', {
@@ -385,26 +391,50 @@ function SpotPageContent() {
   // Order placement mutations
   const placeBuyOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
-      const response = await fetch('/api/spot/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...orderData,
-          side: 'buy',
-          symbol: selectedSymbol,
-          userId: user?.id || 'user-1',
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to place buy order');
-      return response.json();
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const executionPrice = orderData.type === 'limit' ? parseFloat(orderData.price) : currentPrice;
+      const amount = parseFloat(orderData.amount);
+      const total = executionPrice * amount;
+
+      // Create new order
+      const newOrder = {
+        id: Date.now().toString(),
+        symbol: selectedSymbol,
+        type: 'buy',
+        orderType: orderData.type,
+        amount: amount.toFixed(6),
+        price: executionPrice.toFixed(2),
+        total: total.toFixed(2),
+        status: 'filled',
+        time: new Date().toLocaleString(),
+        fee: (total * 0.001).toFixed(2) // 0.1% fee
+      };
+
+      return { order: newOrder, executionPrice, amount, total };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/spot/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
-      toast({ title: "Buy order placed successfully!" });
+    onSuccess: (data) => {
+      const { order, executionPrice, amount, total } = data;
+
+      // Add to order history
+      setOrderHistory(prev => [order, ...prev]);
+
+      // Update balances
+      setUsdtBalance(prev => prev - total);
+      setBtcBalance(prev => prev + amount);
+
+      toast({
+        title: "Buy order completed!",
+        description: `Bought ${amount.toFixed(6)} BTC at $${executionPrice.toFixed(2)}. New balance: ${(usdtBalance - total).toFixed(2)} USDT`,
+        duration: 5000
+      });
+
       // Reset form
       setBuyAmount('');
       setBuyPercentage(0);
+
+      console.log('✅ Buy order completed:', order);
     },
     onError: (error: any) => {
       toast({
@@ -417,26 +447,50 @@ function SpotPageContent() {
 
   const placeSellOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
-      const response = await fetch('/api/spot/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...orderData,
-          side: 'sell',
-          symbol: selectedSymbol,
-          userId: user?.id || 'user-1',
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to place sell order');
-      return response.json();
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const executionPrice = orderData.type === 'limit' ? parseFloat(orderData.price) : currentPrice;
+      const amount = parseFloat(orderData.amount);
+      const total = executionPrice * amount;
+
+      // Create new order
+      const newOrder = {
+        id: Date.now().toString(),
+        symbol: selectedSymbol,
+        type: 'sell',
+        orderType: orderData.type,
+        amount: amount.toFixed(6),
+        price: executionPrice.toFixed(2),
+        total: total.toFixed(2),
+        status: 'filled',
+        time: new Date().toLocaleString(),
+        fee: (total * 0.001).toFixed(2) // 0.1% fee
+      };
+
+      return { order: newOrder, executionPrice, amount, total };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/spot/orders'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
-      toast({ title: "Sell order placed successfully!" });
+    onSuccess: (data) => {
+      const { order, executionPrice, amount, total } = data;
+
+      // Add to order history
+      setOrderHistory(prev => [order, ...prev]);
+
+      // Update balances
+      setBtcBalance(prev => prev - amount);
+      setUsdtBalance(prev => prev + total);
+
+      toast({
+        title: "Sell order completed!",
+        description: `Sold ${amount.toFixed(6)} BTC at $${executionPrice.toFixed(2)}. New balance: ${(usdtBalance + total).toFixed(2)} USDT`,
+        duration: 5000
+      });
+
       // Reset form
       setSellAmount('');
       setSellPercentage(0);
+
+      console.log('✅ Sell order completed:', order);
     },
     onError: (error: any) => {
       toast({
