@@ -16,16 +16,21 @@ CREATE INDEX IF NOT EXISTS idx_balances_user_symbol ON balances("userId", symbol
 -- Enable Row Level Security
 ALTER TABLE balances ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own balances" ON balances;
+DROP POLICY IF EXISTS "Users can update their own balances" ON balances;
+DROP POLICY IF EXISTS "Users can insert their own balances" ON balances;
+
 -- Create policy for users to access their own balances
-CREATE POLICY IF NOT EXISTS "Users can view their own balances" ON balances
+CREATE POLICY "Users can view their own balances" ON balances
     FOR SELECT USING (auth.uid() = "userId");
 
 -- Create policy for users to update their own balances (for admin operations)
-CREATE POLICY IF NOT EXISTS "Users can update their own balances" ON balances
+CREATE POLICY "Users can update their own balances" ON balances
     FOR UPDATE USING (auth.uid() = "userId");
 
 -- Create policy for inserting balances
-CREATE POLICY IF NOT EXISTS "Users can insert their own balances" ON balances
+CREATE POLICY "Users can insert their own balances" ON balances
     FOR INSERT WITH CHECK (auth.uid() = "userId");
 
 -- Grant necessary permissions
