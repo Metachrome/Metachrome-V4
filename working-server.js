@@ -5200,9 +5200,11 @@ app.post('/api/spot/orders', async (req, res) => {
     const tradePrice = parseFloat(price || '0');
     const userBalance = parseFloat(user.balance || '0');
 
-    // For buy orders, check USDT balance
-    // For sell orders, check crypto balance (simplified - assume user has enough crypto)
+    // Extract cryptocurrency symbol from trading pair (e.g., BTCUSDT -> BTC)
+    const cryptoSymbol = symbol.replace('USDT', '');
+
     if (side === 'buy') {
+      // BUY ORDER: Deduct USDT, Add Cryptocurrency
       const totalCost = tradeAmount * tradePrice;
       if (userBalance < totalCost) {
         return res.status(400).json({
@@ -5211,18 +5213,131 @@ app.post('/api/spot/orders', async (req, res) => {
         });
       }
 
-      // Deduct USDT balance for buy order
-      const newBalance = userBalance - totalCost;
-      user.balance = parseFloat(newBalance.toFixed(2));
-      console.log(`💰 BUY ORDER: ${tradeAmount} ${symbol} at ${tradePrice} = ${totalCost} USDT`);
-      console.log(`💰 Balance: ${userBalance} → ${user.balance}`);
+      // Deduct USDT balance
+      const newUsdtBalance = userBalance - totalCost;
+      user.balance = parseFloat(newUsdtBalance.toFixed(2));
+
+      // Add cryptocurrency to user's balance in database
+      if (isProduction && supabase) {
+        try {
+          // Check if user already has this cryptocurrency balance
+          const { data: existingBalance, error: fetchError } = await supabase
+            .from('balances')
+            .select('*')
+            .eq('userId', finalUserId)
+            .eq('symbol', cryptoSymbol)
+            .single();
+
+          if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
+            console.error('❌ Error fetching crypto balance:', fetchError);
+          }
+
+          if (existingBalance) {
+            // Update existing balance
+            const newCryptoAmount = parseFloat(existingBalance.available) + tradeAmount;
+            const { error: updateError } = await supabase
+              .from('balances')
+              .update({
+                available: newCryptoAmount.toFixed(8),
+                updatedAt: new Date().toISOString()
+              })
+              .eq('userId', finalUserId)
+              .eq('symbol', cryptoSymbol);
+
+            if (updateError) {
+              console.error('❌ Error updating crypto balance:', updateError);
+            } else {
+              console.log(`✅ Updated ${cryptoSymbol} balance: +${tradeAmount} (total: ${newCryptoAmount.toFixed(8)})`);
+            }
+          } else {
+            // Create new balance
+            const { error: insertError } = await supabase
+              .from('balances')
+              .insert({
+                userId: finalUserId,
+                symbol: cryptoSymbol,
+                available: tradeAmount.toFixed(8),
+                locked: '0'
+              });
+
+            if (insertError) {
+              console.error('❌ Error creating crypto balance:', insertError);
+            } else {
+              console.log(`✅ Created ${cryptoSymbol} balance: ${tradeAmount.toFixed(8)}`);
+            }
+          }
+        } catch (cryptoError) {
+          console.error('❌ Error managing crypto balance:', cryptoError);
+        }
+      }
+
+      console.log(`💰 BUY ORDER: ${tradeAmount} ${cryptoSymbol} at ${tradePrice} = ${totalCost} USDT`);
+      console.log(`💰 USDT Balance: ${userBalance} → ${user.balance}`);
+
     } else if (side === 'sell') {
-      // For sell orders, add USDT to balance
+      // SELL ORDER: Deduct Cryptocurrency, Add USDT
       const totalReceived = tradeAmount * tradePrice;
-      const newBalance = userBalance + totalReceived;
-      user.balance = parseFloat(newBalance.toFixed(2));
-      console.log(`💰 SELL ORDER: ${tradeAmount} ${symbol} at ${tradePrice} = ${totalReceived} USDT`);
-      console.log(`💰 Balance: ${userBalance} → ${user.balance}`);
+
+      // Check if user has enough cryptocurrency to sell
+      if (isProduction && supabase) {
+        try {
+          const { data: cryptoBalance, error: fetchError } = await supabase
+            .from('balances')
+            .select('*')
+            .eq('userId', finalUserId)
+            .eq('symbol', cryptoSymbol)
+            .single();
+
+          if (fetchError || !cryptoBalance) {
+            return res.status(400).json({
+              success: false,
+              message: `Insufficient ${cryptoSymbol} balance`
+            });
+          }
+
+          const availableCrypto = parseFloat(cryptoBalance.available);
+          if (availableCrypto < tradeAmount) {
+            return res.status(400).json({
+              success: false,
+              message: `Insufficient ${cryptoSymbol} balance. Have ${availableCrypto.toFixed(8)}, need ${tradeAmount.toFixed(8)}`
+            });
+          }
+
+          // Deduct cryptocurrency
+          const newCryptoAmount = availableCrypto - tradeAmount;
+          const { error: updateError } = await supabase
+            .from('balances')
+            .update({
+              available: newCryptoAmount.toFixed(8),
+              updatedAt: new Date().toISOString()
+            })
+            .eq('userId', finalUserId)
+            .eq('symbol', cryptoSymbol);
+
+          if (updateError) {
+            console.error('❌ Error updating crypto balance:', updateError);
+            return res.status(500).json({
+              success: false,
+              message: 'Failed to update cryptocurrency balance'
+            });
+          }
+
+          console.log(`✅ Updated ${cryptoSymbol} balance: -${tradeAmount} (remaining: ${newCryptoAmount.toFixed(8)})`);
+        } catch (cryptoError) {
+          console.error('❌ Error checking crypto balance:', cryptoError);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to verify cryptocurrency balance'
+          });
+        }
+      }
+
+      // Add USDT to balance
+      const newUsdtBalance = userBalance + totalReceived;
+      user.balance = parseFloat(newUsdtBalance.toFixed(2));
+
+      console.log(`💰 SELL ORDER: ${tradeAmount} ${cryptoSymbol} at ${tradePrice} = ${totalReceived} USDT`);
+      console.log(`💰 USDT Balance: ${userBalance} → ${user.balance}`);
     }
 
     console.log(`💰 SPOT TRADE BALANCE UPDATE: User ${user.username} balance updated to ${user.balance}`);

@@ -176,22 +176,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             symbol: 'USDT',
             available: currentBalance.balance.toString(),
             locked: '0'
-          },
-          {
-            symbol: 'BTC',
-            available: '0.0050', // Realistic BTC balance from spot trading
-            locked: '0.0020'     // Some BTC locked in active orders
-          },
-          {
-            symbol: 'ETH',
-            available: '0.1500', // Realistic ETH balance from spot trading
-            locked: '0.0500'     // Some ETH locked in active orders
-          },
-          {
-            symbol: 'SOL',
-            available: '2.5000', // Realistic SOL balance from spot trading
-            locked: '0.0000'     // No SOL locked
           }
+          // Real cryptocurrency balances will come from actual trading activities
+          // and will be stored in the balances table in the database
         ]
       });
     }

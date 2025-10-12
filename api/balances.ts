@@ -96,28 +96,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (user && user.balance !== null && user.balance !== undefined) {
             console.log(`✅ [/api/balances] Found user ${user.username} with balance: ${user.balance}`);
             // SIMPLIFIED BALANCE SYSTEM: Only USDT balance (auto-conversion enabled)
-            balanceData = [
-              {
-                symbol: 'USDT',
-                available: user.balance.toString(),
-                locked: '0'
-              },
-              {
-                symbol: 'BTC',
-                available: '0.0050', // Realistic BTC balance from spot trading
-                locked: '0.0020'     // Some BTC locked in active orders
-              },
-              {
-                symbol: 'ETH',
-                available: '0.1500', // Realistic ETH balance from spot trading
-                locked: '0.0500'     // Some ETH locked in active orders
-              },
-              {
-                symbol: 'SOL',
-                available: '2.5000', // Realistic SOL balance from spot trading
-                locked: '0.0000'     // No SOL locked
+            // Get all user balances from database
+            try {
+              const { data: userBalances, error: balancesError } = await supabaseAdmin
+                .from('balances')
+                .select('symbol, available, locked')
+                .eq('userId', userId);
+
+              if (balancesError) {
+                console.error('❌ [/api/balances] Error fetching balances:', balancesError);
               }
-            ];
+
+              if (userBalances && userBalances.length > 0) {
+                // Use real balances from database
+                balanceData = userBalances.map(balance => ({
+                  symbol: balance.symbol,
+                  available: balance.available?.toString() || '0',
+                  locked: balance.locked?.toString() || '0'
+                }));
+
+                // Ensure USDT balance exists and matches user.balance
+                const usdtBalance = balanceData.find(b => b.symbol === 'USDT');
+                if (usdtBalance) {
+                  usdtBalance.available = user.balance.toString();
+                } else {
+                  balanceData.push({
+                    symbol: 'USDT',
+                    available: user.balance.toString(),
+                    locked: '0'
+                  });
+                }
+              } else {
+                // No balances found, create default USDT balance
+                balanceData = [
+                  {
+                    symbol: 'USDT',
+                    available: user.balance.toString(),
+                    locked: '0'
+                  }
+                ];
+              }
+            } catch (balanceError) {
+              console.error('❌ [/api/balances] Error querying balances:', balanceError);
+              // Fallback to USDT only
+              balanceData = [
+                {
+                  symbol: 'USDT',
+                  available: user.balance.toString(),
+                  locked: '0'
+                }
+              ];
+            }
           } else {
             console.log('⚠️ [/api/balances] User found but no balance field');
           }
@@ -132,27 +161,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!balanceData) {
         console.log('⚠️ [/api/balances] Using fallback in-memory balance');
         const userBalance = userBalances.get(userId || 'demo-user-1') || { balance: 0, currency: 'USDT' };
-        // BALANCE SYSTEM: USDT + Cryptocurrency assets from trading
+        // FALLBACK: Only USDT balance (real cryptocurrency balances come from actual trading)
         balanceData = [
           {
             symbol: 'USDT',
             available: userBalance.balance.toString(),
             locked: '0'
-          },
-          {
-            symbol: 'BTC',
-            available: '0.0050', // Realistic BTC balance from spot trading
-            locked: '0.0020'     // Some BTC locked in active orders
-          },
-          {
-            symbol: 'ETH',
-            available: '0.1500', // Realistic ETH balance from spot trading
-            locked: '0.0500'     // Some ETH locked in active orders
-          },
-          {
-            symbol: 'SOL',
-            available: '2.5000', // Realistic SOL balance from spot trading
-            locked: '0.0000'     // No SOL locked
           }
         ];
       }

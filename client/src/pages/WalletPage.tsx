@@ -299,19 +299,36 @@ export default function WalletPage() {
     return marketItem ? parseFloat(marketItem.price) : 0;
   };
 
-  // Get USDT balance (simplified system with auto-conversion)
+  // Get USDT balance
   const usdtBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'USDT')?.available || '0');
+
+  // Calculate total balance including all cryptocurrency assets
+  const totalBalanceUSDT = userBalances?.reduce((total, balance) => {
+    const available = parseFloat(balance.available || '0');
+
+    // Crypto prices for USDT conversion
+    const cryptoPrices: { [key: string]: number } = {
+      BTC: 65000,
+      ETH: 3500,
+      SOL: 150,
+      USDT: 1,
+      BNB: 600,
+      USDC: 1,
+      BUSD: 1
+    };
+
+    const price = cryptoPrices[balance.symbol] || 1;
+    return total + (available * price);
+  }, 0) || usdtBalance;
 
   // Debug balance data
   console.log('🔍 WALLET PAGE - Balance data:', {
     userId: user?.id,
     userBalances,
     usdtBalance,
+    totalBalanceUSDT,
     balancesLoading
   });
-
-  // Total balance is just USDT balance (all crypto auto-converted)
-  const totalBalanceUSDT = usdtBalance;
 
   // Withdraw mutation
   const withdrawMutation = useMutation({

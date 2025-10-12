@@ -477,16 +477,41 @@ function SpotPageContent() {
   // Order placement mutations
   const placeBuyOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
 
       const executionPrice = orderData.type === 'limit' ? parseFloat(orderData.price) : currentPrice;
       const amount = parseFloat(orderData.amount);
       const total = executionPrice * amount;
 
-      // Create new order
+      // Call real spot trading API
+      const response = await fetch('/api/spot/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          symbol: selectedSymbol,
+          side: 'buy',
+          amount: amount,
+          price: executionPrice,
+          type: orderData.type || 'market'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to place buy order');
+      }
+
+      const result = await response.json();
+
+      // Create order object for UI
       const newOrder = {
-        id: Date.now().toString(),
+        id: result.order?.id || Date.now().toString(),
         symbol: selectedSymbol,
         type: 'buy',
         orderType: orderData.type,
@@ -498,10 +523,10 @@ function SpotPageContent() {
         fee: (total * 0.001).toFixed(2) // 0.1% fee
       };
 
-      return { order: newOrder, executionPrice, amount, total };
+      return { order: newOrder, executionPrice, amount, total, apiResult: result };
     },
     onSuccess: (data) => {
-      const { order, executionPrice, amount, total } = data;
+      const { order, executionPrice, amount, total, apiResult } = data;
 
       // Add to order history and save to localStorage
       setOrderHistory(prev => {
@@ -510,12 +535,8 @@ function SpotPageContent() {
         return newHistory;
       });
 
-      // Update balances and save to localStorage
-      const newUsdtBalance = usdtBalance - total;
-      const newBtcBalance = btcBalance + amount;
-      setUsdtBalance(newUsdtBalance);
-      setBtcBalance(newBtcBalance);
-      saveBalances(newUsdtBalance, newBtcBalance);
+      // Refresh balance data from server instead of manual calculation
+      queryClient.invalidateQueries({ queryKey: ["/api/balances"] });
 
       toast({
         title: "Buy order completed!",
@@ -540,16 +561,41 @@ function SpotPageContent() {
 
   const placeSellOrderMutation = useMutation({
     mutationFn: async (orderData: any) => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
 
       const executionPrice = orderData.type === 'limit' ? parseFloat(orderData.price) : currentPrice;
       const amount = parseFloat(orderData.amount);
       const total = executionPrice * amount;
 
-      // Create new order
+      // Call real spot trading API
+      const response = await fetch('/api/spot/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          symbol: selectedSymbol,
+          side: 'sell',
+          amount: amount,
+          price: executionPrice,
+          type: orderData.type || 'market'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to place sell order');
+      }
+
+      const result = await response.json();
+
+      // Create order object for UI
       const newOrder = {
-        id: Date.now().toString(),
+        id: result.order?.id || Date.now().toString(),
         symbol: selectedSymbol,
         type: 'sell',
         orderType: orderData.type,
@@ -561,10 +607,10 @@ function SpotPageContent() {
         fee: (total * 0.001).toFixed(2) // 0.1% fee
       };
 
-      return { order: newOrder, executionPrice, amount, total };
+      return { order: newOrder, executionPrice, amount, total, apiResult: result };
     },
     onSuccess: (data) => {
-      const { order, executionPrice, amount, total } = data;
+      const { order, executionPrice, amount, total, apiResult } = data;
 
       // Add to order history and save to localStorage
       setOrderHistory(prev => {
@@ -573,12 +619,8 @@ function SpotPageContent() {
         return newHistory;
       });
 
-      // Update balances and save to localStorage
-      const newBtcBalance = btcBalance - amount;
-      const newUsdtBalance = usdtBalance + total;
-      setBtcBalance(newBtcBalance);
-      setUsdtBalance(newUsdtBalance);
-      saveBalances(newUsdtBalance, newBtcBalance);
+      // Refresh balance data from server instead of manual calculation
+      queryClient.invalidateQueries({ queryKey: ["/api/balances"] });
 
       toast({
         title: "Sell order completed!",
