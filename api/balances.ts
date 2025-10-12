@@ -101,7 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const { data: userBalances, error: balancesError } = await supabaseAdmin
                 .from('balances')
                 .select('symbol, available, locked')
-                .eq('userId', userId);
+                .eq('user_id', userId);
 
               console.log('🔍 [/api/balances] Database query result:', {
                 userId,

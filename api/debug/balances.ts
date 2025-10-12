@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { data: balances, error: balancesError } = await supabaseAdmin
           .from('balances')
           .select('*')
-          .eq('userId', userId);
+          .eq('user_id', userId);
 
         debugInfo.balancesQuery = {
           success: !balancesError,

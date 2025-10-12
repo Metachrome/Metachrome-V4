@@ -90,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { data: existingBalance, error: fetchError } = await supabaseAdmin
           .from('balances')
           .select('*')
-          .eq('userId', userId)
+          .eq('user_id', userId)
           .eq('symbol', cryptoSymbol)
           .single();
 
@@ -107,7 +107,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               available: newCryptoAmount.toFixed(8),
               updatedAt: new Date().toISOString()
             })
-            .eq('userId', userId)
+            .eq('user_id', userId)
             .eq('symbol', cryptoSymbol);
 
           if (updateError) {
@@ -120,7 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const { error: insertError } = await supabaseAdmin
             .from('balances')
             .insert({
-              userId: userId,
+              user_id: userId,
               symbol: cryptoSymbol,
               available: tradeAmount.toFixed(8),
               locked: '0'
@@ -148,7 +148,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { data: cryptoBalance, error: fetchError } = await supabaseAdmin
           .from('balances')
           .select('*')
-          .eq('userId', userId)
+          .eq('user_id', userId)
           .eq('symbol', cryptoSymbol)
           .single();
 
@@ -175,7 +175,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             available: newCryptoAmount.toFixed(8),
             updatedAt: new Date().toISOString()
           })
-          .eq('userId', userId)
+          .eq('user_id', userId)
           .eq('symbol', cryptoSymbol);
 
         if (updateError) {

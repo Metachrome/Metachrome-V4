@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: existingBalance, error: fetchError } = await supabaseAdmin
       .from('balances')
       .select('*')
-      .eq('userId', userId)
+      .eq('user_id', userId)
       .eq('symbol', symbol)
       .single();
 
@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           locked: newLocked.toFixed(8),
           updatedAt: new Date().toISOString()
         })
-        .eq('userId', userId)
+        .eq('user_id', userId)
         .eq('symbol', symbol)
         .select()
         .single();
@@ -75,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: newBalance, error: insertError } = await supabaseAdmin
         .from('balances')
         .insert({
-          userId,
+          user_id: userId,
           symbol,
           available: parseFloat(available || '0').toFixed(8),
           locked: parseFloat(locked || '0').toFixed(8)
