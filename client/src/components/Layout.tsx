@@ -17,6 +17,26 @@ export default function Layout({ children }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isLoading, logout } = useAuth();
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isMobileMenuOpen]);
+
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Markets", href: "/markets" },
@@ -196,104 +216,121 @@ export default function Layout({ children }: LayoutProps) {
 
           {/* Mobile Menu */}
           {isMobileMenuOpen && (
-            <div className="md:hidden border-t border-dark-100 py-4">
-              <div className="space-y-2">
-                {navigation.map((item) => (
-                  <div key={item.name}>
-                    {item.submenu ? (
-                      <div>
-                        <div className="text-gray-300 block px-3 py-2 text-base font-medium">
-                          {item.name}
-                        </div>
-                        <div className="mx-3 mb-2 space-y-2">
-                          {/* SPOT Trading Option - Mobile Layout */}
-                          <Link href="/trade/spot">
-                            <div
-                              className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
-                                  <p className="text-xs text-black/80 leading-tight">
-                                    Buy and sell crypto instantly at<br />
-                                    real-time market prices.
-                                  </p>
-                                </div>
-                                <div className="ml-3 flex-shrink-0">
-                                  <img
-                                    src="/asset/trade-spot_icon.png"
-                                    alt="Spot Trading"
-                                    className="w-10 h-10 object-contain"
-                                  />
+            <div
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-hidden md:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                zIndex: 9999
+              }}
+            >
+              <div
+                className="fixed right-0 top-0 h-full w-64 bg-[#1A1B3A] p-4 overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="space-y-2">
+                  {navigation.map((item) => (
+                    <div key={item.name}>
+                      {item.submenu ? (
+                        <div>
+                          <div className="text-gray-300 block px-3 py-2 text-base font-medium">
+                            {item.name}
+                          </div>
+                          <div className="mx-3 mb-2 space-y-2">
+                            {/* SPOT Trading Option - Mobile Layout */}
+                            <Link href="/trade/spot">
+                              <div
+                                className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
+                                    <p className="text-xs text-black/80 leading-tight">
+                                      Buy and sell crypto instantly at<br />
+                                      real-time market prices.
+                                    </p>
+                                  </div>
+                                  <div className="ml-3 flex-shrink-0">
+                                    <img
+                                      src="/asset/trade-spot_icon.png"
+                                      alt="Spot Trading"
+                                      className="w-10 h-10 object-contain"
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </Link>
+                            </Link>
 
-                          {/* OPTION Trading Option - Mobile Layout */}
-                          <Link href="/trade/options">
-                            <div
-                              className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer"
-                              onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
-                                  <p className="text-xs text-black/80 leading-tight">
-                                    Maximize gains by predicting<br />
-                                    market moves in seconds.
-                                  </p>
-                                </div>
-                                <div className="ml-3 flex-shrink-0">
-                                  <img
-                                    src="/asset/trade-option_icon.png"
-                                    alt="Options Trading"
-                                    className="w-10 h-10 object-contain"
-                                  />
+                            {/* OPTION Trading Option - Mobile Layout */}
+                            <Link href="/trade/options">
+                              <div
+                                className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
+                                    <p className="text-xs text-black/80 leading-tight">
+                                      Maximize gains by predicting<br />
+                                      market moves in seconds.
+                                    </p>
+                                  </div>
+                                  <div className="ml-3 flex-shrink-0">
+                                    <img
+                                      src="/asset/trade-option_icon.png"
+                                      alt="Options Trading"
+                                      className="w-10 h-10 object-contain"
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </Link>
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <Link
-                        href={item.href}
-                        className={`block px-3 py-2 rounded-md text-base font-medium ${
-                          isActivePath(item.href) ? "text-primary bg-dark-100" : "text-muted-foreground"
-                        }`}
-                        onClick={() => setIsMobileMenuOpen(false)}
+                      ) : (
+                        <Link
+                          href={item.href}
+                          className={`block px-3 py-2 rounded-md text-base font-medium ${
+                            isActivePath(item.href) ? "text-primary bg-dark-100" : "text-muted-foreground"
+                          }`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {item.name}
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+
+                  {!isAuthenticated && (
+                    <div className="border-t border-dark-100 pt-4 space-y-2">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          openAuthModal("login");
+                          setIsMobileMenuOpen(false);
+                        }}
                       >
-                        {item.name}
-                      </Link>
-                    )}
-                  </div>
-                ))}
-                
-                {!isAuthenticated && (
-                  <div className="border-t border-dark-100 pt-4 space-y-2">
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
-                        openAuthModal("login");
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      Login
-                    </Button>
-                    <Button 
-                      className="btn-primary w-full"
-                      onClick={() => {
-                        openAuthModal("signup");
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      Sign Up
-                    </Button>
-                  </div>
-                )}
+                        Login
+                      </Button>
+                      <Button
+                        className="btn-primary w-full"
+                        onClick={() => {
+                          openAuthModal("signup");
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        Sign Up
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

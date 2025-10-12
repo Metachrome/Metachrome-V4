@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./button";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "../../hooks/useAuth";
@@ -11,6 +11,26 @@ export function MobileHeader() {
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const isMobile = useIsMobile();
+
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isMenuOpen]);
 
   if (!isMobile) {
     return null;
@@ -90,8 +110,23 @@ export function MobileHeader() {
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setIsMenuOpen(false)}>
-          <div className="fixed right-0 top-0 h-full w-64 bg-[#1A1B3A] p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-hidden"
+          onClick={() => setIsMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 9999
+          }}
+        >
+          <div
+            className="fixed right-0 top-0 h-full w-64 bg-[#1A1B3A] p-4 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-white font-semibold">Menu</h2>
               <Button
@@ -102,7 +137,7 @@ export function MobileHeader() {
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <nav className="space-y-2">
               <button
                 onClick={() => handleNavigation("/")}
@@ -124,7 +159,7 @@ export function MobileHeader() {
                   {/* SPOT Trading Option - Mobile Header */}
                   <Link href="/trade/spot">
                     <div
-                      className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer"
+                      className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <div className="flex items-center justify-between">
@@ -149,7 +184,7 @@ export function MobileHeader() {
                   {/* OPTION Trading Option - Mobile Header */}
                   <Link href="/trade/options">
                     <div
-                      className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer"
+                      className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <div className="flex items-center justify-between">

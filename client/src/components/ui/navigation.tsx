@@ -15,6 +15,26 @@ export function Navigation() {
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const { user, isAuthenticated, logout } = useAuth();
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isMobileMenuOpen]);
+
   const navItems = [
     { path: "/", label: "Home" },
     { path: "/market", label: "Market" },
@@ -225,148 +245,165 @@ export function Navigation() {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-800">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navItems.map((item) => (
-                <div key={item.path}>
-                  {item.hasDropdown ? (
-                    <div>
-                      <div className="text-gray-300 block px-3 py-2 text-base font-medium">
-                        {item.label}
-                      </div>
-                      <div className="mx-3 mb-2 space-y-2">
-                        {/* SPOT Trading Option - Mobile */}
-                        <Link href="/trade/spot">
-                          <div
-                            className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
-                                <p className="text-xs text-black/80 leading-tight">
-                                  Buy and sell crypto instantly at<br />
-                                  real-time market prices.
-                                </p>
-                              </div>
-                              <div className="ml-3 flex-shrink-0">
-                                <img
-                                  src="/asset/trade-spot_icon.png"
-                                  alt="Spot Trading"
-                                  className="w-10 h-10 object-contain"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-
-                        {/* OPTION Trading Option - Mobile */}
-                        <Link href="/trade/options">
-                          <div
-                            className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
-                                <p className="text-xs text-black/80 leading-tight">
-                                  Maximize gains by predicting<br />
-                                  market moves in seconds.
-                                </p>
-                              </div>
-                              <div className="ml-3 flex-shrink-0">
-                                <img
-                                  src="/asset/trade-option_icon.png"
-                                  alt="Options Trading"
-                                  className="w-10 h-10 object-contain"
-                                />
+          <div
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-hidden md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              zIndex: 9999
+            }}
+          >
+            <div
+              className="fixed right-0 top-0 h-full w-64 bg-[#1A1B3A] p-4 overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-1">
+                {navItems.map((item) => (
+                  <div key={item.path}>
+                    {item.hasDropdown ? (
+                      <div>
+                        <div className="text-gray-300 block px-3 py-2 text-base font-medium">
+                          {item.label}
+                        </div>
+                        <div className="mx-3 mb-2 space-y-2">
+                          {/* SPOT Trading Option - Mobile */}
+                          <Link href="/trade/spot">
+                            <div
+                              className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
+                                  <p className="text-xs text-black/80 leading-tight">
+                                    Buy and sell crypto instantly at<br />
+                                    real-time market prices.
+                                  </p>
+                                </div>
+                                <div className="ml-3 flex-shrink-0">
+                                  <img
+                                    src="/asset/trade-spot_icon.png"
+                                    alt="Spot Trading"
+                                    className="w-10 h-10 object-contain"
+                                  />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </Link>
-                      </div>
-                    </div>
-                  ) : (
-                    <Link href={item.path}>
-                      <div
-                        className={`block px-3 py-2 text-base font-medium hover:text-white hover:bg-gray-800 ${
-                          location === item.path ? 'text-purple-400' : 'text-gray-300'
-                        }`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {item.label}
-                      </div>
-                    </Link>
-                  )}
-                </div>
-              ))}
+                          </Link>
 
-              {/* Mobile auth buttons */}
-              <div className="pt-4 space-y-2">
-                {isAuthenticated ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2 text-gray-300 px-3 py-2">
-                      <UserCircle className="w-4 h-4" />
-                      <span>Account</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="w-full text-gray-300 border-gray-700 hover:bg-gray-800 mb-2"
-                      onClick={() => {
-                        // Route to admin dashboard if user is admin/super_admin, otherwise user dashboard
-                        const dashboardPath = (user?.role === 'admin' || user?.role === 'super_admin')
-                          ? '/admin/dashboard'
-                          : '/dashboard';
-                        setLocation(dashboardPath);
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Dashboard
-                    </Button>
-                    <Link href="/profile">
+                          {/* OPTION Trading Option - Mobile */}
+                          <Link href="/trade/options">
+                            <div
+                              className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
+                                  <p className="text-xs text-black/80 leading-tight">
+                                    Maximize gains by predicting<br />
+                                    market moves in seconds.
+                                  </p>
+                                </div>
+                                <div className="ml-3 flex-shrink-0">
+                                  <img
+                                    src="/asset/trade-option_icon.png"
+                                    alt="Options Trading"
+                                    className="w-10 h-10 object-contain"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <Link href={item.path}>
+                        <div
+                          className={`block px-3 py-2 text-base font-medium hover:text-white hover:bg-gray-800 ${
+                            location === item.path ? 'text-purple-400' : 'text-gray-300'
+                          }`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {item.label}
+                        </div>
+                      </Link>
+                    )}
+                  </div>
+                ))}
+
+                {/* Mobile auth buttons */}
+                <div className="pt-4 space-y-2">
+                  {isAuthenticated ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 text-gray-300 px-3 py-2">
+                        <UserCircle className="w-4 h-4" />
+                        <span>Account</span>
+                      </div>
                       <Button
                         variant="outline"
                         className="w-full text-gray-300 border-gray-700 hover:bg-gray-800 mb-2"
-                        onClick={() => setIsMobileMenuOpen(false)}
+                        onClick={() => {
+                          // Route to admin dashboard if user is admin/super_admin, otherwise user dashboard
+                          const dashboardPath = (user?.role === 'admin' || user?.role === 'super_admin')
+                            ? '/admin/dashboard'
+                            : '/dashboard';
+                          setLocation(dashboardPath);
+                          setIsMobileMenuOpen(false);
+                        }}
                       >
-                        <User className="w-4 h-4 mr-2" />
-                        Profile
+                        <Settings className="w-4 h-4 mr-2" />
+                        Dashboard
                       </Button>
-                    </Link>
-                    <Button
-                      variant="outline"
-                      className="w-full text-gray-300 border-gray-700 hover:bg-gray-800"
-                      onClick={() => {
-                        logout();
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Link href="/login">
+                      <Link href="/profile">
+                        <Button
+                          variant="outline"
+                          className="w-full text-gray-300 border-gray-700 hover:bg-gray-800 mb-2"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          Profile
+                        </Button>
+                      </Link>
                       <Button
                         variant="outline"
                         className="w-full text-gray-300 border-gray-700 hover:bg-gray-800"
-                        onClick={() => setIsMobileMenuOpen(false)}
+                        onClick={() => {
+                          logout();
+                          setIsMobileMenuOpen(false);
+                        }}
                       >
-                        Login
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
                       </Button>
-                    </Link>
-                    <Link href="/signup">
-                      <Button
-                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white border-0"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Sign Up
-                      </Button>
-                    </Link>
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Link href="/login">
+                        <Button
+                          variant="outline"
+                          className="w-full text-gray-300 border-gray-700 hover:bg-gray-800"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Login
+                        </Button>
+                      </Link>
+                      <Link href="/signup">
+                        <Button
+                          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white border-0"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Sign Up
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
