@@ -1003,19 +1003,45 @@ function SpotPageContent() {
             </button>
           </div>
 
+          {/* Order Type Tabs - Mobile */}
+          <div className="flex space-x-6 mb-4">
+            <button
+              onClick={() => setOrderType('limit')}
+              className={`pb-2 text-sm font-medium ${
+                orderType === 'limit'
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Limit order
+            </button>
+            <button
+              onClick={() => setOrderType('market')}
+              className={`pb-2 text-sm font-medium ${
+                orderType === 'market'
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Market order
+            </button>
+          </div>
+
           {/* Trading Form */}
           {mobileTradeTab === 'buy' ? (
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
-                <input
-                  type="number"
-                  value={buyPrice}
-                  onChange={(e) => setBuyPrice(e.target.value)}
-                  placeholder="Market Price"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
-                />
-              </div>
+              {orderType === 'limit' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
+                  <input
+                    type="number"
+                    value={buyPrice}
+                    onChange={(e) => setBuyPrice(e.target.value)}
+                    placeholder={formattedPrice}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
                 <input
@@ -1042,16 +1068,18 @@ function SpotPageContent() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
-                <input
-                  type="number"
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(e.target.value)}
-                  placeholder="Market Price"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none"
-                />
-              </div>
+              {orderType === 'limit' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
+                  <input
+                    type="number"
+                    value={sellPrice}
+                    onChange={(e) => setSellPrice(e.target.value)}
+                    placeholder={formattedPrice}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
                 <input
