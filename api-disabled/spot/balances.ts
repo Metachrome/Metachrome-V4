@@ -7,23 +7,13 @@ const userBalances = new Map([
   ['superadmin-001', { balance: 1000000, currency: 'USDT' }]
 ]);
 
-// Mock asset balances for spot trading
+// Asset balances for spot trading (only USDT - real crypto comes from trading)
 const assetBalances = new Map([
   ['demo-user-1', {
-    USDT: 10000,
-    BTC: 0.5,
-    ETH: 5.0,
-    BNB: 10.0,
-    ADA: 1000.0,
-    SOL: 20.0
+    USDT: 10000
   }],
   ['superadmin-001', {
-    USDT: 1000000,
-    BTC: 10.0,
-    ETH: 100.0,
-    BNB: 500.0,
-    ADA: 50000.0,
-    SOL: 1000.0
+    USDT: 1000000
   }]
 ]);
 

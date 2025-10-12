@@ -4737,26 +4737,11 @@ app.get('/api/balances', async (req, res) => {
     const userBalance = parseFloat(currentUser.balance || 0);
     console.log('💰 BALANCE SYNC: Parsed balance as number:', userBalance);
 
-    // Return all cryptocurrency balances for compatibility
+    // Return only USDT balance (real cryptocurrency balances come from actual trading)
     const balances = [
       {
         symbol: 'USDT',
         available: userBalance.toString(),
-        locked: '0'
-      },
-      {
-        symbol: 'BTC',
-        available: '0.5', // Default BTC balance for testing
-        locked: '0'
-      },
-      {
-        symbol: 'ETH',
-        available: '2.0', // Default ETH balance for testing
-        locked: '0'
-      },
-      {
-        symbol: 'SOL',
-        available: '10.0', // Default SOL balance for testing
         locked: '0'
       }
     ];
@@ -4871,26 +4856,11 @@ app.get('/api/user/balances', async (req, res) => {
     const userBalance = parseFloat(currentUser.balance || 0);
     console.log('💰 BALANCE SYNC: Parsed user balance as number:', userBalance);
 
-    // Return all cryptocurrency balances for trading pages compatibility
+    // Return only USDT balance (real cryptocurrency balances come from actual trading)
     const balances = [
       {
         symbol: 'USDT',
         available: userBalance.toString(),
-        locked: '0'
-      },
-      {
-        symbol: 'BTC',
-        available: '0.5', // Default BTC balance for testing
-        locked: '0'
-      },
-      {
-        symbol: 'ETH',
-        available: '2.0', // Default ETH balance for testing
-        locked: '0'
-      },
-      {
-        symbol: 'SOL',
-        available: '10.0', // Default SOL balance for testing
         locked: '0'
       }
     ];
