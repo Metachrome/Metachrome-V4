@@ -103,11 +103,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 .select('symbol, available, locked')
                 .eq('userId', userId);
 
+              console.log('🔍 [/api/balances] Database query result:', {
+                userId,
+                userBalances,
+                balancesError: balancesError?.message,
+                balanceCount: userBalances?.length || 0
+              });
+
               if (balancesError) {
                 console.error('❌ [/api/balances] Error fetching balances:', balancesError);
-              }
-
-              if (userBalances && userBalances.length > 0) {
+                // If table doesn't exist or other DB error, fall back to USDT only
+                balanceData = [
+                  {
+                    symbol: 'USDT',
+                    available: user.balance.toString(),
+                    locked: '0'
+                  }
+                ];
+              } else if (userBalances && userBalances.length > 0) {
                 // Use real balances from database
                 balanceData = userBalances.map(balance => ({
                   symbol: balance.symbol,
@@ -126,8 +139,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     locked: '0'
                   });
                 }
+
+                console.log('✅ [/api/balances] Using database balances:', balanceData);
               } else {
                 // No balances found, create default USDT balance
+                console.log('⚠️ [/api/balances] No balances found, using USDT only');
                 balanceData = [
                   {
                     symbol: 'USDT',
