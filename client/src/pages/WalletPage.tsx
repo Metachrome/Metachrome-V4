@@ -505,6 +505,149 @@ export default function WalletPage() {
 
               </div>
 
+              {/* My Assets Section */}
+              <div className="mt-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-white">My assets</h2>
+                  <div className="text-sm text-gray-400">
+                    {userBalances ? `${userBalances.filter(b => parseFloat(b.available) > 0).length} assets` : '0 assets'}
+                  </div>
+                </div>
+
+                {balancesLoading ? (
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8">
+                    <div className="text-center text-gray-400">
+                      <div className="animate-pulse">Loading assets...</div>
+                    </div>
+                  </div>
+                ) : userBalances && userBalances.some(balance => parseFloat(balance.available) > 0) ? (
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden">
+                    {/* Assets Table Header - Desktop */}
+                    <div className="hidden md:grid grid-cols-4 gap-4 p-4 bg-gray-700/30 border-b border-gray-600">
+                      <div className="text-sm font-medium text-gray-300">Name</div>
+                      <div className="text-sm font-medium text-gray-300">Available assets</div>
+                      <div className="text-sm font-medium text-gray-300">Occupy</div>
+                      <div className="text-sm font-medium text-gray-300 text-right">Amount in USDT</div>
+                    </div>
+
+                    {/* Assets Table Body */}
+                    <div className="divide-y divide-gray-600">
+                      {userBalances
+                        .filter(balance => parseFloat(balance.available) > 0)
+                        .map((balance) => {
+                          const available = parseFloat(balance.available);
+                          const locked = parseFloat(balance.locked || '0');
+
+                          // Crypto prices for USDT conversion
+                          const cryptoPrices: { [key: string]: number } = {
+                            BTC: 65000,
+                            ETH: 3500,
+                            SOL: 150,
+                            USDT: 1,
+                            BNB: 600,
+                            USDC: 1,
+                            BUSD: 1
+                          };
+
+                          const price = cryptoPrices[balance.symbol] || 1;
+                          const usdtValue = available * price;
+
+                          // Crypto icons mapping
+                          const cryptoIcons: { [key: string]: string } = {
+                            BTC: '₿',
+                            ETH: 'Ξ',
+                            SOL: '◎',
+                            USDT: '₮',
+                            BNB: 'BNB',
+                            USDC: 'USDC',
+                            BUSD: 'BUSD'
+                          };
+
+                          // Crypto icon colors
+                          const cryptoColors: { [key: string]: string } = {
+                            BTC: 'bg-orange-500',
+                            ETH: 'bg-blue-500',
+                            SOL: 'bg-purple-500',
+                            USDT: 'bg-green-500',
+                            BNB: 'bg-yellow-500',
+                            USDC: 'bg-blue-600',
+                            BUSD: 'bg-yellow-600'
+                          };
+
+                          return (
+                            <div key={balance.symbol}>
+                              {/* Desktop Layout */}
+                              <div className="hidden md:grid grid-cols-4 gap-4 p-4 hover:bg-gray-700/20 transition-colors">
+                                {/* Name */}
+                                <div className="flex items-center space-x-3">
+                                  <div className={`w-8 h-8 ${cryptoColors[balance.symbol] || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
+                                    {cryptoIcons[balance.symbol] || balance.symbol.charAt(0)}
+                                  </div>
+                                  <span className="text-white font-medium">{balance.symbol}</span>
+                                </div>
+
+                                {/* Available assets */}
+                                <div className="text-white">
+                                  {available.toFixed(4)}
+                                </div>
+
+                                {/* Occupy (locked) */}
+                                <div className="text-white">
+                                  {locked.toFixed(4)}
+                                </div>
+
+                                {/* Amount in USDT */}
+                                <div className="text-white text-right">
+                                  {usdtValue.toFixed(2)}
+                                </div>
+                              </div>
+
+                              {/* Mobile Layout */}
+                              <div className="md:hidden p-4 hover:bg-gray-700/20 transition-colors">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-3">
+                                    <div className={`w-10 h-10 ${cryptoColors[balance.symbol] || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold`}>
+                                      {cryptoIcons[balance.symbol] || balance.symbol.charAt(0)}
+                                    </div>
+                                    <div>
+                                      <div className="text-white font-medium">{balance.symbol}</div>
+                                      <div className="text-gray-400 text-sm">{usdtValue.toFixed(2)} USDT</div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <div className="text-gray-400 mb-1">Available</div>
+                                    <div className="text-white">{available.toFixed(4)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-400 mb-1">Occupy</div>
+                                    <div className="text-white">{locked.toFixed(4)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <span className="text-2xl text-gray-400">💰</span>
+                      </div>
+                      <h3 className="text-lg font-medium text-white mb-2">No Data</h3>
+                      <p className="text-gray-400 text-sm mb-4">
+                        You don't have any cryptocurrency assets yet.
+                      </p>
+                      <p className="text-gray-500 text-xs">
+                        Start trading or deposit funds to see your assets here.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
 
             </div>
           </div>
