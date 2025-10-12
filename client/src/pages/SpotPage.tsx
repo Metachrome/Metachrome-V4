@@ -863,8 +863,8 @@ function SpotPageContent() {
 
         {/* Mobile Chart - Full Vertical Layout - Using TradingView like options page */}
         <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '450px' }}>
-          {/* Symbol Selector Overlay */}
-          <div className="absolute top-2 right-2 z-10 bg-gray-900/95 backdrop-blur-sm rounded-md p-1.5 border border-gray-600/30 shadow-lg">
+          {/* Symbol Selector Overlay - Fixed background issue */}
+          <div className="absolute top-2 right-2 z-10">
             <select
               value={selectedSymbol}
               onChange={(e) => {
@@ -872,10 +872,11 @@ function SpotPageContent() {
                 setSelectedSymbol(newSymbol);
                 handleTradingViewSymbolChange(newSymbol);
               }}
-              className="bg-gray-800/95 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px]"
+              className="bg-gray-800/90 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px] backdrop-blur-sm"
+              style={{ backgroundColor: 'rgba(31, 41, 55, 0.9)' }}
             >
               {tradingPairs.map((pair) => (
-                <option key={pair.rawSymbol} value={pair.rawSymbol}>
+                <option key={pair.rawSymbol} value={pair.rawSymbol} className="bg-gray-800 text-white">
                   {pair.coin}/USDT
                 </option>
               ))}
@@ -1058,6 +1059,24 @@ function SpotPageContent() {
                   {calculateBuyTotal()}
                 </div>
               </div>
+
+              {/* Mobile Available Balance and Buy Suggestion - Same as Desktop */}
+              <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
+                {user ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Available {usdtBalance.toFixed(2)} USDT</span>
+                      <span className="text-blue-400">≈</span>
+                    </div>
+                    <div className="text-green-400 font-medium">Can buy ≈ {(usdtBalance / currentPrice).toFixed(6)} BTC</div>
+                  </>
+                ) : (
+                  <div className="text-center text-yellow-400">
+                    Sign in to view balance
+                  </div>
+                )}
+              </div>
+
               <Button
                 onClick={handleBuySubmit}
                 disabled={!buyAmount || buyAmount === '0' || !user}
@@ -1096,6 +1115,24 @@ function SpotPageContent() {
                   {calculateSellTotal()}
                 </div>
               </div>
+
+              {/* Mobile Available Balance and Sell Suggestion - Same as Desktop */}
+              <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
+                {user ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Available {btcBalance.toFixed(6)} BTC</span>
+                      <span className="text-blue-400">≈</span>
+                    </div>
+                    <div className="text-red-400 font-medium">Available ≈ {(btcBalance * currentPrice).toFixed(2)} USDT</div>
+                  </>
+                ) : (
+                  <div className="text-center text-yellow-400">
+                    Sign in to view balance
+                  </div>
+                )}
+              </div>
+
               <Button
                 onClick={handleSellSubmit}
                 disabled={!sellAmount || sellAmount === '0' || !user}
@@ -1339,8 +1376,8 @@ function SpotPageContent() {
 
             {chartView === 'tradingview' && (
               <div className="relative h-full">
-                {/* Symbol Selector Overlay - Positioned in top-right corner */}
-                <div className="absolute top-2 right-2 z-10 bg-gray-900/95 backdrop-blur-sm rounded-md p-1.5 border border-gray-600/30 shadow-lg">
+                {/* Symbol Selector Overlay - Fixed background issue */}
+                <div className="absolute top-2 right-2 z-10">
                   <select
                     value={selectedSymbol}
                     onChange={(e) => {
@@ -1348,10 +1385,11 @@ function SpotPageContent() {
                       setSelectedSymbol(newSymbol);
                       handleTradingViewSymbolChange(newSymbol);
                     }}
-                    className="bg-gray-800/95 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px]"
+                    className="bg-gray-800/90 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px] backdrop-blur-sm"
+                    style={{ backgroundColor: 'rgba(31, 41, 55, 0.9)' }}
                   >
                     {tradingPairs.map((pair) => (
-                      <option key={pair.rawSymbol} value={pair.rawSymbol}>
+                      <option key={pair.rawSymbol} value={pair.rawSymbol} className="bg-gray-800 text-white">
                         {pair.coin}/USDT
                       </option>
                     ))}

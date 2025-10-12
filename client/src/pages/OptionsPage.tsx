@@ -2036,8 +2036,8 @@ function OptionsPageContent({
 
             {chartView === 'tradingview' && (
               <div className="relative h-full">
-                {/* Symbol Selector Overlay - Positioned in top-right corner */}
-                <div className="absolute top-2 right-2 z-10 bg-gray-900/95 backdrop-blur-sm rounded-md p-1.5 border border-gray-600/30 shadow-lg">
+                {/* Symbol Selector Overlay - Fixed background issue */}
+                <div className="absolute top-2 right-2 z-10">
                   <select
                     value={selectedSymbol}
                     onChange={(e) => {
@@ -2045,27 +2045,28 @@ function OptionsPageContent({
                       setSelectedSymbol(newSymbol);
                       handleTradingViewSymbolChange(newSymbol);
                     }}
-                    className="bg-gray-800/95 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px]"
+                    className="bg-gray-800/90 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px] backdrop-blur-sm"
+                    style={{ backgroundColor: 'rgba(31, 41, 55, 0.9)' }}
                   >
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="XRPUSDT">XRP/USDT</option>
-                    <option value="LTCUSDT">LTC/USDT</option>
-                    <option value="BNBUSDT">BNB/USDT</option>
-                    <option value="SOLUSDT">SOL/USDT</option>
-                    <option value="TONUSDT">TON/USDT</option>
-                    <option value="DOGEUSDT">DOGE/USDT</option>
-                    <option value="ADAUSDT">ADA/USDT</option>
-                    <option value="TRXUSDT">TRX/USDT</option>
-                    <option value="HYPEUSDT">HYPE/USDT</option>
-                    <option value="LINKUSDT">LINK/USDT</option>
-                    <option value="AVAXUSDT">AVAX/USDT</option>
-                    <option value="SUIUSDT">SUI/USDT</option>
-                    <option value="SHIBUSDT">SHIB/USDT</option>
-                    <option value="BCHUSDT">BCH/USDT</option>
-                    <option value="DOTUSDT">DOT/USDT</option>
-                    <option value="MATICUSDT">MATIC/USDT</option>
-                    <option value="XLMUSDT">XLM/USDT</option>
+                    <option value="BTCUSDT" className="bg-gray-800 text-white">BTC/USDT</option>
+                    <option value="ETHUSDT" className="bg-gray-800 text-white">ETH/USDT</option>
+                    <option value="XRPUSDT" className="bg-gray-800 text-white">XRP/USDT</option>
+                    <option value="LTCUSDT" className="bg-gray-800 text-white">LTC/USDT</option>
+                    <option value="BNBUSDT" className="bg-gray-800 text-white">BNB/USDT</option>
+                    <option value="SOLUSDT" className="bg-gray-800 text-white">SOL/USDT</option>
+                    <option value="TONUSDT" className="bg-gray-800 text-white">TON/USDT</option>
+                    <option value="DOGEUSDT" className="bg-gray-800 text-white">DOGE/USDT</option>
+                    <option value="ADAUSDT" className="bg-gray-800 text-white">ADA/USDT</option>
+                    <option value="TRXUSDT" className="bg-gray-800 text-white">TRX/USDT</option>
+                    <option value="HYPEUSDT" className="bg-gray-800 text-white">HYPE/USDT</option>
+                    <option value="LINKUSDT" className="bg-gray-800 text-white">LINK/USDT</option>
+                    <option value="AVAXUSDT" className="bg-gray-800 text-white">AVAX/USDT</option>
+                    <option value="SUIUSDT" className="bg-gray-800 text-white">SUI/USDT</option>
+                    <option value="SHIBUSDT" className="bg-gray-800 text-white">SHIB/USDT</option>
+                    <option value="BCHUSDT" className="bg-gray-800 text-white">BCH/USDT</option>
+                    <option value="DOTUSDT" className="bg-gray-800 text-white">DOT/USDT</option>
+                    <option value="MATICUSDT" className="bg-gray-800 text-white">MATIC/USDT</option>
+                    <option value="XLMUSDT" className="bg-gray-800 text-white">XLM/USDT</option>
                   </select>
                 </div>
 
