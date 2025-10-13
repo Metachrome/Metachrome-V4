@@ -19,39 +19,52 @@ export const useCryptoData = () => {
 
         if (internalResponse.ok) {
           const internalData = await internalResponse.json();
-          console.log('✅ Internal API data:', internalData);
+          console.log('✅ Internal API data received:', internalData.length, 'items');
+          console.log('📊 Sample internal data:', internalData.slice(0, 3));
 
           if (internalData && internalData.length > 0) {
             // Transform internal data to match component structure
-            const transformedInternalData = internalData.map(item => ({
-              id: item.symbol.toLowerCase().replace('usdt', ''),
-              symbol: item.symbol.replace('USDT', '/USDT'),
-              name: item.symbol.replace('USDT', ''),
-              price: `$${parseFloat(item.price).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: parseFloat(item.price) < 1 ? 6 : 2
-              })}`,
-              change: `${parseFloat(item.priceChangePercent24h || 0).toFixed(2)}%`,
-              high: `$${parseFloat(item.high24h || item.price).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: parseFloat(item.high24h || item.price) < 1 ? 6 : 2
-              })}`,
-              low: `$${parseFloat(item.low24h || item.price).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: parseFloat(item.low24h || item.price) < 1 ? 6 : 2
-              })}`,
-              isPositive: parseFloat(item.priceChangePercent24h || 0) >= 0,
-              marketCap: 0,
-              volume: parseFloat(item.volume24h || 0),
-              image: `https://cryptoicons.org/api/icon/${item.symbol.replace('USDT', '').toLowerCase()}/200`,
-              coinGeckoId: item.symbol.toLowerCase().replace('usdt', ''),
-              rawPrice: parseFloat(item.price),
-              rawChange: parseFloat(item.priceChangePercent24h || 0)
-            }));
+            const transformedInternalData = internalData
+              .filter(item => item && item.symbol) // Filter out invalid items
+              .slice(0, 15) // Limit to 15 items for better performance
+              .map(item => {
+                const symbolName = item.symbol.replace('USDT', '');
+                const price = parseFloat(item.price || 0);
+                const change = parseFloat(item.priceChangePercent24h || item.change24h || 0);
+                const high = parseFloat(item.high24h || price * 1.05);
+                const low = parseFloat(item.low24h || price * 0.95);
+
+                return {
+                  id: symbolName.toLowerCase(),
+                  symbol: `${symbolName}/USDT`,
+                  name: symbolName,
+                  price: `$${price.toLocaleString('en-US', {
+                    minimumFractionDigits: price < 1 ? 6 : 2,
+                    maximumFractionDigits: price < 1 ? 6 : 2
+                  })}`,
+                  change: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+                  high: `$${high.toLocaleString('en-US', {
+                    minimumFractionDigits: high < 1 ? 6 : 2,
+                    maximumFractionDigits: high < 1 ? 6 : 2
+                  })}`,
+                  low: `$${low.toLocaleString('en-US', {
+                    minimumFractionDigits: low < 1 ? 6 : 2,
+                    maximumFractionDigits: low < 1 ? 6 : 2
+                  })}`,
+                  isPositive: change >= 0,
+                  marketCap: 0,
+                  volume: parseFloat(item.volume24h || 0),
+                  image: `https://cryptoicons.org/api/icon/${symbolName.toLowerCase()}/200`,
+                  coinGeckoId: symbolName.toLowerCase(),
+                  rawPrice: price,
+                  rawChange: change
+                };
+              });
 
             setCryptoData(transformedInternalData);
             setLoading(false);
-            console.log('✅ Using internal market data');
+            console.log('✅ Using internal market data:', transformedInternalData.length, 'currencies');
+            console.log('📊 Transformed data sample:', transformedInternalData.slice(0, 3));
             return;
           }
         }
@@ -62,7 +75,7 @@ export const useCryptoData = () => {
       // Fallback to CoinGecko API
       console.log('🔄 Fetching from CoinGecko API...');
       const response = await fetch(
-        'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,cardano,ripple,dogecoin,polygon,avalanche-2,chainlink&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h',
+        'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,cardano,ripple,dogecoin,polygon,avalanche-2,chainlink,litecoin,polkadot,uniswap,shiba-inu&order=market_cap_desc&per_page=15&page=1&sparkline=false&price_change_percentage=24h',
         {
           headers: {
             'Accept': 'application/json',
@@ -180,14 +193,14 @@ export const useCryptoData = () => {
           rawPrice: 98.45,
           rawChange: 5.12
         },
-        { 
+        {
           id: 'cardano',
-          symbol: "ADA/USDT", 
-          name: "Cardano", 
-          price: "$0.485", 
-          change: "-2.34%", 
-          high: "$0.52", 
-          low: "$0.47", 
+          symbol: "ADA/USDT",
+          name: "Cardano",
+          price: "$0.485",
+          change: "-2.34%",
+          high: "$0.52",
+          low: "$0.47",
           isPositive: false,
           marketCap: 15000000000,
           volume: 800000000,
@@ -195,6 +208,150 @@ export const useCryptoData = () => {
           coinGeckoId: 'cardano',
           rawPrice: 0.485,
           rawChange: -2.34
+        },
+        {
+          id: 'ripple',
+          symbol: "XRP/USDT",
+          name: "XRP",
+          price: "$0.6234",
+          change: "+4.12%",
+          high: "$0.65",
+          low: "$0.59",
+          isPositive: true,
+          marketCap: 35000000000,
+          volume: 1500000000,
+          image: "https://cryptoicons.org/api/icon/xrp/200",
+          coinGeckoId: 'ripple',
+          rawPrice: 0.6234,
+          rawChange: 4.12
+        },
+        {
+          id: 'dogecoin',
+          symbol: "DOGE/USDT",
+          name: "Dogecoin",
+          price: "$0.0823",
+          change: "+6.78%",
+          high: "$0.087",
+          low: "$0.076",
+          isPositive: true,
+          marketCap: 12000000000,
+          volume: 900000000,
+          image: "https://cryptoicons.org/api/icon/doge/200",
+          coinGeckoId: 'dogecoin',
+          rawPrice: 0.0823,
+          rawChange: 6.78
+        },
+        {
+          id: 'polygon',
+          symbol: "MATIC/USDT",
+          name: "Polygon",
+          price: "$0.8945",
+          change: "+3.21%",
+          high: "$0.92",
+          low: "$0.86",
+          isPositive: true,
+          marketCap: 8500000000,
+          volume: 650000000,
+          image: "https://cryptoicons.org/api/icon/matic/200",
+          coinGeckoId: 'polygon',
+          rawPrice: 0.8945,
+          rawChange: 3.21
+        },
+        {
+          id: 'avalanche-2',
+          symbol: "AVAX/USDT",
+          name: "Avalanche",
+          price: "$36.78",
+          change: "-1.45%",
+          high: "$38.20",
+          low: "$35.90",
+          isPositive: false,
+          marketCap: 14000000000,
+          volume: 750000000,
+          image: "https://cryptoicons.org/api/icon/avax/200",
+          coinGeckoId: 'avalanche-2',
+          rawPrice: 36.78,
+          rawChange: -1.45
+        },
+        {
+          id: 'chainlink',
+          symbol: "LINK/USDT",
+          name: "Chainlink",
+          price: "$14.56",
+          change: "+2.89%",
+          high: "$15.10",
+          low: "$14.20",
+          isPositive: true,
+          marketCap: 8800000000,
+          volume: 420000000,
+          image: "https://cryptoicons.org/api/icon/link/200",
+          coinGeckoId: 'chainlink',
+          rawPrice: 14.56,
+          rawChange: 2.89
+        },
+        {
+          id: 'litecoin',
+          symbol: "LTC/USDT",
+          name: "Litecoin",
+          price: "$73.45",
+          change: "+1.67%",
+          high: "$75.20",
+          low: "$71.80",
+          isPositive: true,
+          marketCap: 5400000000,
+          volume: 380000000,
+          image: "https://cryptoicons.org/api/icon/ltc/200",
+          coinGeckoId: 'litecoin',
+          rawPrice: 73.45,
+          rawChange: 1.67
+        },
+        {
+          id: 'polkadot',
+          symbol: "DOT/USDT",
+          name: "Polkadot",
+          price: "$5.89",
+          change: "-3.12%",
+          high: "$6.15",
+          low: "$5.75",
+          isPositive: false,
+          marketCap: 7200000000,
+          volume: 290000000,
+          image: "https://cryptoicons.org/api/icon/dot/200",
+          coinGeckoId: 'polkadot',
+          rawPrice: 5.89,
+          rawChange: -3.12
+        },
+        {
+          id: 'uniswap',
+          symbol: "UNI/USDT",
+          name: "Uniswap",
+          price: "$6.78",
+          change: "+4.56%",
+          high: "$7.05",
+          low: "$6.45",
+          isPositive: true,
+          marketCap: 5100000000,
+          volume: 340000000,
+          image: "https://cryptoicons.org/api/icon/uni/200",
+          coinGeckoId: 'uniswap',
+          rawPrice: 6.78,
+          rawChange: 4.56
+        },
+        {
+          id: 'shiba-inu',
+          symbol: "SHIB/USDT",
+          name: "Shiba Inu",
+          price: "$0.000009234",
+          change: "+8.92%",
+          high: "$0.000009850",
+          low: "$0.000008650",
+          isPositive: true,
+          marketCap: 5400000000,
+          volume: 280000000,
+          image: "https://cryptoicons.org/api/icon/shib/200",
+          coinGeckoId: 'shiba-inu',
+          rawPrice: 0.000009234,
+          rawChange: 8.92
         }
       ]);
     } finally {

@@ -150,7 +150,7 @@ export default function HomePage() {
                         </tr>
                       ))
                     ) : (
-                      cryptoData.slice(0, 8).map((crypto) => (
+                      cryptoData.slice(0, 12).map((crypto) => (
                       <tr key={crypto.symbol} className="border-b border-purple-800/20 hover:bg-purple-900/20 transition-colors">
                         <td className="p-3">
                           <div className="flex items-center space-x-2">

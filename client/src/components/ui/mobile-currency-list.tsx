@@ -60,47 +60,103 @@ export function MobileCurrencyList() {
     return null;
   }
 
+  // Debug logging
+  console.log('🔍 MobileCurrencyList Debug:');
+  console.log('  - cryptoData length:', cryptoData?.length || 0);
+  console.log('  - loading:', loading);
+  console.log('  - error:', error);
+  console.log('  - cryptoData sample:', cryptoData?.slice(0, 3));
+
   // Default currencies if API data is not available
   const defaultCurrencies = [
     {
-      symbol: "BTCUSDT",
+      symbol: "BTC/USDT",
       name: "BTC",
-      price: "117378.01",
+      price: "$117,378.01",
       change: "+1.70%",
       color: "bg-orange-500"
     },
     {
-      symbol: "ETHUSDT", 
+      symbol: "ETH/USDT",
       name: "ETH",
-      price: "3741.71",
+      price: "$3,741.71",
       change: "+3.37%",
       color: "bg-blue-500"
     },
     {
-      symbol: "DOGEUSDT",
-      name: "DOGE", 
-      price: "0.237699",
-      change: "+5.43%",
-      color: "bg-yellow-500"
+      symbol: "BNB/USDT",
+      name: "BNB",
+      price: "$698.45",
+      change: "+1.89%",
+      color: "bg-yellow-600"
     },
     {
-      symbol: "XRPUSDT",
+      symbol: "SOL/USDT",
+      name: "SOL",
+      price: "$245.67",
+      change: "+3.42%",
+      color: "bg-purple-500"
+    },
+    {
+      symbol: "XRP/USDT",
       name: "XRP",
-      price: "3.163320", 
-      change: "+3.36%",
+      price: "$3.1833",
+      change: "-1.77%",
       color: "bg-gray-600"
     },
     {
-      symbol: "TRUMPUSDT",
-      name: "TRUMP",
-      price: "10.0993",
-      change: "+4.35%",
-      color: "bg-red-600"
+      symbol: "DOGE/USDT",
+      name: "DOGE",
+      price: "$0.23878",
+      change: "+0.89%",
+      color: "bg-yellow-500"
+    },
+    {
+      symbol: "ADA/USDT",
+      name: "ADA",
+      price: "$0.8212",
+      change: "+0.66%",
+      color: "bg-blue-600"
+    },
+    {
+      symbol: "AVAX/USDT",
+      name: "AVAX",
+      price: "$45.67",
+      change: "+1.89%",
+      color: "bg-red-500"
+    },
+    {
+      symbol: "LINK/USDT",
+      name: "LINK",
+      price: "$22.34",
+      change: "+2.45%",
+      color: "bg-blue-400"
+    },
+    {
+      symbol: "DOT/USDT",
+      name: "DOT",
+      price: "$8.456",
+      change: "+0.78%",
+      color: "bg-pink-500"
+    },
+    {
+      symbol: "MATIC/USDT",
+      name: "MATIC",
+      price: "$0.4567",
+      change: "+1.23%",
+      color: "bg-purple-600"
+    },
+    {
+      symbol: "LTC/USDT",
+      name: "LTC",
+      price: "$112.45",
+      change: "+2.15%",
+      color: "bg-gray-500"
     }
   ];
 
   const currencies = cryptoData && cryptoData.length > 0 ?
-    cryptoData.slice(0, 5).map((crypto: any) => {
+    cryptoData.slice(0, 12).map((crypto: any) => {
       // Use rawChange from the crypto service, fallback to 0
       const change24h = crypto.rawChange || 0;
       const price = crypto.price || '0.00';
@@ -114,6 +170,9 @@ export function MobileCurrencyList() {
         color: change24h > 0 ? "bg-green-500" : "bg-red-500"
       };
     }) : defaultCurrencies;
+
+  console.log('📊 Final currencies for display:', currencies.length, 'items');
+  console.log('📊 Using data source:', cryptoData && cryptoData.length > 0 ? 'API data' : 'default data');
 
   return (
     <div className="bg-[#0D0B1F] px-0">
