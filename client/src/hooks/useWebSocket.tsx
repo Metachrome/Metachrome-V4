@@ -32,6 +32,8 @@ export function useWebSocket() {
       const isRailway = window.location.hostname.includes('railway.app');
 
       console.log('🔌 WEBSOCKET DEBUG: Environment check:', { isLocal, isVercel, isRailway });
+      console.log('🔌 WEBSOCKET DEBUG: Current hostname:', window.location.hostname);
+      console.log('🔌 WEBSOCKET DEBUG: Current protocol:', window.location.protocol);
 
       // Use correct WebSocket URL
       let wsUrl;
@@ -46,8 +48,10 @@ export function useWebSocket() {
         // Railway supports WebSockets - use the same host and port
         wsUrl = `${protocol}//${window.location.host}/ws`;
         console.log('🔌 Railway deployment detected - using WebSocket:', wsUrl);
+        console.log('🔌 RAILWAY DEBUG: Full WebSocket URL will be:', wsUrl);
       } else {
         wsUrl = `${protocol}//${window.location.host}/ws`;
+        console.log('🔌 GENERIC DEPLOYMENT: Using WebSocket URL:', wsUrl);
       }
 
       console.log('🔌 WEBSOCKET DEBUG: Attempting to connect to:', wsUrl);
@@ -97,6 +101,11 @@ export function useWebSocket() {
 
       ws.onerror = (error) => {
         console.error("🔌 WEBSOCKET DEBUG: WebSocket error:", error);
+        console.error("🔌 WEBSOCKET DEBUG: Error details:", {
+          url: wsUrl,
+          readyState: ws.readyState,
+          protocol: ws.protocol
+        });
       };
 
       setSocket(ws);
