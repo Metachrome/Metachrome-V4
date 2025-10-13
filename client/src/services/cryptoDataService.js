@@ -15,7 +15,7 @@ export const useCryptoData = () => {
       // Try internal API first (our own market data)
       try {
         console.log('🔄 Fetching from internal market data API...');
-        const internalResponse = await fetch('/api/market-data');
+        const internalResponse = await fetch('/api/market-data?force=true');
 
         if (internalResponse.ok) {
           const internalData = await internalResponse.json();
@@ -362,10 +362,10 @@ export const useCryptoData = () => {
   useEffect(() => {
     fetchCryptoData();
 
-    // Update data every 30 seconds, but retry more frequently if there's an error
+    // Update data every 5 minutes, but retry more frequently if there's an error
     const interval = setInterval(() => {
       fetchCryptoData();
-    }, error ? 10000 : 30000); // Retry every 10 seconds if error, otherwise 30 seconds
+    }, error ? 60000 : 300000); // Retry every 1 minute if error, otherwise 5 minutes
 
     return () => clearInterval(interval);
   }, [error]);
