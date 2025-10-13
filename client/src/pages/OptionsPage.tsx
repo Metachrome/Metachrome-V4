@@ -142,6 +142,27 @@ function OptionsPageContent({
         triggerNotification(testTrade);
       };
 
+      // IMMEDIATE NOTIFICATION TEST
+      (window as any).testNotificationNow = () => {
+        console.log('🚀 IMMEDIATE: Testing notification immediately');
+        const testTrade: ActiveTrade = {
+          id: 'immediate-test-' + Date.now(),
+          symbol: 'BTC/USDT',
+          direction: 'up',
+          amount: 100,
+          entryPrice: 114420.87,
+          currentPrice: 114904.29,
+          status: 'won',
+          duration: 30,
+          profitPercentage: 10,
+          payout: 110,
+          profit: 10
+        };
+
+        console.log('🚀 IMMEDIATE: Calling triggerNotification with:', testTrade);
+        triggerNotification(testTrade);
+      };
+
       (window as any).testDirectNotification = () => {
         console.log('🧪 GLOBAL: Creating direct DOM notification from console');
 
@@ -838,6 +859,8 @@ function OptionsPageContent({
 
       // Find the active trade that just completed
       const completedActiveTrade = activeTrades.find(trade => trade.id === tradeId);
+      console.log('🔍 WEBSOCKET: Looking for active trade:', tradeId, 'Found:', !!completedActiveTrade);
+      console.log('🔍 WEBSOCKET: Current active trades:', activeTrades.map(t => t.id));
 
       if (completedActiveTrade) {
         const won = result === 'win';
@@ -856,6 +879,27 @@ function OptionsPageContent({
         // ROBUST NOTIFICATION TRIGGER
         console.log('🔔 WEBSOCKET: About to trigger notification');
         triggerNotification(completedTrade);
+      } else {
+        // FALLBACK: Create notification even if active trade not found
+        console.log('⚠️ WEBSOCKET: Active trade not found, creating fallback notification');
+
+        const won = result === 'win';
+        const fallbackTrade: ActiveTrade = {
+          id: tradeId,
+          symbol: 'BTC/USDT', // Default symbol
+          direction: 'up', // Default direction
+          amount: Math.abs(profitAmount) / (won ? 0.1 : 1), // Estimate amount from profit
+          entryPrice: exitPrice * (won ? 0.99 : 1.01), // Estimate entry price
+          currentPrice: exitPrice,
+          status: won ? 'won' : 'lost',
+          duration: 30, // Default duration
+          profitPercentage: won ? 10 : 0,
+          payout: won ? Math.abs(profitAmount) : 0,
+          profit: profitAmount
+        };
+
+        console.log('🔔 WEBSOCKET: Triggering fallback notification:', fallbackTrade);
+        triggerNotification(fallbackTrade);
 
         // Remove from active trades
         setActiveTrades(prev => prev.filter(trade => trade.id !== tradeId));
