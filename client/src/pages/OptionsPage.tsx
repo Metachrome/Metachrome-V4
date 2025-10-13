@@ -50,6 +50,16 @@ function OptionsPageContent({
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
+  // Debug WebSocket connection status
+  useEffect(() => {
+    console.log('🔌 WEBSOCKET STATUS:', { connected, hasLastMessage: !!lastMessage });
+    if (connected) {
+      console.log('✅ WebSocket is connected and ready');
+    } else {
+      console.log('❌ WebSocket is NOT connected');
+    }
+  }, [connected, lastMessage]);
+
   // Use price context for synchronized price data
   const { priceData } = usePrice();
   const { changeText, changeColor, isPositive } = usePriceChange();
@@ -1225,6 +1235,15 @@ function OptionsPageContent({
       }
 
       // Call backend API to create trade and deduct balance
+      console.log('🚀 TRADE DEBUG: About to place trade:', {
+        userId: tradingUserId,
+        symbol: selectedSymbol,
+        direction,
+        amount: selectedAmount,
+        duration: durationSeconds,
+        entryPrice: safeCurrentPrice
+      });
+
       const response = await fetch('/api/trades/options', {
         method: 'POST',
         headers: {
@@ -1247,8 +1266,10 @@ function OptionsPageContent({
       }
 
       const result = await response.json();
+      console.log('🚀 TRADE DEBUG: Trade placement response:', result);
 
       if (result.success) {
+        console.log('✅ TRADE DEBUG: Trade placed successfully, trade ID:', result.trade?.id);
         const now = Date.now();
         const profitPercentage = getProfitPercentage(selectedDuration);
 
