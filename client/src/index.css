@@ -560,23 +560,12 @@ span.price-neutral {
 
   /* TradingView iframes */
   #options_mobile_chart iframe,
-  #spot_mobile_chart iframe {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 500px !important;
-  }
-
-  /* Force TradingView widget to fill vertical space */
-  .tradingview-widget-container {
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 500px !important;
-  }
-
+  #spot_mobile_chart iframe,
+  .tradingview-widget-container,
   .tradingview-widget-container__widget {
     width: 100% !important;
     height: 100% !important;
-    min-height: 500px !important;
+    min-height: 80px !important;
   }
 
   /* Ensure mobile chart parent containers take large height */
