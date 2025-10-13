@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Detection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .detection-result {
+            background: #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .mobile-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 10000;
+            min-width: 300px;
+            text-align: center;
+        }
+        .desktop-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 300px;
+        }
+        .test-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔔 Notification Detection Test</h1>
+        <p>This test will help us determine why the mobile notification is showing on desktop.</p>
+        
+        <div class="detection-result">
+            <h3>Current Detection Results:</h3>
+            <div id="detection-info"></div>
+        </div>
+        
+        <button class="test-button" onclick="testMobileNotification()">Test Mobile Notification</button>
+        <button class="test-button" onclick="testDesktopNotification()">Test Desktop Notification</button>
+        <button class="test-button" onclick="runDetectionTest()">Run Detection Test</button>
+        <button class="test-button" onclick="clearNotifications()">Clear All</button>
+    </div>
+
+    <script>
+        function getDetectionInfo() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            const isSmallScreen = screenWidth < 768;
+            const isTouchDevice = 'ontouchstart' in window;
+            const userAgent = navigator.userAgent;
+
+            // ENHANCED MOBILE DETECTION - More strict criteria (same as in the app)
+            const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+            const isReallySmallScreen = screenWidth < 600; // Even stricter threshold
+            const isActuallyMobile = (isSmallScreen && isTouchDevice && isMobileUserAgent) || isReallySmallScreen;
+
+            // SAFETY CHECK: If screen is large (desktop), force desktop notification
+            const forceDesktop = screenWidth >= 1024; // Definitely desktop
+            const shouldUseMobile = isActuallyMobile && !forceDesktop;
+
+            return {
+                screenWidth,
+                screenHeight,
+                isSmallScreen,
+                isTouchDevice,
+                isMobileUserAgent,
+                isReallySmallScreen,
+                isActuallyMobile,
+                forceDesktop,
+                shouldUseMobile,
+                userAgent,
+                shouldUseDesktop: !shouldUseMobile
+            };
+        }
+        
+        function displayDetectionInfo() {
+            const info = getDetectionInfo();
+            const container = document.getElementById('detection-info');
+            
+            container.innerHTML = `
+                <p><strong>Screen Width:</strong> ${info.screenWidth}px</p>
+                <p><strong>Screen Height:</strong> ${info.screenHeight}px</p>
+                <p><strong>Is Small Screen (&lt; 768px):</strong> ${info.isSmallScreen}</p>
+                <p><strong>Is Touch Device:</strong> ${info.isTouchDevice}</p>
+                <p><strong>Is Mobile User Agent:</strong> ${info.isMobileUserAgent}</p>
+                <p><strong>Is Really Small Screen (&lt; 600px):</strong> ${info.isReallySmallScreen}</p>
+                <p><strong>Is Actually Mobile:</strong> ${info.isActuallyMobile}</p>
+                <p><strong>Force Desktop (≥ 1024px):</strong> ${info.forceDesktop}</p>
+                <p><strong>Should Use Mobile Notification:</strong> ${info.shouldUseMobile}</p>
+                <p><strong>Should Use Desktop Notification:</strong> ${info.shouldUseDesktop}</p>
+                <p><strong>User Agent:</strong> ${info.userAgent}</p>
+            `;
+        }
+        
+        function testMobileNotification() {
+            clearNotifications();
+            const notification = document.createElement('div');
+            notification.className = 'mobile-notification';
+            notification.id = 'mobile-test';
+            notification.innerHTML = `
+                <h3>📱 Mobile Notification Test</h3>
+                <p>This is how the mobile notification looks</p>
+                <button onclick="clearNotifications()" style="background: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Close</button>
+            `;
+            document.body.appendChild(notification);
+        }
+        
+        function testDesktopNotification() {
+            clearNotifications();
+            const notification = document.createElement('div');
+            notification.className = 'desktop-notification';
+            notification.id = 'desktop-test';
+            notification.innerHTML = `
+                <h3>🖥️ Desktop Notification</h3>
+                <p>This is how the desktop notification looks</p>
+                <button onclick="clearNotifications()" style="background: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Close</button>
+            `;
+            document.body.appendChild(notification);
+        }
+        
+        function runDetectionTest() {
+            const info = getDetectionInfo();
+            clearNotifications();
+
+            // Show the notification that should be used based on detection
+            if (info.shouldUseMobile) {
+                testMobileNotification();
+                alert('🔔 DETECTION RESULT: Mobile notification should show\n\nScreen Width: ' + info.screenWidth + 'px\nTouch Device: ' + info.isTouchDevice + '\nForce Desktop: ' + info.forceDesktop);
+            } else {
+                testDesktopNotification();
+                alert('🔔 DETECTION RESULT: Desktop notification should show\n\nScreen Width: ' + info.screenWidth + 'px\nTouch Device: ' + info.isTouchDevice + '\nForce Desktop: ' + info.forceDesktop);
+            }
+        }
+        
+        function clearNotifications() {
+            const mobile = document.getElementById('mobile-test');
+            const desktop = document.getElementById('desktop-test');
+            if (mobile) mobile.remove();
+            if (desktop) desktop.remove();
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', displayDetectionInfo);
+        window.addEventListener('resize', displayDetectionInfo);
+    </script>
+</body>
+</html>

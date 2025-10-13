@@ -174,7 +174,11 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const screenWidth = window.innerWidth;
   const isSmallScreen = screenWidth < 768;
   const isTouchDevice = 'ontouchstart' in window;
-  const isActuallyMobile = isSmallScreen && isTouchDevice;
+
+  // ENHANCED MOBILE DETECTION - More strict criteria
+  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isReallySmallScreen = screenWidth < 600; // Even stricter threshold
+  const isActuallyMobile = (isSmallScreen && isTouchDevice && isMobileUserAgent) || isReallySmallScreen;
 
   console.log('🔔 TRADE NOTIFICATION: Detection results:', {
     isMobile,
@@ -185,11 +189,16 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     isActuallyMobile,
     'Should use mobile': isActuallyMobile,
     'Should use desktop': !isActuallyMobile,
-    trade: !!trade
+    trade: !!trade,
+    userAgent: navigator.userAgent
   });
 
+  // SAFETY CHECK: If screen is large (desktop), force desktop notification
+  const forceDesktop = screenWidth >= 1024; // Definitely desktop
+  const shouldUseMobile = isActuallyMobile && !forceDesktop;
+
   // BULLETPROOF SYSTEM: Use DOM manipulation for mobile only
-  const useBulletproofSystem = isActuallyMobile; // Only use for actual mobile screens (small + touch)
+  const useBulletproofSystem = shouldUseMobile; // Only use for actual mobile screens (small + touch + not forced desktop)
 
   // BULLETPROOF MOBILE NOTIFICATION - Direct DOM manipulation
   useEffect(() => {
