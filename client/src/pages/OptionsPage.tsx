@@ -339,9 +339,106 @@ function OptionsPageContent({
         console.log('✅ GLOBAL: Direct notification created from console');
       };
 
+      // FORCE NOTIFICATION TEST - Bypass all React logic
+      (window as any).forceNotificationTest = () => {
+        console.log('🚀 FORCE: Creating notification directly via DOM manipulation');
+
+        // Remove any existing notifications
+        const existing = document.querySelectorAll('[data-mobile-notification="true"]');
+        existing.forEach(el => el.remove());
+
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.setAttribute('data-mobile-notification', 'true');
+        notification.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 999999;
+          font-family: Arial, sans-serif;
+        `;
+
+        notification.innerHTML = `
+          <div style="
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 350px;
+            width: 90%;
+            border: 1px solid #3a3d5a;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            color: white;
+          ">
+            <div style="font-size: 20px; font-weight: bold; color: #10b981; margin-bottom: 16px;">
+              🎉 Trade Won!
+            </div>
+            <div style="font-size: 12px; color: #9ca3af; margin-bottom: 16px;">
+              Market: BTC/USDT
+            </div>
+            <div style="background: #2a2d47; border-radius: 8px; padding: 12px; margin-bottom: 16px; border: 1px solid #3a3d5a;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+                <span style="color: #9ca3af;">Trade:</span>
+                <span style="color: #10b981; font-weight: bold;">BUY UP</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+                <span style="color: #9ca3af;">Amount:</span>
+                <span style="color: white; font-weight: bold;">100 USDT</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+                <span style="color: #9ca3af;">Entry Price:</span>
+                <span style="color: white; font-weight: bold;">115,520.39</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+                <span style="color: #9ca3af;">Close Price:</span>
+                <span style="color: white; font-weight: bold;">115,904.29</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+                <span style="color: #9ca3af;">Duration:</span>
+                <span style="color: white; font-weight: bold;">30 seconds</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span style="color: #9ca3af;">Profit:</span>
+                <span style="color: #10b981; font-weight: bold;">+10</span>
+              </div>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" style="
+              background: #10b981;
+              color: white;
+              border: none;
+              border-radius: 8px;
+              padding: 12px 24px;
+              font-weight: bold;
+              cursor: pointer;
+              width: 100%;
+            ">
+              Close Notification
+            </button>
+          </div>
+        `;
+
+        document.body.appendChild(notification);
+        console.log('✅ FORCE: Notification created and added to DOM');
+
+        // Auto-remove after 30 seconds
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.remove();
+            console.log('🗑️ FORCE: Auto-removed notification');
+          }
+        }, 30000);
+      };
+
       console.log('🧪 GLOBAL FUNCTIONS AVAILABLE:');
       console.log('- testMobileNotification() - Test React notification');
       console.log('- testDirectNotification() - Test direct DOM notification');
+      console.log('- forceNotificationTest() - Force create notification (GUARANTEED TO WORK)');
     }
   }, []);
   const [currentTradingMode, setCurrentTradingMode] = useState<'normal' | 'win' | 'lose'>(() => {
@@ -3426,6 +3523,7 @@ function OptionsPageContent({
 
       {/* Trade Notification */}
       {console.log('🔔 RENDER: completedTrade state:', completedTrade, 'key:', notificationKey)}
+      {console.log('🔔 RENDER: About to render TradeNotification component')}
       <TradeNotification
         key={notificationKey} // Force re-render with unique key
         trade={completedTrade ? {
