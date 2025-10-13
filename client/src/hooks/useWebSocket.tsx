@@ -71,14 +71,27 @@ export function useWebSocket() {
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          console.log("🔔 WEBSOCKET: Received message:", message);
           setLastMessage(message);
-          
+
           if (message.type === "pong") {
             // Handle pong response
-            console.log("Received pong from server");
+            console.log("🏓 WEBSOCKET: Received pong from server");
+          } else if (message.type === "trade_completed") {
+            console.log("🎯 WEBSOCKET: Trade completion message received:", message.data);
+            // The OptionsPage component will handle this via the lastMessage state
+          } else if (message.type === "trigger_mobile_notification") {
+            console.log("🔔 WEBSOCKET: Mobile notification trigger received:", message.data);
+            // Try to trigger notification directly if global function exists
+            if (typeof window !== 'undefined' && (window as any).testDirectNotification) {
+              console.log("🔔 WEBSOCKET: Triggering direct notification via global function");
+              (window as any).testDirectNotification();
+            }
+          } else {
+            console.log("🔔 WEBSOCKET: Unknown message type:", message.type);
           }
         } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
+          console.error("❌ WEBSOCKET: Error parsing WebSocket message:", error);
         }
       };
 
