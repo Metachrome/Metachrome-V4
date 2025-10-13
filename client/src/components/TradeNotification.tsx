@@ -170,37 +170,18 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     }
   }, [trade, currentWidth, isMobile]);
 
-  const hookMobile = isMobile;
-  const widthMobile = currentWidth < 768;
-  const forceMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const userAgentMobile = typeof navigator !== 'undefined' &&
-    (navigator.userAgent.toLowerCase().includes('android') ||
-     navigator.userAgent.toLowerCase().includes('iphone') ||
-     navigator.userAgent.toLowerCase().includes('ipad') ||
-     navigator.userAgent.toLowerCase().includes('mobile'));
-
-  const shouldUseMobile = hookMobile || widthMobile || forceMobile || userAgentMobile;
-  const forceMobileForTesting = currentWidth < 1024;
-
-  // PROPER MOBILE DETECTION - Only mobile for screens < 768px
-  const isMobileScreen = currentWidth < 768;
-  const forceAllMobile = false; // Fixed: Use proper detection
+  // SIMPLIFIED MOBILE DETECTION - Use only the hook
+  const isActuallyMobile = isMobile; // Use the proper hook that detects < 768px
 
   console.log('🔔 TRADE NOTIFICATION: Detection results:', {
-    hookMobile,
-    widthMobile,
-    forceMobile,
-    userAgentMobile,
-    shouldUseMobile,
-    forceMobileForTesting,
-    isMobileScreen,
-    forceAllMobile,
+    isMobile,
     currentWidth,
+    isActuallyMobile,
     trade: !!trade
   });
 
   // BULLETPROOF SYSTEM: Use DOM manipulation for mobile only
-  const useBulletproofSystem = shouldUseMobile || isMobileScreen || forceAllMobile;
+  const useBulletproofSystem = isActuallyMobile; // Only use for actual mobile screens
 
   // BULLETPROOF MOBILE NOTIFICATION - Direct DOM manipulation
   useEffect(() => {
