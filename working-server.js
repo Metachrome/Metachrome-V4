@@ -8127,8 +8127,8 @@ app.get('/api/market-data', async (req, res) => {
         priceChangePercent24h: changePercent.toFixed(2),
         high24h: (currentPrice + Math.abs(change24h) * 0.5).toFixed(2),
         low24h: (currentPrice - Math.abs(change24h) * 0.5).toFixed(2),
-        volume24h: (Math.random() * 50000 + 25000).toFixed(2), // 25K-75K BTC
-        quoteVolume24h: (currentPrice * (Math.random() * 50000 + 25000)).toFixed(0), // Volume in USDT
+        volume24h: (Math.random() * 50000 + 25000).toFixed(2),
+        quoteVolume24h: (currentPrice * (Math.random() * 50000 + 25000)).toFixed(0),
         timestamp: currentTime.toISOString()
       },
       {
@@ -8141,10 +8141,132 @@ app.get('/api/market-data', async (req, res) => {
         volume24h: (Math.random() * 100000 + 50000).toFixed(2),
         quoteVolume24h: (3577.42 * (Math.random() * 100000 + 50000)).toFixed(0),
         timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'BNBUSDT',
+        price: (698.45 + (Math.random() - 0.5) * 50).toFixed(2),
+        priceChange24h: ((Math.random() - 0.5) * 30).toFixed(2),
+        priceChangePercent24h: ((Math.random() - 0.5) * 4).toFixed(2),
+        high24h: (698.45 + Math.random() * 25).toFixed(2),
+        low24h: (698.45 - Math.random() * 25).toFixed(2),
+        volume24h: (Math.random() * 20000 + 10000).toFixed(2),
+        quoteVolume24h: (698.45 * (Math.random() * 20000 + 10000)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'SOLUSDT',
+        price: (245.67 + (Math.random() - 0.5) * 20).toFixed(2),
+        priceChange24h: ((Math.random() - 0.5) * 15).toFixed(2),
+        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
+        high24h: (245.67 + Math.random() * 10).toFixed(2),
+        low24h: (245.67 - Math.random() * 10).toFixed(2),
+        volume24h: (Math.random() * 30000 + 15000).toFixed(2),
+        quoteVolume24h: (245.67 * (Math.random() * 30000 + 15000)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'XRPUSDT',
+        price: (3.1833 + (Math.random() - 0.5) * 0.3).toFixed(4),
+        priceChange24h: ((Math.random() - 0.5) * 0.2).toFixed(4),
+        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
+        high24h: (3.1833 + Math.random() * 0.15).toFixed(4),
+        low24h: (3.1833 - Math.random() * 0.15).toFixed(4),
+        volume24h: (Math.random() * 50000000 + 25000000).toFixed(0),
+        quoteVolume24h: (3.1833 * (Math.random() * 50000000 + 25000000)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'DOGEUSDT',
+        price: (0.23878 + (Math.random() - 0.5) * 0.02).toFixed(6),
+        priceChange24h: ((Math.random() - 0.5) * 0.01).toFixed(6),
+        priceChangePercent24h: ((Math.random() - 0.5) * 4).toFixed(2),
+        high24h: (0.23878 + Math.random() * 0.01).toFixed(6),
+        low24h: (0.23878 - Math.random() * 0.01).toFixed(6),
+        volume24h: (Math.random() * 100000000 + 50000000).toFixed(0),
+        quoteVolume24h: (0.23878 * (Math.random() * 100000000 + 50000000)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'ADAUSDT',
+        price: (0.8212 + (Math.random() - 0.5) * 0.08).toFixed(4),
+        priceChange24h: ((Math.random() - 0.5) * 0.05).toFixed(4),
+        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
+        high24h: (0.8212 + Math.random() * 0.04).toFixed(4),
+        low24h: (0.8212 - Math.random() * 0.04).toFixed(4),
+        volume24h: (Math.random() * 80000000 + 40000000).toFixed(0),
+        quoteVolume24h: (0.8212 * (Math.random() * 80000000 + 40000000)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'LTCUSDT',
+        price: (112.45 + (Math.random() - 0.5) * 10).toFixed(2),
+        priceChange24h: ((Math.random() - 0.5) * 8).toFixed(2),
+        priceChangePercent24h: ((Math.random() - 0.5) * 7).toFixed(2),
+        high24h: (112.45 + Math.random() * 5).toFixed(2),
+        low24h: (112.45 - Math.random() * 5).toFixed(2),
+        volume24h: (Math.random() * 15000 + 7500).toFixed(2),
+        quoteVolume24h: (112.45 * (Math.random() * 15000 + 7500)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'LINKUSDT',
+        price: (22.34 + (Math.random() - 0.5) * 2).toFixed(2),
+        priceChange24h: ((Math.random() - 0.5) * 1.5).toFixed(2),
+        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
+        high24h: (22.34 + Math.random() * 1).toFixed(2),
+        low24h: (22.34 - Math.random() * 1).toFixed(2),
+        volume24h: (Math.random() * 25000 + 12500).toFixed(2),
+        quoteVolume24h: (22.34 * (Math.random() * 25000 + 12500)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'AVAXUSDT',
+        price: (45.67 + (Math.random() - 0.5) * 4).toFixed(2),
+        priceChange24h: ((Math.random() - 0.5) * 3).toFixed(2),
+        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
+        high24h: (45.67 + Math.random() * 2).toFixed(2),
+        low24h: (45.67 - Math.random() * 2).toFixed(2),
+        volume24h: (Math.random() * 18000 + 9000).toFixed(2),
+        quoteVolume24h: (45.67 * (Math.random() * 18000 + 9000)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'MATICUSDT',
+        price: (0.4567 + (Math.random() - 0.5) * 0.04).toFixed(4),
+        priceChange24h: ((Math.random() - 0.5) * 0.03).toFixed(4),
+        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
+        high24h: (0.4567 + Math.random() * 0.02).toFixed(4),
+        low24h: (0.4567 - Math.random() * 0.02).toFixed(4),
+        volume24h: (Math.random() * 200000000 + 100000000).toFixed(0),
+        quoteVolume24h: (0.4567 * (Math.random() * 200000000 + 100000000)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'DOTUSDT',
+        price: (8.456 + (Math.random() - 0.5) * 0.8).toFixed(3),
+        priceChange24h: ((Math.random() - 0.5) * 0.6).toFixed(3),
+        priceChangePercent24h: ((Math.random() - 0.5) * 7).toFixed(2),
+        high24h: (8.456 + Math.random() * 0.4).toFixed(3),
+        low24h: (8.456 - Math.random() * 0.4).toFixed(3),
+        volume24h: (Math.random() * 35000 + 17500).toFixed(2),
+        quoteVolume24h: (8.456 * (Math.random() * 35000 + 17500)).toFixed(0),
+        timestamp: currentTime.toISOString()
+      },
+      {
+        symbol: 'SHIBUSDT',
+        price: (0.00002345 + (Math.random() - 0.5) * 0.000002).toFixed(8),
+        priceChange24h: ((Math.random() - 0.5) * 0.000001).toFixed(8),
+        priceChangePercent24h: ((Math.random() - 0.5) * 8).toFixed(2),
+        high24h: (0.00002345 + Math.random() * 0.000001).toFixed(8),
+        low24h: (0.00002345 - Math.random() * 0.000001).toFixed(8),
+        volume24h: (Math.random() * 500000000000 + 250000000000).toFixed(0),
+        quoteVolume24h: (0.00002345 * (Math.random() * 500000000000 + 250000000000)).toFixed(0),
+        timestamp: currentTime.toISOString()
       }
     ];
 
-    console.log('📊 Returning market data:', marketData[0]);
+    console.log(`📊 Returning ${marketData.length} market data entries`);
+    console.log('📊 Symbols:', marketData.map(d => d.symbol).join(', '));
     res.json(marketData);
 
   } catch (error) {

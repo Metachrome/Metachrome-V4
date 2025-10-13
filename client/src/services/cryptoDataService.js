@@ -15,7 +15,7 @@ export const useCryptoData = () => {
       // Try internal API first (our own market data)
       try {
         console.log('🔄 Fetching from internal market data API...');
-        const internalResponse = await fetch('/api/market-data?force=true');
+        const internalResponse = await fetch('/api/market-data');
 
         if (internalResponse.ok) {
           const internalData = await internalResponse.json();
