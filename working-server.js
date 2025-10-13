@@ -5111,6 +5111,39 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
       });
 
       console.log(`📡 Trade completion broadcasted to ${broadcastCount} clients`);
+
+    // BULLETPROOF: Also trigger client-side notification directly
+    console.log('🔔 BULLETPROOF: Triggering client-side notification via global function');
+    if (global.wss) {
+      const directNotificationMessage = {
+        type: 'trigger_mobile_notification',
+        data: {
+          tradeId: tradeId,
+          userId: userId,
+          direction: trade.direction || 'up',
+          amount: tradeAmount,
+          entryPrice: trade.entry_price || trade.entryPrice || 50000,
+          currentPrice: exitPrice,
+          status: finalWon ? 'won' : 'lost',
+          payout: finalWon ? payout : 0,
+          profitPercentage: finalWon ? (duration === 30 ? 10 : 15) : 0,
+          symbol: trade.symbol || 'BTC/USDT',
+          duration: duration || 30
+        }
+      };
+
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(directNotificationMessage));
+          } catch (error) {
+            console.error('❌ Failed to send direct notification trigger:', error);
+          }
+        }
+      });
+
+      console.log('🔔 BULLETPROOF: Direct notification trigger sent');
+    }
     }
 
     console.log(`🏁 ✅ DIRECT COMPLETION SUCCESS: Trade ${tradeId} completed as ${finalWon ? 'WIN' : 'LOSE'}`);

@@ -741,6 +741,31 @@ function OptionsPageContent({
   // Handle WebSocket trade completion notifications for reliable notifications
   useEffect(() => {
     console.log('🔍 WEBSOCKET DEBUG: Checking message:', lastMessage?.type, 'userId match:', lastMessage?.data?.userId === user?.id);
+
+    // BULLETPROOF: Handle direct notification trigger
+    if (lastMessage?.type === 'trigger_mobile_notification' && lastMessage.data?.userId === user?.id) {
+      console.log('🔔 BULLETPROOF: Direct notification trigger received:', lastMessage.data);
+
+      const tradeData = lastMessage.data;
+      const testTrade: ActiveTrade = {
+        id: tradeData.tradeId,
+        direction: tradeData.direction,
+        amount: tradeData.amount,
+        entryPrice: tradeData.entryPrice,
+        currentPrice: tradeData.currentPrice,
+        status: tradeData.status,
+        payout: tradeData.payout,
+        profitPercentage: tradeData.profitPercentage,
+        symbol: tradeData.symbol,
+        duration: tradeData.duration,
+        profit: tradeData.status === 'won' ? (tradeData.payout - tradeData.amount) : -tradeData.amount
+      };
+
+      console.log('🔔 BULLETPROOF: Triggering notification with trade data:', testTrade);
+      triggerNotification(testTrade);
+      return;
+    }
+
     if (lastMessage?.type === 'trade_completed' && lastMessage.data?.userId === user?.id) {
       console.log('🎯 WEBSOCKET: Trade completion notification received:', lastMessage.data);
 
