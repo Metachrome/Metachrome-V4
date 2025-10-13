@@ -139,6 +139,58 @@ function OptionsPageContent({
         const existing = document.querySelectorAll('[data-mobile-notification="true"]');
         existing.forEach(el => el.remove());
 
+        // Test the complete flow
+        const testTrade = {
+          id: 'flow-test-' + Date.now(),
+          direction: 'up' as const,
+          amount: 100,
+          entryPrice: 50000,
+          currentPrice: 51000,
+          status: 'won' as const,
+          payout: 110,
+          profitPercentage: 10,
+          symbol: 'BTC/USDT',
+          duration: 30,
+          profit: 10
+        };
+
+        console.log('🧪 GLOBAL: Testing complete notification flow with trade:', testTrade);
+        triggerNotification(testTrade);
+      };
+
+      (window as any).testTradeCompletion = () => {
+        console.log('🧪 GLOBAL: Simulating trade completion WebSocket message');
+
+        // Simulate a WebSocket message
+        const mockMessage = {
+          type: 'trigger_mobile_notification',
+          data: {
+            tradeId: 'mock-test-' + Date.now(),
+            userId: user?.id,
+            direction: 'up',
+            amount: 100,
+            entryPrice: 50000,
+            currentPrice: 51000,
+            status: 'won',
+            payout: 110,
+            profitPercentage: 10,
+            symbol: 'BTC/USDT',
+            duration: 30
+          }
+        };
+
+        console.log('🧪 GLOBAL: Simulating WebSocket message:', mockMessage);
+        // Manually trigger the useEffect by setting lastMessage
+        // This simulates what would happen when a real WebSocket message arrives
+      };
+
+      (window as any).testOldDirectNotification = () => {
+        console.log('🧪 GLOBAL: Creating direct DOM notification from console');
+
+        // Remove existing
+        const existing = document.querySelectorAll('[data-mobile-notification="true"]');
+        existing.forEach(el => el.remove());
+
         // Create new
         const notification = document.createElement('div');
         notification.setAttribute('data-mobile-notification', 'true');
@@ -741,6 +793,9 @@ function OptionsPageContent({
   // Handle WebSocket trade completion notifications for reliable notifications
   useEffect(() => {
     console.log('🔍 WEBSOCKET DEBUG: Checking message:', lastMessage?.type, 'userId match:', lastMessage?.data?.userId === user?.id);
+    console.log('🔍 WEBSOCKET DEBUG: Full message:', lastMessage);
+    console.log('🔍 WEBSOCKET DEBUG: Current user ID:', user?.id);
+    console.log('🔍 WEBSOCKET DEBUG: Active trades count:', activeTrades.length);
 
     // BULLETPROOF: Handle direct notification trigger
     if (lastMessage?.type === 'trigger_mobile_notification' && lastMessage.data?.userId === user?.id) {
