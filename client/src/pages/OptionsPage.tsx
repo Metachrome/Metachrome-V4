@@ -180,6 +180,48 @@ function OptionsPageContent({
         }
       };
 
+      // SIMULATE WEBSOCKET MESSAGE DIRECTLY
+      (window as any).simulateTradeCompleted = () => {
+        console.log('🎭 SIMULATE: Creating fake trade_completed message');
+
+        const fakeMessage = {
+          type: 'trade_completed',
+          data: {
+            tradeId: 'simulate-' + Date.now(),
+            userId: user?.id,
+            result: 'win',
+            exitPrice: 50000,
+            profitAmount: 10,
+            newBalance: 1000,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        console.log('🎭 SIMULATE: Fake message created:', fakeMessage);
+
+        // Manually trigger the WebSocket effect by setting lastMessage
+        // This simulates what would happen if the server sent this message
+        console.log('🎭 SIMULATE: This would trigger the notification if WebSocket was working');
+
+        // Create a test trade directly
+        const simulatedTrade: ActiveTrade = {
+          id: fakeMessage.data.tradeId,
+          symbol: 'BTC/USDT',
+          direction: 'up',
+          amount: 100,
+          entryPrice: 49000,
+          currentPrice: fakeMessage.data.exitPrice,
+          status: fakeMessage.data.result === 'win' ? 'won' : 'lost',
+          duration: 30,
+          profitPercentage: 10,
+          payout: fakeMessage.data.result === 'win' ? 110 : 0,
+          profit: fakeMessage.data.profitAmount
+        };
+
+        console.log('🎭 SIMULATE: Triggering notification with simulated trade:', simulatedTrade);
+        triggerNotification(simulatedTrade);
+      };
+
       (window as any).testDirectNotification = () => {
         console.log('🧪 GLOBAL: Creating direct DOM notification from console');
 
