@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useIsMobile } from '../hooks/use-mobile';
-import { showMobileTradeNotification, removeMobileNotification } from '../utils/mobileNotification.js';
+import { showMobileTradeNotification, removeMobileNotification } from '../utils/mobileNotification';
+
+// Debug: Verify import is working
+console.log('🔧 DEBUG: TradeNotification component loaded, bulletproof functions available:', {
+  showMobileTradeNotification: typeof showMobileTradeNotification,
+  removeMobileNotification: typeof removeMobileNotification
+});
 
 interface TradeNotificationProps {
   trade: {

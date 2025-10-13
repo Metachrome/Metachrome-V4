@@ -1,9 +1,21 @@
 // BULLETPROOF MOBILE NOTIFICATION SYSTEM
 // This bypasses all React/CSS conflicts and works directly with the DOM
 
-let currentNotification = null;
+let currentNotification: HTMLElement | null = null;
 
-export function showMobileTradeNotification(trade) {
+interface Trade {
+  id: string;
+  direction: 'up' | 'down';
+  amount: number;
+  entryPrice?: number;
+  currentPrice?: number;
+  status: 'won' | 'lost';
+  profitPercentage: number;
+  symbol?: string;
+  duration?: number;
+}
+
+export function showMobileTradeNotification(trade: Trade): HTMLElement {
   console.log('🚀 BULLETPROOF: Creating mobile notification for trade:', trade);
   
   // Remove any existing notifications
@@ -19,7 +31,7 @@ export function showMobileTradeNotification(trade) {
   const pnl = isWin ? (trade.amount * trade.profitPercentage / 100) : -trade.amount;
   
   // Apply bulletproof styles that override everything
-  const containerStyles = {
+  const containerStyles: Record<string, string> = {
     position: 'fixed',
     top: '0',
     left: '0',
@@ -53,7 +65,7 @@ export function showMobileTradeNotification(trade) {
   
   // Create the notification card
   const card = document.createElement('div');
-  const cardStyles = {
+  const cardStyles: Record<string, string> = {
     backgroundColor: '#1a1b3a',
     borderRadius: '16px',
     padding: '20px',
@@ -153,11 +165,13 @@ export function showMobileTradeNotification(trade) {
   container.appendChild(card);
   
   // Add event listeners
-  const closeBtn = card.querySelector('#close-notification-btn');
-  closeBtn.addEventListener('click', function() {
-    removeMobileNotification();
-    console.log('✅ BULLETPROOF: Notification closed via button');
-  });
+  const closeBtn = card.querySelector('#close-notification-btn') as HTMLButtonElement;
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      removeMobileNotification();
+      console.log('✅ BULLETPROOF: Notification closed via button');
+    });
+  }
   
   // Click outside to close
   container.addEventListener('click', function(e) {
@@ -184,7 +198,7 @@ export function showMobileTradeNotification(trade) {
   return container;
 }
 
-export function removeMobileNotification() {
+export function removeMobileNotification(): void {
   if (currentNotification && currentNotification.parentNode) {
     currentNotification.parentNode.removeChild(currentNotification);
     console.log('🗑️ BULLETPROOF: Removed existing notification');
@@ -202,11 +216,17 @@ export function removeMobileNotification() {
 }
 
 // Global test function
+declare global {
+  interface Window {
+    testBulletproofMobileNotification: () => void;
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.testBulletproofMobileNotification = function() {
     console.log('🧪 BULLETPROOF TEST: Creating test notification...');
     
-    const testTrade = {
+    const testTrade: Trade = {
       id: 'test-bulletproof',
       symbol: 'BTC/USDT',
       direction: 'up',
