@@ -20,17 +20,17 @@ export function MobileHero() {
             src={heroMobileImage}
             alt="METACHROME Hero Banner"
             className="w-full h-auto object-cover"
-            style={{ maxHeight: '300px' }}
+            style={{ maxHeight: '280px' }}
             onError={(e) => {
               // Fallback to a solid background if image fails
               e.currentTarget.style.display = 'none';
               e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-              e.currentTarget.parentElement!.style.minHeight = '300px';
+              e.currentTarget.parentElement!.style.minHeight = '280px';
             }}
           />
 
-          {/* Mobile Start Trading Button Overlay - Moved further down */}
-          <div className="absolute bottom-8 left-4 z-20">
+          {/* Mobile Start Trading Button Overlay - Positioned to minimize space below */}
+          <div className="absolute bottom-6 left-4 z-20">
             <Button
               onClick={handleStartTrading}
               className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-2.5 rounded-lg text-base font-semibold border-0 shadow-lg"

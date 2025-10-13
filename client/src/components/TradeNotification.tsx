@@ -29,100 +29,141 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
   console.log('Mobile notification rendering:', { trade, isWin, pnl });
 
   return (
-    <div 
-      style={{ 
+    <div
+      style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
         zIndex: 99999,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '12px'
+        padding: '16px'
       }}
     >
-      <div 
+      <div
         style={{
-          backgroundColor: '#1f2937',
-          borderRadius: '12px',
-          padding: '16px',
-          maxWidth: '280px',
+          backgroundColor: '#1a1b3a',
+          borderRadius: '16px',
+          padding: '20px',
+          maxWidth: '320px',
           width: '100%',
-          border: '1px solid #4b5563',
-          color: 'white'
+          border: isWin ? '2px solid #10b981' : '2px solid #ef4444',
+          color: 'white',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 'bold' }}>{trade.symbol || 'BTC/USDT'}</h3>
-          <button 
-            onClick={onClose}
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: '#9ca3af', 
-              fontSize: '18px', 
-              cursor: 'pointer',
-              padding: '4px'
-            }}
-          >
-            ×
-          </button>
-        </div>
-
+        {/* Header with Trade Result */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <div style={{ 
-            fontSize: '24px', 
-            fontWeight: 'bold', 
+          <div style={{
+            fontSize: '20px',
+            fontWeight: 'bold',
             color: isWin ? '#10b981' : '#ef4444',
-            marginBottom: '4px'
+            marginBottom: '8px'
           }}>
-            {isWin ? '+' : ''}{pnl.toFixed(0)} <span style={{ fontSize: '14px', color: '#9ca3af' }}>USDT</span>
+            {isWin ? 'Trade Won!' : 'Trade Lost!'}
           </div>
           <div style={{ fontSize: '12px', color: '#9ca3af' }}>
-            Settlement completed
+            Market: {trade.symbol || 'BTC/USDT'}
           </div>
         </div>
 
-        <div style={{ fontSize: '12px' }}>
+        {/* Trade Details - Exact format from image */}
+        <div style={{
+          backgroundColor: '#2a2d47',
+          borderRadius: '8px',
+          padding: '12px',
+          marginBottom: '16px',
+          border: '1px solid #3a3d5a',
+          fontSize: '12px'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#9ca3af' }}>Market:</span>
-            <span>{trade.symbol || 'BTC/USDT'}</span>
+            <span style={{ color: '#9ca3af' }}>Market :</span>
+            <span style={{ color: 'white', fontWeight: 'bold' }}>{trade.symbol || 'BTC/USDT'}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#9ca3af' }}>Trade:</span>
-            <span style={{ color: trade.direction === 'up' ? '#10b981' : '#ef4444' }}>
+            <span style={{ color: '#9ca3af' }}>Trade :</span>
+            <span style={{
+              color: trade.direction === 'up' ? '#10b981' : '#ef4444',
+              fontWeight: 'bold'
+            }}>
               {trade.direction === 'up' ? 'BUY' : 'SELL'}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#9ca3af' }}>Amount:</span>
-            <span>{trade.amount.toLocaleString()} USDT</span>
+            <span style={{ color: '#9ca3af' }}>Amount :</span>
+            <span style={{ color: 'white', fontWeight: 'bold' }}>{trade.amount.toLocaleString()} USDT (bukan pakai $)</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#9ca3af' }}>Entry Price:</span>
-            <span>{trade.entryPrice.toFixed(2)}</span>
+            <span style={{ color: '#9ca3af' }}>Entry Price :</span>
+            <span style={{ color: 'white', fontWeight: 'bold' }}>{trade.entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#9ca3af' }}>Closed Price:</span>
-            <span>{trade.finalPrice.toFixed(2)}</span>
+            <span style={{ color: '#9ca3af' }}>Closed Price :</span>
+            <span style={{ color: 'white', fontWeight: 'bold' }}>{trade.finalPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#9ca3af' }}>Duration:</span>
-            <span>{trade.duration || 30} seconds</span>
+            <span style={{ color: '#9ca3af' }}>Duration :</span>
+            <span style={{ color: 'white', fontWeight: 'bold' }}>{trade.duration || 30} seconds</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ color: '#9ca3af' }}>Profit:</span>
-            <span style={{ color: isWin ? '#10b981' : '#ef4444' }}>
-              {isWin ? '+' + pnl.toFixed(0) : pnl.toFixed(0)}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#9ca3af' }}>Profit :</span>
+            <span style={{
+              color: isWin ? '#10b981' : '#ef4444',
+              fontWeight: 'bold'
+            }}>
+              {isWin ? '+' : ''}{pnl.toFixed(0)}
             </span>
           </div>
         </div>
 
-        <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '8px' }}>
+        {/* Note about payout */}
+        <div style={{
+          fontSize: '10px',
+          color: '#9ca3af',
+          marginBottom: '16px',
+          textAlign: 'center',
+          fontStyle: 'italic'
+        }}>
           Pay out nya di hilangkan aja.
+        </div>
+
+        {/* Close Button */}
+        <div style={{ textAlign: 'center' }}>
+          <button
+            onClick={onClose}
+            style={{
+              backgroundColor: '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              width: '100%',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#059669';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = '#10b981';
+            }}
+          >
+            Close Notification
+          </button>
+          <div style={{
+            fontSize: '10px',
+            color: '#6b7280',
+            marginTop: '8px',
+            textAlign: 'center'
+          }}>
+            Click anywhere outside to close
+          </div>
         </div>
       </div>
     </div>

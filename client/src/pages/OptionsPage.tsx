@@ -1142,13 +1142,13 @@ function OptionsPageContent({
         <div className="min-h-screen bg-[#10121E] text-white pb-20">
           <Navigation />
 
-          {/* Mobile Header - Using TradingView Price */}
-          <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700 sticky top-0 z-40">
+          {/* Mobile Header - Using TradingView Price - Reduced spacing */}
+          <div className="bg-[#10121E] px-4 py-1 border-b border-gray-700 sticky top-0 z-40">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
-                <div className="text-white text-xl font-bold">{displayPrice.toFixed(2)} USDT</div>
-                <div className={`text-sm font-semibold ${changeColor}`}>
+                <div className="text-white font-bold text-base">{currentPairData.symbol}</div>
+                <div className="text-white text-lg font-bold">{displayPrice.toFixed(2)} USDT</div>
+                <div className={`text-xs font-semibold ${changeColor}`}>
                   {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
               </div>
@@ -1160,10 +1160,8 @@ function OptionsPageContent({
               </div>
             </div>
 
-
-
-            {/* Mobile Market Stats */}
-            <div className="grid grid-cols-4 gap-2 mt-3 text-xs">
+            {/* Mobile Market Stats - Reduced spacing */}
+            <div className="grid grid-cols-4 gap-2 mt-2 text-xs">
               <div className="text-center">
                 <div className="text-gray-400">24h High</div>
                 <div className="text-white font-medium">{btcMarketData?.high24h || '119,558'}</div>
@@ -1187,8 +1185,8 @@ function OptionsPageContent({
             </div>
           </div>
 
-          {/* Mobile Symbol Selector */}
-          <div className="bg-gray-800/50 px-4 py-3 border-b border-gray-600">
+          {/* Mobile Symbol Selector - Reduced spacing */}
+          <div className="bg-gray-800/50 px-4 py-2 border-b border-gray-600">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-300">Symbol:</span>
               <select
@@ -1198,7 +1196,7 @@ function OptionsPageContent({
                   setSelectedSymbol(newSymbol);
                   handleTradingViewSymbolChange(newSymbol);
                 }}
-                className="bg-gray-700 text-white text-sm font-medium rounded-md px-3 py-2 border border-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="bg-gray-700 text-white text-sm font-medium rounded-md px-3 py-1.5 border border-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="BTCUSDT">BTC/USDT</option>
                 <option value="ETHUSDT">ETH/USDT</option>
@@ -1223,8 +1221,8 @@ function OptionsPageContent({
             </div>
           </div>
 
-          {/* Mobile Chart - Full Vertical Layout - Using TradingView to avoid red line */}
-          <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '450px' }}>
+          {/* Mobile Chart - Optimized spacing and proportions */}
+          <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '380px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
@@ -1234,7 +1232,7 @@ function OptionsPageContent({
                 <TradingViewWidget
                   type="chart"
                   symbol={`BINANCE:${selectedSymbol}`}
-                  height={450}
+                  height={380}
                   interval="1"
                   theme="dark"
                   container_id="options_mobile_tradingview_chart"
@@ -1248,12 +1246,12 @@ function OptionsPageContent({
           <div className="bg-[#10121E] min-h-screen flex">
             {/* Mobile Left Panel - Order Book & Price Data */}
             <div className="w-1/2 border-r border-gray-700">
-              {/* Price Header */}
-              <div className="p-3 border-b border-gray-700">
-                <div className="flex items-center justify-between mb-2">
+              {/* Price Header - Reduced spacing */}
+              <div className="p-2 border-b border-gray-700">
+                <div className="flex items-center justify-between mb-1">
                   <div className="text-white font-bold text-sm">{currentPairData.symbol}</div>
                   <div className="text-right">
-                    <div className="font-bold text-white text-base">
+                    <div className="font-bold text-white text-sm">
                       {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
                     </div>
                     <div className={`text-xs ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
@@ -1263,8 +1261,8 @@ function OptionsPageContent({
                 </div>
               </div>
 
-              {/* Order Book Headers */}
-              <div className="grid grid-cols-3 gap-1 p-2 text-xs text-gray-400 border-b border-gray-700">
+              {/* Order Book Headers - Reduced spacing */}
+              <div className="grid grid-cols-3 gap-1 p-1.5 text-xs text-gray-400 border-b border-gray-700">
                 <span>Price</span>
                 <span>Volume</span>
                 <span>Total</span>
@@ -1453,38 +1451,38 @@ function OptionsPageContent({
             </div>
           </div>
 
-          {/* Mobile Options Trading Interface */}
-          <div className="px-4 py-3 space-y-3 bg-[#10121E]">
-            {/* Balance Display - Using TradingView Price */}
-            <div className="bg-gray-800 rounded-lg p-3">
+          {/* Mobile Options Trading Interface - Reduced spacing */}
+          <div className="px-3 py-2 space-y-2 bg-[#10121E]">
+            {/* Balance Display - Using TradingView Price - Compact */}
+            <div className="bg-gray-800 rounded-lg p-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-gray-400 text-sm">Current Price:</span>
+                  <span className="text-gray-400 text-xs">Current Price:</span>
                   <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+                    <div className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
                     <span className="text-xs text-gray-500">
                       {connected ? 'Live' : 'Offline'}
                     </span>
                   </div>
                 </div>
-                <span className="text-white font-bold text-base">
+                <span className="text-white font-bold text-sm">
                   {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
                 </span>
               </div>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-gray-400 text-sm">Balance:</span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-gray-400 text-xs">Balance:</span>
                 {user ? (
-                  <span className="text-green-400 font-bold text-base">{balance.toFixed(2)} USDT</span>
+                  <span className="text-green-400 font-bold text-sm">{balance.toFixed(2)} USDT</span>
                 ) : (
-                  <span className="text-yellow-400 font-bold text-sm">Sign in required</span>
+                  <span className="text-yellow-400 font-bold text-xs">Sign in required</span>
                 )}
               </div>
             </div>
 
-            {/* Duration Selection - All 8 options with profit percentages */}
+            {/* Duration Selection - Compact layout */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Duration & Profit</label>
-              <div className="grid grid-cols-4 gap-1.5">
+              <label className="block text-xs font-medium text-gray-400 mb-1">Duration & Profit</label>
+              <div className="grid grid-cols-4 gap-1">
                 {[
                   { duration: '30s', profit: '10%' },
                   { duration: '60s', profit: '15%' },
@@ -1504,7 +1502,7 @@ function OptionsPageContent({
                         setSelectedAmount(minAmount);
                       }
                     }}
-                    className={`py-1.5 px-1 rounded text-center transition-colors ${
+                    className={`py-1 px-1 rounded text-center transition-colors ${
                       selectedDuration === option.duration
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -1512,23 +1510,23 @@ function OptionsPageContent({
                     disabled={isTrading}
                   >
                     <div className="text-xs font-medium">{option.duration}</div>
-                    <div className="text-[10px] text-green-400">{option.profit}</div>
+                    <div className="text-[9px] text-green-400">{option.profit}</div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Amount Selection - More options */}
+            {/* Amount Selection - Compact layout */}
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">
+              <label className="block text-xs font-medium text-gray-400 mb-1">
                 Amount (USDT) - Min: {getMinimumAmount(selectedDuration).toLocaleString()}
               </label>
-              <div className="grid grid-cols-3 gap-1.5 mb-2">
+              <div className="grid grid-cols-3 gap-1 mb-1.5">
                 {[100, 500, 1000, 2000].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
-                    className={`py-1.5 px-2 rounded text-xs font-medium transition-colors ${
+                    className={`py-1 px-2 rounded text-xs font-medium transition-colors ${
                       selectedAmount === amount
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -1540,13 +1538,13 @@ function OptionsPageContent({
                 ))}
               </div>
 
-              {/* Max Button */}
+              {/* Max Button - Compact */}
               <button
                 onClick={() => {
                   const maxAmount = Math.floor(balance) || 0;
                   setSelectedAmount(maxAmount);
                 }}
-                className={`w-full py-1.5 px-2 rounded text-xs font-medium transition-colors mb-2 ${
+                className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors mb-1.5 ${
                   selectedAmount === Math.floor(balance || 0)
                     ? 'bg-purple-600 text-white'
                     : 'bg-gray-800 text-gray-400 hover:text-white'
@@ -1556,7 +1554,7 @@ function OptionsPageContent({
                 Max ({Math.floor(balance || 0)} USDT)
               </button>
 
-              {/* Custom Amount Input - FULLY WRITABLE */}
+              {/* Custom Amount Input - Compact */}
               <input
                 type="text"
                 inputMode="numeric"
@@ -1576,58 +1574,58 @@ function OptionsPageContent({
                     setSelectedAmount(Math.floor(balance || 0));
                   }
                 }}
-                className="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-white text-xs focus:border-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder={`Enter amount (Min: 100, Max: ${Math.floor(balance || 0)})`}
               />
             </div>
 
-            {/* Login to Trade Message for Non-Logged Users */}
+            {/* Login to Trade Message - Compact */}
             {!user && (
-              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-4 mb-4 text-center">
-                <div className="text-white font-bold text-lg mb-2">🔒 Login to Trade</div>
-                <div className="text-white/80 text-sm mb-3">
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-3 mb-2 text-center">
+                <div className="text-white font-bold text-base mb-1">🔒 Login to Trade</div>
+                <div className="text-white/80 text-xs mb-2">
                   Sign in to start options trading and earn up to 15% profit
                 </div>
                 <a
                   href="/login"
-                  className="inline-block bg-white text-purple-600 font-bold py-2 px-6 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="inline-block bg-white text-purple-600 font-bold py-1.5 px-4 rounded-lg hover:bg-gray-100 transition-colors text-sm"
                 >
                   Login Now
                 </a>
               </div>
             )}
 
-            {/* UP/DOWN Buttons - VERIFICATION ENABLED (Bypass for superadmin) */}
+            {/* UP/DOWN Buttons - Compact layout */}
             {(!user?.verificationStatus || user?.verificationStatus === 'unverified') && user?.role !== 'super_admin' ? (
-              <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-4 mb-4">
+              <div className="bg-yellow-900/50 border border-yellow-600/50 rounded-lg p-3 mb-2">
                 <div className="text-center">
-                  <div className="text-yellow-100 font-semibold mb-2">🔒 Verification Required</div>
-                  <div className="text-yellow-200 text-sm mb-3">
+                  <div className="text-yellow-100 font-semibold mb-1 text-sm">🔒 Verification Required</div>
+                  <div className="text-yellow-200 text-xs mb-2">
                     Upload your verification documents to start trading
                   </div>
-                  <a href="/profile" className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm">
+                  <a href="/profile" className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs">
                     Upload Documents
                   </a>
                 </div>
               </div>
             ) : user?.verificationStatus === 'pending' ? (
-              <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-4 mb-4">
+              <div className="bg-blue-900/50 border border-blue-600/50 rounded-lg p-3 mb-2">
                 <div className="text-center">
-                  <div className="text-blue-100 font-semibold mb-2">⏳ Verification Pending</div>
-                  <div className="text-blue-200 text-sm">
+                  <div className="text-blue-100 font-semibold mb-1 text-sm">⏳ Verification Pending</div>
+                  <div className="text-blue-200 text-xs">
                     Your documents are being reviewed. Trading will be enabled once approved.
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => handleTrade('up')}
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
-                  className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 rounded font-medium text-lg transition-colors relative"
+                  className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium text-base transition-colors relative"
                 >
                   <div>Buy Up</div>
-                  <div className="text-xs mt-1">
+                  <div className="text-xs mt-0.5">
                     Profit: {getProfitPercentage(selectedDuration)}% •
                     Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
                   </div>
@@ -1635,10 +1633,10 @@ function OptionsPageContent({
                 <button
                   onClick={() => handleTrade('down')}
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
-                  className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 rounded font-medium text-lg transition-colors relative"
+                  className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium text-base transition-colors relative"
                 >
                   <div>Buy Down</div>
-                  <div className="text-xs mt-1">
+                  <div className="text-xs mt-0.5">
                     Profit: {getProfitPercentage(selectedDuration)}% •
                     Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
                   </div>

@@ -405,75 +405,127 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-900 pt-20 pb-24 md:pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Profile Settings</h1>
-          <p className="text-gray-400">Manage your account information and preferences</p>
+        {/* Header - Mobile optimized */}
+        <div className={`mb-6 ${isMobile ? 'mb-4' : 'mb-8'}`}>
+          <h1 className={`font-bold text-white mb-2 ${isMobile ? 'text-2xl' : 'text-3xl'}`}>Profile Settings</h1>
+          <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Manage your account information and preferences</p>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-800 border-gray-700">
-            <TabsTrigger value="profile" className="data-[state=active]:bg-gray-700">
-              Profile Information
+          {/* Mobile-optimized TabsList */}
+          <TabsList className={`grid w-full bg-gray-800 border-gray-700 ${
+            isMobile
+              ? 'grid-cols-2 gap-1 p-1'
+              : 'grid-cols-5'
+          }`}>
+            <TabsTrigger
+              value="profile"
+              className={`data-[state=active]:bg-gray-700 ${
+                isMobile
+                  ? 'text-xs px-2 py-2'
+                  : ''
+              }`}
+            >
+              {isMobile ? 'Profile' : 'Profile Information'}
             </TabsTrigger>
-            <TabsTrigger value="verification" className="data-[state=active]:bg-gray-700">
-              Verification
+            <TabsTrigger
+              value="verification"
+              className={`data-[state=active]:bg-gray-700 ${
+                isMobile
+                  ? 'text-xs px-2 py-2'
+                  : ''
+              }`}
+            >
+              {isMobile ? 'Verify' : 'Verification'}
             </TabsTrigger>
-            <TabsTrigger value="redeem" className="data-[state=active]:bg-gray-700">
-              Redeem Codes
-            </TabsTrigger>
-            <TabsTrigger value="security" className="data-[state=active]:bg-gray-700">
-              Security
-            </TabsTrigger>
-            <TabsTrigger value="account" className="data-[state=active]:bg-gray-700">
-              Account Details
-            </TabsTrigger>
+            {!isMobile && (
+              <>
+                <TabsTrigger value="redeem" className="data-[state=active]:bg-gray-700">
+                  Redeem Codes
+                </TabsTrigger>
+                <TabsTrigger value="security" className="data-[state=active]:bg-gray-700">
+                  Security
+                </TabsTrigger>
+                <TabsTrigger value="account" className="data-[state=active]:bg-gray-700">
+                  Account Details
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
+
+          {/* Mobile: Second row of tabs */}
+          {isMobile && (
+            <TabsList className="grid w-full grid-cols-3 gap-1 p-1 bg-gray-800 border-gray-700 -mt-4">
+              <TabsTrigger
+                value="redeem"
+                className="data-[state=active]:bg-gray-700 text-xs px-2 py-2"
+              >
+                Redeem
+              </TabsTrigger>
+              <TabsTrigger
+                value="security"
+                className="data-[state=active]:bg-gray-700 text-xs px-2 py-2"
+              >
+                Security
+              </TabsTrigger>
+              <TabsTrigger
+                value="account"
+                className="data-[state=active]:bg-gray-700 text-xs px-2 py-2"
+              >
+                Account
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           {/* Profile Information Tab */}
           <TabsContent value="profile">
             <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-white">Profile Information</CardTitle>
-                    <CardDescription className="text-gray-400">
+              <CardHeader className={isMobile ? "p-4" : ""}>
+                <div className={`flex items-center justify-between ${isMobile ? 'flex-col space-y-3' : ''}`}>
+                  <div className={isMobile ? 'text-center' : ''}>
+                    <CardTitle className={`text-white ${isMobile ? 'text-lg' : ''}`}>Profile Information</CardTitle>
+                    <CardDescription className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>
                       Update your personal information and contact details
                     </CardDescription>
                   </div>
                   <Button
                     variant={isEditing ? "outline" : "default"}
                     onClick={() => setIsEditing(!isEditing)}
-                    className={isEditing ? "border-gray-600" : ""}
+                    className={`${isEditing ? "border-gray-600" : ""} ${isMobile ? 'w-full' : ''}`}
+                    size={isMobile ? "sm" : "default"}
                   >
                     <Settings className="w-4 h-4 mr-2" />
                     {isEditing ? "Cancel" : "Edit Profile"}
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Profile Picture Section */}
-                <div className="flex items-center space-x-4">
+              <CardContent className={`space-y-6 ${isMobile ? 'p-4' : ''}`}>
+                {/* Profile Picture Section - Mobile optimized */}
+                <div className={`flex items-center ${isMobile ? 'flex-col text-center space-y-3' : 'space-x-4'}`}>
                   <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                      <User className="w-8 h-8 text-white" />
+                    <div className={`bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center ${
+                      isMobile ? 'w-16 h-16' : 'w-20 h-20'
+                    }`}>
+                      <User className={`text-white ${isMobile ? 'w-6 h-6' : 'w-8 h-8'}`} />
                     </div>
                     {isEditing && (
                       <Button
                         size="sm"
-                        className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                        className={`absolute -bottom-2 -right-2 rounded-full p-0 ${
+                          isMobile ? 'h-6 w-6' : 'h-8 w-8'
+                        }`}
                         disabled
                       >
-                        <Camera className="w-4 h-4" />
+                        <Camera className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                       </Button>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className={`font-semibold text-white ${isMobile ? 'text-base' : 'text-lg'}`}>
                       {user?.firstName} {user?.lastName}
                     </h3>
-                    <p className="text-gray-400">@{user?.username}</p>
-                    <Badge variant="secondary" className="mt-1">
+                    <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>@{user?.username}</p>
+                    <Badge variant="secondary" className={`mt-1 ${isMobile ? 'text-xs' : ''}`}>
                       {user?.role === 'admin' ? 'Administrator' : 'User'}
                     </Badge>
                   </div>
@@ -481,8 +533,8 @@ export default function ProfilePage() {
 
                 <Separator className="bg-gray-700" />
 
-                {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Form Fields - Mobile optimized */}
+                <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
                   <div className="space-y-2">
                     <Label htmlFor="username" className="text-gray-300">Username</Label>
                     <Input

@@ -87,16 +87,16 @@ export default function HomePage() {
         {/* Mobile Hero Section */}
         <MobileHero />
 
-        {/* TradingView Ticker Section - Mobile */}
-        <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-y border-blue-500/30 relative py-2">
+        {/* TradingView Ticker Section - Mobile - Reduced spacing */}
+        <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-y border-blue-500/30 relative py-1">
           <div className="w-full">
             <TradingViewWidget type="ticker" />
           </div>
         </section>
 
         {/* Currency List Section - Mobile */}
-        <section className="px-4 py-8">
-          <div className="mb-6">
+        <section className="px-4 py-4">
+          <div className="mb-4">
             <h2 className="text-xl font-bold text-white mb-2">Currency List</h2>
             <p className="text-gray-400 text-sm">Real-time market data • 24h Changes</p>
             {loading && <p className="text-blue-400 text-sm mt-2">Loading real-time data...</p>}
