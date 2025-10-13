@@ -6,6 +6,7 @@ interface WebSocketMessage {
 }
 
 export function useWebSocket() {
+  console.log('🚀 WEBSOCKET HOOK: useWebSocket() called - hook is being used!');
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
@@ -138,6 +139,7 @@ export function useWebSocket() {
 
   // Connect on mount
   useEffect(() => {
+    console.log('🚀 WEBSOCKET HOOK: useEffect triggered - attempting to connect...');
     connect();
 
     // Cleanup on unmount
