@@ -17,6 +17,7 @@ export function useWebSocket() {
     try {
       console.log('🔌 WEBSOCKET DEBUG: Starting connection attempt...');
       console.log('🔌 WEBSOCKET DEBUG: Current location:', window.location.hostname, window.location.port);
+      console.log('🔌 WEBSOCKET DEBUG: Full URL:', window.location.href);
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
@@ -49,7 +50,9 @@ export function useWebSocket() {
       }
 
       console.log('🔌 WEBSOCKET DEBUG: Attempting to connect to:', wsUrl);
+      console.log('🔌 WEBSOCKET DEBUG: Creating WebSocket instance...');
       const ws = new WebSocket(wsUrl);
+      console.log('🔌 WEBSOCKET DEBUG: WebSocket instance created:', ws);
 
       ws.onopen = () => {
         console.log("🔌 WEBSOCKET DEBUG: WebSocket connected successfully!");
