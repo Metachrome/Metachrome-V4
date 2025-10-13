@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useIsMobile } from '../hooks/use-mobile';
 
 interface TradeNotificationProps {
@@ -17,31 +18,54 @@ interface TradeNotificationProps {
   onClose: () => void;
 }
 
-// MOBILE NOTIFICATION COMPONENT
+// MOBILE NOTIFICATION COMPONENT - ENHANCED FOR GUARANTEED VISIBILITY
 const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   if (!trade) return null;
 
   const isWin = trade.status === 'won';
-  const pnl = isWin ? 
-    (trade.amount * trade.profitPercentage / 100) : 
+  const pnl = isWin ?
+    (trade.amount * trade.profitPercentage / 100) :
     -trade.amount;
 
-  console.log('Mobile notification rendering:', { trade, isWin, pnl });
+  console.log('🔔 MOBILE NOTIFICATION: Rendering mobile notification', { trade, isWin, pnl });
 
-  return (
+  // Auto-close after 25 seconds (longer, stickier as requested)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      console.log('🔔 MOBILE NOTIFICATION: Auto-closing after 25s');
+      onClose();
+    }, 25000);
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  // Create portal to ensure it renders at the top level
+  const notificationElement = (
     <div
+      data-mobile-notification="true"
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 99999,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        zIndex: 2147483647, // Maximum z-index value
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px'
+        padding: '16px',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        visibility: 'visible',
+        opacity: 1,
+        pointerEvents: 'auto'
+      }}
+      onClick={(e) => {
+        // Close when clicking outside the modal
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
       }}
     >
       <div
@@ -53,8 +77,13 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
           width: '100%',
           border: isWin ? '2px solid #10b981' : '2px solid #ef4444',
           color: 'white',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)'
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+          position: 'relative',
+          animation: 'slideInUp 0.3s ease-out',
+          transform: 'translateY(0)',
+          pointerEvents: 'auto'
         }}
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
       >
         {/* Header with Trade Result */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
@@ -168,6 +197,14 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
       </div>
     </div>
   );
+
+  // Use React Portal to render at document body level
+  if (typeof document !== 'undefined') {
+    const portalRoot = document.getElementById('mobile-modal-root') || document.body;
+    return ReactDOM.createPortal(notificationElement, portalRoot);
+  }
+
+  return notificationElement;
 };
 
 // DESKTOP NOTIFICATION COMPONENT
@@ -270,6 +307,15 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     }
   }, []);
 
+  // CRITICAL: Log when notification is triggered
+  useEffect(() => {
+    if (trade) {
+      console.log('🔔 TRADE NOTIFICATION: Notification triggered with trade:', trade);
+      console.log('🔔 TRADE NOTIFICATION: Current width:', currentWidth);
+      console.log('🔔 TRADE NOTIFICATION: isMobile hook:', isMobile);
+    }
+  }, [trade, currentWidth, isMobile]);
+
   const hookMobile = isMobile;
   const widthMobile = currentWidth < 768;
   const forceMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -282,22 +328,78 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   const shouldUseMobile = hookMobile || widthMobile || forceMobile || userAgentMobile;
   const forceMobileForTesting = currentWidth < 1024;
 
-  console.log('Trade notification detection:', {
+  // AGGRESSIVE MOBILE DETECTION - Force mobile on any screen < 1024px
+  const isMobileScreen = currentWidth < 1024;
+  const forceAllMobile = true; // TEMPORARY: Force all notifications to be mobile for testing
+
+  console.log('🔔 TRADE NOTIFICATION: Detection results:', {
     hookMobile,
     widthMobile,
     forceMobile,
     userAgentMobile,
     shouldUseMobile,
     forceMobileForTesting,
+    isMobileScreen,
+    forceAllMobile,
     currentWidth,
     trade: !!trade
   });
 
-  if (shouldUseMobile || forceMobileForTesting) {
-    console.log('Using MOBILE notification');
+  // FORCE MOBILE NOTIFICATION for mobile devices - GUARANTEED MOBILE DISPLAY
+  if (shouldUseMobile || forceMobileForTesting || isMobileScreen || forceAllMobile) {
+    console.log('🔔 TRADE NOTIFICATION: Using MOBILE notification (shouldUseMobile:', shouldUseMobile, 'forceMobileForTesting:', forceMobileForTesting, 'isMobileScreen:', isMobileScreen, 'forceAllMobile:', forceAllMobile, ')');
     return <MobileTradeNotification trade={trade} onClose={onClose} />;
   }
 
-  console.log('Using DESKTOP notification');
+  console.log('🔔 TRADE NOTIFICATION: Using DESKTOP notification');
   return <DesktopTradeNotification trade={trade} onClose={onClose} />;
+}
+
+// GLOBAL TEST FUNCTION - Add to window for debugging
+if (typeof window !== 'undefined') {
+  (window as any).testMobileNotification = () => {
+    console.log('🧪 TESTING: Triggering mobile notification test');
+
+    // Create a test trade object
+    const testTrade = {
+      id: 'test-' + Date.now(),
+      direction: 'up' as const,
+      amount: 100,
+      entryPrice: 50000,
+      finalPrice: 51000,
+      status: 'won' as const,
+      payout: 110,
+      profitPercentage: 10,
+      symbol: 'BTC/USDT',
+      duration: 30
+    };
+
+    // Find the notification container or create one
+    let container = document.getElementById('test-notification-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'test-notification-container';
+      document.body.appendChild(container);
+    }
+
+    // Force mobile notification
+    const MobileNotificationTest = () => {
+      return React.createElement(MobileTradeNotification, {
+        trade: testTrade,
+        onClose: () => {
+          console.log('🧪 TESTING: Test notification closed');
+          if (container) {
+            container.remove();
+          }
+        }
+      });
+    };
+
+    // Render the test notification
+    ReactDOM.render(React.createElement(MobileNotificationTest), container);
+
+    console.log('🧪 TESTING: Mobile notification test rendered');
+  };
+
+  console.log('🧪 TESTING: testMobileNotification() function available in console');
 }

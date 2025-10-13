@@ -2861,6 +2861,41 @@ function OptionsPageContent({
 
 
 
+      {/* DEBUG: Test Mobile Notification Button - REMOVE IN PRODUCTION */}
+      {process.env.NODE_ENV === 'development' && (
+        <button
+          onClick={() => {
+            console.log('🧪 DEBUG: Manual notification trigger');
+            const testTrade = {
+              id: 'manual-test-' + Date.now(),
+              direction: 'up' as const,
+              amount: 100,
+              entryPrice: 50000,
+              currentPrice: 51000,
+              status: 'won' as const,
+              payout: 110,
+              profitPercentage: 10
+            };
+            triggerNotification(testTrade);
+          }}
+          style={{
+            position: 'fixed',
+            top: '10px',
+            right: '10px',
+            zIndex: 1000,
+            backgroundColor: '#10b981',
+            color: 'white',
+            border: 'none',
+            padding: '8px 12px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            cursor: 'pointer'
+          }}
+        >
+          Test Mobile Notification
+        </button>
+      )}
+
       {/* Trade Notification */}
       {console.log('🔔 RENDER: completedTrade state:', completedTrade, 'key:', notificationKey)}
       <TradeNotification

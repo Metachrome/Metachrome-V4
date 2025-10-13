@@ -238,6 +238,58 @@ body {
   min-height: 50vh;
 }
 
+/* Mobile Notification Animations */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile Notification Specific Styles */
+[data-mobile-notification="true"] {
+  animation: fadeIn 0.3s ease-out !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* Ensure mobile notifications appear above everything */
+[data-mobile-notification="true"] * {
+  pointer-events: auto !important;
+}
+
+/* Force mobile notification to be visible on all screen sizes during testing */
+@media (max-width: 1024px) {
+  [data-mobile-notification="true"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
 /* Custom component styles */
 .btn-primary {
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
