@@ -199,6 +199,145 @@ app.get('/api/health', (req, res) => {
   res.status(200).send('OK');
 });
 
+// WebSocket test endpoint
+app.get('/test-websocket', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>WebSocket Test - METACHROME V2</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+            .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+            .connected { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+            .disconnected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+            .message { background: #e2e3e5; padding: 8px; margin: 5px 0; border-radius: 4px; font-family: monospace; }
+            button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background: #0056b3; }
+            button:disabled { background: #6c757d; cursor: not-allowed; }
+            #messages { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔌 METACHROME V2 - WebSocket Test</h1>
+
+            <div id="status" class="status disconnected">
+                ❌ WebSocket: Disconnected
+            </div>
+
+            <div>
+                <button id="connectBtn" onclick="connect()">Connect WebSocket</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+                <button id="pingBtn" onclick="sendPing()" disabled>Send Ping</button>
+                <button id="clearBtn" onclick="clearMessages()">Clear Messages</button>
+            </div>
+
+            <h3>📨 Messages</h3>
+            <div id="messages"></div>
+        </div>
+
+        <script>
+            let ws = null;
+            const statusDiv = document.getElementById('status');
+            const messagesDiv = document.getElementById('messages');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const pingBtn = document.getElementById('pingBtn');
+
+            function log(message, type = 'info') {
+                const div = document.createElement('div');
+                div.className = 'message';
+                div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + ':</strong> ' + message;
+                messagesDiv.appendChild(div);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                console.log(message);
+            }
+
+            function updateStatus(connected) {
+                if (connected) {
+                    statusDiv.className = 'status connected';
+                    statusDiv.innerHTML = '✅ WebSocket: Connected';
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    pingBtn.disabled = false;
+                } else {
+                    statusDiv.className = 'status disconnected';
+                    statusDiv.innerHTML = '❌ WebSocket: Disconnected';
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    pingBtn.disabled = true;
+                }
+            }
+
+            function connect() {
+                const wsUrl = 'ws://127.0.0.1:3005/ws';
+                log('🔌 Attempting to connect to: ' + wsUrl);
+
+                try {
+                    ws = new WebSocket(wsUrl);
+
+                    ws.onopen = function() {
+                        log('✅ WebSocket connected successfully!');
+                        updateStatus(true);
+                    };
+
+                    ws.onmessage = function(event) {
+                        try {
+                            const data = JSON.parse(event.data);
+                            log('📨 Received: ' + JSON.stringify(data, null, 2));
+                        } catch (e) {
+                            log('📨 Received (raw): ' + event.data);
+                        }
+                    };
+
+                    ws.onclose = function(event) {
+                        log('🔌 WebSocket disconnected. Code: ' + event.code + ', Reason: ' + event.reason);
+                        updateStatus(false);
+                        ws = null;
+                    };
+
+                    ws.onerror = function(error) {
+                        log('❌ WebSocket error: ' + error);
+                        updateStatus(false);
+                    };
+                } catch (error) {
+                    log('❌ Failed to create WebSocket: ' + error);
+                }
+            }
+
+            function disconnect() {
+                if (ws) {
+                    ws.close(1000, 'Manual disconnect');
+                }
+            }
+
+            function sendPing() {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    const message = { type: 'ping', timestamp: new Date().toISOString() };
+                    ws.send(JSON.stringify(message));
+                    log('🏓 Sent ping: ' + JSON.stringify(message));
+                } else {
+                    log('❌ Cannot send ping - WebSocket not connected');
+                }
+            }
+
+            function clearMessages() {
+                messagesDiv.innerHTML = '';
+            }
+
+            // Auto-connect on page load
+            window.onload = function() {
+                log('🚀 WebSocket Test Page Loaded');
+                connect();
+            };
+        </script>
+    </body>
+    </html>
+  `);
+});
+
 // Test signup endpoint
 app.get('/test-signup', (req, res) => {
   res.send(`
@@ -10494,15 +10633,17 @@ function broadcastToAdmins(message) {
 
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
-  console.log('🔌 WebSocket client connected from:', req.socket.remoteAddress);
+  console.log('🔌 ✅ WEBSOCKET CLIENT CONNECTED from:', req.socket.remoteAddress);
+  console.log('🔌 ✅ WEBSOCKET CONNECTION ESTABLISHED - Total clients:', wss.clients.size);
 
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message.toString());
-      console.log('📨 WebSocket message received:', data);
+      console.log('📨 ✅ WEBSOCKET MESSAGE RECEIVED:', data);
 
       // Handle ping/pong for keep-alive
       if (data.type === 'ping') {
+        console.log('🏓 PING received, sending PONG');
         ws.send(JSON.stringify({ type: 'pong' }));
       }
     } catch (error) {
@@ -10511,7 +10652,7 @@ wss.on('connection', (ws, req) => {
   });
 
   ws.on('close', () => {
-    console.log('🔌 WebSocket client disconnected');
+    console.log('🔌 ❌ WEBSOCKET CLIENT DISCONNECTED - Remaining clients:', wss.clients.size);
   });
 
   ws.on('error', (error) => {
@@ -10519,6 +10660,7 @@ wss.on('connection', (ws, req) => {
   });
 
   // Send welcome message
+  console.log('📤 Sending welcome message to new WebSocket client');
   ws.send(JSON.stringify({
     type: 'welcome',
     data: { message: 'Connected to METACHROME WebSocket server' }
