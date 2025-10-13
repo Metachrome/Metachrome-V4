@@ -26,7 +26,7 @@ export default function HomePage() {
   const isMobile = useIsMobile();
 
   // Use real-time cryptocurrency data
-  const { cryptoData, loading, error } = useCryptoData();
+  const { cryptoData, loading, error, retry } = useCryptoData();
 
   // Handle trade button click
   const handleTradeClick = (crypto: any, tradingType: 'spot' | 'options' = 'spot') => {
@@ -100,7 +100,17 @@ export default function HomePage() {
             <h2 className="text-xl font-bold text-white mb-2">Currency List</h2>
             <p className="text-gray-400 text-sm">Real-time market data • 24h Changes</p>
             {loading && <p className="text-blue-400 text-sm mt-2">Loading real-time data...</p>}
-            {error && <p className="text-red-400 text-sm mt-2">Using cached data • {error}</p>}
+            {error && (
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-yellow-400 text-sm">Using cached data • Real-time updates temporarily unavailable</p>
+                <button
+                  onClick={retry}
+                  className="text-blue-400 text-sm underline hover:text-blue-300"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
           </div>
 
           <Card className="bg-[#1a1340]/80 border-purple-800/30 backdrop-blur-sm">
@@ -432,7 +442,17 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold text-white mb-2">Currency List</h2>
           <p className="text-gray-400 text-sm">Real-time market data • 24h Changes</p>
           {loading && <p className="text-blue-400 text-sm mt-2">Loading real-time data...</p>}
-          {error && <p className="text-red-400 text-sm mt-2">Using cached data • {error}</p>}
+          {error && (
+            <div className="flex items-center gap-2 mt-2">
+              <p className="text-yellow-400 text-sm">Using cached data • Real-time updates temporarily unavailable</p>
+              <button
+                onClick={retry}
+                className="text-blue-400 text-sm underline hover:text-blue-300"
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </div>
 
         <Card className="bg-[#1a1340]/80 border-purple-800/30 backdrop-blur-sm">
