@@ -760,10 +760,10 @@ function TradingViewWidget({
 
   return (
     <div
-      className={`tradingview-widget-container ${type === 'ticker' ? 'w-full h-16 overflow-hidden bg-transparent' : ''}`}
+      className={`tradingview-widget-container ${type === 'ticker' ? 'w-full overflow-hidden bg-transparent' : ''}`}
       ref={containerRef}
       style={{
-        height: type === 'ticker' ? '64px' : (typeof height === 'number' ? `${height}px` : height),
+        height: type === 'ticker' ? '130px' : (typeof height === 'number' ? `${height}px` : height),
         width: "100%",
         position: "relative"
       }}
