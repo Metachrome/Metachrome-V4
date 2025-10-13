@@ -113,6 +113,95 @@ function OptionsPageContent({
       }, 60000);
     }, 200);
   };
+
+  // GLOBAL FUNCTION FOR CONSOLE TESTING
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).testMobileNotification = () => {
+        console.log('🧪 GLOBAL: Testing mobile notification from console');
+        const testTrade = {
+          id: 'console-test-' + Date.now(),
+          direction: 'up' as const,
+          amount: 100,
+          entryPrice: 50000,
+          currentPrice: 51000,
+          status: 'won' as const,
+          payout: 110,
+          profitPercentage: 10
+        };
+        triggerNotification(testTrade);
+      };
+
+      (window as any).testDirectNotification = () => {
+        console.log('🧪 GLOBAL: Creating direct DOM notification from console');
+
+        // Remove existing
+        const existing = document.querySelectorAll('[data-mobile-notification="true"]');
+        existing.forEach(el => el.remove());
+
+        // Create new
+        const notification = document.createElement('div');
+        notification.setAttribute('data-mobile-notification', 'true');
+        notification.style.cssText = `
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 999999999 !important;
+          background-color: rgba(0, 0, 0, 0.95) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 16px !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        `;
+
+        notification.innerHTML = `
+          <div style="
+            background-color: #1a1b3a;
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 320px;
+            width: 90%;
+            border: 3px solid #10b981;
+            color: white;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            text-align: center;
+          ">
+            <div style="font-size: 20px; font-weight: bold; color: #10b981; margin-bottom: 16px;">
+              🎉 CONSOLE TEST SUCCESS!
+            </div>
+            <div style="margin-bottom: 16px; color: #9ca3af;">
+              This notification was triggered from the browser console.
+            </div>
+            <button onclick="this.closest('[data-mobile-notification]').remove()" style="
+              background-color: #10b981;
+              color: white;
+              border: none;
+              border-radius: 8px;
+              padding: 12px 24px;
+              font-size: 14px;
+              font-weight: bold;
+              cursor: pointer;
+              width: 100%;
+            ">
+              Close Console Test
+            </button>
+          </div>
+        `;
+
+        document.body.appendChild(notification);
+        console.log('✅ GLOBAL: Direct notification created from console');
+      };
+
+      console.log('🧪 GLOBAL FUNCTIONS AVAILABLE:');
+      console.log('- testMobileNotification() - Test React notification');
+      console.log('- testDirectNotification() - Test direct DOM notification');
+    }
+  }, []);
   const [currentTradingMode, setCurrentTradingMode] = useState<'normal' | 'win' | 'lose'>(() => {
     // Initialize from localStorage if available
     const stored = localStorage.getItem('currentTradingMode');
@@ -2330,6 +2419,100 @@ function OptionsPageContent({
               )}
 
             </div>
+
+            {/* DEBUG: Test Notification Button - MOBILE */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4">
+                <button
+                  onClick={() => {
+                    console.log('🧪 MOBILE DEBUG: Manual notification trigger');
+                    const testTrade = {
+                      id: 'mobile-manual-test-' + Date.now(),
+                      direction: 'up' as const,
+                      amount: 100,
+                      entryPrice: 50000,
+                      currentPrice: 51000,
+                      status: 'won' as const,
+                      payout: 110,
+                      profitPercentage: 10
+                    };
+                    triggerNotification(testTrade);
+                  }}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded font-medium text-sm"
+                >
+                  🧪 TEST MOBILE NOTIFICATION
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('🧪 MOBILE DEBUG: Direct DOM notification trigger');
+
+                    // Remove any existing notifications
+                    const existing = document.querySelectorAll('[data-mobile-notification="true"]');
+                    existing.forEach(el => el.remove());
+
+                    // Create notification directly in DOM
+                    const notification = document.createElement('div');
+                    notification.setAttribute('data-mobile-notification', 'true');
+                    notification.style.cssText = `
+                      position: fixed !important;
+                      top: 0 !important;
+                      left: 0 !important;
+                      right: 0 !important;
+                      bottom: 0 !important;
+                      z-index: 999999999 !important;
+                      background-color: rgba(0, 0, 0, 0.95) !important;
+                      display: flex !important;
+                      align-items: center !important;
+                      justify-content: center !important;
+                      padding: 16px !important;
+                      visibility: visible !important;
+                      opacity: 1 !important;
+                      pointer-events: auto !important;
+                    `;
+
+                    notification.innerHTML = `
+                      <div style="
+                        background-color: #1a1b3a;
+                        border-radius: 16px;
+                        padding: 20px;
+                        max-width: 320px;
+                        width: 90%;
+                        border: 3px solid #10b981;
+                        color: white;
+                        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+                        text-align: center;
+                      ">
+                        <div style="font-size: 20px; font-weight: bold; color: #10b981; margin-bottom: 16px;">
+                          🎉 DIRECT DOM TEST!
+                        </div>
+                        <div style="margin-bottom: 16px; color: #9ca3af;">
+                          This notification was created directly in the DOM, bypassing React.
+                        </div>
+                        <button onclick="this.closest('[data-mobile-notification]').remove()" style="
+                          background-color: #10b981;
+                          color: white;
+                          border: none;
+                          border-radius: 8px;
+                          padding: 12px 24px;
+                          font-size: 14px;
+                          font-weight: bold;
+                          cursor: pointer;
+                          width: 100%;
+                        ">
+                          Close Direct Test
+                        </button>
+                      </div>
+                    `;
+
+                    document.body.appendChild(notification);
+                    console.log('✅ Direct DOM notification created');
+                  }}
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded font-medium text-sm mt-2"
+                >
+                  🛠️ TEST DIRECT DOM
+                </button>
+              </div>
+            )}
 
             {/* Buy Up / Buy Down Buttons */}
             {!user ? (
