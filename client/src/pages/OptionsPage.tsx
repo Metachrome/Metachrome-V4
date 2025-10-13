@@ -1035,9 +1035,20 @@ function OptionsPageContent({
           data.result === 'win' || data.result === 'lose' ||
           data.status === 'won' || data.status === 'lost' ||
           (data.changeType === 'trade_completion') ||
-          (data.changeType && data.changeType.includes('trade')) ||
-          (data.change && Math.abs(data.change) > 0 && activeTrades.length > 0)
+          (data.changeType === 'trade_end') ||
+          (data.changeType === 'trade_win') ||
+          (data.changeType === 'trade_lose') ||
+          // Only trigger on positive balance changes (wins) or explicit completion messages
+          // Exclude trade_start messages which are just the initial deduction
+          (data.changeType !== 'trade_start' && data.change && data.change > 0 && activeTrades.length > 0)
         );
+
+        console.log('🚨 AGGRESSIVE: Trade completion check:', {
+          changeType: data?.changeType,
+          change: data?.change,
+          activeTrades: activeTrades.length,
+          isTradeCompletion
+        });
 
         if (isTradeCompletion) {
           console.log('🚨 AGGRESSIVE: Triggering notification for trade-related message');
