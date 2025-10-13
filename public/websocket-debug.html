@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Debug - METACHROME</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #2d5a2d; }
+        .disconnected { background: #5a2d2d; }
+        .error { background: #5a2d2d; }
+        .message { background: #2d2d5a; margin: 5px 0; padding: 8px; border-radius: 3px; }
+        button { padding: 10px 20px; margin: 5px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #messages { max-height: 400px; overflow-y: auto; border: 1px solid #444; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 METACHROME WebSocket Debug Tool</h1>
+        
+        <div id="status" class="status disconnected">
+            ❌ Not Connected
+        </div>
+        
+        <div>
+            <button onclick="connectWebSocket()">Connect WebSocket</button>
+            <button onclick="disconnectWebSocket()">Disconnect</button>
+            <button onclick="sendPing()">Send Ping</button>
+            <button onclick="clearMessages()">Clear Messages</button>
+        </div>
+        
+        <div>
+            <h3>Connection Info:</h3>
+            <p><strong>Current URL:</strong> <span id="currentUrl"></span></p>
+            <p><strong>WebSocket URL:</strong> <span id="wsUrl"></span></p>
+            <p><strong>Environment:</strong> <span id="environment"></span></p>
+        </div>
+        
+        <div id="messages"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let messageCount = 0;
+        
+        function log(message, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(connected, message) {
+            const statusDiv = document.getElementById('status');
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.innerHTML = '✅ ' + message;
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '❌ ' + message;
+            }
+        }
+        
+        function detectEnvironment() {
+            const hostname = window.location.hostname;
+            const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+            const isVercel = hostname.includes('vercel.app');
+            const isRailway = hostname.includes('railway.app');
+            
+            let env = 'Unknown';
+            if (isLocal) env = 'Local Development';
+            else if (isVercel) env = 'Vercel';
+            else if (isRailway) env = 'Railway';
+            
+            document.getElementById('environment').textContent = env;
+            document.getElementById('currentUrl').textContent = window.location.href;
+            
+            return { isLocal, isVercel, isRailway, env };
+        }
+        
+        function getWebSocketUrl() {
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const { isLocal, isVercel, isRailway } = detectEnvironment();
+            
+            let wsUrl;
+            if (isLocal) {
+                wsUrl = 'ws://127.0.0.1:3005/ws';
+            } else if (isVercel) {
+                wsUrl = 'WebSocket not supported on Vercel';
+            } else if (isRailway) {
+                wsUrl = `${protocol}//${window.location.host}/ws`;
+            } else {
+                wsUrl = `${protocol}//${window.location.host}/ws`;
+            }
+            
+            document.getElementById('wsUrl').textContent = wsUrl;
+            return wsUrl;
+        }
+        
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('⚠️ WebSocket already connected');
+                return;
+            }
+            
+            const wsUrl = getWebSocketUrl();
+            
+            if (wsUrl.includes('not supported')) {
+                log('❌ WebSocket not supported in this environment');
+                updateStatus(false, 'WebSocket not supported');
+                return;
+            }
+            
+            log(`🔌 Attempting to connect to: ${wsUrl}`);
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = function(event) {
+                    log('✅ WebSocket connected successfully!');
+                    updateStatus(true, 'Connected');
+                    
+                    // Send initial ping
+                    ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+                };
+                
+                ws.onmessage = function(event) {
+                    messageCount++;
+                    try {
+                        const data = JSON.parse(event.data);
+                        log(`📨 Message ${messageCount}: ${JSON.stringify(data)}`);
+                    } catch (e) {
+                        log(`📨 Raw message ${messageCount}: ${event.data}`);
+                    }
+                };
+                
+                ws.onclose = function(event) {
+                    log(`🔌 WebSocket closed: Code ${event.code}, Reason: ${event.reason || 'No reason'}`);
+                    updateStatus(false, `Disconnected (${event.code})`);
+                };
+                
+                ws.onerror = function(error) {
+                    log(`❌ WebSocket error: ${error}`);
+                    log(`❌ Error details: ReadyState=${ws.readyState}, URL=${wsUrl}`);
+                    updateStatus(false, 'Connection Error');
+                };
+                
+            } catch (error) {
+                log(`❌ Failed to create WebSocket: ${error}`);
+                updateStatus(false, 'Failed to create connection');
+            }
+        }
+        
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                log('🔌 WebSocket disconnected manually');
+                updateStatus(false, 'Disconnected');
+            }
+        }
+        
+        function sendPing() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const ping = { type: 'ping', timestamp: Date.now() };
+                ws.send(JSON.stringify(ping));
+                log(`📤 Sent ping: ${JSON.stringify(ping)}`);
+            } else {
+                log('❌ Cannot send ping - WebSocket not connected');
+            }
+        }
+        
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+            messageCount = 0;
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            detectEnvironment();
+            getWebSocketUrl();
+            log('🚀 WebSocket Debug Tool loaded');
+            log('Click "Connect WebSocket" to test the connection');
+        };
+    </script>
+</body>
+</html>
