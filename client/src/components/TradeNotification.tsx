@@ -20,7 +20,12 @@ interface TradeNotificationProps {
 
 // MOBILE NOTIFICATION COMPONENT - ENHANCED FOR GUARANTEED VISIBILITY
 const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
-  if (!trade) return null;
+  console.log('🔔 MOBILE NOTIFICATION: Component called with trade:', trade);
+
+  if (!trade) {
+    console.log('🔔 MOBILE NOTIFICATION: No trade data, returning null');
+    return null;
+  }
 
   const isWin = trade.status === 'won';
   const pnl = isWin ?
@@ -28,6 +33,7 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
     -trade.amount;
 
   console.log('🔔 MOBILE NOTIFICATION: Rendering mobile notification', { trade, isWin, pnl });
+  console.log('🔔 MOBILE NOTIFICATION: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
 
   // Auto-close after 25 seconds (longer, stickier as requested)
   useEffect(() => {
@@ -49,17 +55,20 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 2147483647, // Maximum z-index value
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        zIndex: 999999999, // Maximum z-index value - higher than any other element
+        backgroundColor: 'rgba(0, 0, 0, 0.95)', // Slightly more opaque for visibility
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
-        visibility: 'visible',
-        opacity: 1,
-        pointerEvents: 'auto'
+        visibility: 'visible !important',
+        opacity: '1 !important',
+        pointerEvents: 'auto',
+        display: 'flex !important',
+        transform: 'translateZ(0)', // Force hardware acceleration
+        willChange: 'transform, opacity'
       }}
       onClick={(e) => {
         // Close when clicking outside the modal
@@ -75,7 +84,8 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
           padding: '20px',
           maxWidth: '320px',
           width: '100%',
-          border: isWin ? '2px solid #10b981' : '2px solid #ef4444',
+          border: isWin ? '3px solid #10b981' : '3px solid #ef4444',
+          boxShadow: isWin ? '0 0 20px rgba(16, 185, 129, 0.5)' : '0 0 20px rgba(239, 68, 68, 0.5)',
           color: 'white',
           boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
           position: 'relative',
@@ -200,10 +210,28 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
 
   // Use React Portal to render at document body level
   if (typeof document !== 'undefined') {
-    const portalRoot = document.getElementById('mobile-modal-root') || document.body;
+    let portalRoot = document.getElementById('mobile-modal-root');
+
+    // Create the portal root if it doesn't exist
+    if (!portalRoot) {
+      console.log('🔔 MOBILE NOTIFICATION: Creating mobile-modal-root element');
+      portalRoot = document.createElement('div');
+      portalRoot.id = 'mobile-modal-root';
+      portalRoot.style.position = 'fixed';
+      portalRoot.style.top = '0';
+      portalRoot.style.left = '0';
+      portalRoot.style.width = '100%';
+      portalRoot.style.height = '100%';
+      portalRoot.style.pointerEvents = 'none';
+      portalRoot.style.zIndex = '999999999';
+      document.body.appendChild(portalRoot);
+    }
+
+    console.log('🔔 MOBILE NOTIFICATION: Rendering to portal root:', portalRoot);
     return ReactDOM.createPortal(notificationElement, portalRoot);
   }
 
+  console.log('🔔 MOBILE NOTIFICATION: Rendering directly (no document)');
   return notificationElement;
 };
 
