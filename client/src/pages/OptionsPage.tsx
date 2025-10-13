@@ -828,6 +828,15 @@ function OptionsPageContent({
     console.log('🔍 WEBSOCKET DEBUG: Current user ID:', user?.id);
     console.log('🔍 WEBSOCKET DEBUG: Active trades count:', activeTrades.length);
 
+    // LOG ALL WEBSOCKET MESSAGES FOR DEBUGGING
+    if (lastMessage) {
+      console.log('📡 ALL WEBSOCKET MESSAGES:', {
+        type: lastMessage.type,
+        data: lastMessage.data,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     // BULLETPROOF: Handle direct notification trigger
     if (lastMessage?.type === 'trigger_mobile_notification' && lastMessage.data?.userId === user?.id) {
       console.log('🔔 BULLETPROOF: Direct notification trigger received:', lastMessage.data);
@@ -915,6 +924,43 @@ function OptionsPageContent({
             loadTradeHistory();
           }
         }, 1000); // 1 second delay to ensure database is updated
+      }
+    }
+
+    // AGGRESSIVE FALLBACK: Check for any trade-related messages
+    if (lastMessage && user?.id) {
+      const messageStr = JSON.stringify(lastMessage).toLowerCase();
+      const isTradeRelated = messageStr.includes('trade') ||
+                           messageStr.includes('win') ||
+                           messageStr.includes('lose') ||
+                           messageStr.includes('profit') ||
+                           messageStr.includes('payout');
+
+      if (isTradeRelated && lastMessage.data?.userId === user?.id) {
+        console.log('🚨 AGGRESSIVE: Found trade-related message:', lastMessage);
+
+        // Try to extract trade info and trigger notification
+        const data = lastMessage.data;
+        if (data && (data.result === 'win' || data.result === 'lose' || data.status === 'won' || data.status === 'lost')) {
+          console.log('🚨 AGGRESSIVE: Triggering notification for trade-related message');
+
+          const won = data.result === 'win' || data.status === 'won';
+          const aggressiveTrade: ActiveTrade = {
+            id: data.tradeId || data.id || 'aggressive-' + Date.now(),
+            symbol: data.symbol || 'BTC/USDT',
+            direction: data.direction || 'up',
+            amount: data.amount || 100,
+            entryPrice: data.entryPrice || data.entry_price || 50000,
+            currentPrice: data.exitPrice || data.currentPrice || data.current_price || 51000,
+            status: won ? 'won' : 'lost',
+            duration: data.duration || 30,
+            profitPercentage: won ? (data.profitPercentage || 10) : 0,
+            payout: won ? (data.payout || data.amount * 1.1) : 0,
+            profit: data.profitAmount || data.profit || (won ? 10 : -100)
+          };
+
+          triggerNotification(aggressiveTrade);
+        }
       }
     }
   }, [lastMessage, user?.id, activeTrades, queryClient]);
