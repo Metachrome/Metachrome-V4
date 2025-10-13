@@ -835,6 +835,16 @@ function OptionsPageContent({
         data: lastMessage.data,
         timestamp: new Date().toISOString()
       });
+
+      // SPECIAL FOCUS ON TRADE MESSAGES
+      if (lastMessage.type && lastMessage.type.toLowerCase().includes('trade')) {
+        console.log('🎯 TRADE MESSAGE DETECTED:', lastMessage);
+        console.log('🎯 Message type:', lastMessage.type);
+        console.log('🎯 Message data:', lastMessage.data);
+        console.log('🎯 User ID from message:', lastMessage.data?.userId);
+        console.log('🎯 Current user ID:', user?.id);
+        console.log('🎯 User IDs match:', lastMessage.data?.userId === user?.id);
+      }
     }
 
     // BULLETPROOF: Handle direct notification trigger
@@ -934,7 +944,8 @@ function OptionsPageContent({
                            messageStr.includes('win') ||
                            messageStr.includes('lose') ||
                            messageStr.includes('profit') ||
-                           messageStr.includes('payout');
+                           messageStr.includes('payout') ||
+                           messageStr.includes('result');
 
       if (isTradeRelated && lastMessage.data?.userId === user?.id) {
         console.log('🚨 AGGRESSIVE: Found trade-related message:', lastMessage);
@@ -959,9 +970,35 @@ function OptionsPageContent({
             profit: data.profitAmount || data.profit || (won ? 10 : -100)
           };
 
+          console.log('🚨 AGGRESSIVE: About to trigger notification with trade:', aggressiveTrade);
           triggerNotification(aggressiveTrade);
         }
       }
+    }
+
+    // ULTRA FALLBACK: Any message with userId match and result field
+    if (lastMessage?.data?.userId === user?.id && lastMessage?.data?.result) {
+      console.log('🔥 ULTRA FALLBACK: Message with userId match and result field:', lastMessage);
+
+      const data = lastMessage.data;
+      const won = data.result === 'win';
+
+      const ultraTrade: ActiveTrade = {
+        id: data.tradeId || 'ultra-' + Date.now(),
+        symbol: 'BTC/USDT',
+        direction: 'up',
+        amount: 100,
+        entryPrice: 50000,
+        currentPrice: data.exitPrice || 51000,
+        status: won ? 'won' : 'lost',
+        duration: 30,
+        profitPercentage: won ? 10 : 0,
+        payout: won ? 110 : 0,
+        profit: data.profitAmount || (won ? 10 : -100)
+      };
+
+      console.log('🔥 ULTRA FALLBACK: Triggering notification:', ultraTrade);
+      triggerNotification(ultraTrade);
     }
   }, [lastMessage, user?.id, activeTrades, queryClient]);
 
