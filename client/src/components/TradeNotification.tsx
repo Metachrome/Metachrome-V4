@@ -70,7 +70,7 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
         bottom: 0,
         zIndex: 999999999, // Maximum z-index value - higher than any other element
         backgroundColor: 'rgba(0, 0, 0, 0.95)', // Slightly more opaque for visibility
-        display: 'flex',
+        display: 'flex !important',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
@@ -79,7 +79,6 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
         visibility: 'visible !important',
         opacity: '1 !important',
         pointerEvents: 'auto',
-        display: 'flex !important',
         transform: 'translateZ(0)', // Force hardware acceleration
         willChange: 'transform, opacity'
       }}
@@ -98,9 +97,8 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
           maxWidth: '320px',
           width: '100%',
           border: isWin ? '3px solid #10b981' : '3px solid #ef4444',
-          boxShadow: isWin ? '0 0 20px rgba(16, 185, 129, 0.5)' : '0 0 20px rgba(239, 68, 68, 0.5)',
+          boxShadow: `0 20px 50px rgba(0, 0, 0, 0.8), ${isWin ? '0 0 20px rgba(16, 185, 129, 0.5)' : '0 0 20px rgba(239, 68, 68, 0.5)'}`,
           color: 'white',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
           position: 'relative',
           animation: 'slideInUp 0.3s ease-out',
           transform: 'translateY(0)',
