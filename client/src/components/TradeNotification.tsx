@@ -170,18 +170,26 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     }
   }, [trade, currentWidth, isMobile]);
 
-  // SIMPLIFIED MOBILE DETECTION - Use only the hook
-  const isActuallyMobile = isMobile; // Use the proper hook that detects < 768px
+  // BULLETPROOF MOBILE DETECTION - Multiple checks
+  const screenWidth = window.innerWidth;
+  const isSmallScreen = screenWidth < 768;
+  const isTouchDevice = 'ontouchstart' in window;
+  const isActuallyMobile = isSmallScreen && isTouchDevice;
 
   console.log('🔔 TRADE NOTIFICATION: Detection results:', {
     isMobile,
     currentWidth,
+    screenWidth,
+    isSmallScreen,
+    isTouchDevice,
     isActuallyMobile,
+    'Should use mobile': isActuallyMobile,
+    'Should use desktop': !isActuallyMobile,
     trade: !!trade
   });
 
   // BULLETPROOF SYSTEM: Use DOM manipulation for mobile only
-  const useBulletproofSystem = isActuallyMobile; // Only use for actual mobile screens
+  const useBulletproofSystem = isActuallyMobile; // Only use for actual mobile screens (small + touch)
 
   // BULLETPROOF MOBILE NOTIFICATION - Direct DOM manipulation
   useEffect(() => {
