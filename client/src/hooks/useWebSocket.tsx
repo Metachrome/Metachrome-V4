@@ -15,6 +15,9 @@ export function useWebSocket() {
 
   const connect = useCallback(() => {
     try {
+      console.log('🔌 WEBSOCKET DEBUG: Starting connection attempt...');
+      console.log('🔌 WEBSOCKET DEBUG: Current location:', window.location.hostname, window.location.port);
+
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
       // Check if we're running locally
@@ -25,6 +28,8 @@ export function useWebSocket() {
       // Check if we're on Vercel or Railway
       const isVercel = window.location.hostname.includes('vercel.app');
       const isRailway = window.location.hostname.includes('railway.app');
+
+      console.log('🔌 WEBSOCKET DEBUG: Environment check:', { isLocal, isVercel, isRailway });
 
       // Use correct WebSocket URL
       let wsUrl;
@@ -43,10 +48,11 @@ export function useWebSocket() {
         wsUrl = `${protocol}//${window.location.host}/ws`;
       }
 
+      console.log('🔌 WEBSOCKET DEBUG: Attempting to connect to:', wsUrl);
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log("WebSocket connected");
+        console.log("🔌 WEBSOCKET DEBUG: WebSocket connected successfully!");
         setConnected(true);
         reconnectAttemptsRef.current = 0;
         
@@ -69,7 +75,7 @@ export function useWebSocket() {
       };
 
       ws.onclose = (event) => {
-        console.log("WebSocket disconnected:", event.code, event.reason);
+        console.log("🔌 WEBSOCKET DEBUG: WebSocket disconnected:", event.code, event.reason);
         setConnected(false);
         setSocket(null);
 
@@ -86,12 +92,12 @@ export function useWebSocket() {
       };
 
       ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
+        console.error("🔌 WEBSOCKET DEBUG: WebSocket error:", error);
       };
 
       setSocket(ws);
     } catch (error) {
-      console.error("Failed to create WebSocket connection:", error);
+      console.error("🔌 WEBSOCKET DEBUG: Failed to create WebSocket connection:", error);
     }
   }, []);
 
