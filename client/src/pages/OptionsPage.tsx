@@ -163,6 +163,23 @@ function OptionsPageContent({
         triggerNotification(testTrade);
       };
 
+      // TEST WEBSOCKET NOTIFICATION FROM SERVER
+      (window as any).testWebSocketNotification = async () => {
+        console.log('🧪 WEBSOCKET TEST: Requesting server to send WebSocket notification');
+        try {
+          const response = await fetch('/api/test/websocket-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user?.id })
+          });
+
+          const result = await response.json();
+          console.log('🧪 WEBSOCKET TEST: Server response:', result);
+        } catch (error) {
+          console.error('🧪 WEBSOCKET TEST: Error:', error);
+        }
+      };
+
       (window as any).testDirectNotification = () => {
         console.log('🧪 GLOBAL: Creating direct DOM notification from console');
 

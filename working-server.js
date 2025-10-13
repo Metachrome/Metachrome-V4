@@ -10467,6 +10467,51 @@ app.get('/api/admin/redeem-codes/:codeId/usage', async (req, res) => {
 
 // ===== TEST ENDPOINTS =====
 
+// Test WebSocket notification endpoint
+app.post('/api/test/websocket-notification', (req, res) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'userId required' });
+  }
+
+  console.log('🧪 TEST: Sending test WebSocket notification to user:', userId);
+
+  if (global.wss) {
+    const testMessage = {
+      type: 'trade_completed',
+      data: {
+        tradeId: 'test-' + Date.now(),
+        userId: userId,
+        result: 'win',
+        exitPrice: 50000,
+        profitAmount: 10,
+        newBalance: 1000,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    console.log('🧪 TEST: Broadcasting test message:', testMessage);
+
+    let broadcastCount = 0;
+    global.wss.clients.forEach(client => {
+      if (client.readyState === 1) { // WebSocket.OPEN
+        try {
+          client.send(JSON.stringify(testMessage));
+          broadcastCount++;
+        } catch (error) {
+          console.error('❌ Failed to send test message:', error);
+        }
+      }
+    });
+
+    console.log(`🧪 TEST: Message sent to ${broadcastCount} clients`);
+    res.json({ success: true, clientCount: broadcastCount, message: testMessage });
+  } else {
+    res.status(500).json({ error: 'WebSocket server not available' });
+  }
+});
+
 // Create sample withdrawal for testing
 app.post('/api/test/create-sample-withdrawal', (req, res) => {
   try {
