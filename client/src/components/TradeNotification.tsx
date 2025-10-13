@@ -357,10 +357,43 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     trade: !!trade
   });
 
-  // FORCE MOBILE NOTIFICATION for mobile devices - GUARANTEED MOBILE DISPLAY
-  if (shouldUseMobile || forceMobileForTesting || isMobileScreen || forceAllMobile) {
-    console.log('🔔 TRADE NOTIFICATION: Using MOBILE notification (shouldUseMobile:', shouldUseMobile, 'forceMobileForTesting:', forceMobileForTesting, 'isMobileScreen:', isMobileScreen, 'forceAllMobile:', forceAllMobile, ')');
-    return <MobileTradeNotification trade={trade} onClose={onClose} />;
+  // BULLETPROOF SYSTEM: Use DOM manipulation for mobile
+  const useBulletproofSystem = shouldUseMobile || forceMobileForTesting || isMobileScreen || forceAllMobile;
+
+  // BULLETPROOF MOBILE NOTIFICATION - Direct DOM manipulation
+  useEffect(() => {
+    if (!trade || !useBulletproofSystem) return;
+
+    console.log('🔔 BULLETPROOF: Creating bulletproof mobile notification');
+
+    // Fix body overflow issues first
+    const originalBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'visible';
+
+    // Use the bulletproof notification system
+    showMobileTradeNotification(trade);
+
+    // Set up cleanup
+    const cleanup = () => {
+      removeMobileNotification();
+      document.body.style.overflow = originalBodyOverflow;
+      onClose();
+    };
+
+    // Auto-close after 25 seconds
+    const timer = setTimeout(cleanup, 25000);
+
+    return () => {
+      clearTimeout(timer);
+      removeMobileNotification();
+      document.body.style.overflow = originalBodyOverflow;
+    };
+  }, [trade, onClose, useBulletproofSystem]);
+
+  // For mobile, return null since bulletproof system handles DOM directly
+  if (useBulletproofSystem) {
+    console.log('🔔 BULLETPROOF: Using bulletproof system, returning null');
+    return null;
   }
 
   console.log('🔔 TRADE NOTIFICATION: Using DESKTOP notification');
