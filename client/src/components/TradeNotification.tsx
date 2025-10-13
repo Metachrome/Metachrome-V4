@@ -208,31 +208,176 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
     </div>
   );
 
-  // Use React Portal to render at document body level
-  if (typeof document !== 'undefined') {
-    let portalRoot = document.getElementById('mobile-modal-root');
+  // BYPASS PORTAL - Render directly to DOM for mobile compatibility
+  useEffect(() => {
+    if (!trade) return;
 
-    // Create the portal root if it doesn't exist
-    if (!portalRoot) {
-      console.log('🔔 MOBILE NOTIFICATION: Creating mobile-modal-root element');
-      portalRoot = document.createElement('div');
-      portalRoot.id = 'mobile-modal-root';
-      portalRoot.style.position = 'fixed';
-      portalRoot.style.top = '0';
-      portalRoot.style.left = '0';
-      portalRoot.style.width = '100%';
-      portalRoot.style.height = '100%';
-      portalRoot.style.pointerEvents = 'none';
-      portalRoot.style.zIndex = '999999999';
-      document.body.appendChild(portalRoot);
-    }
+    console.log('🔔 MOBILE NOTIFICATION: Creating direct DOM notification');
 
-    console.log('🔔 MOBILE NOTIFICATION: Rendering to portal root:', portalRoot);
-    return ReactDOM.createPortal(notificationElement, portalRoot);
-  }
+    // Remove any existing notifications
+    const existing = document.querySelectorAll('[data-mobile-notification="true"]');
+    existing.forEach(el => el.remove());
 
-  console.log('🔔 MOBILE NOTIFICATION: Rendering directly (no document)');
-  return notificationElement;
+    // Create notification element directly
+    const notification = document.createElement('div');
+    notification.setAttribute('data-mobile-notification', 'true');
+    notification.id = 'direct-mobile-notification';
+
+    // Apply maximum visibility styles
+    notification.style.cssText = `
+      position: fixed !important;
+      top: 0px !important;
+      left: 0px !important;
+      right: 0px !important;
+      bottom: 0px !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2147483647 !important;
+      background-color: rgba(0, 0, 0, 0.95) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 16px !important;
+      backdrop-filter: blur(4px) !important;
+      -webkit-backdrop-filter: blur(4px) !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      transform: translateZ(0) !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      box-sizing: border-box !important;
+    `;
+
+    const isWin = trade.status === 'won';
+    const pnl = isWin ?
+      (trade.amount * trade.profitPercentage / 100) :
+      -trade.amount;
+
+    // Create notification content
+    notification.innerHTML = `
+      <div style="
+        background-color: #1a1b3a !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        max-width: 320px !important;
+        width: 90% !important;
+        border: 3px solid ${isWin ? '#10b981' : '#ef4444'} !important;
+        color: white !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px ${isWin ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'} !important;
+        position: relative !important;
+        pointer-events: auto !important;
+        animation: slideInUp 0.3s ease-out !important;
+      ">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 16px;">
+          <div style="font-size: 20px; font-weight: bold; color: ${isWin ? '#10b981' : '#ef4444'}; margin-bottom: 8px;">
+            ${isWin ? '🎉 Trade Won!' : '💔 Trade Lost'}
+          </div>
+          <div style="font-size: 12px; color: #9ca3af;">
+            Market: BTC/USDT
+          </div>
+        </div>
+
+        <!-- Trade Details -->
+        <div style="
+          background-color: #2a2d47;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 16px;
+          border: 1px solid #3a3d5a;
+          font-size: 12px;
+        ">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #9ca3af;">Market :</span>
+            <span style="color: white; font-weight: bold;">BTC/USDT</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #9ca3af;">Trade :</span>
+            <span style="color: ${trade.direction === 'up' ? '#10b981' : '#ef4444'}; font-weight: bold;">${trade.direction === 'up' ? 'BUY UP' : 'BUY DOWN'}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #9ca3af;">Amount :</span>
+            <span style="color: white; font-weight: bold;">${trade.amount} USDT</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #9ca3af;">Entry Price :</span>
+            <span style="color: white; font-weight: bold;">${trade.entryPrice.toLocaleString()}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #9ca3af;">Closed Price :</span>
+            <span style="color: white; font-weight: bold;">${trade.currentPrice.toLocaleString()}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #9ca3af;">Duration :</span>
+            <span style="color: white; font-weight: bold;">30 seconds</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #9ca3af;">Profit :</span>
+            <span style="color: ${isWin ? '#10b981' : '#ef4444'}; font-weight: bold;">${isWin ? '+' : ''}${pnl.toFixed(0)}</span>
+          </div>
+        </div>
+
+        <!-- Close Button -->
+        <div style="text-align: center;">
+          <button onclick="document.getElementById('direct-mobile-notification').remove(); console.log('✅ Direct mobile notification closed');" style="
+            background-color: ${isWin ? '#10b981' : '#ef4444'};
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+          ">
+            Close Notification
+          </button>
+          <div style="
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 8px;
+            text-align: center;
+          ">
+            Click anywhere outside to close
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add click outside to close
+    notification.addEventListener('click', function(e) {
+      if (e.target === notification) {
+        notification.remove();
+        onClose();
+        console.log('✅ Direct mobile notification closed by clicking outside');
+      }
+    });
+
+    // Add to document body
+    document.body.appendChild(notification);
+    console.log('✅ MOBILE NOTIFICATION: Direct DOM notification created');
+
+    // Auto-remove after 25 seconds
+    const timer = setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+        onClose();
+        console.log('🗑️ Direct mobile notification auto-removed after 25 seconds');
+      }
+    }, 25000);
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timer);
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    };
+  }, [trade, onClose]);
+
+  // Return null since we're rendering directly to DOM
+  return null;
 };
 
 // DESKTOP NOTIFICATION COMPONENT

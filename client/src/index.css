@@ -250,6 +250,20 @@ body {
   }
 }
 
+/* Direct Mobile Notification Animation */
+@keyframes slideInUp {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+    scale: 0.95;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+    scale: 1;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
