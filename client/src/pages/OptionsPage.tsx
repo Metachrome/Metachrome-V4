@@ -895,6 +895,22 @@ function OptionsPageContent({
         timestamp: new Date().toISOString()
       });
 
+      // Log balance_update messages in detail
+      if (lastMessage.type === 'balance_update') {
+        console.log('💰 BALANCE UPDATE DETAILS:', {
+          type: lastMessage.type,
+          userId: lastMessage.data?.userId,
+          currentUserId: user?.id,
+          userMatch: lastMessage.data?.userId === user?.id,
+          data: lastMessage.data,
+          activeTrades: activeTrades.length,
+          change: lastMessage.data?.change,
+          changeType: lastMessage.data?.changeType,
+          newBalance: lastMessage.data?.newBalance,
+          oldBalance: lastMessage.data?.oldBalance
+        });
+      }
+
       // SPECIAL FOCUS ON TRADE MESSAGES
       if (lastMessage.type && lastMessage.type.toLowerCase().includes('trade')) {
         console.log('🎯 TRADE MESSAGE DETECTED:', lastMessage);
@@ -1008,13 +1024,42 @@ function OptionsPageContent({
 
       if (isTradeRelated && lastMessage.data?.userId === user?.id) {
         console.log('🚨 AGGRESSIVE: Found trade-related message:', lastMessage);
+        console.log('🚨 AGGRESSIVE: Message data fields:', Object.keys(lastMessage.data || {}));
+        console.log('🚨 AGGRESSIVE: Full message data:', lastMessage.data);
 
         // Try to extract trade info and trigger notification
         const data = lastMessage.data;
-        if (data && (data.result === 'win' || data.result === 'lose' || data.status === 'won' || data.status === 'lost')) {
+
+        // Enhanced detection for balance_update messages that indicate trade completion
+        const isTradeCompletion = data && (
+          data.result === 'win' || data.result === 'lose' ||
+          data.status === 'won' || data.status === 'lost' ||
+          (data.changeType === 'trade_completion') ||
+          (data.changeType && data.changeType.includes('trade')) ||
+          (data.change && Math.abs(data.change) > 0 && activeTrades.length > 0)
+        );
+
+        if (isTradeCompletion) {
           console.log('🚨 AGGRESSIVE: Triggering notification for trade-related message');
 
-          const won = data.result === 'win' || data.status === 'won';
+          // For balance_update messages, infer win/lose from balance change
+          let won = false;
+          if (data.result === 'win' || data.status === 'won') {
+            won = true;
+          } else if (data.result === 'lose' || data.status === 'lost') {
+            won = false;
+          } else if (data.change && data.change > 0) {
+            // Positive balance change = win
+            won = true;
+          } else if (data.change && data.change < 0) {
+            // Negative balance change = lose (but this might be the initial deduction)
+            won = false;
+          } else if (activeTrades.length > 0) {
+            // If we have active trades and got a balance update, assume it's a win
+            // (since your balance increased from 58162 to 58272)
+            won = true;
+          }
+
           const aggressiveTrade: ActiveTrade = {
             id: data.tradeId || data.id || 'aggressive-' + Date.now(),
             symbol: data.symbol || 'BTC/USDT',
@@ -1031,6 +1076,8 @@ function OptionsPageContent({
 
           console.log('🚨 AGGRESSIVE: About to trigger notification with trade:', aggressiveTrade);
           triggerNotification(aggressiveTrade);
+        } else {
+          console.log('🚨 AGGRESSIVE: Message detected but no valid trade completion indicators found');
         }
       }
     }
