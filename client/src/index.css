@@ -617,16 +617,16 @@ span.price-neutral {
   #options_mobile_chart,
   #spot_mobile_chart {
     width: 100% !important;
-    height: 100% !important;
-    min-height: 500px !important;
+    height: 400px !important;
+    min-height: 400px !important;
   }
 
   /* Chart canvas elements */
   #options_mobile_chart canvas,
   #spot_mobile_chart canvas {
     width: 100% !important;
-    height: 100% !important;
-    min-height: 300px !important;
+    height: 400px !important;
+    min-height: 400px !important;
   }
 
   /* TradingView iframes */
@@ -635,8 +635,8 @@ span.price-neutral {
   .tradingview-widget-container,
   .tradingview-widget-container__widget {
     width: 100% !important;
-    height: 70px !important;
-    min-height: 80px !important;
+    height: 400px !important;
+    min-height: 400px !important;
   }
 
   /* Ensure mobile chart parent containers take large height */
@@ -646,8 +646,8 @@ span.price-neutral {
 
   /* Force chart content to be vertical */
   .mobile-chart-container > div {
-    height: 100% !important;
-    min-height: 500px !important;
+    height: 400px !important;
+    min-height: 400px !important;
   }
 
   /* Ensure chart containers don't overflow */
