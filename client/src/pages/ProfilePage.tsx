@@ -1312,6 +1312,36 @@ export default function ProfilePage() {
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh Status
                   </Button>
+
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/debug/password-status', {
+                          headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                          }
+                        });
+                        const data = await response.json();
+                        console.log('🔍 Password Debug Data:', data);
+                        toast({
+                          title: "Debug Info",
+                          description: `Password saved: ${data.debug ? (data.supabaseData?.hasPasswordHash || data.fileData?.hasPasswordHash) : 'Unknown'}`,
+                        });
+                      } catch (error) {
+                        console.error('Debug error:', error);
+                        toast({
+                          title: "Debug Failed",
+                          description: "Could not fetch debug info",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="text-yellow-400 border-yellow-600 hover:bg-yellow-900/20"
+                  >
+                    🔍 Debug
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">

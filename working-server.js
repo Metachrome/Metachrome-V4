@@ -9371,18 +9371,110 @@ app.put('/api/user/password-hotfix', async (req, res) => {
         throw error;
       }
       console.log('✅ HOTFIX Password updated in Supabase for user:', user.id);
+    } else {
+      // Development mode - update local file
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === user.id);
+
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      users[userIndex].password_hash = hashedPassword;
+      users[userIndex].updated_at = new Date().toISOString();
+      await saveUsers(users);
+      console.log('✅ HOTFIX Password updated in local file for user:', user.id);
     }
+
+    // Verify the password was actually saved by fetching fresh user data
+    console.log('🔍 HOTFIX Verifying password was saved...');
+    const verifyUser = await getUserFromToken(authToken);
+    console.log('🔍 HOTFIX Post-update user data:', {
+      username: verifyUser?.username,
+      hasPasswordHash: !!(verifyUser?.password_hash && verifyUser.password_hash.length > 0),
+      passwordHashLength: verifyUser?.password_hash?.length || 0,
+      isProduction: isProduction,
+      supabaseAvailable: !!supabase
+    });
 
     res.json({
       success: true,
       message: isFirstTimePassword ? 'Login password set successfully' : 'Password updated successfully',
       hotfix: true,
-      isFirstTimePassword: !!isFirstTimePassword
+      isFirstTimePassword: !!isFirstTimePassword,
+      debug: {
+        passwordSaved: !!(verifyUser?.password_hash && verifyUser.password_hash.length > 0),
+        environment: isProduction ? 'production' : 'development',
+        supabaseUsed: isProduction && !!supabase
+      }
     });
 
   } catch (error) {
     console.error('❌ HOTFIX Password change error:', error);
     res.status(500).json({ error: 'Failed to update password' });
+  }
+});
+
+// Debug endpoint to check user password status
+app.get('/api/debug/password-status', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    // Get fresh data from both sources for comparison
+    let supabaseUser = null;
+    let fileUser = null;
+
+    if (isProduction && supabase) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (!error) {
+        supabaseUser = data;
+      }
+    }
+
+    // Also check file storage
+    const users = await getUsers();
+    fileUser = users.find(u => u.id === user.id);
+
+    res.json({
+      debug: true,
+      environment: isProduction ? 'production' : 'development',
+      supabaseAvailable: !!supabase,
+      user: {
+        id: user.id,
+        username: user.username
+      },
+      supabaseData: supabaseUser ? {
+        hasPasswordHash: !!(supabaseUser.password_hash && supabaseUser.password_hash.length > 0),
+        passwordHashLength: supabaseUser.password_hash?.length || 0,
+        updatedAt: supabaseUser.updated_at
+      } : 'Not available',
+      fileData: fileUser ? {
+        hasPasswordHash: !!(fileUser.password_hash && fileUser.password_hash.length > 0),
+        passwordHashLength: fileUser.password_hash?.length || 0,
+        updatedAt: fileUser.updated_at
+      } : 'Not found',
+      currentUserData: {
+        hasPasswordHash: !!(user.password_hash && user.password_hash.length > 0),
+        passwordHashLength: user.password_hash?.length || 0
+      }
+    });
+  } catch (error) {
+    console.error('❌ Debug password status error:', error);
+    res.status(500).json({ error: 'Failed to get debug info' });
   }
 });
 
