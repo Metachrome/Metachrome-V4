@@ -237,6 +237,12 @@ export default function ProfilePage() {
   const forceRefreshVerification = async () => {
     setIsRefreshing(true);
     try {
+      console.log('🔄 Force refreshing verification status...');
+
+      // Use the new force refresh endpoint
+      const response = await apiRequest('POST', '/api/user/force-refresh-verification');
+      console.log('🔄 Force refresh response:', response);
+
       // Clear cached user data
       localStorage.removeItem('user');
 
@@ -250,19 +256,19 @@ export default function ProfilePage() {
 
       toast({
         title: "Verification Status Refreshed",
-        description: "Your account verification status has been updated.",
+        description: response.message || "Your account verification status has been updated.",
       });
 
       setTestResults(`✅ Verification refresh successful! Status: ${user?.verificationStatus || 'Unknown'}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to refresh verification status:', error);
       toast({
         title: "Refresh Failed",
-        description: "Failed to refresh verification status. Please try again.",
+        description: error.message || "Failed to refresh verification status. Please try again.",
         variant: "destructive",
       });
 
-      setTestResults(`❌ Verification refresh failed: ${error}`);
+      setTestResults(`❌ Verification refresh failed: ${error.message || error}`);
     } finally {
       setIsRefreshing(false);
     }

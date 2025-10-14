@@ -398,30 +398,66 @@ export default function WorkingAdminDashboard() {
         hasErrors = true;
       }
 
-      // Fetch pending verifications
+      // Fetch pending verifications (enhanced)
       try {
-        const verificationsRes = await fetch(`/api/admin/pending-verifications?_t=${timestamp}`, {
+        const verificationsRes = await fetch(`/api/admin/pending-verifications-enhanced?_t=${timestamp}`, {
           headers: cacheHeaders
         });
         if (verificationsRes.ok) {
           const verificationsData = await verificationsRes.json();
-          console.log('📄 Pending verifications loaded:', verificationsData);
-          setPendingVerifications(verificationsData);
+          console.log('📄 Enhanced pending verifications loaded:', verificationsData);
 
-          // Calculate verification stats
-          const stats = {
-            pending: verificationsData.filter((v: any) => v.verification_status === 'pending').length,
-            approved: verificationsData.filter((v: any) => v.verification_status === 'approved').length,
-            rejected: verificationsData.filter((v: any) => v.verification_status === 'rejected').length,
-            total: verificationsData.length
-          };
-          setVerificationStats(stats);
+          // Use the enhanced response format
+          if (verificationsData.enhanced) {
+            setPendingVerifications(verificationsData.pending || []);
+            console.log(`📄 Set ${verificationsData.pendingCount || 0} pending verifications`);
+            console.log(`📄 Total documents in database: ${verificationsData.totalCount || 0}`);
+
+            // Calculate verification stats from total documents
+            const totalDocs = verificationsData.total || [];
+            const stats = {
+              pending: totalDocs.filter((v: any) => v.verification_status === 'pending').length,
+              approved: totalDocs.filter((v: any) => v.verification_status === 'approved').length,
+              rejected: totalDocs.filter((v: any) => v.verification_status === 'rejected').length,
+              total: totalDocs.length
+            };
+            setVerificationStats(stats);
+          } else {
+            // Fallback to regular response format
+            setPendingVerifications(verificationsData);
+            const stats = {
+              pending: verificationsData.filter((v: any) => v.verification_status === 'pending').length,
+              approved: verificationsData.filter((v: any) => v.verification_status === 'approved').length,
+              rejected: verificationsData.filter((v: any) => v.verification_status === 'rejected').length,
+              total: verificationsData.length
+            };
+            setVerificationStats(stats);
+          }
         } else {
-          console.error('❌ Failed to fetch pending verifications:', verificationsRes.status);
-          hasErrors = true;
+          console.error('❌ Failed to fetch enhanced pending verifications:', verificationsRes.status);
+          // Fallback to regular endpoint
+          try {
+            const fallbackRes = await fetch(`/api/admin/pending-verifications?_t=${timestamp}`, {
+              headers: cacheHeaders
+            });
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              setPendingVerifications(fallbackData);
+              const stats = {
+                pending: fallbackData.filter((v: any) => v.verification_status === 'pending').length,
+                approved: fallbackData.filter((v: any) => v.verification_status === 'approved').length,
+                rejected: fallbackData.filter((v: any) => v.verification_status === 'rejected').length,
+                total: fallbackData.length
+              };
+              setVerificationStats(stats);
+            }
+          } catch (fallbackError) {
+            console.error('❌ Fallback verification fetch error:', fallbackError);
+            hasErrors = true;
+          }
         }
       } catch (error) {
-        console.error('❌ Pending verifications fetch error:', error);
+        console.error('❌ Enhanced pending verifications fetch error:', error);
         hasErrors = true;
       }
 

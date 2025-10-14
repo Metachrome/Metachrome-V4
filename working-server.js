@@ -7806,6 +7806,71 @@ app.get('/api/superadmin/wallet-history/:userId', async (req, res) => {
 
 // ===== USER VERIFICATION ENDPOINTS =====
 
+// ===== VERIFICATION DEBUG ENDPOINT =====
+app.get('/api/debug/verification-status/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    console.log('🔍 DEBUG: Checking verification status for:', username);
+
+    if (isProduction && supabase) {
+      // Check user in Supabase
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, username, email, verification_status, has_uploaded_documents, verified_at, updated_at')
+        .eq('username', username)
+        .single();
+
+      if (userError) {
+        console.error('❌ User fetch error:', userError);
+        return res.status(404).json({ error: 'User not found', details: userError });
+      }
+
+      // Check verification documents
+      const { data: docs, error: docsError } = await supabase
+        .from('user_verification_documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (docsError) {
+        console.error('❌ Documents fetch error:', docsError);
+      }
+
+      res.json({
+        user: user,
+        documents: docs || [],
+        documentsCount: docs ? docs.length : 0,
+        hasDocuments: docs && docs.length > 0,
+        debug: true
+      });
+    } else {
+      // Development mode
+      const users = await getUsers();
+      const user = users.find(u => u.username === username);
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Check local verification documents
+      const verificationDocuments = pendingData.verificationDocuments || [];
+      const userDocs = verificationDocuments.filter(doc => doc.user_id === user.id);
+
+      res.json({
+        user: user,
+        documents: userDocs,
+        documentsCount: userDocs.length,
+        hasDocuments: userDocs.length > 0,
+        debug: true,
+        mode: 'development'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Debug verification error:', error);
+    res.status(500).json({ error: 'Debug failed', details: error.message });
+  }
+});
+
 // Upload verification document
 app.post('/api/user/upload-verification', upload.single('document'), async (req, res) => {
   try {
@@ -8861,6 +8926,94 @@ app.get('/api/admin/pending-verifications', async (req, res) => {
   }
 });
 
+// ===== ENHANCED PENDING VERIFICATIONS ENDPOINT =====
+app.get('/api/admin/pending-verifications-enhanced', async (req, res) => {
+  try {
+    console.log('📄 ENHANCED Getting pending verification documents');
+
+    if (isProduction && supabase) {
+      console.log('📄 Fetching from Supabase...');
+
+      const { data: documents, error } = await supabase
+        .from('user_verification_documents')
+        .select(`
+          *,
+          users (
+            id,
+            username,
+            email,
+            verification_status
+          )
+        `)
+        .eq('verification_status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Supabase fetch error:', error);
+        throw error;
+      }
+
+      console.log(`📄 Found ${documents ? documents.length : 0} pending documents in Supabase`);
+
+      // Also get all documents for debugging
+      const { data: allDocuments, error: allError } = await supabase
+        .from('user_verification_documents')
+        .select(`
+          *,
+          users (
+            id,
+            username,
+            email,
+            verification_status
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (!allError) {
+        console.log(`📄 Total documents in database: ${allDocuments ? allDocuments.length : 0}`);
+      }
+
+      res.json({
+        pending: documents || [],
+        total: allDocuments || [],
+        pendingCount: documents ? documents.length : 0,
+        totalCount: allDocuments ? allDocuments.length : 0,
+        enhanced: true
+      });
+    } else {
+      // Development mode - return stored verification documents
+      console.log('📄 Fetching from local storage (development mode)...');
+
+      const verificationDocuments = pendingData.verificationDocuments || [];
+
+      // Filter only pending documents
+      const pendingDocuments = verificationDocuments.filter(doc =>
+        doc.verification_status === 'pending'
+      );
+
+      console.log(`📄 Found ${pendingDocuments.length} pending verification documents locally`);
+      console.log(`📄 Total verification documents locally: ${verificationDocuments.length}`);
+
+      res.json({
+        pending: pendingDocuments,
+        total: verificationDocuments,
+        pendingCount: pendingDocuments.length,
+        totalCount: verificationDocuments.length,
+        enhanced: true,
+        mode: 'development'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Enhanced pending verifications error:', error);
+    res.status(500).json({
+      error: 'Failed to get pending verifications',
+      details: error.message,
+      enhanced: true
+    });
+  }
+});
+
 // Approve/reject verification document
 app.post('/api/admin/verify-document/:documentId', async (req, res) => {
   try {
@@ -9017,6 +9170,54 @@ app.get('/api/admin/verification-document/:filename', (req, res) => {
   }
 
   res.sendFile(filePath);
+});
+
+// ===== VERIFICATION STATUS FORCE REFRESH ENDPOINT =====
+app.post('/api/user/force-refresh-verification', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    console.log('🔄 Force refreshing verification status for:', user.username);
+
+    if (isProduction && supabase) {
+      // Get fresh user data from Supabase
+      const { data: freshUser, error } = await supabase
+        .from('users')
+        .select('id, username, email, verification_status, has_uploaded_documents, verified_at')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        user: freshUser,
+        message: 'Verification status refreshed'
+      });
+    } else {
+      // Development mode
+      const users = await getUsers();
+      const freshUser = users.find(u => u.id === user.id);
+
+      res.json({
+        success: true,
+        user: freshUser,
+        message: 'Verification status refreshed (development mode)'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Force refresh error:', error);
+    res.status(500).json({ error: 'Failed to refresh verification status' });
+  }
 });
 
 // ===== REFERRAL SYSTEM ENDPOINTS =====
