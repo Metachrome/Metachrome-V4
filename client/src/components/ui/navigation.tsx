@@ -15,6 +15,20 @@ export function Navigation() {
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const { user, isAuthenticated, logout } = useAuth();
 
+  // Get user display name - prioritize firstName + lastName, fallback to username
+  const getUserDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user?.firstName) {
+      return user.firstName;
+    }
+    if (user?.username) {
+      return user.username;
+    }
+    return "Account";
+  };
+
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -178,7 +192,7 @@ export function Navigation() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center space-x-2 text-gray-300 hover:text-white hover:bg-gray-800">
                       <UserCircle className="w-5 h-5" />
-                      <span>Account</span>
+                      <span>{getUserDisplayName()}</span>
                       <ChevronDown className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -343,7 +357,7 @@ export function Navigation() {
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2 text-gray-300 px-3 py-2">
                         <UserCircle className="w-4 h-4" />
-                        <span>Account</span>
+                        <span>{getUserDisplayName()}</span>
                       </div>
                       <Button
                         variant="outline"
