@@ -635,7 +635,7 @@ span.price-neutral {
   .tradingview-widget-container,
   .tradingview-widget-container__widget {
     width: 100% !important;
-    height: 100% !important;
+    height: 70px !important;
     min-height: 80px !important;
   }
 
