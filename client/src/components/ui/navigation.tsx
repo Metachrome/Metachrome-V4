@@ -15,7 +15,18 @@ export function Navigation() {
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const { user, isAuthenticated, logout } = useAuth();
 
-  // Get user display name - prioritize firstName + lastName, fallback to username
+  // Debug logging for user data in navigation
+  console.log('🔍 Navigation Debug - User Data:', {
+    user: user,
+    isAuthenticated: isAuthenticated,
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+    username: user?.username,
+    walletAddress: user?.walletAddress,
+    email: user?.email
+  });
+
+  // Get user display name - prioritize firstName + lastName, fallback to username, then wallet address
   const getUserDisplayName = () => {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`;
@@ -25,6 +36,10 @@ export function Navigation() {
     }
     if (user?.username) {
       return user.username;
+    }
+    // For MetaMask users, show shortened wallet address
+    if (user?.walletAddress) {
+      return `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`;
     }
     return "Account";
   };
@@ -244,8 +259,17 @@ export function Navigation() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile user info and menu button */}
+          <div className="md:hidden flex items-center space-x-3">
+            {/* Mobile user display */}
+            {isAuthenticated && (
+              <div className="flex items-center space-x-2 text-gray-300">
+                <UserCircle className="w-5 h-5" />
+                <span className="text-sm">{getUserDisplayName()}</span>
+              </div>
+            )}
+
+            {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="sm"
