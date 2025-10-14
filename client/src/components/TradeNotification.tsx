@@ -193,12 +193,14 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     userAgent: navigator.userAgent
   });
 
-  // SAFETY CHECK: If screen is large (desktop), force desktop notification
-  const forceDesktop = screenWidth >= 1024; // Definitely desktop
-  const shouldUseMobile = isActuallyMobile && !forceDesktop;
+  // EMERGENCY FIX: Force desktop notification for ALL devices
+  const forceDesktop = true; // FORCE DESKTOP FOR ALL
+  const shouldUseMobile = false; // NEVER USE MOBILE NOTIFICATION
+
+  console.log('🚨 EMERGENCY FIX: Forcing desktop notification for all devices');
 
   // BULLETPROOF SYSTEM: Use DOM manipulation for mobile only
-  const useBulletproofSystem = shouldUseMobile; // Only use for actual mobile screens (small + touch + not forced desktop)
+  const useBulletproofSystem = shouldUseMobile; // EMERGENCY: Always false, so always use React desktop notification
 
   // BULLETPROOF MOBILE NOTIFICATION - Direct DOM manipulation
   useEffect(() => {
