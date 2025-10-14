@@ -3,7 +3,8 @@ import { Button } from "./button";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "../../hooks/useAuth";
 import { useIsMobile } from "../../hooks/use-mobile";
-import { Menu, X, UserCircle } from "lucide-react";
+import { Menu, X, UserCircle, ChevronDown, Settings, User, LogOut } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "./dropdown-menu";
 import logoImage from "../../assets/new-metachrome-logo.png";
 
 export function MobileHeader() {
@@ -41,6 +42,20 @@ export function MobileHeader() {
     setIsMenuOpen(false);
   };
 
+  // Get user display name - prioritize firstName + lastName, fallback to username
+  const getUserDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user?.firstName) {
+      return user.firstName;
+    }
+    if (user?.username) {
+      return user.username;
+    }
+    return "Account";
+  };
+
   return (
     <>
       {/* Mobile Header */}
@@ -62,29 +77,49 @@ export function MobileHeader() {
 
           {/* Auth Buttons */}
           {isAuthenticated ? (
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const dashboardPath = (user?.role === 'admin' || user?.role === 'super_admin')
-                    ? '/admin/dashboard'
-                    : '/dashboard';
-                  handleNavigation(dashboardPath);
-                }}
-                className="text-gray-300 hover:text-white"
-              >
-                <UserCircle className="w-4 h-4 mr-1" />
-                Account
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => logout()}
-                className="text-gray-300 hover:text-white"
-              >
-                Logout
-              </Button>
+            <div className="flex items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-300 hover:text-white flex items-center space-x-1"
+                  >
+                    <UserCircle className="w-4 h-4" />
+                    <span className="text-sm">{getUserDisplayName()}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-gray-800 border-gray-700">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const dashboardPath = (user?.role === 'admin' || user?.role === 'super_admin')
+                        ? '/admin/dashboard'
+                        : '/dashboard';
+                      handleNavigation(dashboardPath);
+                    }}
+                    className="flex items-center w-full px-2 py-2 text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleNavigation('/profile')}
+                    className="flex items-center w-full px-2 py-2 text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem
+                    onClick={() => logout()}
+                    className="flex items-center w-full px-2 py-2 text-gray-300 hover:text-white hover:bg-gray-700 cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <div className="flex items-center space-x-2">
