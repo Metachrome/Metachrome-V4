@@ -122,8 +122,14 @@ export default function ProfilePage() {
         newPassword: '',
         confirmPassword: ''
       }));
-      // Refresh user data to update hasPassword status
+      // Refresh user data to update hasPassword status - multiple approaches
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
+
+      // Force a page refresh after a short delay to ensure UI updates
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -720,8 +726,8 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
 
-                {/* Set Login Password for MetaMask/Google Users */}
-                {!user?.hasPassword && (user?.walletAddress || user?.email?.includes('@gmail.com')) && (
+                {/* Set Login Password for Verified Users Without Password */}
+                {!user?.hasPassword && user?.verificationStatus === 'verified' && (
                   <Card className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-600/50">
                     <CardHeader>
                       <div className="flex items-center gap-3">
@@ -731,10 +737,7 @@ export default function ProfilePage() {
                         <div>
                           <CardTitle className="text-white text-lg">Set Login Password</CardTitle>
                           <CardDescription className="text-purple-200">
-                            {user?.walletAddress
-                              ? 'Add password login to your MetaMask account'
-                              : 'Add password login to your Google account'
-                            }
+                            Add password login to your verified account for additional security
                           </CardDescription>
                         </div>
                       </div>
@@ -821,6 +824,13 @@ export default function ProfilePage() {
 
                         <Button
                           onClick={() => {
+                            console.log('🔐 Setting password for verified user:', {
+                              hasPassword: user?.hasPassword,
+                              verificationStatus: user?.verificationStatus,
+                              newPasswordLength: formData.newPassword?.length,
+                              confirmPasswordLength: formData.confirmPassword?.length
+                            });
+
                             // Handle setting password for MetaMask/Google users
                             if (formData.newPassword !== formData.confirmPassword) {
                               toast({
@@ -904,6 +914,121 @@ export default function ProfilePage() {
                       </Button>
                     </div>
                   </div>
+                )}
+
+                {/* Alternative Password Setting for Non-Verified Users */}
+                {!user?.hasPassword && user?.verificationStatus !== 'verified' && (
+                  <Card className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border-orange-600/50">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-600/20 rounded-lg">
+                          <Shield className="w-6 h-6 text-orange-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-white text-lg">Set Login Password</CardTitle>
+                          <CardDescription className="text-orange-200">
+                            Set a password for your account (verification not required)
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="p-4 bg-orange-900/20 border border-orange-600/50 rounded-lg">
+                        <h3 className="text-orange-400 font-medium mb-2">
+                          🔐 Password Login Setup
+                        </h3>
+                        <p className="text-orange-200 text-sm mb-4">
+                          Add a password to enable username/password login for your account.
+                        </p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="newPasswordAlt" className="text-gray-300">New Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="newPasswordAlt"
+                              type={showPassword ? "text" : "password"}
+                              value={formData.newPassword}
+                              onChange={(e) => handleInputChange('newPassword', e.target.value)}
+                              className="bg-gray-700 border-gray-600 text-white pr-10"
+                              placeholder="Enter your new password"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-gray-400" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPasswordAlt" className="text-gray-300">Confirm Password</Label>
+                          <Input
+                            id="confirmPasswordAlt"
+                            type={showPassword ? "text" : "password"}
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                            className="bg-gray-700 border-gray-600 text-white"
+                            placeholder="Confirm your new password"
+                          />
+                        </div>
+
+                        <Button
+                          onClick={() => {
+                            console.log('🔐 Setting password for non-verified user:', {
+                              hasPassword: user?.hasPassword,
+                              verificationStatus: user?.verificationStatus,
+                              newPasswordLength: formData.newPassword?.length,
+                              confirmPasswordLength: formData.confirmPassword?.length
+                            });
+
+                            // Handle setting password for any user
+                            if (formData.newPassword !== formData.confirmPassword) {
+                              toast({
+                                title: "Password Mismatch",
+                                description: "New password and confirmation don't match",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
+                            if (formData.newPassword.length < 6) {
+                              toast({
+                                title: "Password Too Short",
+                                description: "Password must be at least 6 characters long",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
+                            // Use the mutation for setting password (no current password required)
+                            changePasswordMutation.mutate({
+                              newPassword: formData.newPassword,
+                              isFirstTimePassword: true
+                            });
+                          }}
+                          disabled={
+                            changePasswordMutation.isPending ||
+                            !formData.newPassword ||
+                            !formData.confirmPassword
+                          }
+                          className="w-full bg-orange-600 hover:bg-orange-700"
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          {changePasswordMutation.isPending ? "Setting Password..." : "Set Password"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* Verification Status */}
