@@ -284,21 +284,31 @@ export default function ProfilePage() {
       console.log('🚨 Emergency fix response:', response);
 
       if (response.fixed) {
-        // Clear cache and force refresh
-        localStorage.removeItem('user');
-        queryClient.removeQueries({ queryKey: ["/api/auth"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
-        await queryClient.refetchQueries({ queryKey: ["/api/auth"] });
+        // NUCLEAR OPTION: Complete cache clearing and forced refresh
+        console.log('🚨 NUCLEAR FIX APPLIED - Clearing all caches');
+
+        // Clear ALL localStorage data
+        localStorage.clear();
+
+        // Clear ALL React Query cache
+        queryClient.clear();
 
         toast({
-          title: "✅ Verification Status Fixed!",
+          title: response.nuclear ? "🚨 NUCLEAR FIX APPLIED!" : "✅ Verification Status Fixed!",
           description: response.message || "Your verification status has been corrected.",
+          duration: 5000,
         });
 
-        // Force page reload to ensure all components update
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Force immediate page reload for nuclear fix
+        if (response.nuclear) {
+          console.log('🚨 NUCLEAR: Forcing immediate page reload');
+          window.location.href = window.location.href; // Force complete page reload
+        } else {
+          // Regular fix - delayed reload
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
       } else {
         toast({
           title: "Status Check Complete",

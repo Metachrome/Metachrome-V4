@@ -926,6 +926,17 @@ async function getUserFromToken(token) {
             .single();
 
           if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+
+          // CRITICAL FIX: Log the actual data being returned
+          if (data) {
+            console.log('🔍 getUserFromToken - Fresh user data from Supabase:', {
+              username: data.username,
+              verification_status: data.verification_status,
+              has_uploaded_documents: data.has_uploaded_documents,
+              verified_at: data.verified_at
+            });
+          }
+
           return data;
         } else {
           // Development fallback
@@ -9304,9 +9315,9 @@ app.post('/api/user/emergency-verification-fix', async (req, res) => {
       const hasApprovedDocs = approvedDocs && approvedDocs.length > 0;
       console.log(`📄 User has ${approvedDocs?.length || 0} approved documents`);
 
-      // If user has approved documents but status is not verified, fix it
-      if (hasApprovedDocs && freshUser.verification_status !== 'verified') {
-        console.log('🔧 FIXING: User has approved documents but status is not verified');
+      // NUCLEAR OPTION: Always force update to verified if user has approved docs
+      if (hasApprovedDocs) {
+        console.log('🚨 NUCLEAR FIX: Force updating verification status to verified');
 
         const { data: updatedUser, error: updateError } = await supabase
           .from('users')
@@ -9325,32 +9336,30 @@ app.post('/api/user/emergency-verification-fix', async (req, res) => {
           throw updateError;
         }
 
-        console.log('✅ User verification status fixed:', updatedUser.verification_status);
+        console.log('✅ User verification status FORCE UPDATED:', updatedUser.verification_status);
 
-        // Update user session cache
-        if (authToken.startsWith('user-session-')) {
-          const sessionKey = authToken;
-          if (userSessions[sessionKey]) {
-            userSessions[sessionKey] = {
-              ...userSessions[sessionKey],
-              verification_status: 'verified',
-              has_uploaded_documents: true,
-              verified_at: updatedUser.verified_at,
-              updated_at: updatedUser.updated_at
-            };
-            console.log('✅ User session cache updated');
+        // NUCLEAR OPTION: Clear all user sessions and force re-authentication
+        console.log('🚨 NUCLEAR: Clearing all user sessions for fresh login');
+
+        // Clear user session cache
+        Object.keys(userSessions).forEach(sessionKey => {
+          if (sessionKey.includes(user.id)) {
+            delete userSessions[sessionKey];
+            console.log('🗑️ Cleared session:', sessionKey.substring(0, 30) + '...');
           }
-        }
+        });
 
         res.json({
           success: true,
           fixed: true,
+          nuclear: true,
           user: updatedUser,
-          message: 'Verification status has been fixed - you are now verified!',
+          message: 'NUCLEAR FIX APPLIED: Verification status forced to verified. Please refresh the page completely.',
           debug: {
             previousStatus: freshUser.verification_status,
             newStatus: 'verified',
-            approvedDocuments: approvedDocs?.length || 0
+            approvedDocuments: approvedDocs?.length || 0,
+            sessionCleared: true
           }
         });
       } else {
@@ -9358,7 +9367,7 @@ app.post('/api/user/emergency-verification-fix', async (req, res) => {
           success: true,
           fixed: false,
           user: freshUser,
-          message: 'Verification status is already correct',
+          message: 'No approved documents found - cannot verify user',
           debug: {
             currentStatus: freshUser.verification_status,
             approvedDocuments: approvedDocs?.length || 0,
