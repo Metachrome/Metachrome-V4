@@ -66,7 +66,7 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<any> {
   const fullUrl = `${API_BASE_URL}${url}`;
   // Development logging only
   if (import.meta.env.DEV) {
@@ -99,7 +99,16 @@ export async function apiRequest(
   }
 
   await throwIfResNotOk(res);
-  return res;
+
+  // 🚨 CRITICAL FIX: Parse JSON response instead of returning raw Response object
+  const jsonData = await res.json();
+
+  // Development logging only
+  if (import.meta.env.DEV) {
+    console.log(`📡 API Response: ${method} ${url}`, jsonData);
+  }
+
+  return jsonData;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
