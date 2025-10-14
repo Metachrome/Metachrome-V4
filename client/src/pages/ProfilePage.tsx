@@ -122,11 +122,25 @@ export default function ProfilePage() {
         newPassword: '',
         confirmPassword: ''
       }));
-      // Refresh user data to update hasPassword status - multiple approaches
+
+      // Force complete refresh of user data to update hasPassword status
+      console.log('🔄 Password changed successfully, forcing complete user data refresh...');
+
+      // Clear localStorage cache to force fresh API call
+      localStorage.removeItem('user');
+
+      // Clear all auth-related queries
+      queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.removeQueries({ queryKey: ['/api/auth'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
-      queryClient.removeQueries({ queryKey: ['/api/auth'] });
       queryClient.refetchQueries({ queryKey: ['/api/auth'] });
+
+      // Force a page reload after a short delay to ensure fresh data
+      setTimeout(() => {
+        console.log('🔄 Reloading page to ensure fresh user data...');
+        window.location.reload();
+      }, 1000);
 
       // Force a page refresh after a short delay to ensure UI updates
       setTimeout(() => {

@@ -9470,7 +9470,8 @@ app.get('/api/debug/password-status', async (req, res) => {
       currentUserData: {
         hasPasswordHash: !!(user.password_hash && user.password_hash.length > 0),
         passwordHashLength: user.password_hash?.length || 0
-      }
+      },
+      passwordSaved: !!(user.password_hash && user.password_hash.length > 0)
     });
   } catch (error) {
     console.error('❌ Debug password status error:', error);

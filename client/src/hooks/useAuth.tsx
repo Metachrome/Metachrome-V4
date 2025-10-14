@@ -46,13 +46,23 @@ export function useAuth() {
       }
 
       try {
-        // For user session tokens, get from localStorage
+        // For user session tokens, make API call to get fresh data
         if (authToken.startsWith('user-session-')) {
-          console.log("Found user session token, using stored user data");
-          const storedUser = localStorage.getItem('user');
-          if (storedUser) {
-            console.log("User session auth successful");
-            return JSON.parse(storedUser);
+          console.log("Found user session token, fetching fresh user data from API");
+          try {
+            const response = await apiRequest("GET", "/api/auth/user");
+            console.log("User session API response:", response);
+
+            // Update localStorage with fresh data
+            localStorage.setItem('user', JSON.stringify(response));
+            return response;
+          } catch (error) {
+            console.log("API call failed, falling back to stored user data:", error);
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              console.log("Using fallback stored user data");
+              return JSON.parse(storedUser);
+            }
           }
         }
 
