@@ -44,6 +44,24 @@ export function Navigation() {
     return "Account";
   };
 
+  // Get mobile user display name - shorter format for mobile
+  const getMobileUserDisplayName = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user?.firstName) {
+      return user.firstName;
+    }
+    if (user?.username) {
+      return user.username;
+    }
+    // For MetaMask users, show very short wallet address for mobile
+    if (user?.walletAddress) {
+      return `${user.walletAddress.slice(0, 6)}...`;
+    }
+    return "Account";
+  };
+
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -91,8 +109,8 @@ export function Navigation() {
 
   return (
     <header className="bg-[#34344E] border-b border-gray-700/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-16">
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/">
@@ -100,7 +118,7 @@ export function Navigation() {
                 <img
                   src={metachromeLogo}
                   alt="METACHROME"
-                  className="h-[2.6rem] w-auto"
+                  className="h-[3rem] md:h-[2.6rem] w-auto"
                 />
               </div>
             </Link>
@@ -259,13 +277,18 @@ export function Navigation() {
             )}
           </div>
 
-          {/* Mobile user info and menu button */}
-          <div className="md:hidden flex items-center space-x-3">
+          {/* Mobile right section */}
+          <div className="md:hidden flex items-center space-x-2">
+            {/* US Flag */}
+            <div className="flex items-center">
+              <img src="https://flagcdn.com/w20/us.png" alt="English" className="w-5 h-3" />
+            </div>
+
             {/* Mobile user display */}
             {isAuthenticated && (
-              <div className="flex items-center space-x-2 text-gray-300">
-                <UserCircle className="w-5 h-5" />
-                <span className="text-sm">{getUserDisplayName()}</span>
+              <div className="flex items-center space-x-1.5 text-gray-300 bg-gray-700/30 rounded-full px-2 py-1">
+                <UserCircle className="w-4 h-4" />
+                <span className="text-xs font-medium">{getMobileUserDisplayName()}</span>
               </div>
             )}
 
@@ -274,9 +297,9 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-gray-300 hover:text-white"
+              className="text-gray-300 hover:text-white p-1.5"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
@@ -381,7 +404,7 @@ export function Navigation() {
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2 text-gray-300 px-3 py-2">
                         <UserCircle className="w-4 h-4" />
-                        <span>{getUserDisplayName()}</span>
+                        <span>{getMobileUserDisplayName()}</span>
                       </div>
                       <Button
                         variant="outline"
