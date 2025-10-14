@@ -125,11 +125,15 @@ export default function ProfilePage() {
       // Refresh user data to update hasPassword status - multiple approaches
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
+      queryClient.removeQueries({ queryKey: ['/api/auth'] });
+      queryClient.refetchQueries({ queryKey: ['/api/auth'] });
 
       // Force a page refresh after a short delay to ensure UI updates
       setTimeout(() => {
+        // Clear all auth-related cache before reload
+        queryClient.clear();
         window.location.reload();
-      }, 1500);
+      }, 1000);
     },
     onError: (error: any) => {
       toast({
@@ -1289,8 +1293,39 @@ export default function ProfilePage() {
                 <CardDescription className="text-gray-400">
                   Manage your password and security preferences
                 </CardDescription>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      console.log('🔄 Manual refresh of user data');
+                      queryClient.removeQueries({ queryKey: ['/api/auth'] });
+                      queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
+                      queryClient.refetchQueries({ queryKey: ['/api/auth'] });
+                      toast({
+                        title: "Refreshing User Data",
+                        description: "Updating password status...",
+                      });
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="text-blue-400 border-blue-600 hover:bg-blue-900/20"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh Status
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Debug logging for password status */}
+                {console.log('🔍 Security Tab Debug - User Data:', {
+                  hasPassword: user?.hasPassword,
+                  passwordStatus: user?.hasPassword ? 'Password Set' : 'No Password',
+                  verificationStatus: user?.verificationStatus,
+                  walletAddress: user?.walletAddress,
+                  email: user?.email,
+                  userId: user?.id,
+                  username: user?.username
+                })}
+
                 {/* Check if user has a password set */}
                 {user?.hasPassword ? (
                   /* Traditional password change for users with existing passwords */
