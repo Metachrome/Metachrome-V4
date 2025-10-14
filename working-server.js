@@ -10,6 +10,9 @@ const http = require('http');
 // Import fetch for Node.js
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+// In-memory user sessions cache
+const userSessions = {};
+
 // Helper function to get current price from Binance
 async function getCurrentPrice(symbol) {
   try {
@@ -1233,91 +1236,40 @@ app.get('/api/auth', async (req, res) => {
     if (token.startsWith('user-token-') || token.startsWith('user-session-')) {
       console.log('🔍 Parsing user token:', token);
 
-      let userId = null;
-      const users = await getUsers();
+      // CRITICAL FIX: Use getUserFromToken function instead of getUsers() for consistency
+      const user = await getUserFromToken(token);
 
-      if (token.startsWith('user-session-')) {
-        // Extract user ID from token format: user-session-{userId}-{timestamp}
-        const parts = token.split('-');
-        if (parts.length >= 4) {
-          // For tokens like: user-session-user-angela-1758186127890
-          // Parts: ['user', 'session', 'user', 'angela', '1758186127890']
-          // We need to reconstruct the userId from parts 2 onwards, excluding the last part (timestamp)
-          const userIdParts = parts.slice(2, -1); // Get all parts except first 2 and last 1
-          userId = userIdParts.join('-');
-          console.log('🔍 Extracted userId from token (auth endpoint):', userId);
-        } else {
-          // Fallback for simpler token formats
-          const tokenWithoutPrefix = token.replace('user-session-', '');
-          const lastDashIndex = tokenWithoutPrefix.lastIndexOf('-');
-          if (lastDashIndex > 0) {
-            userId = tokenWithoutPrefix.substring(0, lastDashIndex);
-          } else {
-            userId = tokenWithoutPrefix;
-          }
-        }
-      } else if (token.startsWith('user-token-')) {
-        // Legacy format - find user by token timestamp correlation
-        const tokenTimestamp = token.split('-').pop();
-        if (tokenTimestamp && !isNaN(tokenTimestamp)) {
-          const tokenTime = parseInt(tokenTimestamp);
-          // Find user created around the same time as the token (within 5 minutes)
-          const matchingUser = users.find(u => {
-            const userTime = new Date(u.created_at || u.last_login).getTime();
-            return Math.abs(userTime - tokenTime) < 300000; // 5 minutes tolerance
-          });
-          if (matchingUser) {
-            userId = matchingUser.id;
-          } else {
-            // Fallback: find most recently created user
-            const sortedUsers = users.sort((a, b) =>
-              new Date(b.created_at || b.last_login).getTime() -
-              new Date(a.created_at || a.last_login).getTime()
-            );
-            if (sortedUsers.length > 0) {
-              userId = sortedUsers[0].id;
-            }
-          }
-        }
-      }
+      if (user) {
+        console.log('✅ Token verified, returning user:', user.username);
+        console.log('🔍 User verification status:', user.verification_status);
+        console.log('🔍 User has_uploaded_documents:', user.has_uploaded_documents);
+        console.log('🔍 User verified_at:', user.verified_at);
 
-      console.log('🔍 Extracted user ID from token:', userId);
+        const responseData = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          balance: user.balance,
+          role: user.role || 'user',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
+          hasUploadedDocuments: user.has_uploaded_documents || false,
+          walletAddress: user.wallet_address || null,
+          hasPassword: !!(user.password_hash && user.password_hash.length > 0)
+        };
 
-      if (userId) {
-        const user = users.find(u => u.id === userId);
+        console.log('📤 Sending user data to frontend:', {
+          username: responseData.username,
+          verificationStatus: responseData.verificationStatus,
+          hasUploadedDocuments: responseData.hasUploadedDocuments,
+          walletAddress: responseData.walletAddress,
+          hasPassword: responseData.hasPassword
+        });
 
-        if (user) {
-          console.log('✅ Token verified, returning user:', user.username);
-          console.log('🔍 User verification status:', user.verification_status);
-          console.log('🔍 User has_uploaded_documents:', user.has_uploaded_documents);
-          console.log('🔍 User verified_at:', user.verified_at);
-
-          const responseData = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            balance: user.balance,
-            role: user.role || 'user',
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
-            hasUploadedDocuments: user.has_uploaded_documents || false,
-            walletAddress: user.wallet_address || null,
-            hasPassword: !!(user.password_hash && user.password_hash.length > 0)
-          };
-
-          console.log('📤 Sending user data to frontend:', {
-            username: responseData.username,
-            verificationStatus: responseData.verificationStatus,
-            hasUploadedDocuments: responseData.hasUploadedDocuments,
-            walletAddress: responseData.walletAddress,
-            hasPassword: responseData.hasPassword
-          });
-
-          return res.json(responseData);
-        } else {
-          console.log('❌ User not found for ID:', userId);
-        }
+        return res.json(responseData);
+      } else {
+        console.log('❌ User not found for token');
       }
     }
 
@@ -9223,6 +9175,8 @@ app.post('/api/user/force-refresh-verification', async (req, res) => {
       // CRITICAL FIX: Update the user session cache with fresh data
       if (authToken.startsWith('user-session-')) {
         console.log('🔄 Updating user session cache with fresh verification status');
+        console.log('🔍 Session token:', authToken.substring(0, 30) + '...');
+        console.log('🔍 Available sessions:', Object.keys(userSessions).length);
 
         // Update the user session in memory/cache
         const sessionKey = authToken;
@@ -9235,6 +9189,16 @@ app.post('/api/user/force-refresh-verification', async (req, res) => {
             updated_at: freshUser.updated_at
           };
           console.log('✅ User session cache updated with verification status:', freshUser.verification_status);
+        } else {
+          console.log('⚠️ Session not found in cache, creating new session entry');
+          userSessions[sessionKey] = {
+            ...freshUser,
+            verification_status: freshUser.verification_status,
+            has_uploaded_documents: freshUser.has_uploaded_documents,
+            verified_at: freshUser.verified_at,
+            updated_at: freshUser.updated_at
+          };
+          console.log('✅ New session cache entry created with verification status:', freshUser.verification_status);
         }
       }
 
