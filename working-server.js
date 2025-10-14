@@ -1692,10 +1692,13 @@ app.get('/api/auth/user', async (req, res) => {
       hasPasswordHash: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
       passwordHashLength: currentUser.password_hash?.length || 0,
       verificationStatus: currentUser.verification_status,
+      hasUploadedDocuments: currentUser.has_uploaded_documents,
+      verifiedAt: currentUser.verified_at,
       walletAddress: currentUser.wallet_address
     });
 
-    res.json({
+    // CRITICAL FIX: Ensure verification status is properly mapped
+    const responseData = {
       id: currentUser.id,
       username: currentUser.username,
       email: currentUser.email,
@@ -1709,8 +1712,14 @@ app.get('/api/auth/user', async (req, res) => {
       verificationStatus: currentUser.verification_status || 'unverified',
       hasUploadedDocuments: currentUser.has_uploaded_documents || false,
       walletAddress: currentUser.wallet_address || null,
-      hasPassword: !!(currentUser.password_hash && currentUser.password_hash.length > 0)
-    });
+      hasPassword: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
+      verified_at: currentUser.verified_at,
+      updated_at: currentUser.updated_at
+    };
+
+    console.log('📤 Sending user response with verification status:', responseData.verificationStatus);
+
+    res.json(responseData);
   } catch (error) {
     console.error('❌ Error getting current user:', error);
     res.status(500).json({ error: 'Failed to get user data' });
@@ -9192,16 +9201,41 @@ app.post('/api/user/force-refresh-verification', async (req, res) => {
       // Get fresh user data from Supabase
       const { data: freshUser, error } = await supabase
         .from('users')
-        .select('id, username, email, verification_status, has_uploaded_documents, verified_at')
+        .select('id, username, email, verification_status, has_uploaded_documents, verified_at, updated_at')
         .eq('id', user.id)
         .single();
 
       if (error) throw error;
 
+      console.log('🔄 Fresh user data from database:', freshUser);
+
+      // CRITICAL FIX: Update the user session cache with fresh data
+      if (authToken.startsWith('user-session-')) {
+        console.log('🔄 Updating user session cache with fresh verification status');
+
+        // Update the user session in memory/cache
+        const sessionKey = authToken;
+        if (userSessions[sessionKey]) {
+          userSessions[sessionKey] = {
+            ...userSessions[sessionKey],
+            verification_status: freshUser.verification_status,
+            has_uploaded_documents: freshUser.has_uploaded_documents,
+            verified_at: freshUser.verified_at,
+            updated_at: freshUser.updated_at
+          };
+          console.log('✅ User session cache updated with verification status:', freshUser.verification_status);
+        }
+      }
+
       res.json({
         success: true,
         user: freshUser,
-        message: 'Verification status refreshed'
+        message: 'Verification status refreshed and cache updated',
+        debug: {
+          databaseStatus: freshUser.verification_status,
+          hasDocuments: freshUser.has_uploaded_documents,
+          verifiedAt: freshUser.verified_at
+        }
       });
     } else {
       // Development mode
@@ -9217,6 +9251,130 @@ app.post('/api/user/force-refresh-verification', async (req, res) => {
   } catch (error) {
     console.error('❌ Force refresh error:', error);
     res.status(500).json({ error: 'Failed to refresh verification status' });
+  }
+});
+
+// ===== EMERGENCY VERIFICATION STATUS FIX ENDPOINT =====
+app.post('/api/user/emergency-verification-fix', async (req, res) => {
+  try {
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    console.log('🚨 EMERGENCY: Fixing verification status for:', user.username);
+
+    if (isProduction && supabase) {
+      // Get fresh user data from Supabase
+      const { data: freshUser, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('❌ Error fetching user from Supabase:', error);
+        throw error;
+      }
+
+      console.log('🔍 Current user data in database:', {
+        username: freshUser.username,
+        verification_status: freshUser.verification_status,
+        has_uploaded_documents: freshUser.has_uploaded_documents,
+        verified_at: freshUser.verified_at
+      });
+
+      // Check if user has approved documents
+      const { data: approvedDocs, error: docsError } = await supabase
+        .from('user_verification_documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('verification_status', 'approved');
+
+      if (docsError) {
+        console.error('❌ Error fetching documents:', docsError);
+      }
+
+      const hasApprovedDocs = approvedDocs && approvedDocs.length > 0;
+      console.log(`📄 User has ${approvedDocs?.length || 0} approved documents`);
+
+      // If user has approved documents but status is not verified, fix it
+      if (hasApprovedDocs && freshUser.verification_status !== 'verified') {
+        console.log('🔧 FIXING: User has approved documents but status is not verified');
+
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('users')
+          .update({
+            verification_status: 'verified',
+            has_uploaded_documents: true,
+            verified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('❌ Error updating user status:', updateError);
+          throw updateError;
+        }
+
+        console.log('✅ User verification status fixed:', updatedUser.verification_status);
+
+        // Update user session cache
+        if (authToken.startsWith('user-session-')) {
+          const sessionKey = authToken;
+          if (userSessions[sessionKey]) {
+            userSessions[sessionKey] = {
+              ...userSessions[sessionKey],
+              verification_status: 'verified',
+              has_uploaded_documents: true,
+              verified_at: updatedUser.verified_at,
+              updated_at: updatedUser.updated_at
+            };
+            console.log('✅ User session cache updated');
+          }
+        }
+
+        res.json({
+          success: true,
+          fixed: true,
+          user: updatedUser,
+          message: 'Verification status has been fixed - you are now verified!',
+          debug: {
+            previousStatus: freshUser.verification_status,
+            newStatus: 'verified',
+            approvedDocuments: approvedDocs?.length || 0
+          }
+        });
+      } else {
+        res.json({
+          success: true,
+          fixed: false,
+          user: freshUser,
+          message: 'Verification status is already correct',
+          debug: {
+            currentStatus: freshUser.verification_status,
+            approvedDocuments: approvedDocs?.length || 0,
+            hasApprovedDocs: hasApprovedDocs
+          }
+        });
+      }
+    } else {
+      res.json({
+        success: false,
+        message: 'Emergency fix only available in production mode'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Emergency verification fix error:', error);
+    res.status(500).json({ error: 'Failed to fix verification status' });
   }
 });
 

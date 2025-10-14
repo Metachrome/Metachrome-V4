@@ -274,6 +274,52 @@ export default function ProfilePage() {
     }
   };
 
+  // Emergency verification status fix
+  const emergencyVerificationFix = async () => {
+    setIsRefreshing(true);
+    try {
+      console.log('🚨 Running emergency verification fix...');
+
+      const response = await apiRequest('POST', '/api/user/emergency-verification-fix');
+      console.log('🚨 Emergency fix response:', response);
+
+      if (response.fixed) {
+        // Clear cache and force refresh
+        localStorage.removeItem('user');
+        queryClient.removeQueries({ queryKey: ["/api/auth"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/auth"] });
+
+        toast({
+          title: "✅ Verification Status Fixed!",
+          description: response.message || "Your verification status has been corrected.",
+        });
+
+        // Force page reload to ensure all components update
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        toast({
+          title: "Status Check Complete",
+          description: response.message || "Your verification status is already correct.",
+        });
+      }
+
+      setTestResults(`✅ Emergency fix completed! Fixed: ${response.fixed}, Status: ${response.user?.verification_status}`);
+    } catch (error: any) {
+      console.error('❌ Emergency fix error:', error);
+      toast({
+        title: "Emergency Fix Failed",
+        description: error.message || "Failed to fix verification status",
+        variant: "destructive",
+      });
+      setTestResults(`❌ Emergency fix failed: ${error.message || error}`);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Test function for debugging mobile verification issues
   const testMobileVerificationFix = async () => {
     setTestResults('🔄 Testing mobile verification fix...');
@@ -921,21 +967,70 @@ export default function ProfilePage() {
                           If you were verified on desktop, tap refresh to sync your status
                         </p>
                       </div>
-                      <Button
-                        onClick={forceRefreshVerification}
-                        disabled={isRefreshing}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        {isRefreshing ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-1" />
-                            Refresh
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={forceRefreshVerification}
+                          disabled={isRefreshing}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {isRefreshing ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-1" />
+                              Refresh
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={emergencyVerificationFix}
+                          disabled={isRefreshing}
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          🚨 Fix
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Emergency Verification Fix Notice - Desktop */}
+                {!isMobile && user?.verificationStatus !== 'verified' && (
+                  <div className="p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-red-100 font-medium mb-1">🚨 Verification Status Issue</h3>
+                        <p className="text-red-200 text-sm">
+                          If you should be verified but showing as unverified, click the emergency fix button
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={forceRefreshVerification}
+                          disabled={isRefreshing}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          {isRefreshing ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-1" />
+                              Refresh
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={emergencyVerificationFix}
+                          disabled={isRefreshing}
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          🚨 Emergency Fix
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
