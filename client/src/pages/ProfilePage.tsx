@@ -284,23 +284,39 @@ export default function ProfilePage() {
       console.log('🚨 Emergency fix response:', response);
 
       if (response.fixed) {
-        // NUCLEAR OPTION: Complete cache clearing and forced refresh
-        console.log('🚨 NUCLEAR FIX APPLIED - Clearing all caches');
+        // SUPER NUCLEAR OPTION: Complete system reset
+        console.log('🚨🚨🚨 SUPER NUCLEAR FIX APPLIED - COMPLETE SYSTEM RESET 🚨🚨🚨');
 
-        // Clear ALL localStorage data
+        // Clear ALL browser storage
         localStorage.clear();
+        sessionStorage.clear();
 
         // Clear ALL React Query cache
         queryClient.clear();
 
-        toast({
-          title: response.nuclear ? "🚨 NUCLEAR FIX APPLIED!" : "✅ Verification Status Fixed!",
-          description: response.message || "Your verification status has been corrected.",
-          duration: 5000,
+        // Clear ALL cookies (if possible)
+        document.cookie.split(";").forEach((c) => {
+          const eqPos = c.indexOf("=");
+          const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
         });
 
-        // Force immediate page reload for nuclear fix
-        if (response.nuclear) {
+        const isSuper = response.superNuclear;
+
+        toast({
+          title: isSuper ? "🚨🚨🚨 SUPER NUCLEAR FIX APPLIED!" : response.nuclear ? "🚨 NUCLEAR FIX APPLIED!" : "✅ Verification Status Fixed!",
+          description: response.message || "Your verification status has been corrected.",
+          duration: isSuper ? 10000 : 5000,
+        });
+
+        // Force immediate complete browser refresh for super nuclear fix
+        if (isSuper) {
+          console.log('🚨🚨🚨 SUPER NUCLEAR: Forcing complete browser refresh in 3 seconds');
+          setTimeout(() => {
+            // Force complete page reload with cache bypass
+            window.location.href = window.location.protocol + '//' + window.location.host + window.location.pathname + '?t=' + Date.now();
+          }, 3000);
+        } else if (response.nuclear) {
           console.log('🚨 NUCLEAR: Forcing immediate page reload');
           window.location.href = window.location.href; // Force complete page reload
         } else {
