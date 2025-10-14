@@ -35,6 +35,17 @@ export default function ProfilePage() {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
+  // 🚨🚨🚨 EMERGENCY DIAGNOSTIC - Log all user data
+  useEffect(() => {
+    console.log('🚨🚨🚨 EMERGENCY DIAGNOSTIC - Current user object:', user);
+    console.log('🚨🚨🚨 EMERGENCY DIAGNOSTIC - Verification status check:', {
+      'user?.verificationStatus': user?.verificationStatus,
+      'user?.verification_status': (user as any)?.verification_status,
+      'user object keys': user ? Object.keys(user) : 'No user',
+      'full user object': JSON.stringify(user, null, 2)
+    });
+  }, [user]);
+
   // Show loading if user is not loaded yet
   if (!user) {
     return (
@@ -1033,6 +1044,23 @@ export default function ProfilePage() {
                         </p>
                       </div>
                       <div className="flex gap-2">
+                        <Button
+                          onClick={async () => {
+                            console.log('🚨🚨🚨 TESTING API DIRECTLY');
+                            try {
+                              const response = await apiRequest('GET', '/api/auth/user');
+                              console.log('🚨🚨🚨 DIRECT API RESPONSE:', response);
+                              alert('Check console for API response!');
+                            } catch (error) {
+                              console.error('🚨🚨🚨 API ERROR:', error);
+                              alert('API Error - check console!');
+                            }
+                          }}
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          🔍 Test API
+                        </Button>
                         <Button
                           onClick={forceRefreshVerification}
                           disabled={isRefreshing}
