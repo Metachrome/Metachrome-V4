@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navigation } from "../components/ui/navigation";
+import { NavigationNoMenu } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import { Button } from "../components/ui/button";
@@ -858,7 +858,7 @@ function SpotPageContent() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-[#10121E] text-white pb-20">
-        <Navigation />
+        <NavigationNoMenu />
 
         {/* Mobile Header - Dynamic Trading Pair */}
         <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700 sticky top-0 z-40">
@@ -1230,7 +1230,7 @@ function SpotPageContent() {
   // Desktop layout (existing)
   return (
     <div className="min-h-screen bg-gray-900">
-        <Navigation />
+        <NavigationNoMenu />
       <div className="bg-[#10121E] flex min-h-screen">
         {/* Left and Center Content */}
         <div className="flex-1">
