@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { useIsMobile } from '../hooks/use-mobile';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { showMobileTradeNotification, removeMobileNotification } from '../utils/mobileNotification';
 
 // Debug: Verify import is working
@@ -30,19 +29,17 @@ interface TradeNotificationProps {
 const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
     setTimeout(onClose, 300);
-  };
+  }, [onClose]);
 
   useEffect(() => {
     if (trade) {
-      const timer = setTimeout(() => {
-        handleClose();
-      }, 20000);
+      const timer = setTimeout(handleClose, 20000);
       return () => clearTimeout(timer);
     }
-  }, [trade]);
+  }, [trade?.id, handleClose]); // Only depend on trade ID, not entire trade object
 
   if (!trade || !isVisible) return null;
 
@@ -50,7 +47,9 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
 
   return (
-    <div className="trade-notification fixed top-4 right-4 z-50 max-w-[280px] min-w-[260px]">
+    <div className={`trade-notification fixed top-4 right-4 z-50 max-w-[280px] min-w-[260px] transition-all duration-300 ${
+      isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'
+    }`}>
       <div className={`p-3 rounded-lg shadow-lg border ${
         isWin
           ? 'bg-gradient-to-br from-emerald-900/95 via-green-800/95 to-teal-900/95 border-emerald-400 text-emerald-50'
@@ -109,59 +108,26 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
 
 // MAIN COMPONENT
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
-  const isMobile = useIsMobile();
-  const [currentWidth, setCurrentWidth] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth : 1024
-  );
 
-  useEffect(() => {
-    const handleResize = () => {
-      setCurrentWidth(window.innerWidth);
-    };
+  // Memoize device detection to prevent recalculation on every render
+  const shouldUseMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize);
-      handleResize();
-      return () => window.removeEventListener('resize', handleResize);
-    }
+    const screenWidth = window.innerWidth;
+    const isSmallScreen = screenWidth < 768;
+    const isTouchDevice = 'ontouchstart' in window;
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isReallySmallScreen = screenWidth < 600;
+
+    return (isSmallScreen && isTouchDevice && isMobileUserAgent) || isReallySmallScreen;
   }, []);
 
-  // CRITICAL: Log when notification is triggered
+  // Log only when trade changes (not on every render)
   useEffect(() => {
     if (trade) {
-      console.log('🔔 TRADE NOTIFICATION: Notification triggered with trade:', trade);
-      console.log('🔔 TRADE NOTIFICATION: Current width:', currentWidth);
-      console.log('🔔 TRADE NOTIFICATION: isMobile hook:', isMobile);
+      console.log('🔔 TRADE NOTIFICATION: New notification -', trade.status, 'shouldUseMobile:', shouldUseMobile);
     }
-  }, [trade, currentWidth, isMobile]);
-
-  // BULLETPROOF MOBILE DETECTION - Multiple checks
-  const screenWidth = window.innerWidth;
-  const isSmallScreen = screenWidth < 768;
-  const isTouchDevice = 'ontouchstart' in window;
-
-  // ENHANCED MOBILE DETECTION - More strict criteria
-  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isReallySmallScreen = screenWidth < 600; // Even stricter threshold
-  const isActuallyMobile = (isSmallScreen && isTouchDevice && isMobileUserAgent) || isReallySmallScreen;
-
-  console.log('🔔 TRADE NOTIFICATION: Detection results:', {
-    isMobile,
-    currentWidth,
-    screenWidth,
-    isSmallScreen,
-    isTouchDevice,
-    isActuallyMobile,
-    'Should use mobile': isActuallyMobile,
-    'Should use desktop': !isActuallyMobile,
-    trade: !!trade,
-    userAgent: navigator.userAgent
-  });
-
-  // PROPER DEVICE DETECTION: Use mobile notification only for actual mobile devices
-  const shouldUseMobile = isActuallyMobile;
-
-  console.log('🔔 DEVICE DETECTION: Using proper mobile detection - shouldUseMobile:', shouldUseMobile);
+  }, [trade?.id, shouldUseMobile]); // Only log when trade ID changes
 
   // BULLETPROOF SYSTEM: Use DOM manipulation for mobile only
   const useBulletproofSystem = shouldUseMobile; // EMERGENCY: Always false, so always use React desktop notification

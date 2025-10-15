@@ -102,49 +102,26 @@ function OptionsPageContent({
   // ROBUST NOTIFICATION TRIGGER FUNCTION
   const triggerNotification = (trade: ActiveTrade) => {
     console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id);
-    console.log('🔔 TRIGGER: Trade data:', trade);
 
-    // Check if we're on mobile to determine notification type
-    const isMobileDevice = isMobile || window.innerWidth < 768;
-    console.log('🔔 TRIGGER: Device detection - isMobile:', isMobileDevice);
-
-    // Generate unique key to force re-render
-    const uniqueKey = `${trade.id}-${Date.now()}`;
-    console.log('🔔 TRIGGER: Generated unique key:', uniqueKey);
-
-    setNotificationKey(uniqueKey);
-    console.log('🔔 TRIGGER: Set notification key');
-
-    // Clear existing notification
-    setCompletedTrade(null);
-    console.log('🔔 TRIGGER: Cleared existing notification');
-
-    // Remove any existing DOM notifications
+    // Remove any existing DOM notifications first
     const existing = document.querySelectorAll('[data-mobile-notification="true"]');
     existing.forEach(el => el.remove());
-    console.log('🔔 TRIGGER: Removed existing DOM notifications');
 
-    // Set new notification with delay to ensure React re-renders
+    // Generate stable key based on trade ID only (not timestamp to prevent flickering)
+    const stableKey = `trade-${trade.id}`;
+    setNotificationKey(stableKey);
+
+    // Set notification directly without clearing first (prevents flickering)
+    setCompletedTrade(trade);
+    localStorage.setItem('completedTrade', JSON.stringify(trade));
+
+    console.log('🔔 TRIGGER: Notification set for trade:', trade.id);
+
+    // Auto-hide after 25 seconds (reduced from 60 for better UX)
     setTimeout(() => {
-      console.log('🔔 TRIGGER: Setting notification state with key:', uniqueKey);
-      console.log('🔔 TRIGGER: About to call setCompletedTrade with:', trade);
-
-      // Always use React-based notification (TradeNotification component handles mobile/desktop logic)
-      setCompletedTrade(trade);
-      console.log('🔔 TRIGGER: setCompletedTrade called successfully');
-
-      localStorage.setItem('completedTrade', JSON.stringify(trade));
-      console.log('🔔 TRIGGER: Saved to localStorage');
-
-      console.log('🔔 TRIGGER: Using React-based TradeNotification component only');
-
-      // Auto-hide after 60 seconds
-      setTimeout(() => {
-        console.log('🔔 TRIGGER: Auto-hiding notification');
-        setCompletedTrade(null);
-        localStorage.removeItem('completedTrade');
-      }, 60000);
-    }, 200);
+      setCompletedTrade(null);
+      localStorage.removeItem('completedTrade');
+    }, 25000);
   };
 
   // GLOBAL FUNCTION FOR CONSOLE TESTING
@@ -3547,8 +3524,6 @@ function OptionsPageContent({
       )}
 
       {/* Trade Notification */}
-      {console.log('🔔 RENDER: completedTrade state:', completedTrade, 'key:', notificationKey)}
-      {console.log('🔔 RENDER: About to render TradeNotification component')}
       <TradeNotification
         key={notificationKey} // Force re-render with unique key
         trade={completedTrade ? {
