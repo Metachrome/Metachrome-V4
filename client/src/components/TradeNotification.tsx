@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { showMobileTradeNotification, removeMobileNotification } from '../utils/mobileNotification';
 
 // Debug: Verify import is working
@@ -109,18 +109,46 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
 // MAIN COMPONENT
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
 
-  // Memoize device detection to prevent recalculation on every render
-  const shouldUseMobile = useMemo(() => {
+  // State for responsive mobile detection
+  const [shouldUseMobile, setShouldUseMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
 
     const screenWidth = window.innerWidth;
     const isSmallScreen = screenWidth < 768;
-    const isTouchDevice = 'ontouchstart' in window;
     const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isReallySmallScreen = screenWidth < 600;
 
-    return (isSmallScreen && isTouchDevice && isMobileUserAgent) || isReallySmallScreen;
-  }, []);
+    // More flexible mobile detection - prioritize screen width for responsive testing
+    return isSmallScreen || isMobileUserAgent;
+  });
+
+  // Update mobile detection on window resize
+  useEffect(() => {
+    const updateMobileDetection = () => {
+      const screenWidth = window.innerWidth;
+      const isSmallScreen = screenWidth < 768;
+      const isTouchDevice = 'ontouchstart' in window;
+      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      const isMobile = isSmallScreen || isMobileUserAgent;
+
+      console.log('🔔 MOBILE DETECTION UPDATE:', {
+        screenWidth,
+        isSmallScreen,
+        isTouchDevice,
+        isMobileUserAgent,
+        finalDecision: isMobile,
+        previousDecision: shouldUseMobile
+      });
+
+      setShouldUseMobile(isMobile);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', updateMobileDetection);
+      updateMobileDetection(); // Initial check
+      return () => window.removeEventListener('resize', updateMobileDetection);
+    }
+  }, [shouldUseMobile]);
 
   // Log only when trade changes (not on every render)
   useEffect(() => {
@@ -205,5 +233,48 @@ if (typeof window !== 'undefined') {
     console.log('🧪 TESTING: Mobile notification test rendered');
   };
 
-  console.log('🧪 TESTING: testMobileNotification() function available in console');
+  // Force mobile notification test (bypasses device detection)
+  (window as any).forceMobileNotification = () => {
+    console.log('🧪 FORCE TEST: Forcing mobile notification regardless of device');
+
+    const testTrade = {
+      id: 'force-test-' + Date.now(),
+      direction: 'down' as const,
+      amount: 250,
+      entryPrice: 45000,
+      finalPrice: 44000,
+      status: 'lost' as const,
+      payout: 0,
+      profitPercentage: 15,
+      symbol: 'BTC/USDT',
+      duration: 60
+    };
+
+    // Force mobile notification directly
+    showMobileTradeNotification(testTrade);
+    console.log('🧪 FORCE TEST: Mobile notification forced');
+  };
+
+  // Test mobile detection specifically
+  (window as any).testMobileDetection = () => {
+    const screenWidth = window.innerWidth;
+    const isSmallScreen = screenWidth < 768;
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const shouldUseMobile = isSmallScreen || isMobileUserAgent;
+
+    console.log('🧪 MOBILE DETECTION TEST:', {
+      screenWidth,
+      isSmallScreen: `${isSmallScreen} (< 768px)`,
+      isMobileUserAgent: `${isMobileUserAgent} (regex test)`,
+      shouldUseMobile: `${shouldUseMobile} (final decision)`,
+      recommendation: shouldUseMobile ? 'MOBILE notification' : 'DESKTOP notification'
+    });
+
+    return shouldUseMobile;
+  };
+
+  console.log('🧪 TESTING: Available functions:');
+  console.log('  - testMobileNotification() - Test with device detection');
+  console.log('  - forceMobileNotification() - Force mobile notification');
+  console.log('  - testMobileDetection() - Test mobile detection logic');
 }
