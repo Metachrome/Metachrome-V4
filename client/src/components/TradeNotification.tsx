@@ -193,7 +193,22 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     document.body.style.overflow = 'visible';
 
     // ALWAYS use the bulletproof notification system for now
-    showMobileTradeNotification(trade);
+    // Convert trade data to match expected format
+    const bulletproofTrade = {
+      id: trade.id,
+      direction: trade.direction,
+      amount: trade.amount,
+      entryPrice: trade.entryPrice,
+      currentPrice: trade.finalPrice || trade.entryPrice, // Map finalPrice to currentPrice
+      status: trade.status,
+      profitPercentage: trade.profitPercentage,
+      payout: trade.payout,
+      symbol: trade.symbol,
+      duration: trade.duration
+    };
+
+    console.log('🔔 BULLETPROOF: Converted trade data:', bulletproofTrade);
+    showMobileTradeNotification(bulletproofTrade);
 
     // Set up cleanup
     const cleanup = () => {

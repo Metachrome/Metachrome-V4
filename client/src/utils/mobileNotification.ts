@@ -17,9 +17,11 @@ interface Trade {
 }
 
 export function showMobileTradeNotification(trade: Trade): HTMLElement {
+  console.log('🚀 BULLETPROOF: ===== FUNCTION CALLED =====');
   console.log('🚀 BULLETPROOF: Creating mobile notification for trade:', trade);
   console.log('🚀 BULLETPROOF: Current DOM body children count:', document.body.children.length);
   console.log('🚀 BULLETPROOF: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
+  console.log('🚀 BULLETPROOF: Function execution starting...');
 
   // Remove any existing notifications
   removeMobileNotification();
