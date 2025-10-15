@@ -154,17 +154,37 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
   useEffect(() => {
     if (trade) {
       console.log('🔔 TRADE NOTIFICATION: New notification -', trade.status, 'shouldUseMobile:', shouldUseMobile);
+      console.log('🔔 TRADE NOTIFICATION: Screen width:', window.innerWidth);
+      console.log('🔔 TRADE NOTIFICATION: Will use mobile system:', shouldUseMobile);
     }
   }, [trade?.id, shouldUseMobile]); // Only log when trade ID changes
 
   // BULLETPROOF SYSTEM: Use DOM manipulation for mobile only
-  const useBulletproofSystem = shouldUseMobile; // EMERGENCY: Always false, so always use React desktop notification
+  const useBulletproofSystem = shouldUseMobile;
+
+  console.log('🔔 SYSTEM CHECK:', {
+    trade: !!trade,
+    shouldUseMobile,
+    useBulletproofSystem,
+    screenWidth: window.innerWidth
+  });
 
   // BULLETPROOF MOBILE NOTIFICATION - Direct DOM manipulation
   useEffect(() => {
-    if (!trade || !useBulletproofSystem) return;
+    console.log('🔔 BULLETPROOF EFFECT: Checking conditions...', {
+      hasTrade: !!trade,
+      useBulletproofSystem,
+      shouldProceed: !!(trade && useBulletproofSystem)
+    });
 
-    console.log('🔔 BULLETPROOF: Creating bulletproof mobile notification');
+    if (!trade || !useBulletproofSystem) {
+      console.log('🔔 BULLETPROOF EFFECT: Skipping mobile notification', {
+        reason: !trade ? 'No trade' : 'Not using bulletproof system'
+      });
+      return;
+    }
+
+    console.log('🔔 BULLETPROOF: Creating bulletproof mobile notification for trade:', trade.id);
 
     // Fix body overflow issues first
     const originalBodyOverflow = document.body.style.overflow;
