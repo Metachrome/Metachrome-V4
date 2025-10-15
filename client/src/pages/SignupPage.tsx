@@ -305,18 +305,18 @@ export default function SignupPage() {
     <div className="min-h-screen bg-gray-900">
 
       {/* Main Content */}
-      <div className="flex min-h-[calc(100vh-128px)] flex-col lg:flex-row">
+      <div className="flex min-h-screen flex-col lg:flex-row">
         {/* Left Side - Full width on mobile, 50% on desktop */}
         <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative overflow-hidden min-h-[40vh] lg:min-h-auto" style={{backgroundColor: '#24083B'}}>
           {/* Content */}
-          <div className="text-center z-10 max-w-md relative">
-            <p className="text-white/90 text-lg mb-4">Get Started with METACHROME</p>
-            <h1 className="text-4xl font-bold text-white mb-12 leading-tight">
+          <div className="text-center z-10 max-w-md relative py-[30px]">
+            <p className="text-white/90 text-sm lg:text-lg mb-2 lg:mb-4">Get Started with METACHROME</p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight">
               The Future is for Everyone
             </h1>
 
             {/* Smaller Orb Video Below Text */}
-            <div className="relative w-80 h-80 mx-auto">
+            <div className="relative w-48 h-48 lg:w-80 lg:h-80 mx-auto">
               <video
                 autoPlay
                 loop

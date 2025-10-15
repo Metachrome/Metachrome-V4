@@ -16,7 +16,7 @@ export function MobileLayout({ children }: MobileLayoutProps) {
   const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   // Pages that should not have navigation/footer
-  const noLayoutPages = ['/admin/login', '/trade/options', '/options', '/trade/spot'];
+  const noLayoutPages = ['/admin/login', '/trade/options', '/options', '/trade/spot', '/login', '/signup'];
   const shouldShowLayout = !noLayoutPages.includes(location);
 
   // Check for small screen (mobile/tablet) - up to 1024px
