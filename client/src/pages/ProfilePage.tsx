@@ -1051,15 +1051,6 @@ export default function ProfilePage() {
                           </>
                         )}
                       </Button>
-                        <Button
-                          onClick={emergencyVerificationFix}
-                          disabled={isRefreshing}
-                          size="sm"
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          🚨 Emergency Fix
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 )}
