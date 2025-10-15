@@ -42,22 +42,40 @@ export function MobileHeader() {
     setIsMenuOpen(false);
   };
 
-  // Get user display name - prioritize firstName + lastName, fallback to username, then wallet address
+  // Get user display name - prioritize wallet address for MetaMask users
   const getUserDisplayName = () => {
+    // Debug: Log user data to console
+    console.log('🔍 Mobile Header User Data:', {
+      user,
+      walletAddress: user?.walletAddress,
+      wallet_address: user?.wallet_address,
+      username: user?.username,
+      firstName: user?.firstName,
+      lastName: user?.lastName
+    });
+
+    // Check for wallet address in multiple possible fields
+    const walletAddr = user?.walletAddress || user?.wallet_address || user?.username;
+
+    // If it looks like a wallet address (starts with 0x and is long), truncate it
+    if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
+      const truncated = `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
+      console.log('🔍 Mobile Header: Showing truncated wallet:', truncated);
+      return truncated;
+    }
+
+    // For regular users, show name or username
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
     if (user?.firstName) {
       return user.firstName;
     }
-    if (user?.username) {
+    if (user?.username && !user?.username.startsWith('0x')) {
       return user.username;
     }
-    // For MetaMask users, show shortened wallet address
-    if (user?.walletAddress || user?.wallet_address) {
-      const walletAddr = user?.walletAddress || user?.wallet_address;
-      return `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
-    }
+
+    console.log('🔍 Mobile Header: Showing default Account');
     return "Account";
   };
 
@@ -88,11 +106,11 @@ export function MobileHeader() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-300 hover:text-white flex items-center space-x-1"
+                    className="text-gray-300 hover:text-white flex items-center space-x-1 max-w-[120px]"
                   >
-                    <UserCircle className="w-4 h-4" />
-                    <span className="text-sm">{getUserDisplayName()}</span>
-                    <ChevronDown className="w-3 h-3" />
+                    <UserCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm truncate">{getUserDisplayName()}</span>
+                    <ChevronDown className="w-3 h-3 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 bg-gray-800 border-gray-700">
