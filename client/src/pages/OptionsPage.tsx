@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { NavigationNoMenu } from "../components/ui/navigation";
+import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import TradingViewWidget from "../components/TradingViewWidget";
@@ -1782,7 +1782,7 @@ function OptionsPageContent({
     if (isMobile) {
       return (
         <div className="min-h-screen bg-[#10121E] text-white pb-20">
-          <NavigationNoMenu />
+          <Navigation />
 
           {/* Mobile Header - Using TradingView Price - Reduced spacing */}
           <div className="bg-[#10121E] px-4 py-1 border-b border-gray-700 sticky top-0 z-40">
@@ -2447,7 +2447,7 @@ function OptionsPageContent({
     // Desktop layout (existing)
     return (
       <div className="min-h-screen bg-gray-900">
-        <NavigationNoMenu />
+        <Navigation />
       
       {/* Top Header with Dynamic Trading Pair Info - Using TradingView Price */}
       <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700">
