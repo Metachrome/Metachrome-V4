@@ -100,14 +100,8 @@ export async function apiRequest(
 
   await throwIfResNotOk(res);
 
-  // 🚨 CRITICAL FIX: Parse JSON response instead of returning raw Response object
+  // Parse JSON response instead of returning raw Response object
   const jsonData = await res.json();
-
-  // Development logging only
-  if (import.meta.env.DEV) {
-    console.log(`📡 API Response: ${method} ${url}`, jsonData);
-  }
-
   return jsonData;
 }
 

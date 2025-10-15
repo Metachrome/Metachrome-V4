@@ -386,7 +386,7 @@ export function useAuth() {
   const metamaskLoginMutation = useMutation({
     mutationFn: async (data: { walletAddress: string; signature?: string }) => {
       const response = await apiRequest("POST", "/api/auth", data);
-      return response.json();
+      return response; // apiRequest already returns parsed JSON
     },
     onSuccess: (data) => {
       // Store the token in localStorage
