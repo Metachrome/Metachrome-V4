@@ -42,7 +42,7 @@ export function MobileHeader() {
     setIsMenuOpen(false);
   };
 
-  // Get user display name - prioritize firstName + lastName, fallback to username
+  // Get user display name - prioritize firstName + lastName, fallback to username, then wallet address
   const getUserDisplayName = () => {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`;
@@ -52,6 +52,11 @@ export function MobileHeader() {
     }
     if (user?.username) {
       return user.username;
+    }
+    // For MetaMask users, show shortened wallet address
+    if (user?.walletAddress || user?.wallet_address) {
+      const walletAddr = user?.walletAddress || user?.wallet_address;
+      return `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
     }
     return "Account";
   };

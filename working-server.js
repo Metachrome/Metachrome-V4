@@ -1355,6 +1355,7 @@ app.post('/api/auth', async (req, res) => {
               balance: existingUser.balance,
               firstName: existingUser.firstName || '',
               lastName: existingUser.lastName || '',
+              walletAddress: existingUser.wallet_address || existingUser.walletAddress,
               verificationStatus: normalizeVerificationStatus(existingUser.verification_status || 'unverified'),
               hasUploadedDocuments: existingUser.has_uploaded_documents || false
             }
@@ -1406,6 +1407,7 @@ app.post('/api/auth', async (req, res) => {
               balance: newUser.balance,
               firstName: newUser.firstName || '',
               lastName: newUser.lastName || '',
+              walletAddress: newUser.wallet_address || newUser.walletAddress,
               verificationStatus: normalizeVerificationStatus(newUser.verification_status || 'unverified'),
               hasUploadedDocuments: newUser.has_uploaded_documents || false
             }
@@ -1978,6 +1980,7 @@ app.post('/api/auth/login', async (req, res) => {
           email: user.email,
           role: user.role,
           balance: user.balance,
+          walletAddress: user.wallet_address || user.walletAddress,
           verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
           hasUploadedDocuments: user.has_uploaded_documents || false
         }
@@ -2028,6 +2031,7 @@ app.post('/api/auth/user/login', async (req, res) => {
           username: user.username,
           email: user.email,
           balance: user.balance,
+          walletAddress: user.wallet_address || user.walletAddress,
           verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
           hasUploadedDocuments: user.has_uploaded_documents || false
         }

@@ -38,8 +38,9 @@ export function Navigation() {
       return user.username;
     }
     // For MetaMask users, show shortened wallet address
-    if (user?.walletAddress) {
-      return `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`;
+    if (user?.walletAddress || user?.wallet_address) {
+      const walletAddr = user?.walletAddress || user?.wallet_address;
+      return `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
     }
     return "Account";
   };
@@ -56,8 +57,9 @@ export function Navigation() {
       return user.username;
     }
     // For MetaMask users, show very short wallet address for mobile
-    if (user?.walletAddress) {
-      return `${user.walletAddress.slice(0, 6)}...`;
+    if (user?.walletAddress || user?.wallet_address) {
+      const walletAddr = user?.walletAddress || user?.wallet_address;
+      return `${walletAddr.slice(0, 6)}...`;
     }
     return "Account";
   };
