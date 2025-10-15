@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
+import { MobileHeader } from "../components/ui/mobile-header";
 import TradingViewWidget from "../components/TradingViewWidget";
 import LightweightChart from "../components/LightweightChart";
 import CustomTradingChart from "../components/CustomTradingChart";
@@ -1782,10 +1783,11 @@ function OptionsPageContent({
     if (isMobile) {
       return (
         <div className="min-h-screen bg-[#10121E] text-white pb-20">
-          <Navigation />
+          {/* Use standard mobile header */}
+          <MobileHeader />
 
-          {/* Mobile Header - Using TradingView Price - Reduced spacing */}
-          <div className="bg-[#10121E] px-4 py-1 border-b border-gray-700 sticky top-0 z-40">
+          {/* Trading Pair Info Header - Below standard header */}
+          <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-white font-bold text-base">{currentPairData.symbol}</div>
