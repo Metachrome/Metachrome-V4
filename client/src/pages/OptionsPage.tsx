@@ -149,6 +149,54 @@ function OptionsPageContent({
   // GLOBAL FUNCTION FOR CONSOLE TESTING
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Test function to simulate a real trade completion
+      (window as any).simulateRealTradeCompletion = () => {
+        console.log('🎭 SIMULATING REAL TRADE COMPLETION...');
+
+        if (!user?.id) {
+          console.log('❌ No user logged in');
+          return;
+        }
+
+        // Create a mock trade completion message that matches the server format
+        const mockTradeCompletion = {
+          type: 'trade_completed',
+          data: {
+            tradeId: 'simulated-' + Date.now(),
+            userId: user.id,
+            result: 'win',
+            exitPrice: 51000,
+            profitAmount: 10,
+            newBalance: 1000,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        console.log('🎭 Mock trade completion message:', mockTradeCompletion);
+
+        // Manually trigger the WebSocket message handler by setting lastMessage
+        // This simulates what would happen when a real WebSocket message arrives
+        console.log('🎭 This should trigger the notification system...');
+
+        // Create a test trade for the notification
+        const testTrade: ActiveTrade = {
+          id: mockTradeCompletion.data.tradeId,
+          symbol: 'BTC/USDT',
+          direction: 'up',
+          amount: 100,
+          entryPrice: 50000,
+          currentPrice: 51000,
+          status: 'won',
+          duration: 30,
+          profitPercentage: 10,
+          payout: 110,
+          profit: 10
+        };
+
+        console.log('🎭 Triggering notification directly...');
+        triggerNotification(testTrade);
+      };
+
       (window as any).testMobileNotification = () => {
         console.log('🧪 GLOBAL: Testing mobile notification from console');
         const testTrade = {
@@ -1037,6 +1085,17 @@ function OptionsPageContent({
         data: lastMessage.data,
         timestamp: new Date().toISOString()
       });
+
+      // SPECIAL LOGGING FOR TRADE COMPLETION MESSAGES
+      if (lastMessage.type === 'trade_completed') {
+        console.log('🚨 TRADE COMPLETION MESSAGE RECEIVED!');
+        console.log('🚨 Message type:', lastMessage.type);
+        console.log('🚨 Message data:', lastMessage.data);
+        console.log('🚨 User ID from message:', lastMessage.data?.userId);
+        console.log('🚨 Current user ID:', user?.id);
+        console.log('🚨 User IDs match:', lastMessage.data?.userId === user?.id);
+        console.log('🚨 Will process message:', !!(lastMessage.data?.userId === user?.id));
+      }
 
       // Log balance_update messages in detail
       if (lastMessage.type === 'balance_update') {
