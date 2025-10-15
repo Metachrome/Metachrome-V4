@@ -174,23 +174,25 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     console.log('🔔 BULLETPROOF EFFECT: Checking conditions...', {
       hasTrade: !!trade,
       useBulletproofSystem,
-      shouldProceed: !!(trade && useBulletproofSystem)
+      shouldProceed: !!(trade && useBulletproofSystem),
+      screenWidth: window.innerWidth
     });
 
-    if (!trade || !useBulletproofSystem) {
-      console.log('🔔 BULLETPROOF EFFECT: Skipping mobile notification', {
-        reason: !trade ? 'No trade' : 'Not using bulletproof system'
-      });
+    if (!trade) {
+      console.log('🔔 BULLETPROOF EFFECT: No trade provided');
       return;
     }
 
-    console.log('🔔 BULLETPROOF: Creating bulletproof mobile notification for trade:', trade.id);
+    // FORCE MOBILE NOTIFICATION FOR ALL SCREEN SIZES (TEMPORARY FIX)
+    // This ensures notifications show regardless of device detection issues
+    console.log('🔔 BULLETPROOF: Creating mobile notification for trade:', trade.id);
+    console.log('🔔 BULLETPROOF: Screen width:', window.innerWidth, 'Mobile detection:', useBulletproofSystem);
 
     // Fix body overflow issues first
     const originalBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'visible';
 
-    // Use the bulletproof notification system
+    // ALWAYS use the bulletproof notification system for now
     showMobileTradeNotification(trade);
 
     // Set up cleanup

@@ -11,20 +11,25 @@ interface Trade {
   currentPrice?: number;
   status: 'won' | 'lost';
   profitPercentage: number;
+  payout?: number;
   symbol?: string;
   duration?: number;
 }
 
 export function showMobileTradeNotification(trade: Trade): HTMLElement {
   console.log('🚀 BULLETPROOF: Creating mobile notification for trade:', trade);
-  
+  console.log('🚀 BULLETPROOF: Current DOM body children count:', document.body.children.length);
+  console.log('🚀 BULLETPROOF: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
+
   // Remove any existing notifications
   removeMobileNotification();
-  
+
   // Create the notification container
   const container = document.createElement('div');
   container.id = 'bulletproof-mobile-notification';
   container.setAttribute('data-mobile-notification', 'true');
+
+  console.log('🚀 BULLETPROOF: Container element created:', container);
   
   // Calculate trade results
   const isWin = trade.status === 'won';
@@ -184,10 +189,18 @@ export function showMobileTradeNotification(trade: Trade): HTMLElement {
   // Add to document body
   document.body.appendChild(container);
   currentNotification = container;
-  
+
   console.log('✅ BULLETPROOF: Mobile notification added to DOM');
   console.log('📏 BULLETPROOF: Container dimensions:', container.getBoundingClientRect());
   console.log('📱 BULLETPROOF: Window dimensions:', window.innerWidth, 'x', window.innerHeight);
+  console.log('🔍 BULLETPROOF: Container in DOM?', document.body.contains(container));
+  console.log('🔍 BULLETPROOF: Container visible?', container.offsetWidth > 0 && container.offsetHeight > 0);
+  console.log('🔍 BULLETPROOF: Container computed styles:', {
+    display: window.getComputedStyle(container).display,
+    visibility: window.getComputedStyle(container).visibility,
+    opacity: window.getComputedStyle(container).opacity,
+    zIndex: window.getComputedStyle(container).zIndex
+  });
   
   // Auto-remove after 25 seconds
   setTimeout(() => {
@@ -219,7 +232,30 @@ export function removeMobileNotification(): void {
 declare global {
   interface Window {
     testBulletproofMobileNotification: () => void;
+    testMobileNotificationNow: () => void;
   }
+}
+
+// Make test function available globally
+if (typeof window !== 'undefined') {
+  window.testMobileNotificationNow = () => {
+    console.log('🧪 IMMEDIATE TEST: Creating mobile notification now...');
+
+    const testTrade: Trade = {
+      id: 'immediate-test-' + Date.now(),
+      direction: 'up',
+      amount: 100,
+      entryPrice: 50000,
+      currentPrice: 51000,
+      status: 'won',
+      profitPercentage: 10,
+      symbol: 'BTC/USDT',
+      duration: 30
+    };
+
+    showMobileTradeNotification(testTrade);
+    console.log('🧪 IMMEDIATE TEST: Notification should be visible now');
+  };
 }
 
 if (typeof window !== 'undefined') {
