@@ -106,10 +106,11 @@ function OptionsPageContent({
   const triggerNotification = (trade: ActiveTrade) => {
     console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id);
 
-    // Check for duplicate notifications within 5 seconds
+    // Check for duplicate notifications within 5 seconds (but allow test messages)
     const now = Date.now();
+    const isTestTrade = trade.id.includes('test-');
     const lastNotificationTime = recentNotificationsRef.current.get(trade.id);
-    if (lastNotificationTime && (now - lastNotificationTime) < 5000) {
+    if (lastNotificationTime && (now - lastNotificationTime) < 5000 && !isTestTrade) {
       console.log('🔔 TRIGGER: Duplicate notification prevented for trade:', trade.id, 'Last notification was', (now - lastNotificationTime), 'ms ago');
       return;
     }
@@ -1064,8 +1065,9 @@ function OptionsPageContent({
     console.log('🔍 WEBSOCKET DEBUG: Current user ID:', user?.id);
     console.log('🔍 WEBSOCKET DEBUG: Active trades count:', activeTrades.length);
 
-    // Check if we've already processed this message
-    if (processedMessagesRef.current.has(messageId)) {
+    // Check if we've already processed this message (but allow manual test messages)
+    const isTestMessage = messageId.includes('test-');
+    if (processedMessagesRef.current.has(messageId) && !isTestMessage) {
       console.log('🔍 WEBSOCKET DEBUG: Message already processed, skipping:', messageId);
       return;
     }
