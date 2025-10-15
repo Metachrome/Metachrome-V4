@@ -2438,6 +2438,7 @@ function OptionsPageContent({
             </div>
           </div>
 
+          <Footer />
           <MobileBottomNav />
         </div>
       );
@@ -3727,7 +3728,7 @@ function OptionsPageContent({
         </div>
       )}
 
-
+      <Footer />
     </div>
   );
   } catch (error) {

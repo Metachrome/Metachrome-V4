@@ -1221,6 +1221,7 @@ function SpotPageContent() {
         </div>
         </div>
 
+        <Footer />
         <MobileBottomNav />
       </div>
     );
