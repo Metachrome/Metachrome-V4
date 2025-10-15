@@ -364,7 +364,15 @@ export default function UserDashboard() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {user?.username}!
+            Welcome back,{' '}
+            {user?.username && user.username.startsWith('0x') && user.username.length > 20 ? (
+              <div className="inline-block">
+                <div className="leading-tight">{user.username.slice(0, 21)}</div>
+                <div className="leading-tight">{user.username.slice(21)}!</div>
+              </div>
+            ) : (
+              `${user?.username}!`
+            )}
           </h1>
           <p className="text-gray-400">
             Here's your trading overview and account summary.

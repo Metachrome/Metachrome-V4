@@ -51,13 +51,20 @@ export function MobileHeader() {
       wallet_address: user?.wallet_address,
       username: user?.username,
       firstName: user?.firstName,
-      lastName: user?.lastName
+      lastName: user?.lastName,
+      currentLocation: location
     });
 
     // Check for wallet address in multiple possible fields
     const walletAddr = user?.walletAddress || user?.wallet_address || user?.username;
 
-    // If it looks like a wallet address (starts with 0x and is long), truncate it
+    // If we're on dashboard page, don't truncate - show two lines
+    if (location === '/dashboard' && walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
+      console.log('🔍 Mobile Header: Dashboard page - showing two-line wallet');
+      return walletAddr; // Return full address for dashboard
+    }
+
+    // For other pages, if it looks like a wallet address (starts with 0x and is long), truncate it
     if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
       const truncated = `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
       console.log('🔍 Mobile Header: Showing truncated wallet:', truncated);
@@ -106,10 +113,17 @@ export function MobileHeader() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-300 hover:text-white flex items-center space-x-1 max-w-[120px]"
+                    className="text-gray-300 hover:text-white flex items-center space-x-1 max-w-[160px]"
                   >
                     <UserCircle className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm truncate">{getUserDisplayName()}</span>
+                    {location === '/dashboard' && user?.username && user.username.startsWith('0x') && user.username.length > 20 ? (
+                      <div className="text-xs leading-tight">
+                        <div>{user.username.slice(0, 21)}</div>
+                        <div>{user.username.slice(21)}</div>
+                      </div>
+                    ) : (
+                      <span className="text-sm truncate">{getUserDisplayName()}</span>
+                    )}
                     <ChevronDown className="w-3 h-3 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
