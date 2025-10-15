@@ -607,11 +607,25 @@ async function saveTransactions(transactions) {
 async function getUserByUsername(username) {
   if (isProduction && supabase) {
     try {
-      const { data, error } = await supabase
+      // First try to find by username
+      let { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('username', username)
         .single();
+
+      // If not found and username looks like a wallet address, try wallet_address field
+      if (error && error.code === 'PGRST116' && username.startsWith('0x')) {
+        console.log('🔍 Username not found, trying wallet_address field for:', username);
+        const result = await supabase
+          .from('users')
+          .select('*')
+          .eq('wallet_address', username)
+          .single();
+        data = result.data;
+        error = result.error;
+      }
+
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
       return data;
     } catch (error) {
@@ -622,7 +636,7 @@ async function getUserByUsername(username) {
 
   // Development fallback
   const users = await getUsers();
-  return users.find(u => u.username === username);
+  return users.find(u => u.username === username || u.wallet_address === username);
 }
 
 async function getUserByEmail(email) {
