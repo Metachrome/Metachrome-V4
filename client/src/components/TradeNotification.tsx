@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
 import { useIsMobile } from '../hooks/use-mobile';
 import { showMobileTradeNotification, removeMobileNotification } from '../utils/mobileNotification';
 
@@ -25,41 +24,7 @@ interface TradeNotificationProps {
   onClose: () => void;
 }
 
-// BULLETPROOF MOBILE NOTIFICATION COMPONENT
-const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
-  console.log('🔔 BULLETPROOF MOBILE: Component called with trade:', trade);
-
-  useEffect(() => {
-    if (!trade) {
-      console.log('🔔 BULLETPROOF MOBILE: No trade data, skipping');
-      return;
-    }
-
-    console.log('🔔 BULLETPROOF MOBILE: Creating bulletproof notification');
-
-    // Use the bulletproof notification system
-    showMobileTradeNotification(trade);
-
-    // Set up cleanup
-    const cleanup = () => {
-      removeMobileNotification();
-      onClose();
-    };
-
-    // Auto-close after 25 seconds
-    const timer = setTimeout(cleanup, 25000);
-
-    return () => {
-      clearTimeout(timer);
-      removeMobileNotification();
-    };
-  }, [trade, onClose]);
-
-  // Return null since we're using direct DOM manipulation
-  return null;
-
-  // Component now uses bulletproof DOM manipulation - no JSX needed
-};
+// Note: Mobile notification logic is now handled in the main component's useEffect
 
 // DESKTOP NOTIFICATION COMPONENT
 const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
@@ -193,11 +158,10 @@ export default function TradeNotification({ trade, onClose }: TradeNotificationP
     userAgent: navigator.userAgent
   });
 
-  // EMERGENCY FIX: Force desktop notification for ALL devices
-  const forceDesktop = true; // FORCE DESKTOP FOR ALL
-  const shouldUseMobile = false; // NEVER USE MOBILE NOTIFICATION
+  // PROPER DEVICE DETECTION: Use mobile notification only for actual mobile devices
+  const shouldUseMobile = isActuallyMobile;
 
-  console.log('🚨 EMERGENCY FIX: Forcing desktop notification for all devices');
+  console.log('🔔 DEVICE DETECTION: Using proper mobile detection - shouldUseMobile:', shouldUseMobile);
 
   // BULLETPROOF SYSTEM: Use DOM manipulation for mobile only
   const useBulletproofSystem = shouldUseMobile; // EMERGENCY: Always false, so always use React desktop notification
@@ -269,21 +233,8 @@ if (typeof window !== 'undefined') {
       document.body.appendChild(container);
     }
 
-    // Force mobile notification
-    const MobileNotificationTest = () => {
-      return React.createElement(MobileTradeNotification, {
-        trade: testTrade,
-        onClose: () => {
-          console.log('🧪 TESTING: Test notification closed');
-          if (container) {
-            container.remove();
-          }
-        }
-      });
-    };
-
-    // Render the test notification
-    ReactDOM.render(React.createElement(MobileNotificationTest), container);
+    // Use the direct mobile notification system for testing
+    showMobileTradeNotification(testTrade);
 
     console.log('🧪 TESTING: Mobile notification test rendered');
   };

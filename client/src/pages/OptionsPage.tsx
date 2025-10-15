@@ -104,6 +104,10 @@ function OptionsPageContent({
     console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id);
     console.log('🔔 TRIGGER: Trade data:', trade);
 
+    // Check if we're on mobile to determine notification type
+    const isMobileDevice = isMobile || window.innerWidth < 768;
+    console.log('🔔 TRIGGER: Device detection - isMobile:', isMobileDevice);
+
     // Generate unique key to force re-render
     const uniqueKey = `${trade.id}-${Date.now()}`;
     console.log('🔔 TRIGGER: Generated unique key:', uniqueKey);
@@ -115,117 +119,24 @@ function OptionsPageContent({
     setCompletedTrade(null);
     console.log('🔔 TRIGGER: Cleared existing notification');
 
+    // Remove any existing DOM notifications
+    const existing = document.querySelectorAll('[data-mobile-notification="true"]');
+    existing.forEach(el => el.remove());
+    console.log('🔔 TRIGGER: Removed existing DOM notifications');
+
     // Set new notification with delay to ensure React re-renders
     setTimeout(() => {
       console.log('🔔 TRIGGER: Setting notification state with key:', uniqueKey);
       console.log('🔔 TRIGGER: About to call setCompletedTrade with:', trade);
 
+      // Always use React-based notification (TradeNotification component handles mobile/desktop logic)
       setCompletedTrade(trade);
       console.log('🔔 TRIGGER: setCompletedTrade called successfully');
 
       localStorage.setItem('completedTrade', JSON.stringify(trade));
       console.log('🔔 TRIGGER: Saved to localStorage');
 
-      // Also try to force create notification directly as backup
-      console.log('🔔 TRIGGER: Creating backup direct notification');
-      try {
-        // Remove any existing notifications
-        const existing = document.querySelectorAll('[data-mobile-notification="true"]');
-        existing.forEach(el => el.remove());
-
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.setAttribute('data-mobile-notification', 'true');
-        notification.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 999999;
-          font-family: Arial, sans-serif;
-        `;
-
-        const isWin = trade.status === 'won';
-        const profit = isWin ? (trade.profit || 10) : (trade.profit || -100);
-
-        notification.innerHTML = `
-          <div style="
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            border-radius: 16px;
-            padding: 24px;
-            max-width: 350px;
-            width: 90%;
-            border: 1px solid #3a3d5a;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            color: white;
-          ">
-            <div style="font-size: 20px; font-weight: bold; color: ${isWin ? '#10b981' : '#ef4444'}; margin-bottom: 16px;">
-              ${isWin ? '🎉 Trade Won!' : '💔 Trade Lost!'}
-            </div>
-            <div style="font-size: 12px; color: #9ca3af; margin-bottom: 16px;">
-              Market: ${trade.symbol || 'BTC/USDT'}
-            </div>
-            <div style="background: #2a2d47; border-radius: 8px; padding: 12px; margin-bottom: 16px; border: 1px solid #3a3d5a;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-                <span style="color: #9ca3af;">Trade:</span>
-                <span style="color: ${trade.direction === 'up' ? '#10b981' : '#ef4444'}; font-weight: bold;">${trade.direction === 'up' ? 'BUY UP' : 'BUY DOWN'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-                <span style="color: #9ca3af;">Amount:</span>
-                <span style="color: white; font-weight: bold;">${trade.amount} USDT</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-                <span style="color: #9ca3af;">Entry Price:</span>
-                <span style="color: white; font-weight: bold;">${trade.entryPrice.toLocaleString()}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-                <span style="color: #9ca3af;">Close Price:</span>
-                <span style="color: white; font-weight: bold;">${trade.currentPrice?.toLocaleString() || 'N/A'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-                <span style="color: #9ca3af;">Duration:</span>
-                <span style="color: white; font-weight: bold;">${trade.duration || 30} seconds</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                <span style="color: #9ca3af;">Profit:</span>
-                <span style="color: ${isWin ? '#10b981' : '#ef4444'}; font-weight: bold;">${isWin ? '+' : ''}${profit}</span>
-              </div>
-            </div>
-            <button onclick="this.parentElement.parentElement.remove()" style="
-              background: #10b981;
-              color: white;
-              border: none;
-              border-radius: 8px;
-              padding: 12px 24px;
-              font-weight: bold;
-              cursor: pointer;
-              width: 100%;
-            ">
-              Close Notification
-            </button>
-          </div>
-        `;
-
-        document.body.appendChild(notification);
-        console.log('✅ TRIGGER: Backup notification created successfully');
-
-        // Auto-remove after 30 seconds
-        setTimeout(() => {
-          if (notification.parentNode) {
-            notification.remove();
-            console.log('🗑️ TRIGGER: Auto-removed backup notification');
-          }
-        }, 30000);
-
-      } catch (error) {
-        console.error('❌ TRIGGER: Failed to create backup notification:', error);
-      }
+      console.log('🔔 TRIGGER: Using React-based TradeNotification component only');
 
       // Auto-hide after 60 seconds
       setTimeout(() => {
