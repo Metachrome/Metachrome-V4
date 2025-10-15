@@ -99,9 +99,31 @@ function OptionsPageContent({
 
 
 
+  // Track recent notifications to prevent duplicates
+  const recentNotificationsRef = useRef<Map<string, number>>(new Map());
+
   // ROBUST NOTIFICATION TRIGGER FUNCTION
   const triggerNotification = (trade: ActiveTrade) => {
     console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id);
+
+    // Check for duplicate notifications within 5 seconds
+    const now = Date.now();
+    const lastNotificationTime = recentNotificationsRef.current.get(trade.id);
+    if (lastNotificationTime && (now - lastNotificationTime) < 5000) {
+      console.log('🔔 TRIGGER: Duplicate notification prevented for trade:', trade.id, 'Last notification was', (now - lastNotificationTime), 'ms ago');
+      return;
+    }
+
+    // Record this notification
+    recentNotificationsRef.current.set(trade.id, now);
+
+    // Clean up old entries (keep only last 10 minutes)
+    const tenMinutesAgo = now - (10 * 60 * 1000);
+    for (const [tradeId, timestamp] of recentNotificationsRef.current.entries()) {
+      if (timestamp < tenMinutesAgo) {
+        recentNotificationsRef.current.delete(tradeId);
+      }
+    }
 
     // Remove any existing DOM notifications first
     const existing = document.querySelectorAll('[data-mobile-notification="true"]');
@@ -977,12 +999,36 @@ function OptionsPageContent({
     }
   }, [lastMessage, user?.id, queryClient]);
 
+  // Track processed messages to prevent duplicates
+  const processedMessagesRef = useRef<Set<string>>(new Set());
+
   // Handle WebSocket trade completion notifications for reliable notifications
   useEffect(() => {
+    // Skip if no message or user
+    if (!lastMessage || !user?.id) return;
+
+    // Create unique message ID for deduplication
+    const messageId = `${lastMessage.type}-${lastMessage.data?.tradeId || lastMessage.data?.id || 'unknown'}-${lastMessage.data?.userId || 'unknown'}-${lastMessage.data?.timestamp || Date.now()}`;
+
     console.log('🔍 WEBSOCKET DEBUG: Checking message:', lastMessage?.type, 'userId match:', lastMessage?.data?.userId === user?.id);
+    console.log('🔍 WEBSOCKET DEBUG: Message ID:', messageId);
     console.log('🔍 WEBSOCKET DEBUG: Full message:', lastMessage);
     console.log('🔍 WEBSOCKET DEBUG: Current user ID:', user?.id);
     console.log('🔍 WEBSOCKET DEBUG: Active trades count:', activeTrades.length);
+
+    // Check if we've already processed this message
+    if (processedMessagesRef.current.has(messageId)) {
+      console.log('🔍 WEBSOCKET DEBUG: Message already processed, skipping:', messageId);
+      return;
+    }
+
+    // Clean up old processed messages to prevent memory leaks (keep only last 100)
+    if (processedMessagesRef.current.size > 100) {
+      const messagesArray = Array.from(processedMessagesRef.current);
+      const toKeep = messagesArray.slice(-50); // Keep last 50
+      processedMessagesRef.current = new Set(toKeep);
+      console.log('🧹 WEBSOCKET DEBUG: Cleaned up processed messages cache');
+    }
 
     // LOG ALL WEBSOCKET MESSAGES FOR DEBUGGING
     if (lastMessage) {
@@ -1021,6 +1067,9 @@ function OptionsPageContent({
 
     // BULLETPROOF: Handle direct notification trigger
     if (lastMessage?.type === 'trigger_mobile_notification' && lastMessage.data?.userId === user?.id) {
+      // Mark message as processed
+      processedMessagesRef.current.add(messageId);
+
       console.log('🔔 BULLETPROOF: Direct notification trigger received:', lastMessage.data);
 
       const tradeData = lastMessage.data;
@@ -1043,7 +1092,11 @@ function OptionsPageContent({
       return;
     }
 
+    // MAIN HANDLER: Process trade_completed messages
     if (lastMessage?.type === 'trade_completed' && lastMessage.data?.userId === user?.id) {
+      // Mark message as processed FIRST to prevent duplicate processing
+      processedMessagesRef.current.add(messageId);
+
       console.log('🎯 WEBSOCKET: Trade completion notification received:', lastMessage.data);
 
       const { tradeId, result, exitPrice, profitAmount, newBalance } = lastMessage.data;
@@ -1109,8 +1162,8 @@ function OptionsPageContent({
       }
     }
 
-    // AGGRESSIVE FALLBACK: Check for any trade-related messages
-    if (lastMessage && user?.id) {
+    // AGGRESSIVE FALLBACK: Check for any trade-related messages (ONLY if not already processed)
+    if (lastMessage && user?.id && !processedMessagesRef.current.has(messageId)) {
       const messageStr = JSON.stringify(lastMessage).toLowerCase();
       const isTradeRelated = messageStr.includes('trade') ||
                            messageStr.includes('win') ||
@@ -1148,6 +1201,9 @@ function OptionsPageContent({
         });
 
         if (isTradeCompletion) {
+          // Mark message as processed to prevent ultra fallback from also processing it
+          processedMessagesRef.current.add(messageId);
+
           console.log('🚨 AGGRESSIVE: Triggering notification for trade-related message');
 
           // For balance_update messages, infer win/lose from balance change
@@ -1190,8 +1246,11 @@ function OptionsPageContent({
       }
     }
 
-    // ULTRA FALLBACK: Any message with userId match and result field
-    if (lastMessage?.data?.userId === user?.id && lastMessage?.data?.result) {
+    // ULTRA FALLBACK: Any message with userId match and result field (ONLY if not already processed)
+    if (lastMessage?.data?.userId === user?.id && lastMessage?.data?.result && !processedMessagesRef.current.has(messageId)) {
+      // Mark message as processed
+      processedMessagesRef.current.add(messageId);
+
       console.log('🔥 ULTRA FALLBACK: Message with userId match and result field:', lastMessage);
 
       const data = lastMessage.data;
