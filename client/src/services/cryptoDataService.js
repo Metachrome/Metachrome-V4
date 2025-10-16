@@ -100,119 +100,7 @@ export const useCryptoData = () => {
 
         // Enhanced fallback data with more realistic prices
         console.log('🔄 Using enhanced fallback data...');
-
-        if (internalResponse.ok) {
-          const internalData = await internalResponse.json();
-          console.log('✅ Internal API data received:', internalData.length, 'items');
-          console.log('📊 Sample internal data:', internalData.slice(0, 3));
-
-          if (internalData && internalData.length > 0) {
-            // Transform internal data to match component structure
-            const transformedInternalData = internalData
-              .filter(item => item && item.symbol) // Filter out invalid items
-              .slice(0, 15) // Limit to 15 items for better performance
-              .map(item => {
-                const symbolName = item.symbol.replace('USDT', '');
-                const price = parseFloat(item.price || 0);
-                const change = parseFloat(item.priceChangePercent24h || item.change24h || 0);
-                const high = parseFloat(item.high24h || price * 1.05);
-                const low = parseFloat(item.low24h || price * 0.95);
-
-                return {
-                  id: symbolName.toLowerCase(),
-                  symbol: `${symbolName}/USDT`,
-                  name: symbolName,
-                  price: `$${price.toLocaleString('en-US', {
-                    minimumFractionDigits: price < 1 ? 6 : 2,
-                    maximumFractionDigits: price < 1 ? 6 : 2
-                  })}`,
-                  change: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
-                  high: `$${high.toLocaleString('en-US', {
-                    minimumFractionDigits: high < 1 ? 6 : 2,
-                    maximumFractionDigits: high < 1 ? 6 : 2
-                  })}`,
-                  low: `$${low.toLocaleString('en-US', {
-                    minimumFractionDigits: low < 1 ? 6 : 2,
-                    maximumFractionDigits: low < 1 ? 6 : 2
-                  })}`,
-                  isPositive: change >= 0,
-                  marketCap: 0,
-                  volume: parseFloat(item.volume24h || 0),
-                  image: `https://cryptoicons.org/api/icon/${symbolName.toLowerCase()}/200`,
-                  coinGeckoId: symbolName.toLowerCase(),
-                  rawPrice: price,
-                  rawChange: change
-                };
-              });
-
-            setCryptoData(transformedInternalData);
-            setLoading(false);
-            console.log('✅ Using internal market data:', transformedInternalData.length, 'currencies');
-            console.log('📊 Transformed data sample:', transformedInternalData.slice(0, 3));
-            return;
-          }
-        }
-      } catch (internalError) {
-        console.log('⚠️ Internal API failed, trying external APIs:', internalError.message);
-      }
-
-      // Fallback to CoinGecko API
-      console.log('🔄 Fetching from CoinGecko API...');
-      const response = await fetch(
-        'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,cardano,ripple,dogecoin,polygon,avalanche-2,chainlink,litecoin,polkadot,uniswap,shiba-inu&order=market_cap_desc&per_page=15&page=1&sparkline=false&price_change_percentage=24h',
-        {
-          headers: {
-            'Accept': 'application/json',
-          },
-          // Add timeout
-          signal: AbortSignal.timeout(10000) // 10 second timeout
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`CoinGecko API failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ CoinGecko API data received');
-      
-      // Transform data to match our component structure
-      const transformedData = data.map(coin => ({
-        id: coin.id,
-        symbol: `${coin.symbol.toUpperCase()}/USDT`,
-        name: coin.name,
-        price: `$${coin.current_price.toLocaleString('en-US', { 
-          minimumFractionDigits: 2, 
-          maximumFractionDigits: coin.current_price < 1 ? 6 : 2 
-        })}`,
-        change: `${coin.price_change_percentage_24h?.toFixed(2) || '0.00'}%`,
-        high: `$${coin.high_24h?.toLocaleString('en-US', { 
-          minimumFractionDigits: 2, 
-          maximumFractionDigits: coin.high_24h < 1 ? 6 : 2 
-        }) || 'N/A'}`,
-        low: `$${coin.low_24h?.toLocaleString('en-US', { 
-          minimumFractionDigits: 2, 
-          maximumFractionDigits: coin.low_24h < 1 ? 6 : 2 
-        }) || 'N/A'}`,
-        isPositive: (coin.price_change_percentage_24h || 0) >= 0,
-        marketCap: coin.market_cap,
-        volume: coin.total_volume,
-        image: coin.image,
-        coinGeckoId: coin.id,
-        rawPrice: coin.current_price,
-        rawChange: coin.price_change_percentage_24h || 0
-      }));
-      
-      setCryptoData(transformedData);
-      setError(null);
-      console.log('✅ CoinGecko data processed successfully');
-    } catch (err) {
-      console.error('❌ All crypto data sources failed:', err);
-      setError('Failed to fetch');
-
-      // Enhanced fallback data with more realistic prices
-      console.log('🔄 Using enhanced fallback data...');
-      setCryptoData([
+        setCryptoData([
         {
           id: 'bitcoin',
           symbol: "BTC/USDT",
@@ -438,6 +326,7 @@ export const useCryptoData = () => {
           rawChange: 8.92
         }
       ]);
+      }
     } finally {
       setLoading(false);
     }
