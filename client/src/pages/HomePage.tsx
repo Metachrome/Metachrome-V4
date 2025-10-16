@@ -119,17 +119,8 @@ export default function HomePage() {
         {/* Currency List Section - Mobile */}
         <section className="px-4 py-4">
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-bold text-white">Currency List</h2>
-              <button
-                onClick={forceRefresh}
-                disabled={loading}
-                className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded transition-colors"
-              >
-                {loading ? '⏳' : '🔄'}
-              </button>
-            </div>
-            <p className="text-gray-400 text-sm">Real-time data from CoinMarketCap</p>
+            <h2 className="text-xl font-bold text-white mb-2">Currency List</h2>
+            <p className="text-gray-400 text-sm">Real-time market data • Updates every minute</p>
             {loading && <p className="text-blue-400 text-sm mt-2">Loading real-time data...</p>}
             {error && (
               <div className="flex items-center gap-2 mt-2">
@@ -470,26 +461,8 @@ export default function HomePage() {
       {/* Currency List Section */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-2xl font-bold text-white">Currency List</h2>
-            <button
-              onClick={forceRefresh}
-              disabled={loading}
-              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-md transition-colors flex items-center gap-1"
-            >
-              {loading ? (
-                <>
-                  <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                  Updating...
-                </>
-              ) : (
-                <>
-                  🔄 Refresh
-                </>
-              )}
-            </button>
-          </div>
-          <p className="text-gray-400 text-sm">Real-time market data from CoinMarketCap • Updates every minute</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Currency List</h2>
+          <p className="text-gray-400 text-sm">Real-time market data • Updates every minute</p>
           {loading && <p className="text-blue-400 text-sm mt-2">Loading real-time data...</p>}
           {error && (
             <div className="flex items-center gap-2 mt-2">

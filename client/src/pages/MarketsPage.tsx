@@ -97,7 +97,7 @@ export default function MarketsPage() {
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-400 animate-pulse' : error ? 'bg-red-400' : 'bg-green-400'}`}></div>
             <span className="text-sm text-gray-400">
-              {loading ? 'Updating market data...' : error ? 'Using cached data' : 'Real-time data from CoinMarketCap'}
+              {loading ? 'Updating market data...' : error ? 'Using cached data' : 'Real-time data'}
             </span>
             {error && (
               <button
