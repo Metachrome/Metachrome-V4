@@ -1226,7 +1226,7 @@ function SpotPageContent() {
     );
   }
 
-  // Desktop layout (existing)
+  // Desktop layout (existing) - Footer is added at the end for desktop only
   return (
     <div className="min-h-screen bg-gray-900">
         <Navigation />
@@ -2036,7 +2036,8 @@ function SpotPageContent() {
         </div>
       </div>
 
-      <Footer />
+      {/* Footer is already included in mobile layout, only add for desktop */}
+      {!isMobile && <Footer />}
     </div>
   );
 }
