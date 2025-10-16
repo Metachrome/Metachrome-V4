@@ -373,12 +373,13 @@ export default function UserDashboard() {
                 return `Welcome back, ${user.firstName}!`;
               }
               if (user?.username) {
-                // If username is a long wallet address, show it in two lines for mobile
+                // If username is a long wallet address, truncate it for mobile
                 if (user.username.startsWith('0x') && user.username.length > 20) {
+                  const truncatedAddress = `${user.username.slice(0, 6)}...${user.username.slice(-4)}`;
                   return (
                     <div className="block max-w-full">
-                      <div className="leading-tight">Welcome back,</div>
-                      <div className="leading-tight break-all text-xs md:text-2xl font-mono overflow-hidden max-w-full" style={{ wordBreak: 'break-all' }}>{user.username}!</div>
+                      <span className="leading-tight">Welcome back, </span>
+                      <span className="leading-tight font-mono text-purple-400">{truncatedAddress}!</span>
                     </div>
                   );
                 }
