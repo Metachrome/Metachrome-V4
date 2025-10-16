@@ -109,10 +109,14 @@ export default function HomePage() {
         {/* Mobile Hero Section */}
         <MobileHero />
 
-        {/* TradingView Ticker Section - Mobile - Reduced spacing */}
-        <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-y border-blue-500/30 relative py-1">
-          <div className="w-full">
-            <TradingViewWidget type="ticker" />
+        {/* Running Text Ticker Section - Mobile */}
+        <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/30 border-y border-blue-500/30 relative overflow-hidden" style={{ height: '100px' }}>
+          <div className="flex items-center h-full">
+            <div className="whitespace-nowrap animate-scroll">
+              <span className="text-white text-base font-medium px-6">
+                Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Crypto market cap expands almost 5% in 24 hours
+              </span>
+            </div>
           </div>
         </section>
 
@@ -452,24 +456,12 @@ export default function HomePage() {
       </section>
 
       {/* Running Text Ticker Section */}
-      <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-y border-blue-500/30 relative overflow-hidden">
-        {/* Desktop Version */}
-        <div className="hidden md:block py-3">
+      <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-y border-blue-500/30 relative overflow-hidden" style={{ height: '100px' }}>
+        <div className="flex items-center h-full">
           <div className="whitespace-nowrap animate-scroll">
             <span className="text-white text-lg font-medium px-8">
               Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Crypto market cap expands almost 5% in 24 hours
             </span>
-          </div>
-        </div>
-
-        {/* Mobile Version - 80px height */}
-        <div className="block md:hidden" style={{ height: '80px' }}>
-          <div className="flex items-center h-full">
-            <div className="whitespace-nowrap animate-scroll">
-              <span className="text-white text-base font-medium px-6">
-                Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Crypto market cap expands almost 5% in 24 hours
-              </span>
-            </div>
           </div>
         </div>
       </section>
