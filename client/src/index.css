@@ -721,6 +721,27 @@ iframe[src*="tradingview"] {
   /* Additional iframe-specific hiding will be handled by JavaScript */
 }
 
+/* Force dark background on TradingView widget containers */
+.tradingview-widget-container,
+.tradingview-widget-container__widget,
+#options_mobile_tradingview_chart,
+#spot_mobile_tradingview_chart,
+#options_tradingview_chart,
+#spot_tradingview_chart {
+  background-color: #10121E !important;
+}
+
+/* Force dark background on TradingView iframes */
+.tradingview-widget-container iframe,
+.tradingview-widget-container__widget iframe,
+#options_mobile_tradingview_chart iframe,
+#spot_mobile_tradingview_chart iframe,
+#options_tradingview_chart iframe,
+#spot_tradingview_chart iframe {
+  background-color: #10121E !important;
+  filter: invert(0) !important;
+}
+
 /* Ensure volume elements are completely removed from layout */
 .tv-lightweight-charts__volume,
 .tv-lightweight-charts__histogram,

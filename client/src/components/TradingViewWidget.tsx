@@ -111,10 +111,10 @@ function TradingViewWidget({
         symbol: tradingViewSymbol,
         interval: interval,
         timezone: timezone,
-        theme: theme,
+        theme: "dark",  // Force dark theme explicitly
         style: "1",
         locale: locale,
-        toolbar_bg: "#1a1a1a",
+        toolbar_bg: "#10121E",  // Changed from #1a1a1a to match our dark color
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
@@ -153,10 +153,12 @@ function TradingViewWidget({
         overrides: {
           "volumePaneSize": "xtiny",
           "paneProperties.background": "#10121E",
+          "paneProperties.backgroundType": "solid",
           "paneProperties.vertGridProperties.color": "#1F2937",
           "paneProperties.horzGridProperties.color": "#1F2937",
           "symbolWatermarkProperties.transparency": 90,
           "scalesProperties.textColor": "#D1D5DB",
+          "scalesProperties.backgroundColor": "#10121E",
           "mainSeriesProperties.candleStyle.upColor": "#10B981",
           "mainSeriesProperties.candleStyle.downColor": "#EF4444",
           "mainSeriesProperties.candleStyle.borderUpColor": "#10B981",
