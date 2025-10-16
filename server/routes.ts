@@ -1377,8 +1377,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isWin
       });
 
-      const tradeAmount = parseFloat(trade.amount || '0');
-      console.log(`💰 Parsed trade amount: ${tradeAmount}`);
+      // Convert amount to string first (in case it's a Decimal object)
+      const amountStr = trade.amount ? trade.amount.toString() : '0';
+      const tradeAmount = parseFloat(amountStr);
+      console.log(`💰 Parsed trade amount: ${tradeAmount} (from: ${amountStr})`);
 
       const profit = isWin ? tradeAmount * 0.1 : -tradeAmount; // 10% profit on win, lose all on loss
       console.log(`📊 Calculated profit: ${profit} (isWin: ${isWin})`);

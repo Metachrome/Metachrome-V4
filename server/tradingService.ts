@@ -194,11 +194,13 @@ class TradingService {
       }
 
       // Calculate profit/loss
-      const tradeAmount = parseFloat(trade.amount);
+      // Convert amount to string first (in case it's a Decimal object)
+      const amountStr = trade.amount ? trade.amount.toString() : '0';
+      const tradeAmount = parseFloat(amountStr);
       const optionsSettings = await storage.getOptionsSettings();
       const setting = optionsSettings.find(s => s.duration === trade.duration);
       const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
-      
+
       const profit = isWin ? tradeAmount * (profitPercentage / 100) : -tradeAmount;
 
       // Update trade
