@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -34,12 +34,34 @@ export default function HomePage() {
     setLocation(route);
   };
 
-  const topGainers = [
-    { symbol: "OP", price: "$2.22", change: "+14.75%", color: "bg-red-500" },
-    { symbol: "DOGE", price: "$0.371", change: "+8.51%", color: "bg-yellow-500" },
-    { symbol: "PEPE", price: "$0.000018", change: "+6.23%", color: "bg-green-500" },
-    { symbol: "UNI", price: "$6.45", change: "+10.15%", color: "bg-blue-500" },
-  ];
+  // Fetch top gainers from our CoinMarketCap endpoint
+  const [topGainers, setTopGainers] = useState([
+    { symbol: "BTC", price: "$43,250", change: "+2.34%", color: "bg-orange-500" },
+    { symbol: "ETH", price: "$2,650", change: "+1.89%", color: "bg-blue-500" },
+    { symbol: "BNB", price: "$315", change: "+0.89%", color: "bg-yellow-500" },
+    { symbol: "SOL", price: "$245", change: "+3.45%", color: "bg-purple-500" },
+  ]);
+
+  // Fetch top gainers data
+  const fetchTopGainers = async () => {
+    try {
+      const response = await fetch('/api/market-data/top-gainers');
+      if (response.ok) {
+        const data = await response.json();
+        setTopGainers(data);
+        console.log('✅ Top gainers data updated from CoinMarketCap');
+      }
+    } catch (error) {
+      console.log('⚠️ Using fallback top gainers data:', error);
+    }
+  };
+
+  // Update top gainers every 2 minutes
+  useEffect(() => {
+    fetchTopGainers();
+    const interval = setInterval(fetchTopGainers, 120000); // 2 minutes
+    return () => clearInterval(interval);
+  }, []);
 
   const features = [
     {

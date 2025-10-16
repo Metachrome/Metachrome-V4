@@ -1,7 +1,7 @@
 // Cryptocurrency Data Service
 import { useState, useEffect } from 'react';
 
-// Real-time cryptocurrency data using CoinGecko API
+// Real-time cryptocurrency data using CoinMarketCap API via our server
 export const useCryptoData = () => {
   const [cryptoData, setCryptoData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,10 +12,94 @@ export const useCryptoData = () => {
       setLoading(true);
       setError(null);
 
-      // Try internal API first (our own market data)
+      // Fetch from our CoinMarketCap proxy endpoint
+      console.log('🪙 Fetching from CoinMarketCap via server proxy...');
+      const response = await fetch('/api/market-data', {
+        headers: {
+          'Accept': 'application/json',
+        },
+        // Add timeout
+        signal: AbortSignal.timeout(15000) // 15 second timeout
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server API failed: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Check if we got fallback data due to API error
+      if (data.error && data.fallback) {
+        console.log('⚠️ Server returned fallback data due to CoinMarketCap API error');
+        setCryptoData(data.fallback);
+        setError('Using cached data');
+        return;
+      }
+
+      console.log('✅ CoinMarketCap data received via server proxy');
+      setCryptoData(data);
+      setError(null);
+
+    } catch (err) {
+      console.error('❌ Server proxy failed, trying direct CoinGecko fallback:', err);
+
+      // Fallback to CoinGecko API if server fails
       try {
-        console.log('🔄 Fetching from internal market data API...');
-        const internalResponse = await fetch('/api/market-data');
+        console.log('🔄 Fallback: Fetching from CoinGecko API...');
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,cardano,ripple,dogecoin,polygon,avalanche-2,chainlink,litecoin,polkadot,uniswap,shiba-inu&order=market_cap_desc&per_page=15&page=1&sparkline=false&price_change_percentage=24h',
+          {
+            headers: {
+              'Accept': 'application/json',
+            },
+            signal: AbortSignal.timeout(10000) // 10 second timeout
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`CoinGecko API failed: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ CoinGecko fallback data received');
+
+        // Transform CoinGecko data to match our format
+        const transformedData = data.map(coin => ({
+          id: coin.id,
+          symbol: `${coin.symbol.toUpperCase()}/USDT`,
+          name: coin.name,
+          price: `$${coin.current_price.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: coin.current_price < 1 ? 6 : 2
+          })}`,
+          change: `${coin.price_change_percentage_24h?.toFixed(2) || '0.00'}%`,
+          high: `$${coin.high_24h?.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: coin.high_24h < 1 ? 6 : 2
+          }) || 'N/A'}`,
+          low: `$${coin.low_24h?.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: coin.low_24h < 1 ? 6 : 2
+          }) || 'N/A'}`,
+          isPositive: (coin.price_change_percentage_24h || 0) >= 0,
+          marketCap: coin.market_cap,
+          volume: coin.total_volume,
+          image: coin.image,
+          coinGeckoId: coin.id,
+          rawPrice: coin.current_price,
+          rawChange: coin.price_change_percentage_24h || 0
+        }));
+
+        setCryptoData(transformedData);
+        setError('Using CoinGecko fallback');
+        console.log('✅ CoinGecko fallback data processed successfully');
+
+      } catch (fallbackErr) {
+        console.error('❌ All crypto data sources failed:', fallbackErr);
+        setError('Failed to fetch');
+
+        // Enhanced fallback data with more realistic prices
+        console.log('🔄 Using enhanced fallback data...');
 
         if (internalResponse.ok) {
           const internalData = await internalResponse.json();

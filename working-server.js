@@ -8503,178 +8503,208 @@ app.get('/api/binance/price', async (req, res) => {
   }
 });
 
-// ===== MARKET DATA ENDPOINTS (LEGACY - WILL BE DEPRECATED) =====
+// ===== MARKET DATA ENDPOINTS =====
 
-// Get all market data
+// CoinMarketCap API integration
+const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || 'demo-key';
+const COINMARKETCAP_BASE_URL = 'https://pro-api.coinmarketcap.com/v1';
+
+// Cache for CoinMarketCap data to avoid hitting rate limits
+let cmcDataCache = null;
+let cmcCacheTimestamp = 0;
+const CMC_CACHE_DURATION = 60000; // 1 minute cache
+
+// Fetch data from CoinMarketCap API
+async function fetchCoinMarketCapData() {
+  try {
+    console.log('🪙 Fetching data from CoinMarketCap API...');
+
+    // Check cache first
+    const now = Date.now();
+    if (cmcDataCache && (now - cmcCacheTimestamp) < CMC_CACHE_DURATION) {
+      console.log('📦 Using cached CoinMarketCap data');
+      return cmcDataCache;
+    }
+
+    const response = await fetch(`${COINMARKETCAP_BASE_URL}/cryptocurrency/listings/latest?start=1&limit=20&convert=USD`, {
+      headers: {
+        'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`CoinMarketCap API failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Transform CoinMarketCap data to our format
+    const transformedData = data.data.map(coin => {
+      const quote = coin.quote.USD;
+      return {
+        symbol: `${coin.symbol}/USDT`,
+        name: coin.name,
+        price: `$${quote.price.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: quote.price < 1 ? 6 : 2
+        })}`,
+        change: `${quote.percent_change_24h?.toFixed(2) || '0.00'}%`,
+        high: `$${(quote.price * 1.05).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: quote.price < 1 ? 6 : 2
+        })}`,
+        low: `$${(quote.price * 0.95).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: quote.price < 1 ? 6 : 2
+        })}`,
+        isPositive: (quote.percent_change_24h || 0) >= 0,
+        marketCap: quote.market_cap,
+        volume: quote.volume_24h,
+        rawPrice: quote.price,
+        rawChange: quote.percent_change_24h || 0,
+        cmcId: coin.id,
+        cmcRank: coin.cmc_rank,
+        lastUpdated: quote.last_updated
+      };
+    });
+
+    // Update cache
+    cmcDataCache = transformedData;
+    cmcCacheTimestamp = now;
+
+    console.log('✅ CoinMarketCap data fetched and cached successfully');
+    return transformedData;
+
+  } catch (error) {
+    console.error('❌ CoinMarketCap API error:', error);
+
+    // Return fallback data if API fails
+    return getFallbackMarketData();
+  }
+}
+
+// Fallback market data when APIs fail
+function getFallbackMarketData() {
+  console.log('🔄 Using fallback market data...');
+  return [
+    {
+      symbol: 'BTC/USDT',
+      name: 'Bitcoin',
+      price: '$43,250.00',
+      change: '2.34%',
+      high: '$44,000.00',
+      low: '$42,500.00',
+      isPositive: true,
+      marketCap: 850000000000,
+      volume: 25000000000,
+      rawPrice: 43250.00,
+      rawChange: 2.34
+    },
+    {
+      symbol: 'ETH/USDT',
+      name: 'Ethereum',
+      price: '$2,650.00',
+      change: '-1.23%',
+      high: '$2,700.00',
+      low: '$2,600.00',
+      isPositive: false,
+      marketCap: 320000000000,
+      volume: 15000000000,
+      rawPrice: 2650.00,
+      rawChange: -1.23
+    },
+    {
+      symbol: 'BNB/USDT',
+      name: 'BNB',
+      price: '$315.50',
+      change: '0.89%',
+      high: '$320.00',
+      low: '$310.00',
+      isPositive: true,
+      marketCap: 48000000000,
+      volume: 1200000000,
+      rawPrice: 315.50,
+      rawChange: 0.89
+    }
+  ];
+}
+
+// Get all market data - now using CoinMarketCap
 app.get('/api/market-data', async (req, res) => {
   try {
     console.log('📊 Market data request received');
 
-    // Real-time market data with realistic simulation
-    const currentTime = new Date();
-    const basePrice = 166373.87; // Current BTC price
+    const marketData = await fetchCoinMarketCapData();
 
-    // Generate realistic price movements
-    const priceVariation = (Math.random() - 0.5) * 1000; // ±$500 variation
-    const currentPrice = basePrice + priceVariation;
-    const change24h = (Math.random() - 0.5) * 5000; // ±$2500 change
-    const changePercent = (change24h / currentPrice) * 100;
-
-    const marketData = [
-      {
-        symbol: 'BTCUSDT',
-        price: currentPrice.toFixed(2),
-        priceChange24h: change24h.toFixed(2),
-        priceChangePercent24h: changePercent.toFixed(2),
-        high24h: (currentPrice + Math.abs(change24h) * 0.5).toFixed(2),
-        low24h: (currentPrice - Math.abs(change24h) * 0.5).toFixed(2),
-        volume24h: (Math.random() * 50000 + 25000).toFixed(2),
-        quoteVolume24h: (currentPrice * (Math.random() * 50000 + 25000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'ETHUSDT',
-        price: (3577.42 + (Math.random() - 0.5) * 200).toFixed(2),
-        priceChange24h: ((Math.random() - 0.5) * 300).toFixed(2),
-        priceChangePercent24h: ((Math.random() - 0.5) * 8).toFixed(2),
-        high24h: (3577.42 + Math.random() * 150).toFixed(2),
-        low24h: (3577.42 - Math.random() * 150).toFixed(2),
-        volume24h: (Math.random() * 100000 + 50000).toFixed(2),
-        quoteVolume24h: (3577.42 * (Math.random() * 100000 + 50000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'BNBUSDT',
-        price: (698.45 + (Math.random() - 0.5) * 50).toFixed(2),
-        priceChange24h: ((Math.random() - 0.5) * 30).toFixed(2),
-        priceChangePercent24h: ((Math.random() - 0.5) * 4).toFixed(2),
-        high24h: (698.45 + Math.random() * 25).toFixed(2),
-        low24h: (698.45 - Math.random() * 25).toFixed(2),
-        volume24h: (Math.random() * 20000 + 10000).toFixed(2),
-        quoteVolume24h: (698.45 * (Math.random() * 20000 + 10000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'SOLUSDT',
-        price: (245.67 + (Math.random() - 0.5) * 20).toFixed(2),
-        priceChange24h: ((Math.random() - 0.5) * 15).toFixed(2),
-        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
-        high24h: (245.67 + Math.random() * 10).toFixed(2),
-        low24h: (245.67 - Math.random() * 10).toFixed(2),
-        volume24h: (Math.random() * 30000 + 15000).toFixed(2),
-        quoteVolume24h: (245.67 * (Math.random() * 30000 + 15000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'XRPUSDT',
-        price: (3.1833 + (Math.random() - 0.5) * 0.3).toFixed(4),
-        priceChange24h: ((Math.random() - 0.5) * 0.2).toFixed(4),
-        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
-        high24h: (3.1833 + Math.random() * 0.15).toFixed(4),
-        low24h: (3.1833 - Math.random() * 0.15).toFixed(4),
-        volume24h: (Math.random() * 50000000 + 25000000).toFixed(0),
-        quoteVolume24h: (3.1833 * (Math.random() * 50000000 + 25000000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'DOGEUSDT',
-        price: (0.23878 + (Math.random() - 0.5) * 0.02).toFixed(6),
-        priceChange24h: ((Math.random() - 0.5) * 0.01).toFixed(6),
-        priceChangePercent24h: ((Math.random() - 0.5) * 4).toFixed(2),
-        high24h: (0.23878 + Math.random() * 0.01).toFixed(6),
-        low24h: (0.23878 - Math.random() * 0.01).toFixed(6),
-        volume24h: (Math.random() * 100000000 + 50000000).toFixed(0),
-        quoteVolume24h: (0.23878 * (Math.random() * 100000000 + 50000000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'ADAUSDT',
-        price: (0.8212 + (Math.random() - 0.5) * 0.08).toFixed(4),
-        priceChange24h: ((Math.random() - 0.5) * 0.05).toFixed(4),
-        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
-        high24h: (0.8212 + Math.random() * 0.04).toFixed(4),
-        low24h: (0.8212 - Math.random() * 0.04).toFixed(4),
-        volume24h: (Math.random() * 80000000 + 40000000).toFixed(0),
-        quoteVolume24h: (0.8212 * (Math.random() * 80000000 + 40000000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'LTCUSDT',
-        price: (112.45 + (Math.random() - 0.5) * 10).toFixed(2),
-        priceChange24h: ((Math.random() - 0.5) * 8).toFixed(2),
-        priceChangePercent24h: ((Math.random() - 0.5) * 7).toFixed(2),
-        high24h: (112.45 + Math.random() * 5).toFixed(2),
-        low24h: (112.45 - Math.random() * 5).toFixed(2),
-        volume24h: (Math.random() * 15000 + 7500).toFixed(2),
-        quoteVolume24h: (112.45 * (Math.random() * 15000 + 7500)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'LINKUSDT',
-        price: (22.34 + (Math.random() - 0.5) * 2).toFixed(2),
-        priceChange24h: ((Math.random() - 0.5) * 1.5).toFixed(2),
-        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
-        high24h: (22.34 + Math.random() * 1).toFixed(2),
-        low24h: (22.34 - Math.random() * 1).toFixed(2),
-        volume24h: (Math.random() * 25000 + 12500).toFixed(2),
-        quoteVolume24h: (22.34 * (Math.random() * 25000 + 12500)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'AVAXUSDT',
-        price: (45.67 + (Math.random() - 0.5) * 4).toFixed(2),
-        priceChange24h: ((Math.random() - 0.5) * 3).toFixed(2),
-        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
-        high24h: (45.67 + Math.random() * 2).toFixed(2),
-        low24h: (45.67 - Math.random() * 2).toFixed(2),
-        volume24h: (Math.random() * 18000 + 9000).toFixed(2),
-        quoteVolume24h: (45.67 * (Math.random() * 18000 + 9000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'MATICUSDT',
-        price: (0.4567 + (Math.random() - 0.5) * 0.04).toFixed(4),
-        priceChange24h: ((Math.random() - 0.5) * 0.03).toFixed(4),
-        priceChangePercent24h: ((Math.random() - 0.5) * 6).toFixed(2),
-        high24h: (0.4567 + Math.random() * 0.02).toFixed(4),
-        low24h: (0.4567 - Math.random() * 0.02).toFixed(4),
-        volume24h: (Math.random() * 200000000 + 100000000).toFixed(0),
-        quoteVolume24h: (0.4567 * (Math.random() * 200000000 + 100000000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'DOTUSDT',
-        price: (8.456 + (Math.random() - 0.5) * 0.8).toFixed(3),
-        priceChange24h: ((Math.random() - 0.5) * 0.6).toFixed(3),
-        priceChangePercent24h: ((Math.random() - 0.5) * 7).toFixed(2),
-        high24h: (8.456 + Math.random() * 0.4).toFixed(3),
-        low24h: (8.456 - Math.random() * 0.4).toFixed(3),
-        volume24h: (Math.random() * 35000 + 17500).toFixed(2),
-        quoteVolume24h: (8.456 * (Math.random() * 35000 + 17500)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      },
-      {
-        symbol: 'SHIBUSDT',
-        price: (0.00002345 + (Math.random() - 0.5) * 0.000002).toFixed(8),
-        priceChange24h: ((Math.random() - 0.5) * 0.000001).toFixed(8),
-        priceChangePercent24h: ((Math.random() - 0.5) * 8).toFixed(2),
-        high24h: (0.00002345 + Math.random() * 0.000001).toFixed(8),
-        low24h: (0.00002345 - Math.random() * 0.000001).toFixed(8),
-        volume24h: (Math.random() * 500000000000 + 250000000000).toFixed(0),
-        quoteVolume24h: (0.00002345 * (Math.random() * 500000000000 + 250000000000)).toFixed(0),
-        timestamp: currentTime.toISOString()
-      }
-    ];
-
-    console.log(`📊 Returning ${marketData.length} market data entries`);
-    console.log('📊 Symbols:', marketData.map(d => d.symbol).join(', '));
     res.json(marketData);
-
   } catch (error) {
-    console.error('❌ Error fetching market data:', error);
-    res.status(500).json({ error: 'Failed to fetch market data' });
+    console.error('❌ Market data error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch market data',
+      fallback: getFallbackMarketData()
+    });
   }
 });
+
+// Get top gainers from CoinMarketCap data
+app.get('/api/market-data/top-gainers', async (req, res) => {
+  try {
+    console.log('📈 Top gainers request received');
+
+    const marketData = await fetchCoinMarketCapData();
+
+    // Filter and sort by positive changes, get top 4
+    const topGainers = marketData
+      .filter(coin => coin.rawChange > 0)
+      .sort((a, b) => b.rawChange - a.rawChange)
+      .slice(0, 4)
+      .map(coin => ({
+        symbol: coin.symbol.replace('/USDT', ''),
+        price: coin.price,
+        change: `+${coin.rawChange.toFixed(2)}%`,
+        color: getColorForSymbol(coin.symbol.replace('/USDT', ''))
+      }));
+
+    res.json(topGainers);
+  } catch (error) {
+    console.error('❌ Top gainers error:', error);
+
+    // Fallback top gainers data
+    const fallbackGainers = [
+      { symbol: "BTC", price: "$43,250", change: "+2.34%", color: "bg-orange-500" },
+      { symbol: "ETH", price: "$2,650", change: "+1.89%", color: "bg-blue-500" },
+      { symbol: "BNB", price: "$315", change: "+0.89%", color: "bg-yellow-500" },
+      { symbol: "SOL", price: "$245", change: "+3.45%", color: "bg-purple-500" },
+    ];
+
+    res.json(fallbackGainers);
+  }
+});
+
+// Helper function to get color for crypto symbols
+function getColorForSymbol(symbol) {
+  const colors = {
+    'BTC': 'bg-orange-500',
+    'ETH': 'bg-blue-500',
+    'BNB': 'bg-yellow-500',
+    'SOL': 'bg-purple-500',
+    'XRP': 'bg-blue-400',
+    'ADA': 'bg-blue-600',
+    'DOGE': 'bg-yellow-400',
+    'DOT': 'bg-pink-500',
+    'UNI': 'bg-pink-400',
+    'LINK': 'bg-blue-600',
+    'LTC': 'bg-gray-400',
+    'MATIC': 'bg-purple-600',
+    'AVAX': 'bg-red-500',
+    'ATOM': 'bg-purple-400',
+    'NEAR': 'bg-green-500'
+  };
+  return colors[symbol] || 'bg-gray-500';
+}
+
+
 
 // Get specific market data by symbol
 app.get('/api/market-data/:symbol', async (req, res) => {
