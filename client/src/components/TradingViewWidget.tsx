@@ -760,12 +760,13 @@ function TradingViewWidget({
 
   return (
     <div
-      className={`tradingview-widget-container ${type === 'ticker' ? 'w-full overflow-hidden bg-transparent' : ''}`}
+      className={`tradingview-widget-container ${type === 'ticker' ? 'w-full overflow-hidden bg-transparent' : 'bg-[#10121E]'}`}
       ref={containerRef}
       style={{
         height: type === 'ticker' ? '50px' : (typeof height === 'number' ? `${height}px` : height),
         width: "100%",
-        position: "relative"
+        position: "relative",
+        backgroundColor: type === 'ticker' ? 'transparent' : '#10121E'
       }}
     >
       {/* Custom Symbol Selector - Only show for main chart, not ticker */}
