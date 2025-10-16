@@ -114,7 +114,7 @@ export default function HomePage() {
           <div className="flex items-center h-full">
             <div className="whitespace-nowrap animate-scroll">
               <span className="text-white text-base font-medium px-6">
-                Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Crypto market cap expands almost 5% in 24 hours | Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Crypto market cap expands almost 5% in 24 hours
+                Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Metachrome introduces seamless trading built for speed and precision | Crypto market cap expands almost 5% in 24 hours | Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Metachrome introduces seamless trading built for speed and precision | Crypto market cap expands almost 5% in 24 hours
               </span>
             </div>
           </div>
@@ -460,7 +460,7 @@ export default function HomePage() {
         <div className="flex items-center h-full">
           <div className="whitespace-nowrap animate-scroll">
             <span className="text-white text-lg font-medium px-8">
-              Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Crypto market cap expands almost 5% in 24 hours | Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Crypto market cap expands almost 5% in 24 hours
+              Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Metachrome introduces seamless trading built for speed and precision | Crypto market cap expands almost 5% in 24 hours | Bitcoin surges past key resistance traders eye the next breakout | Ethereum momentum builds smart money is already in | Market opportunities don't wait execute faster with Metachrome | Metachrome introduces seamless trading built for speed and precision | Crypto market cap expands almost 5% in 24 hours
             </span>
           </div>
         </div>
