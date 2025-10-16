@@ -9,7 +9,7 @@ export const tradeTypeEnum = pgEnum('trade_type', ['spot', 'options', 'futures']
 export const tradeDirectionEnum = pgEnum('trade_direction', ['buy', 'sell', 'up', 'down']);
 export const tradeStatusEnum = pgEnum('trade_status', ['pending', 'active', 'completed', 'cancelled']);
 export const adminControlEnum = pgEnum('admin_control', ['normal', 'win', 'lose']);
-export const transactionTypeEnum = pgEnum('transaction_type', ['deposit', 'withdraw', 'trade', 'transfer']);
+export const transactionTypeEnum = pgEnum('transaction_type', ['deposit', 'withdraw', 'trade', 'transfer', 'trade_win', 'trade_loss', 'bonus']);
 export const transactionStatusEnum = pgEnum('transaction_status', ['pending', 'completed', 'failed']);
 
 // Users table
