@@ -24,6 +24,8 @@ import { setupOAuth } from "./oauth";
 // import { paymentService } from "./paymentService";
 import { z } from "zod";
 import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdminControlSchema } from "@shared/schema";
+import { sql } from "drizzle-orm";
+import { transactions } from "@shared/schema";
 
 // Helper functions for deposit addresses and network info
 function getDepositAddress(currency: string): string {
@@ -1302,6 +1304,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting admin control:", error);
       res.status(500).json({ message: "Failed to delete admin control" });
+    }
+  });
+
+  // Diagnostic endpoint to check database schema
+  app.get("/api/admin/diagnostics/schema", async (req, res) => {
+    try {
+      console.log('🔍 Checking database schema...');
+
+      // Check transactions table structure
+      const result = await db.execute(sql`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_name = 'transactions'
+        ORDER BY ordinal_position
+      `);
+
+      console.log('📋 Transactions table schema:', result);
+
+      // Get a sample transaction
+      const sampleTx = await db.select().from(transactions).limit(1);
+      console.log('📦 Sample transaction:', sampleTx);
+
+      res.json({
+        schema: result,
+        sampleTransaction: sampleTx[0],
+        message: 'Check server logs for detailed schema information'
+      });
+    } catch (error) {
+      console.error('❌ Error checking schema:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
