@@ -260,17 +260,39 @@ class DatabaseStorage implements IStorage {
         amountIsEmpty: trade.amount === '',
         allFields: Object.keys(trade)
       });
+
+      // Convert Decimal amounts to strings for proper parsing
+      return {
+        ...trade,
+        amount: trade.amount ? trade.amount.toString() : '0',
+        price: trade.price ? trade.price.toString() : undefined,
+        entryPrice: trade.entryPrice ? trade.entryPrice.toString() : undefined,
+        exitPrice: trade.exitPrice ? trade.exitPrice.toString() : undefined,
+        profit: trade.profit ? trade.profit.toString() : undefined,
+        fee: trade.fee ? trade.fee.toString() : undefined
+      };
     }
-    return trade;
+    return undefined;
   }
 
   async getUserTrades(userId: string, limit: number = 100): Promise<Trade[]> {
-    return await db
+    const userTrades = await db
       .select()
       .from(trades)
       .where(eq(trades.userId, userId))
       .orderBy(desc(trades.createdAt))
       .limit(limit);
+
+    // Convert Decimal amounts to strings for proper parsing
+    return userTrades.map(trade => ({
+      ...trade,
+      amount: trade.amount ? trade.amount.toString() : '0',
+      price: trade.price ? trade.price.toString() : undefined,
+      entryPrice: trade.entryPrice ? trade.entryPrice.toString() : undefined,
+      exitPrice: trade.exitPrice ? trade.exitPrice.toString() : undefined,
+      profit: trade.profit ? trade.profit.toString() : undefined,
+      fee: trade.fee ? trade.fee.toString() : undefined
+    }));
   }
 
   async updateTrade(id: string, updates: Partial<InsertTrade>): Promise<Trade> {
@@ -279,14 +301,35 @@ class DatabaseStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(trades.id, id))
       .returning();
-    return trade;
+
+    // Convert Decimal amounts to strings for proper parsing
+    return {
+      ...trade,
+      amount: trade.amount ? trade.amount.toString() : '0',
+      price: trade.price ? trade.price.toString() : undefined,
+      entryPrice: trade.entryPrice ? trade.entryPrice.toString() : undefined,
+      exitPrice: trade.exitPrice ? trade.exitPrice.toString() : undefined,
+      profit: trade.profit ? trade.profit.toString() : undefined,
+      fee: trade.fee ? trade.fee.toString() : undefined
+    };
   }
 
   async getActiveTrades(userId: string): Promise<Trade[]> {
-    return await db
+    const activeTrades = await db
       .select()
       .from(trades)
       .where(and(eq(trades.userId, userId), eq(trades.status, 'active')));
+
+    // Convert Decimal amounts to strings for proper parsing
+    return activeTrades.map(trade => ({
+      ...trade,
+      amount: trade.amount ? trade.amount.toString() : '0',
+      price: trade.price ? trade.price.toString() : undefined,
+      entryPrice: trade.entryPrice ? trade.entryPrice.toString() : undefined,
+      exitPrice: trade.exitPrice ? trade.exitPrice.toString() : undefined,
+      profit: trade.profit ? trade.profit.toString() : undefined,
+      fee: trade.fee ? trade.fee.toString() : undefined
+    }));
   }
 
   // Spot trading operations
@@ -538,7 +581,14 @@ class DatabaseStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(transactions.id, id))
       .returning();
-    return transaction;
+
+    // Convert Decimal amounts back to strings for consistency
+    return {
+      ...transaction,
+      amount: transaction.amount ? transaction.amount.toString() : '0',
+      fee: transaction.fee ? transaction.fee.toString() : '0',
+      networkFee: transaction.networkFee ? transaction.networkFee.toString() : undefined
+    };
   }
 
   async getTransaction(id: string): Promise<Transaction | undefined> {
@@ -547,23 +597,48 @@ class DatabaseStorage implements IStorage {
       .from(transactions)
       .where(eq(transactions.id, id))
       .limit(1);
-    return transaction;
+
+    if (!transaction) return undefined;
+
+    // Convert Decimal amounts back to strings for consistency
+    return {
+      ...transaction,
+      amount: transaction.amount ? transaction.amount.toString() : '0',
+      fee: transaction.fee ? transaction.fee.toString() : '0',
+      networkFee: transaction.networkFee ? transaction.networkFee.toString() : undefined
+    };
   }
 
   async getPendingTransactions(): Promise<Transaction[]> {
-    return await db
+    const txs = await db
       .select()
       .from(transactions)
       .where(eq(transactions.status, 'pending'))
       .orderBy(desc(transactions.createdAt));
+
+    // Convert Decimal amounts to strings for proper parsing on frontend
+    return txs.map(tx => ({
+      ...tx,
+      amount: tx.amount ? tx.amount.toString() : '0',
+      fee: tx.fee ? tx.fee.toString() : '0',
+      networkFee: tx.networkFee ? tx.networkFee.toString() : undefined
+    }));
   }
 
   async getAllTransactions(): Promise<Transaction[]> {
-    return await db
+    const txs = await db
       .select()
       .from(transactions)
       .orderBy(desc(transactions.createdAt))
       .limit(1000); // Limit to prevent performance issues
+
+    // Convert Decimal amounts to strings for proper parsing on frontend
+    return txs.map(tx => ({
+      ...tx,
+      amount: tx.amount ? tx.amount.toString() : '0',
+      fee: tx.fee ? tx.fee.toString() : '0',
+      networkFee: tx.networkFee ? tx.networkFee.toString() : undefined
+    }));
   }
 
   // Admin operations
@@ -677,12 +752,12 @@ class DatabaseStorage implements IStorage {
         symbol: t.symbol,
         type: t.type,
         direction: t.direction,
-        amount: t.amount,
-        price: t.price,
-        entryPrice: t.entryPrice,
-        exitPrice: t.exitPrice,
-        profit: t.profit,
-        fee: t.fee,
+        amount: t.amount ? t.amount.toString() : '0',
+        price: t.price ? t.price.toString() : undefined,
+        entryPrice: t.entryPrice ? t.entryPrice.toString() : undefined,
+        exitPrice: t.exitPrice ? t.exitPrice.toString() : undefined,
+        profit: t.profit ? t.profit.toString() : undefined,
+        fee: t.fee ? t.fee.toString() : undefined,
         status: t.status,
         duration: t.duration,
         expiresAt: t.expiresAt,
