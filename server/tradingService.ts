@@ -81,6 +81,8 @@ class TradingService {
 
       // Create the trade
       const expiresAt = new Date(Date.now() + request.duration * 1000);
+      console.log(`📊 Creating trade with amount: ${request.amount} (type: ${typeof request.amount})`);
+
       const trade = await storage.createTrade({
         userId: finalUserId,
         symbol: request.symbol,
@@ -93,6 +95,8 @@ class TradingService {
         duration: request.duration,
         expiresAt,
       });
+
+      console.log(`✅ Trade created with ID: ${trade.id}, amount: ${trade.amount} (type: ${typeof trade.amount})`);
 
       // Schedule trade execution
       this.scheduleTradeExecution(trade.id, request.duration * 1000);

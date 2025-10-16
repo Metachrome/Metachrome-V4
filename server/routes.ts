@@ -1367,8 +1367,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate profit/loss
-      const tradeAmount = parseFloat(trade.amount);
+      console.log(`🔍 Trade data for profit calculation:`, {
+        tradeId,
+        tradeAmount: trade.amount,
+        tradeAmountType: typeof trade.amount,
+        isWin
+      });
+
+      const tradeAmount = parseFloat(trade.amount || '0');
+      console.log(`💰 Parsed trade amount: ${tradeAmount}`);
+
       const profit = isWin ? tradeAmount * 0.1 : -tradeAmount; // 10% profit on win, lose all on loss
+      console.log(`📊 Calculated profit: ${profit} (isWin: ${isWin})`);
 
       // Update trade
       const updatedTrade = await storage.updateTrade(tradeId, {
@@ -1389,9 +1399,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Use profit amount (not balance change) to show actual win/loss
         const transactionAmount = profit.toString();
-        console.log(`📝 Creating transaction: amount=${transactionAmount}, profit=${profit}, isWin=${isWin}`);
+        console.log(`📝 Creating transaction with amount: ${transactionAmount}`);
 
-        await storage.createTransaction({
+        const transaction = await storage.createTransaction({
           userId: trade.userId,
           type: 'trade',
           symbol: 'USDT',
@@ -1407,7 +1417,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             result: isWin ? 'win' : 'loss'
           })
         });
-        console.log(`✅ Transaction created for trade ${tradeId}: ${isWin ? 'WIN' : 'LOSS'} $${Math.abs(profit).toFixed(2)}`);
+        console.log(`✅ Transaction created:`, {
+          transactionId: transaction.id,
+          amount: transaction.amount,
+          amountType: typeof transaction.amount,
+          profit: profit,
+          isWin
+        });
       } catch (txError) {
         console.error(`⚠️ Failed to create transaction for trade ${tradeId}:`, txError);
       }
