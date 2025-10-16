@@ -1409,8 +1409,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create transaction record for trade result
       try {
         // Use profit amount (not balance change) to show actual win/loss
-        const transactionAmount = profit.toString();
-        console.log(`📝 Creating transaction with amount: ${transactionAmount}`);
+        // IMPORTANT: Pass as string for Decimal type, but ensure it's a valid decimal string
+        const transactionAmount = profit.toFixed(8); // Ensure 8 decimal places
+        console.log(`📝 Creating transaction with amount: ${transactionAmount} (type: ${typeof transactionAmount})`);
 
         // Use old transaction types for database compatibility
         const transactionType = isWin ? 'trade_win' : 'trade_loss';
