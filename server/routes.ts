@@ -1401,9 +1401,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const transactionAmount = profit.toString();
         console.log(`📝 Creating transaction with amount: ${transactionAmount}`);
 
+        // Use old transaction types for database compatibility
+        const transactionType = isWin ? 'trade_win' : 'trade_loss';
+
         const transaction = await storage.createTransaction({
           userId: trade.userId,
-          type: 'trade',
+          type: transactionType as any,
           symbol: 'USDT',
           amount: transactionAmount,
           fee: '0',
@@ -1422,7 +1425,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: transaction.amount,
           amountType: typeof transaction.amount,
           profit: profit,
-          isWin
+          isWin,
+          type: transactionType
         });
       } catch (txError) {
         console.error(`⚠️ Failed to create transaction for trade ${tradeId}:`, txError);

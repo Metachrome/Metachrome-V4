@@ -181,8 +181,11 @@ export default function TransactionHistory() {
       case 'deposit':
         return <Download className="h-4 w-4" />;
       case 'withdraw':
+      case 'withdrawal':
         return <Upload className="h-4 w-4" />;
       case 'trade':
+      case 'trade_win':
+      case 'trade_loss':
         return <ArrowUpRight className="h-4 w-4" />;
       case 'transfer':
         return <RefreshCw className="h-4 w-4" />;
@@ -222,9 +225,13 @@ export default function TransactionHistory() {
       case 'deposit':
         return 'text-green-400';
       case 'withdraw':
+      case 'withdrawal':
         return 'text-red-400';
       case 'trade':
-        return 'text-purple-400';
+      case 'trade_win':
+        return 'text-green-400';
+      case 'trade_loss':
+        return 'text-red-400';
       case 'transfer':
         return 'text-blue-400';
       default:
@@ -363,8 +370,9 @@ export default function TransactionHistory() {
                     <div className="flex items-center gap-4 min-w-0 flex-1">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                         transaction.type === 'deposit' ? 'bg-green-600/20 text-green-400' :
-                        transaction.type === 'withdraw' ? 'bg-red-600/20 text-red-400' :
-                        transaction.type === 'trade' ? 'bg-purple-600/20 text-purple-400' :
+                        transaction.type === 'withdraw' || transaction.type === 'withdrawal' ? 'bg-red-600/20 text-red-400' :
+                        transaction.type === 'trade' || transaction.type === 'trade_win' ? 'bg-green-600/20 text-green-400' :
+                        transaction.type === 'trade_loss' ? 'bg-red-600/20 text-red-400' :
                         'bg-blue-600/20 text-blue-400'
                       }`}>
                         {getTransactionIcon(transaction.type)}
@@ -405,7 +413,7 @@ export default function TransactionHistory() {
                       <div className="text-sm text-gray-400">
                         {transaction.symbol || 'USDT'}
                       </div>
-                      {transaction.type === 'trade' && (
+                      {(transaction.type === 'trade' || transaction.type === 'trade_win' || transaction.type === 'trade_loss') && (
                         <div className={`text-sm font-medium ${
                           parseFloat(transaction.amount || '0') > 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
