@@ -335,10 +335,10 @@ export const useCryptoData = () => {
   useEffect(() => {
     fetchCryptoData();
 
-    // Update data every 5 minutes, but retry more frequently if there's an error
+    // Update data more frequently for real-time feel
     const interval = setInterval(() => {
       fetchCryptoData();
-    }, error ? 60000 : 300000); // Retry every 1 minute if error, otherwise 5 minutes
+    }, error ? 30000 : 60000); // Retry every 30 seconds if error, otherwise 1 minute
 
     return () => clearInterval(interval);
   }, [error]);
@@ -349,12 +349,31 @@ export const useCryptoData = () => {
     fetchCryptoData();
   };
 
+  // Force refresh function that clears server cache
+  const forceRefresh = async () => {
+    try {
+      console.log('🔄 Force refreshing data from server...');
+      setLoading(true);
+
+      // Call server refresh endpoint to clear cache
+      await fetch('/api/market-data/refresh', { method: 'POST' });
+
+      // Then fetch fresh data
+      await fetchCryptoData();
+    } catch (error) {
+      console.error('❌ Force refresh failed:', error);
+      // Fallback to regular fetch
+      fetchCryptoData();
+    }
+  };
+
   return {
     cryptoData,
     loading,
     error,
     refetch: fetchCryptoData,
-    retry: retryFetch
+    retry: retryFetch,
+    forceRefresh
   };
 };
 

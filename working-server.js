@@ -8512,7 +8512,7 @@ const COINMARKETCAP_BASE_URL = 'https://pro-api.coinmarketcap.com/v1';
 // Cache for CoinMarketCap data to avoid hitting rate limits
 let cmcDataCache = null;
 let cmcCacheTimestamp = 0;
-const CMC_CACHE_DURATION = 60000; // 1 minute cache
+const CMC_CACHE_DURATION = 30000; // 30 seconds cache for more real-time data
 
 // Fetch data from CoinMarketCap API
 async function fetchCoinMarketCapData() {
@@ -8539,33 +8539,55 @@ async function fetchCoinMarketCapData() {
 
     const data = await response.json();
 
-    // Transform CoinMarketCap data to our format
+    // Transform CoinMarketCap data to match the exact format
     const transformedData = data.data.map(coin => {
       const quote = coin.quote.USD;
+      const price = quote.price;
+      const change24h = quote.percent_change_24h || 0;
+
+      // Format price exactly like CoinMarketCap
+      let formattedPrice;
+      if (price >= 1000) {
+        formattedPrice = `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      } else if (price >= 1) {
+        formattedPrice = `$${price.toFixed(2)}`;
+      } else if (price >= 0.01) {
+        formattedPrice = `$${price.toFixed(4)}`;
+      } else {
+        formattedPrice = `$${price.toFixed(8)}`;
+      }
+
+      // Calculate 24h high/low based on current price and change
+      const changeAmount = (price * change24h) / 100;
+      const yesterdayPrice = price - changeAmount;
+      const high24h = Math.max(price, yesterdayPrice * 1.02);
+      const low24h = Math.min(price, yesterdayPrice * 0.98);
+
       return {
         symbol: `${coin.symbol}/USDT`,
         name: coin.name,
-        price: `$${quote.price.toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: quote.price < 1 ? 6 : 2
-        })}`,
-        change: `${quote.percent_change_24h?.toFixed(2) || '0.00'}%`,
-        high: `$${(quote.price * 1.05).toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: quote.price < 1 ? 6 : 2
-        })}`,
-        low: `$${(quote.price * 0.95).toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: quote.price < 1 ? 6 : 2
-        })}`,
-        isPositive: (quote.percent_change_24h || 0) >= 0,
+        price: formattedPrice,
+        change: `${change24h >= 0 ? '' : ''}${change24h.toFixed(2)}%`,
+        high: `$${high24h >= 1000 ? high24h.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) :
+                   high24h >= 1 ? high24h.toFixed(2) :
+                   high24h >= 0.01 ? high24h.toFixed(4) :
+                   high24h.toFixed(8)}`,
+        low: `$${low24h >= 1000 ? low24h.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) :
+                  low24h >= 1 ? low24h.toFixed(2) :
+                  low24h >= 0.01 ? low24h.toFixed(4) :
+                  low24h.toFixed(8)}`,
+        isPositive: change24h >= 0,
         marketCap: quote.market_cap,
         volume: quote.volume_24h,
-        rawPrice: quote.price,
-        rawChange: quote.percent_change_24h || 0,
+        rawPrice: price,
+        rawChange: change24h,
         cmcId: coin.id,
         cmcRank: coin.cmc_rank,
-        lastUpdated: quote.last_updated
+        lastUpdated: quote.last_updated,
+        // Additional CoinMarketCap-like data
+        circulatingSupply: coin.circulating_supply,
+        totalSupply: coin.total_supply,
+        maxSupply: coin.max_supply
       };
     });
 
@@ -8584,48 +8606,79 @@ async function fetchCoinMarketCapData() {
   }
 }
 
-// Fallback market data when APIs fail
+// Fallback market data when APIs fail - Updated with current realistic prices
 function getFallbackMarketData() {
   console.log('🔄 Using fallback market data...');
   return [
     {
       symbol: 'BTC/USDT',
       name: 'Bitcoin',
-      price: '$43,250.00',
-      change: '2.34%',
-      high: '$44,000.00',
-      low: '$42,500.00',
-      isPositive: true,
-      marketCap: 850000000000,
-      volume: 25000000000,
-      rawPrice: 43250.00,
-      rawChange: 2.34
+      price: '$110,777.29',
+      change: '-2.22%',
+      high: '$116,316.16',
+      low: '$105,238.43',
+      isPositive: false,
+      marketCap: 2190000000000,
+      volume: 45000000000,
+      rawPrice: 110777.29,
+      rawChange: -2.22,
+      cmcRank: 1
     },
     {
       symbol: 'ETH/USDT',
       name: 'Ethereum',
-      price: '$2,650.00',
-      change: '-1.23%',
-      high: '$2,700.00',
-      low: '$2,600.00',
+      price: '$3,994.71',
+      change: '-4.77%',
+      high: '$4,194.44',
+      low: '$3,794.97',
       isPositive: false,
-      marketCap: 320000000000,
-      volume: 15000000000,
-      rawPrice: 2650.00,
-      rawChange: -1.23
+      marketCap: 480000000000,
+      volume: 25000000000,
+      rawPrice: 3994.71,
+      rawChange: -4.77,
+      cmcRank: 2
+    },
+    {
+      symbol: 'USDT/USDT',
+      name: 'Tether USDt',
+      price: '$1.00',
+      change: '-0.04%',
+      high: '$1.05',
+      low: '$0.95',
+      isPositive: false,
+      marketCap: 140000000000,
+      volume: 85000000000,
+      rawPrice: 1.00,
+      rawChange: -0.04,
+      cmcRank: 3
     },
     {
       symbol: 'BNB/USDT',
       name: 'BNB',
-      price: '$315.50',
-      change: '0.89%',
-      high: '$320.00',
-      low: '$310.00',
-      isPositive: true,
-      marketCap: 48000000000,
-      volume: 1200000000,
-      rawPrice: 315.50,
-      rawChange: 0.89
+      price: '$1,186.36',
+      change: '-2.00%',
+      high: '$1,245.69',
+      low: '$1,127.05',
+      isPositive: false,
+      marketCap: 172000000000,
+      volume: 2800000000,
+      rawPrice: 1186.36,
+      rawChange: -2.00,
+      cmcRank: 4
+    },
+    {
+      symbol: 'XRP/USDT',
+      name: 'XRP',
+      price: '$2.40',
+      change: '-5.45%',
+      high: '$2.51',
+      low: '$2.28',
+      isPositive: false,
+      marketCap: 137000000000,
+      volume: 8500000000,
+      rawPrice: 2.40,
+      rawChange: -5.45,
+      cmcRank: 5
     }
   ];
 }
@@ -8703,6 +8756,34 @@ function getColorForSymbol(symbol) {
   };
   return colors[symbol] || 'bg-gray-500';
 }
+
+// Force refresh CoinMarketCap cache
+app.post('/api/market-data/refresh', async (req, res) => {
+  try {
+    console.log('🔄 Force refreshing CoinMarketCap cache...');
+
+    // Clear cache to force fresh data
+    cmcDataCache = null;
+    cmcCacheTimestamp = 0;
+
+    // Fetch fresh data
+    const marketData = await fetchCoinMarketCapData();
+
+    res.json({
+      success: true,
+      message: 'Cache refreshed successfully',
+      dataCount: marketData.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Cache refresh error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to refresh cache',
+      message: error.message
+    });
+  }
+});
 
 
 
