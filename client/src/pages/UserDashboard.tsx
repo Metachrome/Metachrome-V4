@@ -376,9 +376,9 @@ export default function UserDashboard() {
                 // If username is a long wallet address, show it in two lines for mobile
                 if (user.username.startsWith('0x') && user.username.length > 20) {
                   return (
-                    <div className="block">
+                    <div className="block max-w-full">
                       <div className="leading-tight">Welcome back,</div>
-                      <div className="leading-tight break-all text-lg md:text-2xl">{user.username}!</div>
+                      <div className="leading-tight break-all text-xs md:text-2xl font-mono overflow-hidden max-w-full" style={{ wordBreak: 'break-all' }}>{user.username}!</div>
                     </div>
                   );
                 }
