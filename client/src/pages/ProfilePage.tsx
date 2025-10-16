@@ -645,11 +645,15 @@ export default function ProfilePage() {
                       </Button>
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0 max-w-full">
                     <h3 className={`font-semibold text-white ${isMobile ? 'text-base' : 'text-lg'}`}>
                       {user?.firstName} {user?.lastName}
                     </h3>
-                    <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>@{user?.username}</p>
+                    <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''} break-all max-w-full overflow-hidden`}>
+                      @{user?.username && user.username.startsWith('0x') && user.username.length > 20
+                        ? `${user.username.slice(0, 6)}...${user.username.slice(-4)}`
+                        : user?.username}
+                    </p>
                     <Badge variant="secondary" className={`mt-1 ${isMobile ? 'text-xs' : ''}`}>
                       {user?.role === 'admin' ? 'Administrator' : 'User'}
                     </Badge>

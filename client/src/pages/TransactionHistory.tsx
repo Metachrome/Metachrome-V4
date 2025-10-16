@@ -359,9 +359,9 @@ export default function TransactionHistory() {
             ) : filteredTransactions.length > 0 ? (
               <div className="space-y-4">
                 {filteredTransactions.map((transaction: any) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg hover:bg-gray-700/70 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg hover:bg-gray-700/70 transition-colors max-w-full overflow-hidden">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                         transaction.type === 'deposit' ? 'bg-green-600/20 text-green-400' :
                         transaction.type === 'withdraw' ? 'bg-red-600/20 text-red-400' :
                         transaction.type === 'trade' ? 'bg-purple-600/20 text-purple-400' :
@@ -369,7 +369,7 @@ export default function TransactionHistory() {
                       }`}>
                         {getTransactionIcon(transaction.type)}
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-white capitalize">{transaction.type}</span>
                           <Badge className={getStatusColor(transaction.status)}>
@@ -381,13 +381,15 @@ export default function TransactionHistory() {
                           {new Date(transaction.created_at).toLocaleString()}
                         </div>
                         {transaction.description && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 truncate max-w-full">
                             {transaction.description}
                           </div>
                         )}
                         {transaction.users?.username && (
-                          <div className="text-xs text-gray-500">
-                            User: {transaction.users.username}
+                          <div className="text-xs text-gray-500 truncate max-w-full">
+                            User: {transaction.users.username.startsWith('0x') && transaction.users.username.length > 20
+                              ? `${transaction.users.username.slice(0, 6)}...${transaction.users.username.slice(-4)}`
+                              : transaction.users.username}
                           </div>
                         )}
                       </div>

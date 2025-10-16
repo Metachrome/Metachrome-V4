@@ -3263,14 +3263,14 @@ function OptionsPageContent({
                   </div>
                 ) : (
                   tradeHistory.slice(0, 8).map((trade, index) => (
-                    <div key={index} className="flex justify-between text-xs py-1 hover:bg-gray-800/50 rounded px-2 -mx-2">
-                      <span className="text-gray-400 font-mono">
+                    <div key={index} className="flex justify-between text-xs py-1 hover:bg-gray-800/50 rounded px-2 -mx-2 max-w-full overflow-hidden">
+                      <span className="text-gray-400 font-mono truncate flex-shrink-0 w-16">
                         {new Date(trade.endTime).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8)}
                       </span>
-                      <span className={`font-mono ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                      <span className={`font-mono truncate flex-shrink-0 w-16 text-center ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                         {trade.entryPrice.toFixed(2)}
                       </span>
-                      <span className="text-gray-300 font-mono">{trade.amount.toFixed(0)}</span>
+                      <span className="text-gray-300 font-mono truncate flex-shrink-0 w-12 text-right">{trade.amount.toFixed(0)}</span>
                     </div>
                   ))
                 )}
@@ -3472,23 +3472,23 @@ function OptionsPageContent({
                   const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -trade.amount;
 
                   return (
-                    <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
-                      <div className="flex flex-col">
-                        <span className="text-gray-400 text-xs">{selectedSymbol.replace('USDT', '/USDT')}</span>
-                        <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                    <div key={trade.id} className="grid grid-cols-8 gap-1 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-gray-400 text-xs truncate">{selectedSymbol.replace('USDT', '/USDT')}</span>
+                        <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                           {trade.direction.toUpperCase()}
                         </span>
                       </div>
-                      <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
-                      <span className="text-white">{currentPrice.toFixed(2)} USDT</span>
-                      <span className="text-gray-300">{trade.amount} USDT</span>
-                      <span className="text-gray-300">{trade.profitPercentage}%</span>
-                      <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                        {potentialPayout > 0 ? '+' : ''}{potentialPayout.toFixed(2)} USDT
+                      <span className="text-gray-300 truncate text-center">{trade.entryPrice.toFixed(2)}</span>
+                      <span className="text-white truncate text-center">{currentPrice.toFixed(2)}</span>
+                      <span className="text-gray-300 truncate text-center">{trade.amount}</span>
+                      <span className="text-gray-300 truncate text-center">{trade.profitPercentage}%</span>
+                      <span className={`font-bold truncate text-center ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
+                        {potentialPayout > 0 ? '+' : ''}{potentialPayout.toFixed(2)}
                       </span>
-                      <span className="text-yellow-400 font-bold">{timeRemaining}s</span>
-                      <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
-                        {isWinning ? '🟢 WINNING' : '🔴 LOSING'}
+                      <span className="text-yellow-400 font-bold truncate text-center">{timeRemaining}s</span>
+                      <span className={`font-bold truncate text-center ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
+                        {isWinning ? '🟢' : '🔴'}
                       </span>
                     </div>
                   );
@@ -3541,23 +3541,23 @@ function OptionsPageContent({
                       });
 
                       return (
-                        <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
-                          <div className="flex flex-col">
-                            <span className="text-gray-400 text-xs">{marketPair}</span>
-                            <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                        <div key={trade.id} className="grid grid-cols-8 gap-1 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-gray-400 text-xs truncate">{marketPair}</span>
+                            <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                               {trade.direction.toUpperCase()}
                             </span>
                           </div>
-                          <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
-                          <span className="text-gray-300">{trade.currentPrice?.toFixed(2) || 'N/A'} USDT</span>
-                          <span className="text-gray-300">{trade.amount} USDT</span>
-                          <span className="text-gray-300">{profitPercentage}%</span>
-                          <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)} USDT
+                          <span className="text-gray-300 truncate text-center">{trade.entryPrice.toFixed(2)}</span>
+                          <span className="text-gray-300 truncate text-center">{trade.currentPrice?.toFixed(2) || 'N/A'}</span>
+                          <span className="text-gray-300 truncate text-center">{trade.amount}</span>
+                          <span className="text-gray-300 truncate text-center">{profitPercentage}%</span>
+                          <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                            {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)}
                           </span>
-                          <span className="text-gray-400 text-xs">{fullDateTime}</span>
-                          <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
+                          <span className="text-gray-400 text-xs truncate text-center">{new Date(trade.endTime).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8)}</span>
+                          <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                            {trade.status === 'won' ? '✅' : '❌'}
                           </span>
                         </div>
                       );
