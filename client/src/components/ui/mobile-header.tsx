@@ -42,7 +42,7 @@ export function MobileHeader() {
     setIsMenuOpen(false);
   };
 
-  // Get user display name - prioritize wallet address for MetaMask users
+  // Get user display name - prioritize name and username over wallet address
   const getUserDisplayName = () => {
     // Debug: Log user data to console
     console.log('🔍 Mobile Header User Data:', {
@@ -55,31 +55,45 @@ export function MobileHeader() {
       currentLocation: location
     });
 
-    // Check for wallet address in multiple possible fields
-    const walletAddr = user?.walletAddress || user?.wallet_address || user?.username;
-
-    // If we're on dashboard page, don't truncate - show two lines
-    if (location === '/dashboard' && walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
-      console.log('🔍 Mobile Header: Dashboard page - showing two-line wallet');
-      return walletAddr; // Return full address for dashboard
-    }
-
-    // For other pages, if it looks like a wallet address (starts with 0x and is long), truncate it
-    if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
-      const truncated = `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
-      console.log('🔍 Mobile Header: Showing truncated wallet:', truncated);
-      return truncated;
-    }
-
-    // For regular users, show name or username
+    // First priority: Full name
     if (user?.firstName && user?.lastName) {
+      console.log('🔍 Mobile Header: Showing full name');
       return `${user.firstName} ${user.lastName}`;
     }
+
+    // Second priority: First name only
     if (user?.firstName) {
+      console.log('🔍 Mobile Header: Showing first name');
       return user.firstName;
     }
-    if (user?.username && !user?.username.startsWith('0x')) {
+
+    // Third priority: Username (regardless of format)
+    if (user?.username) {
+      console.log('🔍 Mobile Header: Showing username:', user.username);
+
+      // If we're on dashboard page and it's a long wallet address, show two lines
+      if (location === '/dashboard' && user.username.startsWith('0x') && user.username.length > 20) {
+        console.log('🔍 Mobile Header: Dashboard page - showing two-line wallet');
+        return user.username; // Return full address for dashboard
+      }
+
+      // For other pages, if it's a long wallet address, truncate it
+      if (user.username.startsWith('0x') && user.username.length > 20) {
+        const truncated = `${user.username.slice(0, 6)}...${user.username.slice(-4)}`;
+        console.log('🔍 Mobile Header: Showing truncated wallet:', truncated);
+        return truncated;
+      }
+
+      // For regular usernames, show as-is
       return user.username;
+    }
+
+    // Last resort: Check for wallet address in other fields
+    const walletAddr = user?.walletAddress || user?.wallet_address;
+    if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
+      const truncated = `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
+      console.log('🔍 Mobile Header: Showing wallet from other field:', truncated);
+      return truncated;
     }
 
     console.log('🔍 Mobile Header: Showing default Account');

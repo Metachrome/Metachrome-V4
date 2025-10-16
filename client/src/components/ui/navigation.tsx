@@ -26,25 +26,32 @@ export function Navigation() {
     email: user?.email
   });
 
-  // Get user display name - prioritize firstName + lastName, fallback to username, then wallet address
+  // Get user display name - prioritize firstName + lastName, then username, then wallet address
   const getUserDisplayName = () => {
-    // Check for wallet address in multiple possible fields
-    const walletAddr = user?.walletAddress || user?.wallet_address || user?.username;
-
-    // If it looks like a wallet address (starts with 0x and is long), truncate it
-    if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
-      return `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
-    }
-
-    // For regular users, show name or username
+    // First priority: Full name
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
+
+    // Second priority: First name only
     if (user?.firstName) {
       return user.firstName;
     }
+
+    // Third priority: Username (if it's not a wallet address)
     if (user?.username && !user?.username.startsWith('0x')) {
       return user.username;
+    }
+
+    // Fourth priority: Username even if it looks like wallet address
+    if (user?.username) {
+      return user.username;
+    }
+
+    // Last resort: Check for wallet address in other fields
+    const walletAddr = user?.walletAddress || user?.wallet_address;
+    if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
+      return `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
     }
 
     return "Account";
@@ -52,23 +59,30 @@ export function Navigation() {
 
   // Get mobile user display name - shorter format for mobile
   const getMobileUserDisplayName = () => {
-    // Check for wallet address in multiple possible fields
-    const walletAddr = user?.walletAddress || user?.wallet_address || user?.username;
-
-    // If it looks like a wallet address (starts with 0x and is long), truncate it for mobile
-    if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
-      return `${walletAddr.slice(0, 6)}...`;
-    }
-
-    // For regular users, show name or username
+    // First priority: Full name
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`;
     }
+
+    // Second priority: First name only
     if (user?.firstName) {
       return user.firstName;
     }
+
+    // Third priority: Username (if it's not a wallet address)
     if (user?.username && !user?.username.startsWith('0x')) {
       return user.username;
+    }
+
+    // Fourth priority: Username even if it looks like wallet address
+    if (user?.username) {
+      return user.username;
+    }
+
+    // Last resort: Check for wallet address in other fields and truncate for mobile
+    const walletAddr = user?.walletAddress || user?.wallet_address;
+    if (walletAddr && walletAddr.startsWith('0x') && walletAddr.length > 20) {
+      return `${walletAddr.slice(0, 6)}...`;
     }
 
     return "Account";

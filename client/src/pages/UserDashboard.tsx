@@ -365,14 +365,28 @@ export default function UserDashboard() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
             Welcome back,{' '}
-            {user?.username && user.username.startsWith('0x') && user.username.length > 20 ? (
-              <div className="inline-block">
-                <div className="leading-tight">{user.username.slice(0, 21)}</div>
-                <div className="leading-tight">{user.username.slice(21)}!</div>
-              </div>
-            ) : (
-              `${user?.username}!`
-            )}
+            {(() => {
+              // Prioritize name over username
+              if (user?.firstName && user?.lastName) {
+                return `${user.firstName} ${user.lastName}!`;
+              }
+              if (user?.firstName) {
+                return `${user.firstName}!`;
+              }
+              if (user?.username) {
+                // If username is a long wallet address, show it in two lines
+                if (user.username.startsWith('0x') && user.username.length > 20) {
+                  return (
+                    <div className="inline-block">
+                      <div className="leading-tight">{user.username.slice(0, 21)}</div>
+                      <div className="leading-tight">{user.username.slice(21)}!</div>
+                    </div>
+                  );
+                }
+                return `${user.username}!`;
+              }
+              return 'User!';
+            })()}
           </h1>
           <p className="text-gray-400">
             Here's your trading overview and account summary.
