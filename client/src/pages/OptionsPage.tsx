@@ -1212,6 +1212,7 @@ function OptionsPageContent({
         // Refresh trade history and balance - CRITICAL: Invalidate React Query cache
         queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
         queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/transactions`] }); // Also invalidate transaction history
 
         // CRITICAL FIX: Add delay to ensure database is updated before fetching
         console.log('🔄 WEBSOCKET: Refreshing trade history after trade completion...');
@@ -1381,6 +1382,7 @@ function OptionsPageContent({
               // Refresh trade history and balance - CRITICAL: Invalidate React Query cache
               queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
               queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
+              queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/transactions`] }); // Also invalidate transaction history
 
               // CRITICAL FIX: Add delay to ensure database is updated before fetching
               console.log('🔄 POLLING: Refreshing trade history after trade completion...');
@@ -1472,6 +1474,7 @@ function OptionsPageContent({
         // Refresh balance and trade history to show updated data
         queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
         queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/trades`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/transactions`] }); // Also invalidate transaction history
         console.log(`💰 Balance updated: Trade ${won ? 'WON' : 'LOST'} - Amount: ${trade.amount} USDT`);
 
         // CRITICAL FIX: Refresh trade history immediately after trade completion
