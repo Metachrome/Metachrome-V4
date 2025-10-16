@@ -1307,8 +1307,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Diagnostic endpoint to check database schema
-  app.get("/api/admin/diagnostics/schema", async (req, res) => {
+  // Diagnostic endpoint to check database schema (PUBLIC - for debugging)
+  app.get("/api/diagnostics/schema", async (req, res) => {
     try {
       console.log('🔍 Checking database schema...');
 
