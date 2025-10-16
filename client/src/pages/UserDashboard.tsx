@@ -363,29 +363,28 @@ export default function UserDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back,{' '}
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
             {(() => {
               // Prioritize name over username
               if (user?.firstName && user?.lastName) {
-                return `${user.firstName} ${user.lastName}!`;
+                return `Welcome back, ${user.firstName} ${user.lastName}!`;
               }
               if (user?.firstName) {
-                return `${user.firstName}!`;
+                return `Welcome back, ${user.firstName}!`;
               }
               if (user?.username) {
-                // If username is a long wallet address, show it in two lines
+                // If username is a long wallet address, show it in two lines for mobile
                 if (user.username.startsWith('0x') && user.username.length > 20) {
                   return (
-                    <div className="inline-block">
-                      <div className="leading-tight">{user.username.slice(0, 21)}</div>
-                      <div className="leading-tight">{user.username.slice(21)}!</div>
+                    <div className="block">
+                      <div className="leading-tight">Welcome back,</div>
+                      <div className="leading-tight break-all">{user.username}!</div>
                     </div>
                   );
                 }
-                return `${user.username}!`;
+                return `Welcome back, ${user.username}!`;
               }
-              return 'User!';
+              return 'Welcome back, User!';
             })()}
           </h1>
           <p className="text-gray-400">

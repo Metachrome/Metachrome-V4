@@ -127,13 +127,13 @@ export function MobileHeader() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-gray-300 hover:text-white flex items-center space-x-1 max-w-[160px]"
+                    className="text-gray-300 hover:text-white flex items-center space-x-1 max-w-[180px]"
                   >
                     <UserCircle className="w-4 h-4 flex-shrink-0" />
-                    {location === '/dashboard' && user?.username && user.username.startsWith('0x') && user.username.length > 20 ? (
+                    {user?.username && user.username.startsWith('0x') && user.username.length > 20 ? (
                       <div className="text-xs leading-tight">
-                        <div>{user.username.slice(0, 21)}</div>
-                        <div>{user.username.slice(21)}</div>
+                        <div className="text-gray-400">Hello</div>
+                        <div className="truncate">{user.username}</div>
                       </div>
                     ) : (
                       <span className="text-sm truncate">{getUserDisplayName()}</span>
