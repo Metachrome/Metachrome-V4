@@ -216,13 +216,40 @@ class TradingService {
       if (userBalance) {
         const newAvailable = parseFloat(userBalance.available) + tradeAmount + profit;
         const newLocked = parseFloat(userBalance.locked || '0') - tradeAmount;
-        
+
         await storage.updateBalance(
-          trade.userId, 
-          'USDT', 
-          Math.max(0, newAvailable).toString(), 
+          trade.userId,
+          'USDT',
+          Math.max(0, newAvailable).toString(),
           Math.max(0, newLocked).toString()
         );
+      }
+
+      // Create transaction record for trade result
+      try {
+        const transactionType = isWin ? 'trade_win' : 'trade_loss';
+        const transactionAmount = profit.toFixed(8); // Ensure 8 decimal places
+
+        console.log(`📝 Creating transaction for trade ${tradeId}:`, {
+          userId: trade.userId,
+          type: transactionType,
+          amount: transactionAmount,
+          profit: profit,
+          isWin: isWin
+        });
+
+        await storage.createTransaction({
+          userId: trade.userId,
+          type: transactionType as any,
+          amount: transactionAmount,
+          status: 'completed',
+          description: `${isWin ? 'Win' : 'Loss'} on ${trade.symbol} trade`,
+          referenceId: tradeId
+        });
+
+        console.log(`✅ Transaction created successfully for trade ${tradeId}`);
+      } catch (txError) {
+        console.error(`❌ Failed to create transaction for trade ${tradeId}:`, txError);
       }
 
       console.log(`Trade ${tradeId} executed: ${isWin ? 'WIN' : 'LOSS'}, Profit: $${profit.toFixed(2)}`);
