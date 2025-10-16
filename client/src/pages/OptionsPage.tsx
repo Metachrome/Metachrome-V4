@@ -3442,7 +3442,7 @@ function OptionsPageContent({
             <span>Entry Price</span>
             <span>Current Price</span>
             <span>Amount</span>
-            <span>Profit %</span>
+            <span>Profit/Loss %</span>
             <span>P&L (USDT)</span>
             <span>Date & Time</span>
             <span>Status</span>
