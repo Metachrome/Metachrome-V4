@@ -4535,24 +4535,50 @@ app.put('/api/user/profile', async (req, res) => {
 
     console.log('👤 Updating profile for user:', user.username, 'with data:', updateData);
 
-    // Update user in database
-    const users = await getUsers();
-    const userIndex = users.findIndex(u => u.id === user.id);
+    let updatedUser;
 
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
+    if (isProduction && supabase) {
+      // Production: Update in Supabase database
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .update({
+            ...updateData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+          .select('*')
+          .single();
+
+        if (error) {
+          console.error('❌ Database update error:', error);
+          return res.status(500).json({ error: 'Failed to update profile in database' });
+        }
+
+        updatedUser = data;
+        console.log('✅ User profile updated in database for:', user.username);
+      } catch (error) {
+        console.error('❌ Database error:', error);
+        return res.status(500).json({ error: 'Database operation failed' });
+      }
+    } else {
+      // Development: Update in local file
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === user.id);
+
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Update user data
+      users[userIndex] = { ...users[userIndex], ...updateData, updated_at: new Date().toISOString() };
+
+      // Save updated users
+      await saveUsers(users);
+
+      updatedUser = users[userIndex];
+      console.log('✅ User profile updated in file for:', user.username);
     }
-
-    // Update user data
-    users[userIndex] = { ...users[userIndex], ...updateData, updated_at: new Date().toISOString() };
-
-    // Save updated users
-    await saveUsers(users);
-
-    console.log('✅ User profile updated successfully for:', user.username);
-
-    // Return updated profile without sensitive data
-    const updatedUser = users[userIndex];
     const userProfile = {
       id: updatedUser.id,
       username: updatedUser.username,

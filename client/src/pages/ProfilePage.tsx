@@ -76,6 +76,21 @@ export default function ProfilePage() {
     confirmPassword: ''
   });
 
+  // Update form data when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        username: user.username || '',
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+        address: user.address || '',
+      }));
+    }
+  }, [user]);
+
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -87,7 +102,13 @@ export default function ProfilePage() {
         description: "Your profile has been updated successfully",
       });
       setIsEditing(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+
+      // Invalidate the correct auth query key and force refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/auth'] });
+      queryClient.refetchQueries({ queryKey: ['/api/auth'] });
+
+      // Also clear localStorage to force fresh data
+      localStorage.removeItem('user');
     },
     onError: (error: any) => {
       toast({
