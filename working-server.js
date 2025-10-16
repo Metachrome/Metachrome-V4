@@ -4540,6 +4540,8 @@ app.put('/api/user/profile', async (req, res) => {
     if (isProduction && supabase) {
       // Production: Update in Supabase database
       try {
+        console.log('🔄 Attempting database update with data:', updateData);
+
         const { data, error } = await supabase
           .from('users')
           .update({
@@ -4552,14 +4554,31 @@ app.put('/api/user/profile', async (req, res) => {
 
         if (error) {
           console.error('❌ Database update error:', error);
-          return res.status(500).json({ error: 'Failed to update profile in database' });
+          console.error('❌ Error details:', JSON.stringify(error, null, 2));
+
+          // Check if it's a column not found error
+          if (error.message && error.message.includes('column') && error.message.includes('does not exist')) {
+            return res.status(500).json({
+              error: 'Database schema needs to be updated. Please run the profile columns migration.',
+              details: error.message
+            });
+          }
+
+          return res.status(500).json({
+            error: 'Failed to update profile in database',
+            details: error.message
+          });
         }
 
         updatedUser = data;
         console.log('✅ User profile updated in database for:', user.username);
+        console.log('✅ Updated user data:', updatedUser);
       } catch (error) {
         console.error('❌ Database error:', error);
-        return res.status(500).json({ error: 'Database operation failed' });
+        return res.status(500).json({
+          error: 'Database operation failed',
+          details: error.message || error
+        });
       }
     } else {
       // Development: Update in local file
