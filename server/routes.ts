@@ -1310,15 +1310,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { tradeId } = req.body;
       const trade = await storage.getTrade(tradeId);
-      
+
       if (!trade) {
         return res.status(404).json({ message: "Trade not found" });
       }
 
+      console.log(`🔍🔍🔍 FULL TRADE OBJECT:`, JSON.stringify(trade, null, 2));
+
       // Check admin control for this user
       const adminControl = await storage.getAdminControl(trade.userId);
       const currentPrice = await storage.getMarketData(trade.symbol);
-      
+
       if (!currentPrice) {
         return res.status(400).json({ message: "Current price not available" });
       }
@@ -1371,6 +1373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tradeId,
         tradeAmount: trade.amount,
         tradeAmountType: typeof trade.amount,
+        tradeAmountKeys: Object.keys(trade),
         isWin
       });
 
