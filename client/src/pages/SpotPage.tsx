@@ -929,14 +929,11 @@ function SpotPageContent() {
 
           <div className="w-full h-full">
             <ErrorBoundary>
-              <TradingViewWidget
-                type="chart"
-                symbol={`BINANCE:${selectedSymbol}`}
+              <LightweightChart
+                symbol={selectedSymbol}
+                interval="1m"
                 height={450}
-                interval="1"
-                theme="dark"
-                container_id="spot_mobile_tradingview_chart"
-                onSymbolChange={handleTradingViewSymbolChange}
+                containerId="spot_mobile_chart"
               />
             </ErrorBoundary>
           </div>
