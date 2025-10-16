@@ -3438,13 +3438,13 @@ function OptionsPageContent({
         {/* Trade Table Headers */}
         <div className="px-4 py-2 border-b border-gray-700">
           <div className="grid grid-cols-8 gap-4 text-xs text-gray-400">
-            <span>Direction</span>
+            <span>Market/Direction</span>
             <span>Entry Price</span>
             <span>Current Price</span>
             <span>Amount</span>
             <span>Profit %</span>
             <span>P&L (USDT)</span>
-            <span>Time</span>
+            <span>Date & Time</span>
             <span>Status</span>
           </div>
         </div>
@@ -3473,9 +3473,12 @@ function OptionsPageContent({
 
                   return (
                     <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
-                      <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.direction.toUpperCase()}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-gray-400 text-xs">{selectedSymbol.replace('USDT', '/USDT')}</span>
+                        <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                          {trade.direction.toUpperCase()}
+                        </span>
+                      </div>
                       <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
                       <span className="text-white">{currentPrice.toFixed(2)} USDT</span>
                       <span className="text-gray-300">{trade.amount} USDT</span>
@@ -3525,11 +3528,26 @@ function OptionsPageContent({
                                    -trade.amount); // Show negative amount for losses
                       const endTime = new Date(trade.endTime).toLocaleTimeString();
 
+                      // Format market pair and date/time
+                      const marketPair = trade.symbol ? trade.symbol.replace('USDT', '/USDT') : 'BTC/USDT';
+                      const fullDateTime = new Date(trade.endTime).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                      });
+
                       return (
                         <div key={trade.id} className="grid grid-cols-8 gap-4 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30">
-                          <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.direction.toUpperCase()}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-gray-400 text-xs">{marketPair}</span>
+                            <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                              {trade.direction.toUpperCase()}
+                            </span>
+                          </div>
                           <span className="text-gray-300">{trade.entryPrice.toFixed(2)} USDT</span>
                           <span className="text-gray-300">{trade.currentPrice?.toFixed(2) || 'N/A'} USDT</span>
                           <span className="text-gray-300">{trade.amount} USDT</span>
@@ -3537,7 +3555,7 @@ function OptionsPageContent({
                           <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)} USDT
                           </span>
-                          <span className="text-gray-400">{endTime}</span>
+                          <span className="text-gray-400 text-xs">{fullDateTime}</span>
                           <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
                           </span>
@@ -3546,53 +3564,7 @@ function OptionsPageContent({
                     })}
                   </div>
 
-                  {/* Trading Chart Below History */}
-                  <div className="border-t border-gray-800 pt-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-white">Market Chart</h3>
-                      <select
-                        value={selectedSymbol}
-                        onChange={(e) => {
-                          const newSymbol = e.target.value;
-                          setSelectedSymbol(newSymbol);
-                          handleTradingViewSymbolChange(newSymbol);
-                        }}
-                        className="bg-gray-700 text-white text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="BTCUSDT">BTC/USDT</option>
-                        <option value="ETHUSDT">ETH/USDT</option>
-                        <option value="XRPUSDT">XRP/USDT</option>
-                        <option value="LTCUSDT">LTC/USDT</option>
-                        <option value="BNBUSDT">BNB/USDT</option>
-                        <option value="SOLUSDT">SOL/USDT</option>
-                        <option value="TONUSDT">TON/USDT</option>
-                        <option value="DOGEUSDT">DOGE/USDT</option>
-                        <option value="ADAUSDT">ADA/USDT</option>
-                        <option value="TRXUSDT">TRX/USDT</option>
-                        <option value="HYPEUSDT">HYPE/USDT</option>
-                        <option value="LINKUSDT">LINK/USDT</option>
-                        <option value="AVAXUSDT">AVAX/USDT</option>
-                        <option value="SUIUSDT">SUI/USDT</option>
-                        <option value="SHIBUSDT">SHIB/USDT</option>
-                        <option value="BCHUSDT">BCH/USDT</option>
-                        <option value="DOTUSDT">DOT/USDT</option>
-                        <option value="MATICUSDT">MATIC/USDT</option>
-                        <option value="XLMUSDT">XLM/USDT</option>
-                      </select>
-                    </div>
-                    <div className="h-[300px] bg-[#10121E] rounded-lg overflow-hidden">
-                      <TradingViewWidget
-                        type="chart"
-                        symbol={`BINANCE:${selectedSymbol}`}
-                        height={300}
-                        interval="1"
-                        theme="dark"
-                        container_id="trade_history_chart"
-                        allow_symbol_change={true}
-                        onSymbolChange={handleTradingViewSymbolChange}
-                      />
-                    </div>
-                  </div>
+
                 </>
               )}
             </>
