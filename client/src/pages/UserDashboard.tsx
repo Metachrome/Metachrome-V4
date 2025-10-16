@@ -373,13 +373,18 @@ export default function UserDashboard() {
                 return `Welcome back, ${user.firstName}!`;
               }
               if (user?.username) {
-                // If username is a long wallet address, truncate it for mobile
+                // If username is a long wallet address, split it into two lines for mobile
                 if (user.username.startsWith('0x') && user.username.length > 20) {
-                  const truncatedAddress = `${user.username.slice(0, 6)}...${user.username.slice(-4)}`;
+                  const firstLine = user.username.slice(0, 21); // First 21 characters
+                  const secondLine = user.username.slice(21);   // Remaining characters
                   return (
                     <div className="block max-w-full">
-                      <span className="leading-tight">Welcome back, </span>
-                      <span className="leading-tight font-mono text-purple-400">{truncatedAddress}!</span>
+                      <div className="leading-tight">Welcome back,</div>
+                      <div className="leading-tight font-mono text-purple-400 break-all">
+                        {firstLine}
+                        <br />
+                        {secondLine}!
+                      </div>
                     </div>
                   );
                 }
