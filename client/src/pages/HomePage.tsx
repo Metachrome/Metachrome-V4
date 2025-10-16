@@ -110,7 +110,7 @@ export default function HomePage() {
         <MobileHero />
 
         {/* Running Text Ticker Section - Mobile */}
-        <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/30 border-y border-blue-500/30 relative overflow-hidden" style={{ height: '100px' }}>
+        <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/30 border-y border-blue-500/30 relative overflow-hidden" style={{ height: '86px' }}>
           <div className="flex items-center h-full">
             <div className="whitespace-nowrap animate-scroll">
               <span className="text-white text-base font-medium px-6">
@@ -456,7 +456,7 @@ export default function HomePage() {
       </section>
 
       {/* Running Text Ticker Section */}
-      <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-y border-blue-500/30 relative overflow-hidden" style={{ height: '100px' }}>
+      <section className="bg-gradient-to-r from-blue-600/20 to-blue-500/20 border-y border-blue-500/30 relative overflow-hidden" style={{ height: '86px' }}>
         <div className="flex items-center h-full">
           <div className="whitespace-nowrap animate-scroll">
             <span className="text-white text-lg font-medium px-8">
