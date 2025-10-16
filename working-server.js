@@ -4451,6 +4451,133 @@ app.get('/api/user/data', async (req, res) => {
   }
 });
 
+// ===== USER PROFILE ENDPOINTS =====
+// Get user profile
+app.get('/api/user/profile', async (req, res) => {
+  try {
+    console.log('👤 User profile request received');
+
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Get user from token
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    console.log('✅ User profile retrieved for:', user.username);
+
+    // Return user profile without sensitive data
+    const userProfile = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.first_name || user.firstName,
+      lastName: user.last_name || user.lastName,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+      status: user.status,
+      trading_mode: user.trading_mode,
+      balance: user.balance,
+      wallet_address: user.wallet_address,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      last_login: user.last_login
+    };
+
+    res.json(userProfile);
+  } catch (error) {
+    console.error('❌ Error getting user profile:', error);
+    res.status(500).json({ error: 'Failed to get user profile' });
+  }
+});
+
+// Update user profile
+app.put('/api/user/profile', async (req, res) => {
+  try {
+    console.log('👤 User profile update request received:', req.body);
+
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Get user from token
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    const { username, email, firstName, lastName, phone, address } = req.body;
+
+    // Prepare update data
+    const updateData = {};
+    if (username !== undefined) updateData.username = username;
+    if (email !== undefined) updateData.email = email;
+    if (firstName !== undefined) {
+      updateData.first_name = firstName;
+      updateData.firstName = firstName; // Support both column names
+    }
+    if (lastName !== undefined) {
+      updateData.last_name = lastName;
+      updateData.lastName = lastName; // Support both column names
+    }
+    if (phone !== undefined) updateData.phone = phone;
+    if (address !== undefined) updateData.address = address;
+
+    console.log('👤 Updating profile for user:', user.username, 'with data:', updateData);
+
+    // Update user in database
+    const users = await getUsers();
+    const userIndex = users.findIndex(u => u.id === user.id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user data
+    users[userIndex] = { ...users[userIndex], ...updateData, updated_at: new Date().toISOString() };
+
+    // Save updated users
+    await saveUsers(users);
+
+    console.log('✅ User profile updated successfully for:', user.username);
+
+    // Return updated profile without sensitive data
+    const updatedUser = users[userIndex];
+    const userProfile = {
+      id: updatedUser.id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      firstName: updatedUser.first_name || updatedUser.firstName,
+      lastName: updatedUser.last_name || updatedUser.lastName,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      role: updatedUser.role,
+      status: updatedUser.status,
+      trading_mode: updatedUser.trading_mode,
+      balance: updatedUser.balance,
+      wallet_address: updatedUser.wallet_address,
+      created_at: updatedUser.created_at,
+      updated_at: updatedUser.updated_at,
+      last_login: updatedUser.last_login
+    };
+
+    res.json(userProfile);
+  } catch (error) {
+    console.error('❌ Error updating user profile:', error);
+    res.status(500).json({ error: 'Failed to update user profile' });
+  }
+});
+
 // ===== USER WITHDRAWAL REQUEST ENDPOINT =====
 // Force Railway deployment - 2025-01-10
 app.post('/api/withdrawals', async (req, res) => {
