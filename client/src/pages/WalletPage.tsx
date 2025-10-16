@@ -458,17 +458,17 @@ export default function WalletPage() {
 
         {/* Header Tabs */}
         <div className="mb-8">
-          <div className="flex items-center space-x-1 mb-8 border-b border-gray-600">
+          <div className="flex items-center space-x-1 mb-8 border-b border-gray-600 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <Button
                 key={tab.id}
                 variant="ghost"
                 size="sm"
                 onClick={() => setActiveTab(tab.id)}
-                className={activeTab === tab.id
+                className={`whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
                   ? "bg-transparent text-white border-b-2 border-purple-500 rounded-none pb-3"
                   : "bg-transparent text-gray-400 hover:text-white rounded-none pb-3"
-                }
+                }`}
               >
                 {tab.label}
               </Button>
