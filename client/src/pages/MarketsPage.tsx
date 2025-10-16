@@ -50,7 +50,7 @@ export default function MarketsPage() {
       {/* Content Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs and Search - Mobile: Stack vertically, Desktop: One row */}
-        <div className={`mb-8 ${isMobile ? 'space-y-4' : 'flex items-center justify-between'}`}>
+        <div className={`mb-8 ${isMobile ? 'space-y-3' : 'flex items-center justify-between'}`}>
           {/* Tabs */}
           <div className="flex items-center space-x-1">
             {tabs.map((tab) => (
@@ -70,24 +70,25 @@ export default function MarketsPage() {
           </div>
 
           {/* Search and Refresh */}
-          <div className="flex items-center space-x-4">
-            <div className="relative">
+          <div className={`flex items-center ${isMobile ? 'w-full gap-2' : 'space-x-4'}`}>
+            <div className={`relative ${isMobile ? 'flex-1' : ''}`}>
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 type="text"
-                placeholder="Search cryptocurrencies..."
+                placeholder={isMobile ? "Search..." : "Search cryptocurrencies..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-64 bg-[#3A3A4E] border-gray-600 text-white placeholder-gray-400 rounded-md"
+                className={`pl-10 ${isMobile ? 'w-full' : 'w-64'} bg-[#3A3A4E] border-gray-600 text-white placeholder-gray-400 rounded-md`}
               />
             </div>
             <Button
               onClick={forceRefresh}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white px-4 py-2 rounded-md flex items-center gap-2"
+              className={`bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-md flex items-center gap-2 ${isMobile ? 'px-3 py-2 text-sm flex-shrink-0' : 'px-4 py-2'}`}
+              title={loading ? 'Updating...' : 'Refresh'}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Updating...' : 'Refresh'}
+              {!isMobile && (loading ? 'Updating...' : 'Refresh')}
             </Button>
           </div>
         </div>

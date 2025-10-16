@@ -3707,9 +3707,6 @@ function OptionsPageContent({
           </div>
         </div>
       )}
-
-      {/* Footer is already included in mobile layout, only add for desktop */}
-      {!isMobile && <Footer />}
     </div>
   );
   } catch (error) {
