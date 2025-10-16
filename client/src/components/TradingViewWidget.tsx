@@ -114,7 +114,7 @@ function TradingViewWidget({
         theme: theme,
         style: "1",
         locale: locale,
-        toolbar_bg: "#f1f3f6",
+        toolbar_bg: "#1a1a1a",
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
