@@ -61,7 +61,7 @@ export default function TransactionHistory() {
           user_id: user.id,
           username: user.username || 'Current User',
           type: 'deposit',
-          amount: 1000,
+          amount: '1000',
           symbol: 'USDT',
           status: 'completed',
           description: 'Demo deposit transaction',
@@ -72,8 +72,8 @@ export default function TransactionHistory() {
           id: 'fallback-tx-2',
           user_id: user.id,
           username: user.username || 'Current User',
-          type: 'trade_win',
-          amount: 150,
+          type: 'trade',
+          amount: '150',
           symbol: 'USDT',
           status: 'completed',
           description: 'Demo trading win - BTC/USDT',
@@ -84,8 +84,8 @@ export default function TransactionHistory() {
           id: 'fallback-tx-3',
           user_id: user.id,
           username: user.username || 'Current User',
-          type: 'trade_loss',
-          amount: -75,
+          type: 'trade',
+          amount: '-75',
           symbol: 'USDT',
           status: 'completed',
           description: 'Demo trading loss - ETH/USDT',
@@ -405,7 +405,7 @@ export default function TransactionHistory() {
                       <div className="text-sm text-gray-400">
                         {transaction.symbol || 'USDT'}
                       </div>
-                      {(transaction.type === 'trade_win' || transaction.type === 'trade_loss') && (
+                      {transaction.type === 'trade' && (
                         <div className={`text-sm font-medium ${
                           parseFloat(transaction.amount || '0') > 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
