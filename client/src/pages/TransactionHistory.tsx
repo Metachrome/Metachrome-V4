@@ -388,7 +388,7 @@ export default function TransactionHistory() {
                           <Clock className="h-3 w-3" />
                           {new Date(transaction.created_at).toLocaleString()}
                         </div>
-                        {transaction.description && (
+                        {transaction.description && !transaction.description.includes('ADMIN') && (
                           <div className="text-xs text-gray-500 truncate max-w-full">
                             {transaction.description}
                           </div>

@@ -498,17 +498,38 @@ class DatabaseStorage implements IStorage {
 
   // Transaction operations
   async createTransaction(transactionData: InsertTransaction): Promise<Transaction> {
-    const [transaction] = await db.insert(transactions).values(transactionData).returning();
-    return transaction;
+    // Ensure amount is properly converted to string for decimal storage
+    const normalizedData = {
+      ...transactionData,
+      amount: transactionData.amount ? transactionData.amount.toString() : '0',
+      fee: transactionData.fee ? transactionData.fee.toString() : '0'
+    };
+    const [transaction] = await db.insert(transactions).values(normalizedData).returning();
+
+    // Convert Decimal amounts back to strings for consistency
+    return {
+      ...transaction,
+      amount: transaction.amount ? transaction.amount.toString() : '0',
+      fee: transaction.fee ? transaction.fee.toString() : '0',
+      networkFee: transaction.networkFee ? transaction.networkFee.toString() : undefined
+    };
   }
 
   async getUserTransactions(userId: string, limit: number = 100): Promise<Transaction[]> {
-    return await db
+    const txs = await db
       .select()
       .from(transactions)
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.createdAt))
       .limit(limit);
+
+    // Convert Decimal amounts to strings for proper parsing on frontend
+    return txs.map(tx => ({
+      ...tx,
+      amount: tx.amount ? tx.amount.toString() : '0',
+      fee: tx.fee ? tx.fee.toString() : '0',
+      networkFee: tx.networkFee ? tx.networkFee.toString() : undefined
+    }));
   }
 
   async updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction> {
