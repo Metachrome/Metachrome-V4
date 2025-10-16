@@ -1384,6 +1384,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const profit = isWin ? tradeAmount * 0.1 : -tradeAmount; // 10% profit on win, lose all on loss
       console.log(`📊 Calculated profit: ${profit} (isWin: ${isWin})`);
+      console.log(`📊 Profit details:`, {
+        tradeAmount,
+        isWin,
+        profitCalculation: isWin ? `${tradeAmount} * 0.1 = ${profit}` : `-${tradeAmount} = ${profit}`,
+        profitAsString: profit.toString()
+      });
 
       // Update trade
       const updatedTrade = await storage.updateTrade(tradeId, {

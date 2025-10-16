@@ -547,7 +547,22 @@ class DatabaseStorage implements IStorage {
       amount: transactionData.amount ? transactionData.amount.toString() : '0',
       fee: transactionData.fee ? transactionData.fee.toString() : '0'
     };
+
+    console.log(`💾 INSERTING TRANSACTION:`, {
+      normalizedAmount: normalizedData.amount,
+      normalizedAmountType: typeof normalizedData.amount,
+      originalAmount: transactionData.amount,
+      originalAmountType: typeof transactionData.amount
+    });
+
     const [transaction] = await db.insert(transactions).values(normalizedData).returning();
+
+    console.log(`✅ TRANSACTION INSERTED:`, {
+      id: transaction.id,
+      storedAmount: transaction.amount,
+      storedAmountType: typeof transaction.amount,
+      storedAmountString: transaction.amount?.toString()
+    });
 
     // Convert Decimal amounts back to strings for consistency
     return {
