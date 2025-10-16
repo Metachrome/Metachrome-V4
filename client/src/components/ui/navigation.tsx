@@ -23,7 +23,13 @@ export function Navigation() {
     lastName: user?.lastName,
     username: user?.username,
     walletAddress: user?.walletAddress,
-    email: user?.email
+    email: user?.email,
+    displayName: (() => {
+      if (user?.firstName && user?.lastName) return `${user.firstName} ${user.lastName}`;
+      if (user?.firstName) return user.firstName;
+      if (user?.username) return user.username;
+      return "Account";
+    })()
   });
 
   // Get user display name - prioritize firstName + lastName, then username, then wallet address
