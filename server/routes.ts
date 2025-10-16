@@ -1451,18 +1451,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const transaction = await storage.createTransaction({
           userId: trade.userId,
           type: transactionType as any,
-          symbol: 'USDT',
           amount: transactionAmount,
-          fee: '0',
           status: 'completed',
-          metadata: JSON.stringify({
-            tradeId,
-            tradeType: 'options',
-            direction: trade.direction,
-            entryPrice: trade.entryPrice,
-            exitPrice,
-            result: isWin ? 'win' : 'loss'
-          })
+          description: `${isWin ? 'Win' : 'Loss'} on ${trade.symbol} trade`,
+          referenceId: tradeId
         });
         console.log(`✅ Transaction created:`, {
           transactionId: transaction.id,

@@ -112,19 +112,16 @@ export const optionsSettings = pgTable("options_settings", {
 });
 
 // Transactions
+// NOTE: Actual database schema has: id, user_id (text), type, amount (numeric 15,8), status, description, reference_id, created_at, updated_at
+// We only include columns that actually exist in the database
 export const transactions = pgTable("transactions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  type: transactionTypeEnum("type").notNull(),
-  symbol: varchar("symbol").notNull(),
-  amount: decimal("amount", { precision: 18, scale: 8 }).notNull(),
-  fee: decimal("fee", { precision: 18, scale: 8 }).default('0'),
-  status: transactionStatusEnum("status").default('pending'),
-  txHash: varchar("tx_hash"),
-  fromAddress: varchar("from_address"),
-  toAddress: varchar("to_address"),
-  networkFee: decimal("network_fee", { precision: 18, scale: 8 }),
-  metadata: jsonb("metadata"),
+  userId: text("user_id").notNull(), // Database has TEXT, not UUID
+  type: varchar("type").notNull(), // Using varchar instead of enum since database doesn't have enum constraint
+  amount: decimal("amount", { precision: 15, scale: 8 }).notNull(), // Database has numeric(15,8), not (18,8)
+  status: varchar("status").default('pending'), // Using varchar instead of enum
+  description: text("description"), // This column exists in the database
+  referenceId: varchar("reference_id"), // This column exists in the database
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

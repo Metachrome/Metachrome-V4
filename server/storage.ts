@@ -542,17 +542,23 @@ class DatabaseStorage implements IStorage {
   // Transaction operations
   async createTransaction(transactionData: InsertTransaction): Promise<Transaction> {
     // Ensure amount is properly converted to string for decimal storage
+    // Only include fields that exist in the actual database
     const normalizedData = {
-      ...transactionData,
+      userId: transactionData.userId,
+      type: transactionData.type,
       amount: transactionData.amount ? transactionData.amount.toString() : '0',
-      fee: transactionData.fee ? transactionData.fee.toString() : '0'
+      status: transactionData.status || 'pending',
+      description: transactionData.description,
+      referenceId: transactionData.referenceId
     };
 
     console.log(`💾 INSERTING TRANSACTION:`, {
       normalizedAmount: normalizedData.amount,
       normalizedAmountType: typeof normalizedData.amount,
       originalAmount: transactionData.amount,
-      originalAmountType: typeof transactionData.amount
+      originalAmountType: typeof transactionData.amount,
+      userId: normalizedData.userId,
+      type: normalizedData.type
     });
 
     const [transaction] = await db.insert(transactions).values(normalizedData).returning();
@@ -567,9 +573,7 @@ class DatabaseStorage implements IStorage {
     // Convert Decimal amounts back to strings for consistency
     return {
       ...transaction,
-      amount: transaction.amount ? transaction.amount.toString() : '0',
-      fee: transaction.fee ? transaction.fee.toString() : '0',
-      networkFee: transaction.networkFee ? transaction.networkFee.toString() : undefined
+      amount: transaction.amount ? transaction.amount.toString() : '0'
     };
   }
 
@@ -584,25 +588,29 @@ class DatabaseStorage implements IStorage {
     // Convert Decimal amounts to strings for proper parsing on frontend
     return txs.map(tx => ({
       ...tx,
-      amount: tx.amount ? tx.amount.toString() : '0',
-      fee: tx.fee ? tx.fee.toString() : '0',
-      networkFee: tx.networkFee ? tx.networkFee.toString() : undefined
+      amount: tx.amount ? tx.amount.toString() : '0'
     }));
   }
 
   async updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction> {
+    // Only include fields that exist in the actual database
+    const normalizedUpdates: any = {};
+    if (updates.type !== undefined) normalizedUpdates.type = updates.type;
+    if (updates.amount !== undefined) normalizedUpdates.amount = updates.amount?.toString();
+    if (updates.status !== undefined) normalizedUpdates.status = updates.status;
+    if (updates.description !== undefined) normalizedUpdates.description = updates.description;
+    if (updates.referenceId !== undefined) normalizedUpdates.referenceId = updates.referenceId;
+
     const [transaction] = await db
       .update(transactions)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...normalizedUpdates, updatedAt: new Date() })
       .where(eq(transactions.id, id))
       .returning();
 
     // Convert Decimal amounts back to strings for consistency
     return {
       ...transaction,
-      amount: transaction.amount ? transaction.amount.toString() : '0',
-      fee: transaction.fee ? transaction.fee.toString() : '0',
-      networkFee: transaction.networkFee ? transaction.networkFee.toString() : undefined
+      amount: transaction.amount ? transaction.amount.toString() : '0'
     };
   }
 
@@ -618,9 +626,7 @@ class DatabaseStorage implements IStorage {
     // Convert Decimal amounts back to strings for consistency
     return {
       ...transaction,
-      amount: transaction.amount ? transaction.amount.toString() : '0',
-      fee: transaction.fee ? transaction.fee.toString() : '0',
-      networkFee: transaction.networkFee ? transaction.networkFee.toString() : undefined
+      amount: transaction.amount ? transaction.amount.toString() : '0'
     };
   }
 
@@ -634,9 +640,7 @@ class DatabaseStorage implements IStorage {
     // Convert Decimal amounts to strings for proper parsing on frontend
     return txs.map(tx => ({
       ...tx,
-      amount: tx.amount ? tx.amount.toString() : '0',
-      fee: tx.fee ? tx.fee.toString() : '0',
-      networkFee: tx.networkFee ? tx.networkFee.toString() : undefined
+      amount: tx.amount ? tx.amount.toString() : '0'
     }));
   }
 
@@ -650,9 +654,7 @@ class DatabaseStorage implements IStorage {
     // Convert Decimal amounts to strings for proper parsing on frontend
     return txs.map(tx => ({
       ...tx,
-      amount: tx.amount ? tx.amount.toString() : '0',
-      fee: tx.fee ? tx.fee.toString() : '0',
-      networkFee: tx.networkFee ? tx.networkFee.toString() : undefined
+      amount: tx.amount ? tx.amount.toString() : '0'
     }));
   }
 
