@@ -1385,6 +1385,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateBalance(trade.userId, 'USDT', newBalance.toString(), currentBalance.locked || '0');
       }
 
+      // Create transaction record for trade result
+      try {
+        await storage.createTransaction({
+          userId: trade.userId,
+          type: isWin ? 'trade' : 'trade',
+          symbol: 'USDT',
+          amount: profit.toString(),
+          fee: '0',
+          status: 'completed',
+          metadata: JSON.stringify({
+            tradeId,
+            tradeType: 'options',
+            direction: trade.direction,
+            entryPrice: trade.entryPrice,
+            exitPrice,
+            result: isWin ? 'win' : 'loss'
+          })
+        });
+        console.log(`✅ Transaction created for trade ${tradeId}: ${isWin ? 'WIN' : 'LOSS'} $${Math.abs(profit).toFixed(2)}`);
+      } catch (txError) {
+        console.error(`⚠️ Failed to create transaction for trade ${tradeId}:`, txError);
+      }
+
       res.json({ trade: updatedTrade, isWin, profit });
     } catch (error) {
       console.error("Error executing options trade:", error);

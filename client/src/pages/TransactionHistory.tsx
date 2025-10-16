@@ -397,17 +397,22 @@ export default function TransactionHistory() {
                     
                     <div className="text-right">
                       <div className={`font-medium text-lg ${getTypeColor(transaction.type)}`}>
-                        {transaction.amount > 0 ? '+' : ''}
-                        ${Math.abs(parseFloat(transaction.amount)).toFixed(2)}
+                        {(() => {
+                          const amount = parseFloat(transaction.amount || '0');
+                          return `${amount > 0 ? '+' : ''}$${Math.abs(amount).toFixed(2)}`;
+                        })()}
                       </div>
                       <div className="text-sm text-gray-400">
                         {transaction.symbol || 'USDT'}
                       </div>
                       {(transaction.type === 'trade_win' || transaction.type === 'trade_loss') && (
                         <div className={`text-sm font-medium ${
-                          transaction.amount > 0 ? 'text-green-400' : 'text-red-400'
+                          parseFloat(transaction.amount || '0') > 0 ? 'text-green-400' : 'text-red-400'
                         }`}>
-                          P&L: {transaction.amount > 0 ? '+' : ''}${Math.abs(parseFloat(transaction.amount)).toFixed(2)}
+                          {(() => {
+                            const amount = parseFloat(transaction.amount || '0');
+                            return `P&L: ${amount > 0 ? '+' : ''}$${Math.abs(amount).toFixed(2)}`;
+                          })()}
                         </div>
                       )}
                       {transaction.old_balance !== undefined && transaction.new_balance !== undefined && (
