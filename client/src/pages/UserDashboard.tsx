@@ -378,7 +378,7 @@ export default function UserDashboard() {
                   return (
                     <div className="block">
                       <div className="leading-tight">Welcome back,</div>
-                      <div className="leading-tight break-all">{user.username}!</div>
+                      <div className="leading-tight break-all text-lg md:text-2xl">{user.username}!</div>
                     </div>
                   );
                 }
