@@ -71,13 +71,7 @@ export function MobileHeader() {
     if (user?.username) {
       console.log('🔍 Mobile Header: Showing username:', user.username);
 
-      // If we're on dashboard page and it's a long wallet address, show two lines
-      if (location === '/dashboard' && user.username.startsWith('0x') && user.username.length > 20) {
-        console.log('🔍 Mobile Header: Dashboard page - showing two-line wallet');
-        return user.username; // Return full address for dashboard
-      }
-
-      // For other pages, if it's a long wallet address, truncate it
+      // For all pages, if it's a long wallet address, truncate it
       if (user.username.startsWith('0x') && user.username.length > 20) {
         const truncated = `${user.username.slice(0, 6)}...${user.username.slice(-4)}`;
         console.log('🔍 Mobile Header: Showing truncated wallet:', truncated);
@@ -130,14 +124,7 @@ export function MobileHeader() {
                     className="text-gray-300 hover:text-white flex items-center space-x-1 max-w-[160px]"
                   >
                     <UserCircle className="w-4 h-4 flex-shrink-0" />
-                    {location === '/dashboard' && user?.username && user.username.startsWith('0x') && user.username.length > 20 ? (
-                      <div className="text-xs leading-tight">
-                        <div>{user.username.slice(0, 21)}</div>
-                        <div>{user.username.slice(21)}</div>
-                      </div>
-                    ) : (
-                      <span className="text-sm truncate">{getUserDisplayName()}</span>
-                    )}
+                    <span className="text-sm truncate">{getUserDisplayName()}</span>
                     <ChevronDown className="w-3 h-3 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
