@@ -112,6 +112,7 @@ function TradingViewWidget({
         interval: interval,
         timezone: timezone,
         theme: "dark",  // Force dark theme explicitly
+        colorTheme: "dark",  // Also set colorTheme for compatibility
         style: "1",
         locale: locale,
         toolbar_bg: "#10121E",  // Changed from #1a1a1a to match our dark color
@@ -202,6 +203,31 @@ function TradingViewWidget({
       script.onload = () => {
         console.log('✅ TradingView widget loaded successfully');
         console.log('🔍 Widget config:', JSON.stringify(config, null, 2));
+        console.log('📱 Mobile detection:', isMobile);
+        console.log('🎨 Theme setting:', theme);
+        console.log('🎨 Config theme:', config.theme);
+
+        // Force dark theme on the iframe after loading
+        setTimeout(() => {
+          const iframe = document.querySelector(`#${container_id} iframe`);
+          if (iframe) {
+            console.log('🎨 Found iframe, attempting to set dark theme');
+            try {
+              // Try to access iframe document and set background
+              const iframeDoc = (iframe as any).contentDocument || (iframe as any).contentWindow?.document;
+              if (iframeDoc) {
+                const htmlElement = iframeDoc.documentElement;
+                if (htmlElement) {
+                  htmlElement.style.backgroundColor = '#10121E';
+                  htmlElement.style.color = '#FFFFFF';
+                  console.log('🎨 Set iframe background to dark');
+                }
+              }
+            } catch (e) {
+              console.log('Could not access iframe document:', e);
+            }
+          }
+        }, 1000);
 
         // Add CSS to hide volume bars after widget loads
         setTimeout(() => {
