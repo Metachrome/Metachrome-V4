@@ -21,11 +21,22 @@ interface TradeNotificationProps {
 // UNIVERSAL NOTIFICATION COMPONENT (Works for both Desktop and Mobile)
 const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   const handleClose = useCallback(() => {
     setIsVisible(false);
     setTimeout(onClose, 300);
   }, [onClose]);
+
+  // Handle window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (trade) {
@@ -40,16 +51,19 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
   const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
 
   return (
-    <div className={`trade-notification fixed z-50 transition-all duration-300 ${
-      isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'
-    }
-    /* Desktop positioning */
-    md:top-4 md:right-4 md:max-w-[280px] md:min-w-[260px]
-    /* Mobile positioning - centered and larger */
-    top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
-    md:transform-none md:translate-x-0 md:translate-y-0
-    w-[90vw] max-w-[350px] md:w-auto
-    `}>
+    <div className={`trade-notification fixed z-[9999] transition-all duration-300 ${
+      isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+    }`}
+    style={{
+      // Mobile-first approach with CSS-in-JS for better control
+      top: isMobile ? '50%' : '16px',
+      left: isMobile ? '50%' : 'auto',
+      right: isMobile ? 'auto' : '16px',
+      transform: isMobile ? 'translate(-50%, -50%)' : 'none',
+      width: isMobile ? '90vw' : 'auto',
+      maxWidth: isMobile ? '350px' : '280px',
+      minWidth: isMobile ? 'auto' : '260px'
+    }}>
       <div className={`p-4 md:p-3 rounded-lg shadow-lg border ${
         isWin
           ? 'bg-gradient-to-br from-emerald-900/95 via-green-800/95 to-teal-900/95 border-emerald-400 text-emerald-50'
