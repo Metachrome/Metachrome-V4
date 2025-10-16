@@ -1387,11 +1387,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create transaction record for trade result
       try {
+        // Use profit amount (not balance change) to show actual win/loss
+        const transactionAmount = profit.toString();
+        console.log(`📝 Creating transaction: amount=${transactionAmount}, profit=${profit}, isWin=${isWin}`);
+
         await storage.createTransaction({
           userId: trade.userId,
-          type: isWin ? 'trade' : 'trade',
+          type: 'trade',
           symbol: 'USDT',
-          amount: profit.toString(),
+          amount: transactionAmount,
           fee: '0',
           status: 'completed',
           metadata: JSON.stringify({
