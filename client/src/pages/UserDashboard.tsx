@@ -363,7 +363,7 @@ export default function UserDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 break-words">
             {(() => {
               // Prioritize name over username
               if (user?.firstName && user?.lastName) {
@@ -378,9 +378,9 @@ export default function UserDashboard() {
                   const firstLine = user.username.slice(0, 21); // First 21 characters
                   const secondLine = user.username.slice(21);   // Remaining characters
                   return (
-                    <div className="block max-w-full">
+                    <div className="block max-w-full overflow-hidden">
                       <div className="leading-tight">Welcome back,</div>
-                      <div className="leading-tight font-mono text-purple-400 break-all">
+                      <div className="leading-tight font-mono text-purple-400 break-all text-xs sm:text-sm md:text-base">
                         {firstLine}
                         <br />
                         {secondLine}!
@@ -393,7 +393,7 @@ export default function UserDashboard() {
               return 'Welcome back, User!';
             })()}
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 text-sm sm:text-base">
             Here's your trading overview and account summary.
           </p>
         </div>
