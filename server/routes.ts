@@ -1439,6 +1439,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isWin,
           type: transactionType
         });
+
+        // Verify what was actually stored in the database
+        const verifyTx = await storage.getTransaction(transaction.id);
+        console.log(`🔍 VERIFICATION - Transaction retrieved from DB:`, {
+          id: verifyTx?.id,
+          storedAmount: verifyTx?.amount,
+          storedAmountType: typeof verifyTx?.amount,
+          storedAmountString: verifyTx?.amount?.toString()
+        });
       } catch (txError) {
         console.error(`⚠️ Failed to create transaction for trade ${tradeId}:`, txError);
       }
