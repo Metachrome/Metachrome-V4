@@ -142,7 +142,7 @@
   }
 }
 
-@keyframes marquee {
+@keyframes scroll {
   0% {
     transform: translateX(100%);
   }
@@ -157,6 +157,10 @@
 
 .animate-marquee {
   animation: marquee 30s linear infinite;
+}
+
+.animate-scroll {
+  animation: scroll 25s linear infinite;
 }
 
 .animate-float {
