@@ -3555,9 +3555,9 @@ function OptionsPageContent({
                           <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)}
                           </span>
-                          <span className="text-gray-400 text-xs truncate text-center">{new Date(trade.endTime).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8)}</span>
+                          <span className="text-gray-400 text-xs truncate text-center">{new Date(trade.endTime).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
                           <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.status === 'won' ? '✅' : '❌'}
+                            {trade.status === 'won' ? 'WIN' : 'LOSE'}
                           </span>
                         </div>
                       );

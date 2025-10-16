@@ -233,12 +233,34 @@ class DatabaseStorage implements IStorage {
 
   // Trading operations
   async createTrade(tradeData: InsertTrade): Promise<Trade> {
+    console.log(`📝 Creating trade with data:`, {
+      amount: tradeData.amount,
+      amountType: typeof tradeData.amount,
+      allFields: Object.keys(tradeData)
+    });
     const [trade] = await db.insert(trades).values(tradeData).returning();
+    console.log(`✅ Trade created:`, {
+      id: trade.id,
+      amount: trade.amount,
+      amountType: typeof trade.amount,
+      allFields: Object.keys(trade)
+    });
     return trade;
   }
 
   async getTrade(id: string): Promise<Trade | undefined> {
     const [trade] = await db.select().from(trades).where(eq(trades.id, id));
+    if (trade) {
+      console.log(`🔍 Retrieved trade ${id}:`, {
+        id: trade.id,
+        amount: trade.amount,
+        amountType: typeof trade.amount,
+        amountIsUndefined: trade.amount === undefined,
+        amountIsNull: trade.amount === null,
+        amountIsEmpty: trade.amount === '',
+        allFields: Object.keys(trade)
+      });
+    }
     return trade;
   }
 
