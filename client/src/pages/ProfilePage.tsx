@@ -646,8 +646,12 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <div className="min-w-0 max-w-full">
-                    <h3 className={`font-semibold text-white ${isMobile ? 'text-base' : 'text-lg'}`}>
-                      {user?.firstName} {user?.lastName}
+                    <h3 className={`font-semibold text-white ${isMobile ? 'text-base' : 'text-lg'} break-words`}>
+                      {user?.firstName && user?.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user?.username && user.username.startsWith('0x') && user.username.length > 20
+                        ? `${user.username.slice(0, 6)}...${user.username.slice(-4)}`
+                        : user?.username || 'User'}
                     </h3>
                     <p className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'} break-all max-w-full overflow-hidden`}>
                       @{user?.username && user.username.startsWith('0x') && user.username.length > 20
