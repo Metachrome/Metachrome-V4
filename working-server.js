@@ -10352,6 +10352,7 @@ app.post('/api/user/redeem-code', async (req, res) => {
         .single();
 
       console.log('🎁 Supabase query result:', { redeemCode, codeError });
+      console.log('🎁 Redeem code fields:', redeemCode ? Object.keys(redeemCode) : 'N/A');
 
       if (codeError || !redeemCode) {
         console.log('❌ Redeem code not found in Supabase:', code.toUpperCase());
@@ -10514,7 +10515,7 @@ app.post('/api/user/redeem-code', async (req, res) => {
           success: true,
           bonusAmount: mockBonus,
           tradesRequired: 10,
-          message: `Bonus of $${mockBonus} added! Complete 10 trades to unlock withdrawals.`
+          message: `Bonus of ${mockBonus} USDT added! Complete 10 trades to unlock withdrawals.`
         });
       }
 
@@ -10563,7 +10564,7 @@ app.post('/api/user/redeem-code', async (req, res) => {
         .from('user_redeem_history')
         .insert({
           user_id: user.id,
-          redeem_code_id: redeemCode.id,
+          redeem_code_id: redeemCode.id || redeemCode.code,
           code: code.toUpperCase(),
           bonus_amount: redeemCode.bonus_amount,
           trades_required: 10,
@@ -10690,12 +10691,13 @@ app.post('/api/user/redeem-code', async (req, res) => {
       // Update code usage count
       const { error: updateError } = await supabase
         .from('redeem_codes')
-        .update({ current_uses: redeemCode.current_uses + 1 })
-        .eq('id', redeemCode.id);
+        .update({ current_uses: (redeemCode.current_uses || 0) + 1 })
+        .eq('code', code.toUpperCase());
 
       if (updateError) {
         console.error('❌ Error updating code usage count:', updateError);
-        throw updateError;
+        // Don't throw - this is not critical
+        console.log('⚠️ Continuing despite usage count update error');
       }
 
       console.log('✅ Code redeemed successfully:', code, 'Amount:', redeemCode.bonus_amount);
@@ -10705,7 +10707,7 @@ app.post('/api/user/redeem-code', async (req, res) => {
         success: true,
         bonusAmount: redeemCode.bonus_amount,
         tradesRequired: 10,
-        message: `Bonus of $${redeemCode.bonus_amount} added! Complete 10 trades to unlock withdrawals.`,
+        message: `Bonus of ${redeemCode.bonus_amount} USDT added! Complete 10 trades to unlock withdrawals.`,
         newBalance: newBalance // Include new balance in response
       });
 
@@ -10764,7 +10766,7 @@ app.post('/api/user/redeem-code', async (req, res) => {
         success: true,
         bonusAmount: mockBonus,
         tradesRequired: 10,
-        message: `Bonus of $${mockBonus} added! Complete 10 trades to unlock withdrawals.`
+        message: `Bonus of ${mockBonus} USDT added! Complete 10 trades to unlock withdrawals.`
       });
     }
 

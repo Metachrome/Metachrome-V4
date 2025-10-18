@@ -189,7 +189,7 @@ export default function ProfilePage() {
     onSuccess: (data: any) => {
       toast({
         title: "Code Redeemed Successfully!",
-        description: data.message || `Bonus of $${data.bonusAmount} added to your account!`,
+        description: data.message || `Bonus of ${data.bonusAmount} USDT added to your account!`,
       });
       setRedeemCode('');
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
