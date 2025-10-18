@@ -183,6 +183,26 @@ app.use((req, res, next) => {
 
 // Serve static files from dist/public with cache control
 const distPath = path.join(__dirname, 'dist', 'public');
+
+// CRITICAL: Explicitly serve /assets/* files FIRST before any other routes
+app.use('/assets', express.static(path.join(distPath, 'assets'), {
+  setHeaders: (res, filePath) => {
+    // Set correct MIME types
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+    // Prevent caching for development
+    if (!isProduction) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
+
+// Serve other static files from dist/public
 app.use(express.static(distPath, {
   setHeaders: (res, path) => {
     // Prevent caching for development to show changes immediately
