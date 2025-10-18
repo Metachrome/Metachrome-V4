@@ -10941,6 +10941,55 @@ app.get('/api/user/redeem-history', async (req, res) => {
   }
 });
 
+// Get available redeem codes for users
+app.get('/api/user/available-codes', async (req, res) => {
+  try {
+    console.log('🎁 Getting available redeem codes for user');
+
+    if (isProduction && supabase) {
+      // Get all active codes from Supabase
+      const { data: codes, error } = await supabase
+        .from('redeem_codes')
+        .select('code, bonus_amount, description, max_uses, current_uses')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.log('⚠️ Error fetching available codes:', error.message);
+        // Return empty array if table doesn't exist
+        return res.json([]);
+      }
+
+      // Format codes for user display
+      const availableCodes = (codes || []).map(code => ({
+        code: code.code,
+        amount: `${code.bonus_amount} USDT`,
+        description: code.description || 'Bonus code',
+        // Don't show max_uses to users, just show if it's limited
+        isLimited: code.max_uses !== null && code.max_uses > 0,
+        // Check if code is still available (if max_uses is set)
+        isAvailable: code.max_uses === null || code.current_uses < code.max_uses
+      })).filter(code => code.isAvailable); // Only show codes that are still available
+
+      console.log('✅ Returning available codes:', availableCodes.length);
+      res.json(availableCodes);
+    } else {
+      // Development mode - return mock codes
+      const mockCodes = [
+        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'First time user bonus', isLimited: false, isAvailable: true },
+        { code: 'LETSGO1000', amount: '1000 USDT', description: 'High value bonus code', isLimited: false, isAvailable: true },
+        { code: 'WELCOME50', amount: '50 USDT', description: 'Welcome bonus for new users', isLimited: true, isAvailable: true },
+        { code: 'BONUS500', amount: '500 USDT', description: 'Limited time bonus', isLimited: true, isAvailable: true }
+      ];
+      res.json(mockCodes);
+    }
+
+  } catch (error) {
+    console.error('❌ Error getting available codes:', error);
+    res.status(500).json({ error: 'Failed to get available codes' });
+  }
+});
+
 // Test withdrawal eligibility endpoint (no auth required for testing)
 app.get('/api/test/withdrawal-eligibility', async (req, res) => {
   try {

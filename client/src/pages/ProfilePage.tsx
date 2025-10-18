@@ -58,6 +58,7 @@ export default function ProfilePage() {
   const [referralStats, setReferralStats] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [testResults, setTestResults] = useState<string>('');
+  const [availableCodes, setAvailableCodes] = useState<any[]>([]);
 
   // Document upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -193,6 +194,8 @@ export default function ProfilePage() {
       });
       setRedeemCode('');
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      // Refresh available codes to update the list
+      fetchAvailableCodes();
     },
     onError: (error: any) => {
       toast({
@@ -423,6 +426,32 @@ export default function ProfilePage() {
       fetchReferralStats();
     }
   }, [user?.id, fetchReferralStats]);
+
+  // Fetch available redeem codes
+  const fetchAvailableCodes = useCallback(async () => {
+    try {
+      console.log('🎁 Fetching available redeem codes');
+      const response = await apiRequest('GET', '/api/user/available-codes');
+      console.log('🎁 Available codes response:', response);
+      setAvailableCodes(response || []);
+    } catch (error) {
+      console.error('❌ Failed to fetch available codes:', error);
+      // Set fallback data
+      setAvailableCodes([
+        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'First time user bonus' },
+        { code: 'LETSGO1000', amount: '1000 USDT', description: 'High value bonus code' },
+        { code: 'WELCOME50', amount: '50 USDT', description: 'Welcome bonus for new users' },
+        { code: 'BONUS500', amount: '500 USDT', description: 'Limited time bonus' }
+      ]);
+    }
+  }, []);
+
+  // Load available codes on component mount
+  useEffect(() => {
+    if (user?.id) {
+      fetchAvailableCodes();
+    }
+  }, [user?.id, fetchAvailableCodes]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -1359,13 +1388,11 @@ export default function ProfilePage() {
                   {/* Available Codes Hint */}
                   <div className="p-4 bg-gray-700 rounded-lg">
                     <h3 className="text-white font-medium mb-2">💡 Available Codes</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      {[
-                        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'First time user bonus' },
-                        { code: 'LETSGO1000', amount: '1000 USDT', description: 'High value bonus code' },
-                        { code: 'WELCOME50', amount: '50 USDT', description: 'Welcome bonus for new users' },
-                        { code: 'BONUS500', amount: '500 USDT', description: 'Limited time bonus' }
-                      ].map((codeInfo) => (
+                    {availableCodes.length === 0 ? (
+                      <p className="text-gray-400 text-sm">Loading available codes...</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {availableCodes.map((codeInfo) => (
                         <div
                           key={codeInfo.code}
                           className="bg-gray-800 p-3 rounded border border-gray-600 hover:border-purple-500 cursor-pointer transition-colors"
@@ -1395,7 +1422,8 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
