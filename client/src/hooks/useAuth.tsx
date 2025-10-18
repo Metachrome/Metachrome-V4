@@ -69,10 +69,18 @@ export function useAuth() {
         // For admin session tokens, make API request
         if (authToken.startsWith('admin-session-')) {
           console.log("Making API request for admin user");
-          const response = await apiRequest("GET", "/api/auth");
-          const userData = await response.json();
-          console.log("Admin user query response:", userData);
-          return userData;
+          try {
+            const userData = await apiRequest("GET", "/api/auth");
+            console.log("Admin user query response:", userData);
+            return userData;
+          } catch (error) {
+            console.log("Admin API call failed, falling back to stored user data:", error);
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              console.log("Using fallback stored user data");
+              return JSON.parse(storedUser);
+            }
+          }
         }
 
         // For admin tokens (admin-token-), use stored user data
