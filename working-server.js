@@ -6433,7 +6433,7 @@ app.post('/api/trades/complete', async (req, res) => {
     } else {
       // Lose: balance was already deducted when trade started, so no change needed
       profitAmount = -tradeAmount; // Loss amount (negative)
-      balanceChange = 0; // Balance already deducted at trade start
+      balanceChange = -tradeAmount; // Record the loss amount for transaction history
     }
 
     // Update user balance and trade count
@@ -6539,7 +6539,7 @@ app.post('/api/trades/complete', async (req, res) => {
     // Create transaction record
     const transaction = {
       user_id: actualUserId,
-      type: finalOutcome ? 'deposit' : 'trade_loss', // Use 'deposit' for wins, 'trade_loss' for losses
+      type: finalOutcome ? 'trade_win' : 'trade_loss', // Use 'trade_win' for wins, 'trade_loss' for losses
       amount: balanceChange,
       status: 'completed',
       description: `Options trade ${finalOutcome ? 'win' : 'loss'} - ${tradeId}${overrideReason}`,
