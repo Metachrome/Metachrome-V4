@@ -469,7 +469,30 @@ export default function WorkingAdminDashboard() {
         if (redeemCodesRes.ok) {
           const redeemCodesData = await redeemCodesRes.json();
           console.log('🎁 Redeem codes loaded:', redeemCodesData);
-          setRedeemCodes(redeemCodesData.codes || []);
+
+          // Fetch redemption history for each code
+          let codesWithHistory = redeemCodesData.codes || [];
+          try {
+            const historyRes = await fetch(`/api/admin/redeem-codes-usage-all?_t=${timestamp}`, {
+              headers: cacheHeaders
+            });
+            if (historyRes.ok) {
+              const historyData = await historyRes.json();
+              const allRedemptions = historyData.data || [];
+
+              // Group redemptions by code
+              codesWithHistory = codesWithHistory.map(code => ({
+                ...code,
+                redemptions: allRedemptions.filter(r => r.code === code.code)
+              }));
+
+              console.log('🎁 Codes with redemption history:', codesWithHistory);
+            }
+          } catch (historyError) {
+            console.log('⚠️ Could not fetch redemption history:', historyError);
+          }
+
+          setRedeemCodes(codesWithHistory);
           setRedeemStats(redeemCodesData.stats || {});
         } else {
           console.error('❌ Failed to fetch redeem codes:', redeemCodesRes.status);
@@ -2744,6 +2767,73 @@ export default function WorkingAdminDashboard() {
                         )}
                       </TableBody>
                     </Table>
+                  </div>
+
+                  {/* User Redemption History */}
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold text-white mb-4">User Redemption History</h3>
+                    <div className="border border-gray-700 rounded-lg overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-700">
+                            <TableHead className="text-gray-300">Code</TableHead>
+                            <TableHead className="text-gray-300">User</TableHead>
+                            <TableHead className="text-gray-300">Amount</TableHead>
+                            <TableHead className="text-gray-300">Redeemed Date</TableHead>
+                            <TableHead className="text-gray-300">Status</TableHead>
+                            <TableHead className="text-gray-300">Trades Progress</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {redeemCodes.length === 0 ? (
+                            <TableRow className="border-gray-700">
+                              <TableCell colSpan={6} className="text-center py-8 text-gray-400">
+                                No redemptions yet
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            redeemCodes.map((code) => {
+                              // Get redemption history for this code
+                              const codeRedemptions = code.redemptions || [];
+                              if (codeRedemptions.length === 0) {
+                                return (
+                                  <TableRow key={`${code.id}-empty`} className="border-gray-700">
+                                    <TableCell className="text-white font-mono">{code.code}</TableCell>
+                                    <TableCell colSpan={5} className="text-center text-gray-400">
+                                      No users have redeemed this code yet
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              }
+                              return codeRedemptions.map((redemption, idx) => (
+                                <TableRow key={`${code.id}-${idx}`} className="border-gray-700">
+                                  <TableCell className="text-white font-mono">{code.code}</TableCell>
+                                  <TableCell className="text-blue-400">{redemption.user}</TableCell>
+                                  <TableCell className="text-green-400">{redemption.amount} USDT</TableCell>
+                                  <TableCell className="text-gray-300">
+                                    {new Date(redemption.date).toLocaleDateString()} {new Date(redemption.date).toLocaleTimeString()}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      className={
+                                        redemption.status === 'completed' ? 'bg-green-600' :
+                                        redemption.status === 'pending_trades' ? 'bg-yellow-600' :
+                                        'bg-gray-600'
+                                      }
+                                    >
+                                      {redemption.status === 'completed' ? 'Completed' : 'Pending Trades'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-gray-300">
+                                    {redemption.tradesCompleted}/{redemption.tradesRequired}
+                                  </TableCell>
+                                </TableRow>
+                              ));
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </div>
               </CardContent>

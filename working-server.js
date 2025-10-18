@@ -8990,24 +8990,37 @@ app.get('/api/admin/redeem-codes', async (req, res) => {
         return res.json({ codes: mockCodes, stats });
       }
 
-      // Calculate stats
+      // Get actual redemption history from user_redeem_history table
+      const { data: history, error: historyError } = await supabase
+        .from('user_redeem_history')
+        .select('*');
+
+      let totalRedeemed = 0;
+      let bonusDistributed = 0;
+
+      if (!historyError && history) {
+        totalRedeemed = history.length;
+        bonusDistributed = history.reduce((sum, h) => sum + (parseFloat(h.bonus_amount) || 0), 0);
+      }
+
+      // Calculate stats based on actual redemption data
       const stats = {
         activeCodes: codes.filter(c => c.is_active).length,
-        totalRedeemed: codes.reduce((sum, c) => sum + (c.current_uses || 0), 0),
-        bonusDistributed: codes.reduce((sum, c) => sum + ((c.current_uses || 0) * c.bonus_amount), 0),
+        totalRedeemed: totalRedeemed,
+        bonusDistributed: bonusDistributed,
         usageRate: codes.length > 0 ? Math.round((codes.filter(c => c.current_uses > 0).length / codes.length) * 100) : 0
       };
 
       res.json({ codes, stats });
     } else {
-      // Mock data for development
+      // Development mode - get actual data from users
       const mockCodes = [
         {
           id: 'code-1',
           code: 'FIRSTBONUS',
           bonus_amount: 100,
           max_uses: null,
-          used_count: 45,
+          used_count: 0,
           status: 'active',
           created_at: new Date('2024-01-15').toISOString()
         },
@@ -9016,7 +9029,7 @@ app.get('/api/admin/redeem-codes', async (req, res) => {
           code: 'LETSGO1000',
           bonus_amount: 1000,
           max_uses: null,
-          used_count: 23,
+          used_count: 0,
           status: 'active',
           created_at: new Date('2024-01-15').toISOString()
         },
@@ -9025,7 +9038,7 @@ app.get('/api/admin/redeem-codes', async (req, res) => {
           code: 'WELCOME50',
           bonus_amount: 50,
           max_uses: 100,
-          used_count: 67,
+          used_count: 0,
           status: 'active',
           created_at: new Date('2024-02-01').toISOString()
         },
@@ -9034,17 +9047,29 @@ app.get('/api/admin/redeem-codes', async (req, res) => {
           code: 'BONUS500',
           bonus_amount: 500,
           max_uses: 50,
-          used_count: 12,
+          used_count: 0,
           status: 'active',
           created_at: new Date('2024-02-15').toISOString()
         }
       ];
 
+      // Calculate actual stats from user redeem history
+      let totalRedeemed = 0;
+      let bonusDistributed = 0;
+
+      const allUsers = await getUsers();
+      for (const user of allUsers) {
+        if (user.redeem_history && Array.isArray(user.redeem_history)) {
+          totalRedeemed += user.redeem_history.length;
+          bonusDistributed += user.redeem_history.reduce((sum, h) => sum + (parseFloat(h.bonus_amount) || 0), 0);
+        }
+      }
+
       const stats = {
         activeCodes: 4,
-        totalRedeemed: 147,
-        bonusDistributed: 15300,
-        usageRate: 89
+        totalRedeemed: totalRedeemed,
+        bonusDistributed: bonusDistributed,
+        usageRate: totalRedeemed > 0 ? Math.round((mockCodes.filter(c => c.used_count > 0).length / mockCodes.length) * 100) : 0
       };
 
       res.json({ codes: mockCodes, stats });
@@ -11254,33 +11279,149 @@ app.get('/api/admin/redeem-codes/:codeId/usage', async (req, res) => {
 
     console.log('📊 Getting redeem code usage:', codeId);
 
-    // Mock usage data
-    const mockUsage = {
-      'FIRSTBONUS': [
-        { user: 'john.doe@example.com', amount: 100, date: '2024-01-15T10:30:00Z', status: 'completed' },
-        { user: 'jane.smith@example.com', amount: 100, date: '2024-01-14T15:20:00Z', status: 'completed' },
-        { user: 'bob.wilson@example.com', amount: 100, date: '2024-01-13T09:45:00Z', status: 'pending_trades' }
-      ],
-      'LETSGO1000': [
-        { user: 'alice.brown@example.com', amount: 1000, date: '2024-01-12T14:15:00Z', status: 'completed' },
-        { user: 'charlie.davis@example.com', amount: 1000, date: '2024-01-11T11:30:00Z', status: 'completed' }
-      ]
-    };
+    if (isProduction && supabase) {
+      // Get actual redemption history from Supabase
+      const { data: history, error } = await supabase
+        .from('user_redeem_history')
+        .select('*, users(username, email)')
+        .eq('code', codeId.toUpperCase())
+        .order('redeemed_at', { ascending: false });
 
-    const usage = mockUsage[codeId] || [];
-
-    res.json({
-      success: true,
-      data: {
-        code: codeId,
-        totalUsage: usage.length,
-        totalAmount: usage.reduce((sum, u) => sum + u.amount, 0),
-        usage: usage
+      if (error) {
+        console.log('⚠️ Error fetching redemption history:', error.message);
+        return res.json({
+          success: true,
+          data: {
+            code: codeId,
+            totalUsage: 0,
+            totalAmount: 0,
+            usage: []
+          }
+        });
       }
-    });
+
+      const usage = (history || []).map(h => ({
+        user: h.users?.username || h.users?.email || 'Unknown User',
+        amount: h.bonus_amount,
+        date: h.redeemed_at,
+        status: h.withdrawal_unlocked ? 'completed' : 'pending_trades',
+        tradesCompleted: h.trades_completed,
+        tradesRequired: h.trades_required
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          code: codeId,
+          totalUsage: usage.length,
+          totalAmount: usage.reduce((sum, u) => sum + u.amount, 0),
+          usage: usage
+        }
+      });
+    } else {
+      // Development mode - get from user redeem history
+      const allUsers = await getUsers();
+      const usage = [];
+
+      for (const user of allUsers) {
+        if (user.redeem_history && Array.isArray(user.redeem_history)) {
+          for (const redemption of user.redeem_history) {
+            if (redemption.code === codeId.toUpperCase()) {
+              usage.push({
+                user: user.username,
+                amount: redemption.bonus_amount,
+                date: redemption.redeemed_at || new Date().toISOString(),
+                status: redemption.withdrawal_unlocked ? 'completed' : 'pending_trades',
+                tradesCompleted: redemption.trades_completed || 0,
+                tradesRequired: redemption.trades_required || 10
+              });
+            }
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          code: codeId,
+          totalUsage: usage.length,
+          totalAmount: usage.reduce((sum, u) => sum + u.amount, 0),
+          usage: usage
+        }
+      });
+    }
 
   } catch (error) {
     console.error('❌ Error getting redeem code usage:', error);
+    res.status(500).json({ error: 'Failed to get redeem code usage' });
+  }
+});
+
+// ===== GET ALL REDEEM CODE USAGE (for admin dashboard) =====
+app.get('/api/admin/redeem-codes-usage-all', async (req, res) => {
+  try {
+    console.log('📊 Getting all redeem code usage');
+
+    if (isProduction && supabase) {
+      // Get all redemption history from Supabase
+      const { data: history, error } = await supabase
+        .from('user_redeem_history')
+        .select('*, users(username, email)')
+        .order('redeemed_at', { ascending: false });
+
+      if (error) {
+        console.log('⚠️ Error fetching redemption history:', error.message);
+        return res.json({
+          success: true,
+          data: []
+        });
+      }
+
+      const usage = (history || []).map(h => ({
+        id: h.id,
+        code: h.code,
+        user: h.users?.username || h.users?.email || 'Unknown User',
+        amount: h.bonus_amount,
+        date: h.redeemed_at,
+        status: h.withdrawal_unlocked ? 'completed' : 'pending_trades',
+        tradesCompleted: h.trades_completed,
+        tradesRequired: h.trades_required
+      }));
+
+      res.json({
+        success: true,
+        data: usage
+      });
+    } else {
+      // Development mode - get from user redeem history
+      const allUsers = await getUsers();
+      const usage = [];
+
+      for (const user of allUsers) {
+        if (user.redeem_history && Array.isArray(user.redeem_history)) {
+          for (const redemption of user.redeem_history) {
+            usage.push({
+              id: `${user.id}-${redemption.code}`,
+              code: redemption.code,
+              user: user.username,
+              amount: redemption.bonus_amount,
+              date: redemption.redeemed_at || new Date().toISOString(),
+              status: redemption.withdrawal_unlocked ? 'completed' : 'pending_trades',
+              tradesCompleted: redemption.trades_completed || 0,
+              tradesRequired: redemption.trades_required || 10
+            });
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        data: usage.sort((a, b) => new Date(b.date) - new Date(a.date))
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error getting all redeem code usage:', error);
     res.status(500).json({ error: 'Failed to get redeem code usage' });
   }
 });
