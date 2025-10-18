@@ -20,7 +20,7 @@ interface TradeNotificationProps {
 
 // UNIVERSAL NOTIFICATION COMPONENT (Works for both Desktop and Mobile)
 const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) => {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   const handleClose = useCallback(() => {
@@ -38,8 +38,11 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // CRITICAL FIX: Reset visibility when trade changes
   useEffect(() => {
     if (trade) {
+      console.log('🔔 NOTIFICATION: New trade received, showing notification:', trade.id);
+      setIsVisible(true);
       const timer = setTimeout(handleClose, 25000); // Increased to 25 seconds for better UX
       return () => clearTimeout(timer);
     }
