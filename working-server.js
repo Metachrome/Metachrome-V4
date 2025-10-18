@@ -137,7 +137,9 @@ const corsOptions = {
       'https://metachrome-v2-production.up.railway.app',
       'https://metachrome-v2.vercel.app',
       'https://metachrome-v2-main.vercel.app',
-      'https://metachrome.vercel.app'
+      'https://metachrome.vercel.app',
+      'https://www.metachrome.io',
+      'https://metachrome.io'
     ];
 
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -183,10 +185,23 @@ app.use((req, res, next) => {
 
 // Serve static files from dist/public with cache control
 const distPath = path.join(__dirname, 'dist', 'public');
+const assetsPath = path.join(distPath, 'assets');
+
+// DEBUG: Log paths on startup
+console.log('📁 Static file paths:');
+console.log('   distPath:', distPath);
+console.log('   assetsPath:', assetsPath);
+console.log('   distPath exists:', fs.existsSync(distPath));
+console.log('   assetsPath exists:', fs.existsSync(assetsPath));
+if (fs.existsSync(assetsPath)) {
+  const files = fs.readdirSync(assetsPath);
+  console.log('   Assets files:', files.slice(0, 5).join(', '), files.length > 5 ? `... (${files.length} total)` : '');
+}
 
 // CRITICAL: Explicitly serve /assets/* files FIRST before any other routes
-app.use('/assets', express.static(path.join(distPath, 'assets'), {
+app.use('/assets', express.static(assetsPath, {
   setHeaders: (res, filePath) => {
+    console.log('📦 Serving asset:', filePath);
     // Set correct MIME types
     if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
@@ -216,6 +231,22 @@ app.use(express.static(distPath, {
 
 // Also serve files from the root directory for testing
 app.use(express.static(__dirname));
+
+// DEBUG: Fallback handler for /assets to see what's being requested
+app.get('/assets/*', (req, res) => {
+  const requestedFile = req.path;
+  const fullPath = path.join(assetsPath, requestedFile.replace('/assets/', ''));
+  console.log('❌ Asset not found by static middleware:', requestedFile);
+  console.log('   Looking for:', fullPath);
+  console.log('   File exists:', fs.existsSync(fullPath));
+
+  if (fs.existsSync(assetsPath)) {
+    const files = fs.readdirSync(assetsPath);
+    console.log('   Available files:', files.join(', '));
+  }
+
+  res.status(404).send(`Asset not found: ${requestedFile}`);
+});
 
 // Ultra-fast health check for Railway
 app.get('/api/health', (req, res) => {
