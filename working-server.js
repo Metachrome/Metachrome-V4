@@ -4145,8 +4145,9 @@ app.post('/api/admin/redeem-codes/:codeId/action', async (req, res) => {
     console.log('🎁 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
     console.log('🎁 Supabase available:', !!supabase);
 
-    if (isProduction && supabase) {
-      // Production mode - use Supabase
+    // Use Supabase if available (regardless of NODE_ENV)
+    if (supabase) {
+      // Supabase mode - use real database
       console.log('🎁 Using Supabase for redeem code action');
 
       if (action === 'edit') {
@@ -10458,7 +10459,7 @@ app.post('/api/user/redeem-code', async (req, res) => {
     // ===== MANDATORY ONE-TIME USE CHECK (BEFORE ANYTHING ELSE) =====
     console.log('🔍 CHECKING ONE-TIME USE - User:', user.id, 'Code:', code.toUpperCase());
 
-    // First check in Supabase if available
+    // Check in Supabase if available (regardless of NODE_ENV)
     if (supabase) {
       try {
         const { data: existingUse, error: useError } = await supabase
@@ -10468,12 +10469,21 @@ app.post('/api/user/redeem-code', async (req, res) => {
           .eq('code', code.toUpperCase())
           .single();
 
+        // Check if there's an error (other than "no rows found")
+        if (useError) {
+          // PGRST116 = no rows found (this is OK, user hasn't redeemed yet)
+          if (useError.code !== 'PGRST116') {
+            console.log('⚠️ Error checking Supabase history:', useError.code, useError.message);
+          }
+        }
+
+        // If we got data, user already redeemed this code
         if (existingUse) {
           console.log('❌ ONE-TIME USE VIOLATION: User already used this code:', code.toUpperCase());
           return res.status(400).json({ error: 'You have already used this redeem code' });
         }
       } catch (e) {
-        console.log('⚠️ Could not check Supabase history:', e.message);
+        console.log('⚠️ Exception checking Supabase history:', e.message);
       }
     }
 
@@ -10494,7 +10504,8 @@ app.post('/api/user/redeem-code', async (req, res) => {
     }
     // ===== END ONE-TIME USE CHECK =====
 
-    if (isProduction && supabase) {
+    // Use Supabase if available (regardless of NODE_ENV)
+    if (supabase) {
       // Check if code exists and is valid
       console.log('🎁 Checking redeem code in Supabase:', code.toUpperCase());
       const { data: redeemCode, error: codeError } = await supabase
