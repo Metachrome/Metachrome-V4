@@ -117,7 +117,7 @@ export default function AdminLogin() {
               Enter your admin credentials to continue
             </CardDescription>
           </CardHeader>
-          <CardContent className="pb-0">
+          <CardContent className="pb-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
