@@ -1290,9 +1290,37 @@ app.get('/api/auth', async (req, res) => {
     // For admin tokens
     if (token.startsWith('admin-token-') || token.startsWith('admin-session-')) {
       console.log('✅ Admin token verified');
-      // Find the actual admin user from database
+
+      // Extract user ID from token: admin-session-{id}-{timestamp}
+      const tokenParts = token.split('-');
+      let userId = null;
+
+      if (token.startsWith('admin-session-')) {
+        // Format: admin-session-{id}-{timestamp}
+        // Find the part that looks like an ID (contains 'admin' or 'superadmin')
+        userId = tokenParts.slice(2, -1).join('-'); // Everything except 'admin-session' and timestamp
+      } else if (token.startsWith('admin-token-')) {
+        // Format: admin-token-{id}-{timestamp}
+        userId = tokenParts.slice(2, -1).join('-');
+      }
+
+      console.log('🔍 Extracted user ID from token:', userId);
+
+      // For hardcoded admin credentials (superadmin-001 or admin-001)
+      if (userId === 'superadmin-001' || userId === 'admin-001') {
+        const role = userId === 'superadmin-001' ? 'super_admin' : 'admin';
+        return res.json({
+          id: userId,
+          username: userId.replace('-001', ''),
+          email: `${userId.replace('-001', '')}@metachrome.com`,
+          role: role,
+          balance: role === 'super_admin' ? 1000000 : 50000
+        });
+      }
+
+      // Try to find the actual admin user from database
       const users = await getUsers();
-      const adminUser = users.find(u => u.role === 'super_admin' || u.role === 'admin');
+      const adminUser = users.find(u => u.id === userId || u.role === 'super_admin' || u.role === 'admin');
 
       if (adminUser) {
         return res.json({
