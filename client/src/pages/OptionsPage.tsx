@@ -2473,23 +2473,25 @@ function OptionsPageContent({
           <div className="flex items-center space-x-4 text-sm">
             <div>
               <div className="text-gray-400">Change 24h</div>
-              <div className="text-white">{btcMarketData?.priceChange24h || '0.00'} {btcMarketData?.priceChangePercent24h || '0.00%'}</div>
+              <div className={`text-white font-semibold ${priceData?.priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {priceData?.priceChange24h?.toFixed(2) || '0.00'} {priceData?.priceChangePercent24h >= 0 ? '+' : ''}{priceData?.priceChangePercent24h?.toFixed(2) || '0.00'}%
+              </div>
             </div>
             <div>
               <div className="text-gray-400">24h High</div>
-              <div className="text-white">{btcMarketData?.high24h || currentPrice.toFixed(2)}</div>
+              <div className="text-white">{priceData?.high24h?.toFixed(2) || btcMarketData?.high24h || currentPrice.toFixed(2)}</div>
             </div>
             <div>
               <div className="text-gray-400">24h Low</div>
-              <div className="text-white">{btcMarketData?.low24h || currentPrice.toFixed(2)}</div>
+              <div className="text-white">{priceData?.low24h?.toFixed(2) || btcMarketData?.low24h || currentPrice.toFixed(2)}</div>
             </div>
             <div>
               <div className="text-gray-400">Volume 24h (BTC)</div>
-              <div className="text-white">{btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(2) + 'M' : '0.00'}</div>
+              <div className="text-white">{priceData?.volume24h ? (parseFloat(priceData.volume24h.toString()) / 1000000).toFixed(2) + 'M' : (btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(2) + 'M' : '0.00')}</div>
             </div>
             <div>
               <div className="text-gray-400">Turnover 24h (USDT)</div>
-              <div className="text-white">{btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) * parseFloat(btcMarketData.price) / 1000000).toFixed(2) + 'M' : '0.00'}</div>
+              <div className="text-white">{priceData?.volume24h && priceData?.price ? (parseFloat(priceData.volume24h.toString()) * priceData.price / 1000000).toFixed(2) + 'M' : (btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) * parseFloat(btcMarketData.price) / 1000000).toFixed(2) + 'M' : '0.00')}</div>
             </div>
           </div>
         </div>
