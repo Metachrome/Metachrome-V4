@@ -113,6 +113,7 @@ function TradingViewWidget({
         timezone: timezone,
         theme: "dark",  // Force dark theme explicitly
         colorTheme: "dark",  // Also set colorTheme for compatibility
+        backgroundColor: "#10121E",  // Explicit background color
         style: "1",
         locale: locale,
         toolbar_bg: "#10121E",  // Changed from #1a1a1a to match our dark color
@@ -862,7 +863,8 @@ function TradingViewWidget({
           className="tradingview-widget-container__widget"
           style={{
             height: "100%",
-            width: "100%"
+            width: "100%",
+            backgroundColor: "#10121E"  // Force dark background while loading
           }}
         />
       )}
