@@ -11733,8 +11733,9 @@ app.post('/api/test/create-sample-deposit', (req, res) => {
 });
 
 // ===== SPA ROUTING =====
-// Only catch GET requests that don't start with /api
-app.get(/^(?!\/api).*/, (req, res) => {
+// Only catch GET requests that don't start with /api or /assets
+// This ensures static files (CSS, JS, images) are served correctly
+app.get(/^(?!\/api|\/assets).*/, (req, res) => {
   const indexPath = path.join(distPath, 'index.html');
   console.log('📄 Serving SPA route:', req.path);
 
