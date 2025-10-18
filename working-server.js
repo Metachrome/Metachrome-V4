@@ -166,10 +166,10 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy',
     "default-src 'self' https://www.metachrome.io https://metachrome.io; " +
     "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://accounts.google.com https://s3.tradingview.com https://charting-library.tradingview.com https://www.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://s3.tradingview.com https://www.tradingview.com; " +
-    "font-src 'self' https://fonts.gstatic.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://s3.tradingview.com https://www.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com https://charting-library.tradingview.com; " +
+    "font-src 'self' https://fonts.gstatic.com https://s3.tradingview.com https://www.tradingview.com; " +
     "img-src 'self' data: https:; " +
-    "connect-src 'self' https://api.binance.com https://accounts.google.com https://www.tradingview.com https://data.tradingview.com https://symbol-search.tradingview.com wss: ws:; " +
+    "connect-src 'self' https://api.binance.com https://accounts.google.com https://www.tradingview.com https://data.tradingview.com https://symbol-search.tradingview.com https://prodata.tradingview.com https://scanner.tradingview.com wss: ws:; " +
     "frame-src 'self' https://accounts.google.com https://www.tradingview.com https://s3.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com; " +
     "object-src 'none'; " +
     "base-uri 'self';"
