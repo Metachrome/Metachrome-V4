@@ -94,6 +94,24 @@ function TradingViewWidget({
       // Check if mobile for specific mobile chart settings
       const isMobile = window.innerWidth <= 768;
 
+      // FORCE CLEAR any TradingView theme preferences from localStorage
+      try {
+        // Clear any TradingView localStorage items that might store theme
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('tradingview') || key.includes('tv.') || key.includes('chart'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => {
+          console.log('🗑️ Clearing TradingView localStorage:', key);
+          localStorage.removeItem(key);
+        });
+      } catch (e) {
+        console.warn('Could not clear localStorage:', e);
+      }
+
       // Working configuration for TradingView widget
       // Handle symbol format - check if already has exchange prefix
       let tradingViewSymbol = symbol;
@@ -176,6 +194,10 @@ function TradingViewWidget({
           "volume.volume ma.color": "rgba(0,0,0,0)",
           "volume.volume ma.transparency": 100,
           "volume.show ma": false
+        },
+        // FORCE DARK THEME - override any user preferences
+        settings_overrides: {
+          "theme": "dark"
         },
         // Force a chart layout without volume pane
         saved_data: JSON.stringify({
