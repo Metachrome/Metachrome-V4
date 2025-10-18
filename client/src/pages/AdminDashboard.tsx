@@ -1302,7 +1302,7 @@ export default function WorkingAdminDashboard() {
           code: newRedeemCode.code.toUpperCase(),
           bonusAmount: parseFloat(newRedeemCode.bonusAmount),
           maxUses: newRedeemCode.maxUses ? parseInt(newRedeemCode.maxUses) : null,
-          description: newRedeemCode.description || `Bonus code for $${newRedeemCode.bonusAmount}`
+          description: newRedeemCode.description || `Bonus code for ${newRedeemCode.bonusAmount} USDT`
         })
       });
 
@@ -2657,7 +2657,7 @@ export default function WorkingAdminDashboard() {
                     </div>
                     <div className="bg-gray-700 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-blue-400">
-                        ${redeemStats?.bonusDistributed || 0}
+                        {redeemStats?.bonusDistributed || 0} USDT
                       </div>
                       <div className="text-gray-400 text-sm">Bonus Distributed</div>
                     </div>
@@ -2693,7 +2693,7 @@ export default function WorkingAdminDashboard() {
                           redeemCodes.map((code) => (
                             <TableRow key={code.id} className="border-gray-700">
                               <TableCell className="text-white font-mono">{code.code}</TableCell>
-                              <TableCell className="text-green-400">${code.bonus_amount}</TableCell>
+                              <TableCell className="text-green-400">{code.bonus_amount} USDT</TableCell>
                               <TableCell className="text-gray-300">
                                 {code.used_count || 0} / {code.max_uses || '∞'}
                               </TableCell>
@@ -3366,7 +3366,7 @@ export default function WorkingAdminDashboard() {
                 />
               </div>
               <div>
-                <label className="text-gray-400 text-sm block mb-2">Bonus Amount ($) *</label>
+                <label className="text-gray-400 text-sm block mb-2">Bonus Amount (USDT) *</label>
                 <Input
                   type="number"
                   value={newRedeemCode.bonusAmount}
@@ -3440,7 +3440,7 @@ export default function WorkingAdminDashboard() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Bonus Amount ($)
+                  Bonus Amount (USDT)
                 </label>
                 <input
                   type="number"

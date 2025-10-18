@@ -1361,10 +1361,10 @@ export default function ProfilePage() {
                     <h3 className="text-white font-medium mb-2">💡 Available Codes</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {[
-                        { code: 'FIRSTBONUS', amount: '$100', description: 'First time user bonus' },
-                        { code: 'LETSGO1000', amount: '$1000', description: 'High value bonus code' },
-                        { code: 'WELCOME50', amount: '$50', description: 'Welcome bonus for new users' },
-                        { code: 'BONUS500', amount: '$500', description: 'Limited time bonus' }
+                        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'First time user bonus' },
+                        { code: 'LETSGO1000', amount: '1000 USDT', description: 'High value bonus code' },
+                        { code: 'WELCOME50', amount: '50 USDT', description: 'Welcome bonus for new users' },
+                        { code: 'BONUS500', amount: '500 USDT', description: 'Limited time bonus' }
                       ].map((codeInfo) => (
                         <div
                           key={codeInfo.code}

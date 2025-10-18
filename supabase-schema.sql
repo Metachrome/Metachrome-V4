@@ -4,6 +4,21 @@
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Drop existing tables if they have incompatible schemas (only for fresh setup)
+-- This will delete all data in these tables - uncomment only if you're okay with that
+DROP TABLE IF EXISTS user_redeem_history CASCADE;
+DROP TABLE IF EXISTS redeem_codes CASCADE;
+DROP TABLE IF EXISTS user_referrals CASCADE;
+DROP TABLE IF EXISTS user_verification_documents CASCADE;
+
+-- Check if users table exists and drop it if needed for fresh setup
+-- WARNING: This will delete ALL user data! Only use for fresh setup
+DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS trades CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS trading_settings CASCADE;
+DROP TABLE IF EXISTS system_settings CASCADE;
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -253,22 +268,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_trades_updated_at BEFORE UPDATE ON trades
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_trading_settings_updated_at BEFORE UPDATE ON trading_settings
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_settings
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ===== NEW FEATURE TABLES =====
+-- Triggers will be created after all tables are defined
 
 -- User Verification Documents table
 CREATE TABLE IF NOT EXISTS user_verification_documents (
@@ -300,24 +300,27 @@ CREATE TABLE IF NOT EXISTS redeem_codes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code VARCHAR(50) UNIQUE NOT NULL,
     bonus_amount DECIMAL(15,2) NOT NULL,
+    description TEXT,
     max_uses INTEGER DEFAULT NULL,
     current_uses INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     expires_at TIMESTAMP WITH TIME ZONE
 );
 
 -- User Redeem History table
 CREATE TABLE IF NOT EXISTS user_redeem_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     redeem_code_id UUID REFERENCES redeem_codes(id),
     code VARCHAR(50) NOT NULL,
     bonus_amount DECIMAL(15,2) NOT NULL,
     trades_required INTEGER DEFAULT 10,
     trades_completed INTEGER DEFAULT 0,
     withdrawal_unlocked BOOLEAN DEFAULT false,
-    redeemed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    redeemed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, code)
 );
 
 -- ===== INDEXES FOR NEW TABLES =====
@@ -328,7 +331,10 @@ CREATE INDEX IF NOT EXISTS idx_verification_documents_status ON user_verificatio
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON user_referrals(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referred_id ON user_referrals(referred_id);
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_code ON redeem_codes(code);
+CREATE INDEX IF NOT EXISTS idx_redeem_codes_active ON redeem_codes(is_active);
 CREATE INDEX IF NOT EXISTS idx_redeem_history_user_id ON user_redeem_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_redeem_history_code ON user_redeem_history(code);
+CREATE INDEX IF NOT EXISTS idx_redeem_history_user_code ON user_redeem_history(user_id, code);
 
 -- ===== ROW LEVEL SECURITY POLICIES =====
 
@@ -399,8 +405,36 @@ CREATE POLICY "Admins can view all redeem history" ON user_redeem_history
         )
     );
 
--- ===== TRIGGERS FOR NEW TABLES =====
+-- ===== TRIGGERS FOR ALL TABLES =====
+-- Drop existing triggers if they exist (for re-running the script)
+DROP TRIGGER IF EXISTS update_users_updated_at ON users CASCADE;
+DROP TRIGGER IF EXISTS update_trades_updated_at ON trades CASCADE;
+DROP TRIGGER IF EXISTS update_transactions_updated_at ON transactions CASCADE;
+DROP TRIGGER IF EXISTS update_trading_settings_updated_at ON trading_settings CASCADE;
+DROP TRIGGER IF EXISTS update_system_settings_updated_at ON system_settings CASCADE;
+DROP TRIGGER IF EXISTS update_verification_documents_updated_at ON user_verification_documents CASCADE;
+DROP TRIGGER IF EXISTS update_redeem_codes_updated_at ON redeem_codes CASCADE;
+
+-- Create triggers for all tables with updated_at columns
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_trades_updated_at BEFORE UPDATE ON trades
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_trading_settings_updated_at BEFORE UPDATE ON trading_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_verification_documents_updated_at BEFORE UPDATE ON user_verification_documents
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_redeem_codes_updated_at BEFORE UPDATE ON redeem_codes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ===== DEFAULT DATA FOR NEW FEATURES =====
