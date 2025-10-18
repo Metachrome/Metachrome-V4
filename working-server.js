@@ -180,6 +180,13 @@ app.use((req, res, next) => {
   // res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // COMMENTED OUT - conflicts with frame-src CSP
   res.setHeader('X-XSS-Protection', '1; mode=block');
 
+  // Force no-cache for HTML to ensure latest client build is always loaded
+  if (req.path.endsWith('.html') || req.path === '/') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+
   next();
 });
 
