@@ -10373,6 +10373,27 @@ app.post('/api/user/redeem-code', async (req, res) => {
           return res.status(400).json({ error: 'Invalid or expired redeem code' });
         }
 
+        // CHECK FOR DUPLICATE REDEMPTION FIRST (one-time use)
+        console.log('🔍 Checking if user already used code:', upperCode);
+
+        // Try to check in Supabase first
+        let alreadyUsed = false;
+        try {
+          const { data: existingUse, error: useError } = await supabase
+            .from('user_redeem_history')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('code', upperCode)
+            .single();
+
+          if (existingUse) {
+            console.log('❌ User already used this code in Supabase:', upperCode);
+            return res.status(400).json({ error: 'You have already used this redeem code' });
+          }
+        } catch (e) {
+          console.log('⚠️ Could not check Supabase history, will check file storage');
+        }
+
         // SIMPLIFIED APPROACH: Update balance directly in Supabase (where user exists)
         console.log('🎁 Updating balance in Supabase for user:', user.id);
 
@@ -10398,10 +10419,6 @@ app.post('/api/user/redeem-code', async (req, res) => {
             return res.status(400).json({ error: 'User not found' });
           }
 
-          // For now, skip duplicate checking since we don't have redeem_history table
-          // This will be fixed when database tables are created
-          console.log('⚠️ Skipping duplicate check - database tables not available');
-
           // Calculate new balance
           currentBalance = parseFloat(userData.balance || '0');
           newBalance = currentBalance + mockBonus;
@@ -10426,6 +10443,21 @@ app.post('/api/user/redeem-code', async (req, res) => {
             throw updateError;
           }
 
+          // Try to record in history table
+          try {
+            await supabase
+              .from('user_redeem_history')
+              .insert({
+                user_id: user.id,
+                code: upperCode,
+                bonus_amount: mockBonus,
+                redeemed_at: new Date().toISOString()
+              });
+            console.log('✅ Redemption recorded in history');
+          } catch (historyError) {
+            console.log('⚠️ Could not record in history table:', historyError);
+          }
+
           balanceUpdated = true;
           console.log('✅ Balance updated in Supabase:', {
             userId: user.id,
@@ -10444,9 +10476,9 @@ app.post('/api/user/redeem-code', async (req, res) => {
           if (userIndex !== -1) {
             // Check user's redeem history (stored in user object)
             const userRedeemHistory = users[userIndex].redeem_history || [];
-            const alreadyUsed = userRedeemHistory.some(entry => entry.code === upperCode);
+            const alreadyUsedInFile = userRedeemHistory.some(entry => entry.code === upperCode);
 
-            if (alreadyUsed) {
+            if (alreadyUsedInFile) {
               console.log('❌ User already used this code in file storage:', upperCode);
               return res.status(400).json({ error: 'You have already used this redeem code' });
             }
