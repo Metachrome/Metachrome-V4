@@ -2450,6 +2450,30 @@ function OptionsPageContent({
 
           <Footer />
           <MobileBottomNav />
+
+          {/* Trade Notification - Mobile */}
+          <TradeNotification
+            key={notificationKey} // Force re-render with unique key
+            trade={completedTrade ? {
+              id: completedTrade.id,
+              direction: completedTrade.direction,
+              amount: completedTrade.amount,
+              entryPrice: completedTrade.entryPrice,
+              finalPrice: completedTrade.currentPrice || completedTrade.entryPrice,
+              status: completedTrade.status as 'won' | 'lost',
+              payout: completedTrade.payout || (completedTrade.status === 'won' ?
+                completedTrade.amount + (completedTrade.amount * (completedTrade.profitPercentage || 10) / 100) :
+                0),
+              profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15),
+              symbol: selectedSymbol.replace('USDT', '/USDT'), // Convert BTCUSDT to BTC/USDT format
+              duration: parseInt(selectedDuration.replace('s', '')) // Convert "30s" to 30
+            } : null}
+            onClose={() => {
+              console.log('🔔 NOTIFICATION: onClose called (mobile)');
+              setCompletedTrade(null);
+              localStorage.removeItem('completedTrade');
+            }}
+          />
         </div>
       );
     }
