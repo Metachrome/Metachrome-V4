@@ -98,7 +98,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 py-8">
+    <div className="bg-gray-900 flex items-center justify-center px-4 py-8 w-full" style={{ minHeight: '100vh' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
@@ -117,7 +117,7 @@ export default function AdminLogin() {
               Enter your admin credentials to continue
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-0">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -176,8 +176,6 @@ export default function AdminLogin() {
                 </Button>
               </form>
             </Form>
-
-
           </CardContent>
         </Card>
       </div>
