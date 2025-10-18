@@ -162,22 +162,22 @@ app.use(express.urlencoded({ extended: true }));
 
 // Security headers middleware to fix CSP issues
 app.use((req, res, next) => {
-  // Set Content Security Policy to allow unsafe-eval for development
+  // Set Content Security Policy to allow TradingView widgets
   res.setHeader('Content-Security-Policy',
-    "default-src 'self' https://www.metachrome.io https://metachrome.io; " +
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://accounts.google.com https://s3.tradingview.com https://charting-library.tradingview.com https://www.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com; " +
+    "default-src 'self' https://www.metachrome.io https://metachrome.io https://metachrome-v2-production.up.railway.app; " +
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://accounts.google.com https://s3.tradingview.com https://charting-library.tradingview.com https://www.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com https://data.tradingview.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://s3.tradingview.com https://www.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com https://charting-library.tradingview.com; " +
     "font-src 'self' https://fonts.gstatic.com https://s3.tradingview.com https://www.tradingview.com; " +
-    "img-src 'self' data: https:; " +
-    "connect-src 'self' https://api.binance.com https://accounts.google.com https://www.tradingview.com https://data.tradingview.com https://symbol-search.tradingview.com https://prodata.tradingview.com https://scanner.tradingview.com wss: ws:; " +
-    "frame-src 'self' https://accounts.google.com https://www.tradingview.com https://s3.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com; " +
+    "img-src 'self' data: https: blob:; " +
+    "connect-src 'self' https://api.binance.com https://accounts.google.com https://www.tradingview.com https://data.tradingview.com https://symbol-search.tradingview.com https://prodata.tradingview.com https://scanner.tradingview.com wss://data.tradingview.com wss://stream.binance.com wss: ws: https:; " +
+    "frame-src 'self' https://accounts.google.com https://www.tradingview.com https://s3.tradingview.com https://www.tradingview-widget.com https://s.tradingview.com https://charting-library.tradingview.com; " +
     "object-src 'none'; " +
     "base-uri 'self';"
   );
 
-  // Additional security headers
+  // Additional security headers - REMOVE X-Frame-Options to allow TradingView iframes
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  // res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // COMMENTED OUT - conflicts with frame-src CSP
   res.setHeader('X-XSS-Protection', '1; mode=block');
 
   next();

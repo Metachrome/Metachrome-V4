@@ -30,6 +30,7 @@ function TradingViewWidget({
   onSymbolChange
 }: TradingViewWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -207,6 +208,9 @@ function TradingViewWidget({
         console.log('📱 Mobile detection:', isMobile);
         console.log('🎨 Theme setting:', theme);
         console.log('🎨 Config theme:', config.theme);
+
+        // Hide loading state after widget loads
+        setTimeout(() => setIsLoading(false), 1000);
 
         // Force dark theme on the iframe after loading
         setTimeout(() => {
@@ -795,7 +799,8 @@ function TradingViewWidget({
         height: type === 'ticker' ? '50px' : (typeof height === 'number' ? `${height}px` : height),
         width: "100%",
         position: "relative",
-        backgroundColor: type === 'ticker' ? 'transparent' : '#10121E'
+        backgroundColor: type === 'ticker' ? 'transparent' : '#10121E',
+        overflow: 'hidden'  // Prevent any white content from showing
       }}
     >
       {/* Custom Symbol Selector - Only show for main chart, not ticker */}
