@@ -231,208 +231,208 @@ function TradingViewWidget({
         console.log('🎨 Theme setting:', theme);
         console.log('🎨 Config theme:', config.theme);
 
-        // Hide loading state after widget loads
-        setTimeout(() => setIsLoading(false), 1000);
+        // Hide loading state immediately after script loads
+        setIsLoading(false);
 
         // Force dark theme on the iframe after loading
         setTimeout(() => {
-          const iframe = document.querySelector(`#${container_id} iframe`);
-          if (iframe) {
-            console.log('🎨 Found iframe, attempting to set dark theme');
-            try {
-              // Try to access iframe document and set background
-              const iframeDoc = (iframe as any).contentDocument || (iframe as any).contentWindow?.document;
-              if (iframeDoc) {
-                const htmlElement = iframeDoc.documentElement;
-                if (htmlElement) {
-                  htmlElement.style.backgroundColor = '#10121E';
-                  htmlElement.style.color = '#FFFFFF';
-                  console.log('🎨 Set iframe background to dark');
-                }
+        const iframe = document.querySelector(`#${container_id} iframe`);
+        if (iframe) {
+          console.log('🎨 Found iframe, attempting to set dark theme');
+          try {
+            // Try to access iframe document and set background
+            const iframeDoc = (iframe as any).contentDocument || (iframe as any).contentWindow?.document;
+            if (iframeDoc) {
+              const htmlElement = iframeDoc.documentElement;
+              if (htmlElement) {
+                htmlElement.style.backgroundColor = '#10121E';
+                htmlElement.style.color = '#FFFFFF';
+                console.log('🎨 Set iframe background to dark');
               }
-            } catch (e) {
-              console.log('Could not access iframe document:', e);
             }
+          } catch (e) {
+            console.log('Could not access iframe document:', e);
           }
-        }, 1000);
+        }
+      }, 1000);
 
-        // Add CSS to hide volume bars after widget loads
+      // Add CSS to hide volume bars after widget loads
+      setTimeout(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+          /* Hide TradingView volume bars */
+          iframe[id*="tradingview"] {
+            /* This targets the TradingView iframe */
+          }
+
+          /* Hide volume-related elements */
+          [data-name="volume"],
+          [data-name="Volume"],
+          .chart-markup-table .pane:last-child,
+          .layout__area--bottom .pane,
+          .chart-container .pane[data-name*="volume"],
+          .chart-container .pane[data-name*="Volume"] {
+            display: none !important;
+            height: 0 !important;
+            visibility: hidden !important;
+          }
+
+          /* Hide volume histogram specifically */
+          .histogram-series,
+          .volume-series,
+          [class*="volume"],
+          [class*="Volume"] {
+            display: none !important;
+          }
+        `;
+        document.head.appendChild(style);
+        console.log('🎨 Applied CSS to hide volume bars');
+      }, 2000); // Wait 2 seconds for TradingView to fully load
+
+      // AGGRESSIVE volume removal - try multiple approaches
+      const removeVolumeAttempts = [1000, 2000, 3000, 5000, 7000]; // Multiple timing attempts
+
+      removeVolumeAttempts.forEach((delay, index) => {
         setTimeout(() => {
-          const style = document.createElement('style');
-          style.textContent = `
-            /* Hide TradingView volume bars */
-            iframe[id*="tradingview"] {
-              /* This targets the TradingView iframe */
-            }
+          try {
+            console.log(`🚫 Volume removal attempt ${index + 1} at ${delay}ms`);
 
-            /* Hide volume-related elements */
-            [data-name="volume"],
-            [data-name="Volume"],
-            .chart-markup-table .pane:last-child,
-            .layout__area--bottom .pane,
-            .chart-container .pane[data-name*="volume"],
-            .chart-container .pane[data-name*="Volume"] {
-              display: none !important;
-              height: 0 !important;
-              visibility: hidden !important;
-            }
+            // Method 1: Direct iframe access
+            const iframe = document.querySelector(`#${container_id} iframe`);
+            if (iframe && iframe.contentDocument) {
+              const iframeDoc = iframe.contentDocument;
 
-            /* Hide volume histogram specifically */
-            .histogram-series,
-            .volume-series,
-            [class*="volume"],
-            [class*="Volume"] {
-              display: none !important;
-            }
-          `;
-          document.head.appendChild(style);
-          console.log('🎨 Applied CSS to hide volume bars');
-        }, 2000); // Wait 2 seconds for TradingView to fully load
+              // Hide volume-related elements in the iframe
+              const volumeSelectors = [
+                '[data-name*="volume"]', '[data-name*="Volume"]',
+                '.histogram-series', '.volume-series',
+                '[class*="volume"]', '[class*="Volume"]',
+                '.pane:last-child', '.chart-markup-table .pane:last-child',
+                '[data-series-type="histogram"]', '[data-series-type="volume"]',
+                '.tv-lightweight-charts__volume', '.tv-lightweight-charts__histogram'
+              ];
 
-        // AGGRESSIVE volume removal - try multiple approaches
-        const removeVolumeAttempts = [1000, 2000, 3000, 5000, 7000]; // Multiple timing attempts
-
-        removeVolumeAttempts.forEach((delay, index) => {
-          setTimeout(() => {
-            try {
-              console.log(`🚫 Volume removal attempt ${index + 1} at ${delay}ms`);
-
-              // Method 1: Direct iframe access
-              const iframe = document.querySelector(`#${container_id} iframe`);
-              if (iframe && iframe.contentDocument) {
-                const iframeDoc = iframe.contentDocument;
-
-                // Hide volume-related elements in the iframe
-                const volumeSelectors = [
-                  '[data-name*="volume"]', '[data-name*="Volume"]',
-                  '.histogram-series', '.volume-series',
-                  '[class*="volume"]', '[class*="Volume"]',
-                  '.pane:last-child', '.chart-markup-table .pane:last-child',
-                  '[data-series-type="histogram"]', '[data-series-type="volume"]',
-                  '.tv-lightweight-charts__volume', '.tv-lightweight-charts__histogram'
-                ];
-
-                volumeSelectors.forEach(selector => {
-                  const elements = iframeDoc.querySelectorAll(selector);
-                  elements.forEach(el => {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                    el.style.height = '0';
-                    el.style.opacity = '0';
-                    el.remove(); // Actually remove the element
-                  });
+              volumeSelectors.forEach(selector => {
+                const elements = iframeDoc.querySelectorAll(selector);
+                elements.forEach(el => {
+                  el.style.display = 'none';
+                  el.style.visibility = 'hidden';
+                  el.style.height = '0';
+                  el.style.opacity = '0';
+                  el.remove(); // Actually remove the element
                 });
-
-                console.log('🚫 Applied iframe volume removal');
-              }
-
-              // Method 2: Global document selectors
-              const globalVolumeElements = document.querySelectorAll(`
-                #${container_id} [data-name*="volume"],
-                #${container_id} [data-name*="Volume"],
-                #${container_id} .histogram-series,
-                #${container_id} .volume-series,
-                #${container_id} [class*="volume"],
-                #${container_id} [class*="Volume"]
-              `);
-
-              globalVolumeElements.forEach(el => {
-                el.style.display = 'none';
-                el.style.visibility = 'hidden';
-                el.style.height = '0';
-                el.style.opacity = '0';
               });
 
-              if (globalVolumeElements.length > 0) {
-                console.log('🚫 Removed', globalVolumeElements.length, 'global volume elements');
-              }
-
-            } catch (error) {
-              console.log('Volume removal attempt failed:', error);
+              console.log('🚫 Applied iframe volume removal');
             }
-          }, delay);
-        });
 
-        // Additional widget setup after volume removal attempts
-        setTimeout(() => {
-          try {
-            // Check if TradingView widget is available globally
-            if (window.TradingView && window.TradingView.widget) {
-              console.log('🔍 TradingView widget API detected, setting up direct monitoring');
+            // Method 2: Global document selectors
+            const globalVolumeElements = document.querySelectorAll(`
+              #${container_id} [data-name*="volume"],
+              #${container_id} [data-name*="Volume"],
+              #${container_id} .histogram-series,
+              #${container_id} .volume-series,
+              #${container_id} [class*="volume"],
+              #${container_id} [class*="Volume"]
+            `);
 
-              // Try to get widget instance for symbol monitoring
-              const widgetInstance = window.TradingView.widget({
-                container_id: container_id,
-                onSymbolChanged: function(symbolInfo: any) {
-                  if (onSymbolChange && symbolInfo && symbolInfo.name) {
-                    console.log('🔄 Direct TradingView onSymbolChanged:', symbolInfo.name);
-                    const cleanSymbol = symbolInfo.name.replace('BINANCE:', '').replace('COINBASE:', '');
-                    onSymbolChange(cleanSymbol);
-                  }
-                }
-              });
+            globalVolumeElements.forEach(el => {
+              el.style.display = 'none';
+              el.style.visibility = 'hidden';
+              el.style.height = '0';
+              el.style.opacity = '0';
+            });
+
+            if (globalVolumeElements.length > 0) {
+              console.log('🚫 Removed', globalVolumeElements.length, 'global volume elements');
             }
+
           } catch (error) {
-            console.log('Direct TradingView API access failed, using fallback methods');
+            console.log('Volume removal attempt failed:', error);
           }
-        }, 3000); // Wait 3 seconds for full load
+        }, delay);
+      });
 
-        // Simplified and more aggressive symbol change monitoring
-        if (onSymbolChange) {
-          try {
-            let currentSymbol = symbol.replace('BINANCE:', '').replace('COINBASE:', '').replace('BITSTAMP:', '');
-            console.log('🔍 Setting up symbol monitoring for:', currentSymbol);
-            console.log('🔍 Initial symbol from props:', symbol);
+      // Additional widget setup after volume removal attempts
+      setTimeout(() => {
+        try {
+          // Check if TradingView widget is available globally
+          if (window.TradingView && window.TradingView.widget) {
+            console.log('🔍 TradingView widget API detected, setting up direct monitoring');
 
-            // Enhanced message listener for TradingView events
-            const handleMessage = (event: MessageEvent) => {
-              try {
-                // Listen to all TradingView origins
-                if (event.data && event.origin && (event.origin.includes('tradingview') || event.origin.includes('charting_library'))) {
-                  console.log('📨 TradingView message:', event.data);
+            // Try to get widget instance for symbol monitoring
+            const widgetInstance = window.TradingView.widget({
+              container_id: container_id,
+              onSymbolChanged: function(symbolInfo: any) {
+                if (onSymbolChange && symbolInfo && symbolInfo.name) {
+                  console.log('🔄 Direct TradingView onSymbolChanged:', symbolInfo.name);
+                  const cleanSymbol = symbolInfo.name.replace('BINANCE:', '').replace('COINBASE:', '');
+                  onSymbolChange(cleanSymbol);
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.log('Direct TradingView API access failed, using fallback methods');
+        }
+      }, 3000); // Wait 3 seconds for full load
 
-                  // Handle string messages
-                  if (typeof event.data === 'string') {
-                    // Look for symbol patterns in string messages
-                    const symbolMatches = event.data.match(/([A-Z]{3,6}USD[T]?)/g);
-                    if (symbolMatches && symbolMatches.length > 0) {
-                      const detectedSymbol = symbolMatches[0].replace('USD', 'USDT');
-                      if (detectedSymbol !== currentSymbol) {
-                        console.log('🔄 Symbol detected in string message:', detectedSymbol);
-                        currentSymbol = detectedSymbol;
-                        onSymbolChange(detectedSymbol);
-                      }
-                    }
-                  }
+      // Simplified and more aggressive symbol change monitoring
+      if (onSymbolChange) {
+        try {
+          let currentSymbol = symbol.replace('BINANCE:', '').replace('COINBASE:', '').replace('BITSTAMP:', '');
+          console.log('🔍 Setting up symbol monitoring for:', currentSymbol);
+          console.log('🔍 Initial symbol from props:', symbol);
 
-                  // Handle object messages
-                  if (event.data && typeof event.data === 'object') {
-                    const messageStr = JSON.stringify(event.data);
+          // Enhanced message listener for TradingView events
+          const handleMessage = (event: MessageEvent) => {
+            try {
+              // Listen to all TradingView origins
+              if (event.data && event.origin && (event.origin.includes('tradingview') || event.origin.includes('charting_library'))) {
+                console.log('📨 TradingView message:', event.data);
 
-                    // Look for USDT/USD symbols in any part of the message
-                    const symbolMatches = messageStr.match(/([A-Z]{2,10}USD[T]?)/g);
-                    if (symbolMatches && symbolMatches.length > 0) {
-                      const detectedSymbol = symbolMatches[0].replace('USD', 'USDT');
-                      if (detectedSymbol !== currentSymbol) {
-                        console.log('🔄 Symbol detected in object message:', detectedSymbol);
-                        currentSymbol = detectedSymbol;
-                        onSymbolChange(detectedSymbol);
-                      }
-                    }
-
-                    // Check for specific TradingView message types
-                    if (event.data.name === 'tv-widget-ready' || event.data.type === 'symbol_changed') {
-                      console.log('🎯 TradingView widget event detected:', event.data);
+                // Handle string messages
+                if (typeof event.data === 'string') {
+                  // Look for symbol patterns in string messages
+                  const symbolMatches = event.data.match(/([A-Z]{3,6}USD[T]?)/g);
+                  if (symbolMatches && symbolMatches.length > 0) {
+                    const detectedSymbol = symbolMatches[0].replace('USD', 'USDT');
+                    if (detectedSymbol !== currentSymbol) {
+                      console.log('🔄 Symbol detected in string message:', detectedSymbol);
+                      currentSymbol = detectedSymbol;
+                      onSymbolChange(detectedSymbol);
                     }
                   }
                 }
-              } catch (error) {
-                // Silent error handling
-              }
-            };
 
-            // Add message listener for all origins
-            window.addEventListener('message', handleMessage);
+                // Handle object messages
+                if (event.data && typeof event.data === 'object') {
+                  const messageStr = JSON.stringify(event.data);
+
+                  // Look for USDT/USD symbols in any part of the message
+                  const symbolMatches = messageStr.match(/([A-Z]{2,10}USD[T]?)/g);
+                  if (symbolMatches && symbolMatches.length > 0) {
+                    const detectedSymbol = symbolMatches[0].replace('USD', 'USDT');
+                    if (detectedSymbol !== currentSymbol) {
+                      console.log('🔄 Symbol detected in object message:', detectedSymbol);
+                      currentSymbol = detectedSymbol;
+                      onSymbolChange(detectedSymbol);
+                    }
+                  }
+
+                  // Check for specific TradingView message types
+                  if (event.data.name === 'tv-widget-ready' || event.data.type === 'symbol_changed') {
+                    console.log('🎯 TradingView widget event detected:', event.data);
+                  }
+                }
+              }
+            } catch (error) {
+              // Silent error handling
+            }
+          };
+
+          // Add message listener for all origins
+          window.addEventListener('message', handleMessage);
 
             // Aggressive URL and DOM monitoring
             const checkSymbolChange = () => {
@@ -782,14 +782,25 @@ function TradingViewWidget({
 
             // Check price every 5 seconds
             const priceInterval = setInterval(checkPrice, 5000);
-
-            // Cleanup interval on unmount
-            return () => clearInterval(priceInterval);
           } catch (error) {
             console.log('TradingView price monitoring setup error:', error);
           }
         }
+      }; // End of script.onload
+
+      script.onerror = () => {
+        console.error('❌ TradingView widget failed to load');
+        setIsLoading(false);
       };
+
+      // Ensure loading state is cleared after 5 seconds max
+      const loadingTimeout = setTimeout(() => {
+        console.warn('⏱️ TradingView widget loading timeout - clearing loading state');
+        setIsLoading(false);
+      }, 5000);
+
+      // Store timeout for cleanup
+      (script as any).loadingTimeout = loadingTimeout;
 
       try {
         containerRef.current.appendChild(script);
