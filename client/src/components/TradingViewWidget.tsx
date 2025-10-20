@@ -130,12 +130,12 @@ function TradingViewWidget({
         symbol: tradingViewSymbol,
         interval: interval,
         timezone: timezone,
-        theme: "dark",  // Force dark theme explicitly
-        colorTheme: "dark",  // Also set colorTheme for compatibility
-        backgroundColor: "#10121E",  // Explicit background color
+        theme: theme === "light" ? "light" : "dark",  // Use theme prop, default to dark
+        colorTheme: theme === "light" ? "light" : "dark",  // Also set colorTheme for compatibility
+        backgroundColor: theme === "light" ? "#FFFFFF" : "#10121E",  // Explicit background color
         style: "1",
         locale: locale,
-        toolbar_bg: "#10121E",  // Changed from #1a1a1a to match our dark color
+        toolbar_bg: theme === "light" ? "#FFFFFF" : "#10121E",  // Changed from #1a1a1a to match our dark color
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
@@ -170,16 +170,16 @@ function TradingViewWidget({
           "remove_library_container_border",
           "disable_resolution_rebuild"
         ],
-        loading_screen: { backgroundColor: "#10121E" },
+        loading_screen: { backgroundColor: theme === "light" ? "#FFFFFF" : "#10121E" },
         overrides: {
           "volumePaneSize": "xtiny",
-          "paneProperties.background": "#10121E",
+          "paneProperties.background": theme === "light" ? "#FFFFFF" : "#10121E",
           "paneProperties.backgroundType": "solid",
-          "paneProperties.vertGridProperties.color": "#1F2937",
-          "paneProperties.horzGridProperties.color": "#1F2937",
+          "paneProperties.vertGridProperties.color": theme === "light" ? "#E5E7EB" : "#1F2937",
+          "paneProperties.horzGridProperties.color": theme === "light" ? "#E5E7EB" : "#1F2937",
           "symbolWatermarkProperties.transparency": 90,
-          "scalesProperties.textColor": "#D1D5DB",
-          "scalesProperties.backgroundColor": "#10121E",
+          "scalesProperties.textColor": theme === "light" ? "#374151" : "#D1D5DB",
+          "scalesProperties.backgroundColor": theme === "light" ? "#FFFFFF" : "#10121E",
           "mainSeriesProperties.candleStyle.upColor": "#10B981",
           "mainSeriesProperties.candleStyle.downColor": "#EF4444",
           "mainSeriesProperties.candleStyle.borderUpColor": "#10B981",
@@ -236,25 +236,25 @@ function TradingViewWidget({
 
         // Force dark theme on the iframe after loading
         setTimeout(() => {
-        const iframe = document.querySelector(`#${container_id} iframe`);
-        if (iframe) {
-          console.log('🎨 Found iframe, attempting to set dark theme');
-          try {
-            // Try to access iframe document and set background
-            const iframeDoc = (iframe as any).contentDocument || (iframe as any).contentWindow?.document;
-            if (iframeDoc) {
-              const htmlElement = iframeDoc.documentElement;
-              if (htmlElement) {
-                htmlElement.style.backgroundColor = '#10121E';
-                htmlElement.style.color = '#FFFFFF';
-                console.log('🎨 Set iframe background to dark');
+          const iframe = document.querySelector(`#${container_id} iframe`);
+          if (iframe) {
+            console.log('🎨 Found iframe, attempting to set dark theme');
+            try {
+              // Try to access iframe document and set background
+              const iframeDoc = (iframe as any).contentDocument || (iframe as any).contentWindow?.document;
+              if (iframeDoc) {
+                const htmlElement = iframeDoc.documentElement;
+                if (htmlElement) {
+                  htmlElement.style.backgroundColor = theme === "light" ? '#FFFFFF' : '#10121E';
+                  htmlElement.style.color = theme === "light" ? '#000000' : '#FFFFFF';
+                  console.log('🎨 Set iframe background to', theme);
+                }
               }
+            } catch (e) {
+              console.log('Could not access iframe document:', e);
             }
-          } catch (e) {
-            console.log('Could not access iframe document:', e);
           }
-        }
-      }, 1000);
+        }, 1000);
 
       // Add CSS to hide volume bars after widget loads
       setTimeout(() => {
