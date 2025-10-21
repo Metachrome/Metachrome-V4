@@ -6149,6 +6149,21 @@ app.post('/api/trades', async (req, res) => {
         console.log(`📤 User ID: ${finalUserId}`);
         console.log(`📤 Amount: ${tradeAmount}`);
         console.log(`📤 Won: ${finalOutcome}`);
+        console.log(`📤 Duration: ${duration}`);
+
+        // Calculate payout based on duration-specific profit percentage
+        let profitPercentage = 0.10; // Default 10% for 30s
+        if (duration === 30) profitPercentage = 0.10;
+        else if (duration === 60) profitPercentage = 0.15;
+        else if (duration === 90) profitPercentage = 0.20;
+        else if (duration === 120) profitPercentage = 0.25;
+        else if (duration === 180) profitPercentage = 0.30;
+        else if (duration === 240) profitPercentage = 0.75;
+        else if (duration === 300) profitPercentage = 1.00;
+
+        const payout = finalOutcome ? (tradeAmount * (1 + profitPercentage)).toString() : '0';
+        console.log(`📤 Profit Percentage: ${(profitPercentage * 100).toFixed(0)}%`);
+        console.log(`📤 Payout: ${payout}`);
 
         await fetch(`http://localhost:${PORT}/api/trades/complete`, {
           method: 'POST',
@@ -6158,7 +6173,7 @@ app.post('/api/trades', async (req, res) => {
             userId: finalUserId,
             won: finalOutcome,
             amount: tradeAmount.toString(),
-            payout: finalOutcome ? (tradeAmount * 1.8).toString() : '0'
+            payout: payout
           })
         });
       } catch (error) {
