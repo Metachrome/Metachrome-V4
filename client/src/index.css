@@ -738,6 +738,8 @@ iframe[src*="tradingview"] {
   #options_mobile_tradingview_chart iframe,
   #spot_mobile_tradingview_chart iframe {
     background-color: #10121E !important;
+    /* Use CSS filter to invert light theme to dark */
+    filter: invert(1) hue-rotate(180deg) brightness(0.95) !important;
   }
 }
 
@@ -748,6 +750,8 @@ iframe[src*="tradingview"] {
   #options_tradingview_chart iframe,
   #spot_tradingview_chart iframe {
     background-color: #10121E !important;
+    /* Use CSS filter to invert light theme to dark */
+    filter: invert(1) hue-rotate(180deg) brightness(0.95) !important;
   }
 
   /* Add dark overlay if iframe loads light */
