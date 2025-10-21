@@ -1964,14 +1964,14 @@ function SpotPageContent() {
         </div>
 
         {/* Table Header */}
-        <div className="grid grid-cols-7 gap-4 px-4 py-3 text-gray-400 text-xs font-medium border-b border-gray-700">
-          <div>Trading pair</div>
-          <div>Type</div>
-          <div>Price</div>
-          <div>Amount</div>
-          <div>Total</div>
-          <div>Status</div>
-          <div>Time</div>
+        <div className="grid grid-cols-7 gap-2 px-4 py-3 text-gray-400 text-xs font-medium border-b border-gray-700">
+          <div className="truncate">Trading pair</div>
+          <div className="truncate text-center">Type</div>
+          <div className="truncate text-center">Price</div>
+          <div className="truncate text-center">Amount</div>
+          <div className="truncate text-center">Total</div>
+          <div className="truncate text-center">Status</div>
+          <div className="truncate text-center">Time</div>
         </div>
 
         {/* Orders Content */}
@@ -1981,16 +1981,16 @@ function SpotPageContent() {
             openOrders.length > 0 ? (
               <div className="space-y-2">
                 {openOrders.map((order) => (
-                  <div key={order.id} className="grid grid-cols-7 gap-4 px-4 py-3 text-sm hover:bg-gray-800/50">
-                    <div className="text-white">{order.symbol}</div>
-                    <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                  <div key={order.id} className="grid grid-cols-7 gap-2 px-4 py-3 text-sm hover:bg-gray-800/50 max-w-full overflow-hidden">
+                    <div className="text-white truncate">{order.symbol}</div>
+                    <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'} truncate text-center`}>
                       {order.type.toUpperCase()} / {order.orderType.toUpperCase()}
                     </div>
-                    <div className="text-white">{order.price}</div>
-                    <div className="text-white">{order.amount}</div>
-                    <div className="text-white">{order.total}</div>
-                    <div className="text-yellow-400">Pending</div>
-                    <div className="text-gray-400">{order.time}</div>
+                    <div className="text-white truncate text-center">{order.price}</div>
+                    <div className="text-white truncate text-center">{order.amount}</div>
+                    <div className="text-white truncate text-center">{order.total}</div>
+                    <div className="text-yellow-400 truncate text-center">Pending</div>
+                    <div className="text-gray-400 truncate text-center">{order.time}</div>
                   </div>
                 ))}
               </div>
@@ -2010,16 +2010,16 @@ function SpotPageContent() {
             orderHistory.length > 0 ? (
               <div className="space-y-2">
                 {orderHistory.map((order) => (
-                  <div key={order.id} className="grid grid-cols-7 gap-4 px-4 py-3 text-sm hover:bg-gray-800/50">
-                    <div className="text-white">{order.symbol}</div>
-                    <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
+                  <div key={order.id} className="grid grid-cols-7 gap-2 px-4 py-3 text-sm hover:bg-gray-800/50 max-w-full overflow-hidden">
+                    <div className="text-white truncate">{order.symbol}</div>
+                    <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'} truncate text-center`}>
                       {order.type.toUpperCase()} / {order.orderType.toUpperCase()}
                     </div>
-                    <div className="text-white">${order.price}</div>
-                    <div className="text-white">{order.amount}</div>
-                    <div className="text-white">${order.total}</div>
-                    <div className="text-green-400">Filled</div>
-                    <div className="text-gray-400">{order.time}</div>
+                    <div className="text-white truncate text-center">${order.price}</div>
+                    <div className="text-white truncate text-center">{order.amount}</div>
+                    <div className="text-white truncate text-center">${order.total}</div>
+                    <div className="text-green-400 truncate text-center">Filled</div>
+                    <div className="text-gray-400 truncate text-center">{order.time}</div>
                   </div>
                 ))}
               </div>

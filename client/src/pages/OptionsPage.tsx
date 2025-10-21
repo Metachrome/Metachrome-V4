@@ -3485,15 +3485,15 @@ function OptionsPageContent({
 
         {/* Trade Table Headers */}
         <div className="px-4 py-2 border-b border-gray-700">
-          <div className="grid grid-cols-8 gap-4 text-xs text-gray-400">
-            <span>Market/Direction</span>
-            <span>Entry Price</span>
-            <span>Current Price</span>
-            <span>Amount</span>
-            <span>Profit/Loss %</span>
-            <span>P&L (USDT)</span>
-            <span>Date & Time</span>
-            <span>Status</span>
+          <div className="grid grid-cols-8 gap-2 text-xs text-gray-400">
+            <span className="truncate">Market/Direction</span>
+            <span className="truncate text-center">Entry Price</span>
+            <span className="truncate text-center">Current Price</span>
+            <span className="truncate text-center">Amount</span>
+            <span className="truncate text-center">Profit/Loss %</span>
+            <span className="truncate text-center">P&L (USDT)</span>
+            <span className="truncate text-center">Date & Time</span>
+            <span className="truncate text-center">Status</span>
           </div>
         </div>
 
@@ -3520,7 +3520,7 @@ function OptionsPageContent({
                   const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -trade.amount;
 
                   return (
-                    <div key={trade.id} className="grid grid-cols-8 gap-1 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
+                    <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
                       <div className="flex flex-col min-w-0">
                         <span className="text-gray-400 text-xs truncate">{selectedSymbol.replace('USDT', '/USDT')}</span>
                         <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
@@ -3589,7 +3589,7 @@ function OptionsPageContent({
                       });
 
                       return (
-                        <div key={trade.id} className="grid grid-cols-8 gap-1 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
+                        <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
                           <div className="flex flex-col min-w-0">
                             <span className="text-gray-400 text-xs truncate">{marketPair}</span>
                             <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
@@ -3603,7 +3603,7 @@ function OptionsPageContent({
                           <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)}
                           </span>
-                          <span className="text-gray-400 text-xs truncate text-center">{new Date(trade.endTime).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</span>
+                          <span className="text-gray-400 text-xs truncate text-center">{new Date(trade.endTime).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                           <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? 'WIN' : 'LOSE'}
                           </span>
