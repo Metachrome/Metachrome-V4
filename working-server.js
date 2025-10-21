@@ -6522,8 +6522,34 @@ app.post('/api/trades/complete', async (req, res) => {
       }
     }
 
-    // Generate current price for exit price
-    const currentPrice = 65000 + (Math.random() - 0.5) * 2000; // Mock exit price
+    // FETCH TRADE DATA FIRST to get accurate exit price
+    let existingTrade = null;
+    let currentPrice = 65000; // Default fallback
+
+    try {
+      if (supabase) {
+        const { data: fetchedTrade, error: fetchError } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('id', tradeId)
+          .single();
+
+        if (!fetchError && fetchedTrade) {
+          existingTrade = fetchedTrade;
+          console.log('✅ Trade data fetched from database:', { id: existingTrade.id, symbol: existingTrade.symbol, entry_price: existingTrade.entry_price });
+        } else {
+          console.log('⚠️ Could not fetch trade from database:', fetchError?.message);
+        }
+      } else {
+        const trades = await getTrades();
+        existingTrade = trades.find(t => t.id === tradeId);
+        if (existingTrade) {
+          console.log('✅ Trade data fetched from local storage:', { id: existingTrade.id, symbol: existingTrade.symbol, entry_price: existingTrade.entry_price });
+        }
+      }
+    } catch (fetchError) {
+      console.log('⚠️ Error fetching trade data:', fetchError);
+    }
 
     // Normalize won to boolean in case it's a string
     const originalWon = typeof won === 'string' ? (won.toLowerCase() === 'true') : !!won;
@@ -6751,13 +6777,17 @@ app.post('/api/trades/complete', async (req, res) => {
           console.log('✅ Trade found in database:', existingTrade.id);
         }
 
+        // Generate realistic exit price based on trade data
+        const exitPrice = generateRealisticExitPrice(existingTrade || { entry_price: currentPrice, direction: 'up' }, finalOutcome, tradeId);
+        currentPrice = exitPrice; // Update currentPrice to use the realistic exit price
+
         // Update trade in database (only fields that exist in schema)
         const { data: updatedTrade, error: tradeUpdateError } = await supabase
           .from('trades')
           .update({
             result: finalOutcome ? 'win' : 'lose',
             status: 'completed', // CRITICAL: Set status to completed for trade history
-            exit_price: generateRealisticExitPrice(existingTrade || { entry_price: currentPrice, direction: 'up' }, finalOutcome, tradeId), // Generate realistic exit price
+            exit_price: exitPrice, // Use the realistic exit price
             profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           })
