@@ -94,22 +94,35 @@ function TradingViewWidget({
       // Check if mobile for specific mobile chart settings
       const isMobile = window.innerWidth <= 768;
 
-      // FORCE CLEAR any TradingView theme preferences from localStorage
+      // FORCE CLEAR any TradingView theme preferences from localStorage and sessionStorage
       try {
-        // Clear any TradingView localStorage items that might store theme
-        const keysToRemove = [];
+        // Clear localStorage
+        const localKeysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key && (key.includes('tradingview') || key.includes('tv.') || key.includes('chart'))) {
-            keysToRemove.push(key);
+          if (key && (key.includes('tradingview') || key.includes('tv.') || key.includes('chart') || key.includes('theme'))) {
+            localKeysToRemove.push(key);
           }
         }
-        keysToRemove.forEach(key => {
+        localKeysToRemove.forEach(key => {
           console.log('🗑️ Clearing TradingView localStorage:', key);
           localStorage.removeItem(key);
         });
+
+        // Clear sessionStorage
+        const sessionKeysToRemove = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && (key.includes('tradingview') || key.includes('tv.') || key.includes('chart') || key.includes('theme'))) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+        sessionKeysToRemove.forEach(key => {
+          console.log('🗑️ Clearing TradingView sessionStorage:', key);
+          sessionStorage.removeItem(key);
+        });
       } catch (e) {
-        console.warn('Could not clear localStorage:', e);
+        console.warn('Could not clear storage:', e);
       }
 
       // Working configuration for TradingView widget
@@ -197,9 +210,13 @@ function TradingViewWidget({
         },
         // FORCE DARK THEME - override any user preferences
         settings_overrides: {
-          "theme": "dark"
+          "theme": "dark",
+          "mainSeriesProperties.candleStyle.upColor": "#10B981",
+          "mainSeriesProperties.candleStyle.downColor": "#EF4444",
+          "paneProperties.background": "#10121E",
+          "paneProperties.backgroundType": "solid"
         },
-        // Force a chart layout without volume pane
+        // Force a chart layout without volume pane with explicit dark theme
         saved_data: JSON.stringify({
           "version": 1,
           "charts": [{
@@ -218,7 +235,8 @@ function TradingViewWidget({
               }]
             }]
           }],
-          "studies": []
+          "studies": [],
+          "theme": "dark"
         })
       };
 
@@ -234,27 +252,38 @@ function TradingViewWidget({
         // Hide loading state immediately after script loads
         setIsLoading(false);
 
-        // Force dark theme on the iframe after loading
-        setTimeout(() => {
-          const iframe = document.querySelector(`#${container_id} iframe`);
-          if (iframe) {
-            console.log('🎨 Found iframe, attempting to set dark theme');
-            try {
-              // Try to access iframe document and set background
-              const iframeDoc = (iframe as any).contentDocument || (iframe as any).contentWindow?.document;
-              if (iframeDoc) {
-                const htmlElement = iframeDoc.documentElement;
-                if (htmlElement) {
-                  htmlElement.style.backgroundColor = theme === "light" ? '#FFFFFF' : '#10121E';
-                  htmlElement.style.color = theme === "light" ? '#000000' : '#FFFFFF';
-                  console.log('🎨 Set iframe background to', theme);
+        // Force dark theme on the iframe after loading - multiple attempts
+        const forceThemeAttempts = [500, 1000, 1500, 2000, 3000];
+        forceThemeAttempts.forEach((delay) => {
+          setTimeout(() => {
+            const iframe = document.querySelector(`#${container_id} iframe`);
+            if (iframe) {
+              console.log('🎨 Forcing dark theme on iframe (attempt at', delay, 'ms)');
+              try {
+                // Try to access iframe document and set background
+                const iframeDoc = (iframe as any).contentDocument || (iframe as any).contentWindow?.document;
+                if (iframeDoc) {
+                  const htmlElement = iframeDoc.documentElement;
+                  if (htmlElement) {
+                    htmlElement.style.backgroundColor = '#10121E !important';
+                    htmlElement.style.color = '#FFFFFF !important';
+
+                    // Also set body styles
+                    const bodyElement = iframeDoc.body;
+                    if (bodyElement) {
+                      bodyElement.style.backgroundColor = '#10121E !important';
+                      bodyElement.style.color = '#FFFFFF !important';
+                    }
+
+                    console.log('🎨 Successfully set iframe dark theme');
+                  }
                 }
+              } catch (e) {
+                console.log('Could not access iframe document:', e);
               }
-            } catch (e) {
-              console.log('Could not access iframe document:', e);
             }
-          }
-        }, 1000);
+          }, delay);
+        });
 
       // Add CSS to hide volume bars after widget loads
       setTimeout(() => {
