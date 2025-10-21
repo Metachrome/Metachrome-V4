@@ -6911,9 +6911,11 @@ app.post('/api/trades/complete', async (req, res) => {
             .eq('id', tradeId)
             .single();
           tradeData = fetchedTrade;
+          console.log('✅ Trade data fetched from database:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
         } else {
           const trades = await getTrades();
           tradeData = trades.find(t => t.id === tradeId);
+          console.log('✅ Trade data fetched from local storage:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
         }
       } catch (e) {
         console.error('⚠️ Failed to fetch trade data for notification:', e);
@@ -6939,6 +6941,11 @@ app.post('/api/trades/complete', async (req, res) => {
         }
       };
 
+      console.log('📡 TRADE COMPLETION MESSAGE DETAILS:');
+      console.log('📡 Amount in message:', tradeCompletionMessage.data.amount);
+      console.log('📡 Symbol in message:', tradeCompletionMessage.data.symbol);
+      console.log('📡 Direction in message:', tradeCompletionMessage.data.direction);
+      console.log('📡 Full message:', JSON.stringify(tradeCompletionMessage, null, 2));
       console.log('📡 Broadcasting trade completion via WebSocket:', tradeCompletionMessage);
 
       broadcastCount = 0;
