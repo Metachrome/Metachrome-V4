@@ -6944,6 +6944,12 @@ app.post('/api/trades/complete', async (req, res) => {
         console.error('⚠️ Failed to fetch trade data for notification:', e);
       }
 
+      // DEBUG: Log what we're using for the notification
+      console.log('📡 DEBUG NOTIFICATION DATA:');
+      console.log('📡 tradeData?.amount:', tradeData?.amount, 'type:', typeof tradeData?.amount);
+      console.log('📡 tradeAmount (from endpoint):', tradeAmount, 'type:', typeof tradeAmount);
+      console.log('📡 profitAmount:', profitAmount);
+
       const tradeCompletionMessage = {
         type: 'trade_completed',
         data: {
@@ -6956,7 +6962,7 @@ app.post('/api/trades/complete', async (req, res) => {
           // Include complete trade data for notification
           symbol: tradeData?.symbol || 'BTC/USDT',
           direction: tradeData?.direction || 'up',
-          amount: tradeData?.amount || tradeAmount || 100,  // Use tradeAmount parameter as fallback
+          amount: tradeData?.amount !== undefined ? tradeData.amount : tradeAmount,  // Prefer database value, fallback to endpoint parameter
           entryPrice: tradeData?.entry_price || currentPrice || 0,
           duration: tradeData?.duration || 30,
           profitPercentage: tradeData?.profit_percentage || (tradeData?.duration === 30 ? 10 : 15),
