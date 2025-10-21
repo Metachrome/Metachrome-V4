@@ -6835,6 +6835,24 @@ app.post('/api/trades/complete', async (req, res) => {
       console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
 
       // Also broadcast trade completion notification
+      // Fetch the trade data to include complete information in notification
+      let tradeData = null;
+      try {
+        if (supabase) {
+          const { data: fetchedTrade } = await supabase
+            .from('trades')
+            .select('*')
+            .eq('id', tradeId)
+            .single();
+          tradeData = fetchedTrade;
+        } else {
+          const trades = await getTrades();
+          tradeData = trades.find(t => t.id === tradeId);
+        }
+      } catch (e) {
+        console.error('⚠️ Failed to fetch trade data for notification:', e);
+      }
+
       const tradeCompletionMessage = {
         type: 'trade_completed',
         data: {
@@ -6844,6 +6862,13 @@ app.post('/api/trades/complete', async (req, res) => {
           exitPrice: currentPrice || 0,
           profitAmount: profitAmount,
           newBalance: users[userIndex].balance,
+          // Include complete trade data for notification
+          symbol: tradeData?.symbol || 'BTC/USDT',
+          direction: tradeData?.direction || 'up',
+          amount: tradeData?.amount || 100,
+          entryPrice: tradeData?.entry_price || currentPrice || 0,
+          duration: tradeData?.duration || 30,
+          profitPercentage: tradeData?.profit_percentage || (tradeData?.duration === 30 ? 10 : 15),
           timestamp: new Date().toISOString()
         }
       };

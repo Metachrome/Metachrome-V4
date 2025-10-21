@@ -1160,7 +1160,7 @@ function OptionsPageContent({
 
       console.log('🎯 WEBSOCKET: Trade completion notification received:', lastMessage.data);
 
-      const { tradeId, result, exitPrice, profitAmount, newBalance } = lastMessage.data;
+      const { tradeId, result, exitPrice, profitAmount, newBalance, symbol, direction, amount, entryPrice, duration, profitPercentage } = lastMessage.data;
 
       // Find the active trade that just completed
       const completedActiveTrade = activeTrades.find(trade => trade.id === tradeId);
@@ -1169,13 +1169,13 @@ function OptionsPageContent({
 
       if (completedActiveTrade) {
         const won = result === 'win';
-        const profitPercentage = completedActiveTrade.profitPercentage || (completedActiveTrade.duration === 30 ? 10 : 15);
+        const profitPercentageValue = completedActiveTrade.profitPercentage || (completedActiveTrade.duration === 30 ? 10 : 15);
 
         const completedTrade: ActiveTrade = {
           ...completedActiveTrade,
           status: won ? 'won' : 'lost',
           currentPrice: exitPrice,
-          payout: won ? completedActiveTrade.amount * (1 + profitPercentage / 100) : 0,
+          payout: won ? completedActiveTrade.amount * (1 + profitPercentageValue / 100) : 0,
           profit: profitAmount
         };
 
@@ -1185,25 +1185,29 @@ function OptionsPageContent({
         console.log('🔔 WEBSOCKET: About to trigger notification');
         triggerNotification(completedTrade);
       } else {
-        // FALLBACK: Create notification even if active trade not found
-        console.log('⚠️ WEBSOCKET: Active trade not found, creating fallback notification');
+        // FALLBACK: Use data from WebSocket message if available, otherwise use defaults
+        console.log('⚠️ WEBSOCKET: Active trade not found, using WebSocket data for notification');
 
         const won = result === 'win';
+        const profitPercentageValue = profitPercentage || (duration === 30 ? 10 : 15);
+
         const fallbackTrade: ActiveTrade = {
           id: tradeId,
-          symbol: 'BTC/USDT', // Default symbol
-          direction: 'up', // Default direction
-          amount: Math.abs(profitAmount) / (won ? 0.1 : 1), // Estimate amount from profit
-          entryPrice: exitPrice * (won ? 0.99 : 1.01), // Estimate entry price
+          symbol: symbol || 'BTC/USDT', // Use symbol from WebSocket
+          direction: (direction || 'up') as 'up' | 'down', // Use direction from WebSocket
+          amount: amount || Math.abs(profitAmount) / (won ? profitPercentageValue / 100 : 1), // Use amount from WebSocket
+          entryPrice: entryPrice || (exitPrice * (won ? 0.99 : 1.01)), // Use entryPrice from WebSocket
           currentPrice: exitPrice,
           status: won ? 'won' : 'lost',
-          duration: 30, // Default duration
-          profitPercentage: won ? 10 : 0,
-          payout: won ? Math.abs(profitAmount) : 0,
-          profit: profitAmount
+          duration: duration || 30, // Use duration from WebSocket
+          profitPercentage: profitPercentageValue,
+          payout: won ? (amount || 100) * (1 + profitPercentageValue / 100) : 0,
+          profit: profitAmount,
+          startTime: Date.now() - ((duration || 30) * 1000),
+          endTime: Date.now()
         };
 
-        console.log('🔔 WEBSOCKET: Triggering fallback notification:', fallbackTrade);
+        console.log('🔔 WEBSOCKET: Triggering fallback notification with WebSocket data:', fallbackTrade);
         triggerNotification(fallbackTrade);
 
         // Remove from active trades
