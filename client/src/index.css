@@ -780,3 +780,8 @@ iframe[src*="tradingview"] {
   width: 0 !important;
   height: 0 !important;
 }
+
+/* Force rebuild trigger - dark theme enforcement */
+html {
+  background-color: #10121E !important;
+}
