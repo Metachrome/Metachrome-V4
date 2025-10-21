@@ -750,6 +750,23 @@ iframe[src*="tradingview"] {
   #spot_tradingview_chart iframe {
     background-color: #10121E !important;
   }
+
+  /* Add dark overlay if iframe loads light */
+  .tradingview-widget-container {
+    position: relative;
+  }
+
+  .tradingview-widget-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #10121E;
+    pointer-events: none;
+    z-index: -1;
+  }
 }
 
 /* Ensure volume elements are completely removed from layout */
