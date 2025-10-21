@@ -905,7 +905,7 @@ function SpotPageContent() {
           </div>
         </div>
 
-        {/* Mobile Chart - Full Vertical Layout - Using TradingView like options page */}
+        {/* Mobile Chart - Full Vertical Layout - Using TradingView like desktop */}
         <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '450px' }}>
           {/* Symbol Selector Overlay - Fixed background issue */}
           <div className="absolute top-2 right-2 z-10">
@@ -929,11 +929,14 @@ function SpotPageContent() {
 
           <div className="w-full h-full">
             <ErrorBoundary>
-              <LightweightChart
-                symbol={selectedSymbol}
-                interval="1m"
+              <TradingViewWidget
+                type="chart"
+                symbol={`BINANCE:${selectedSymbol}`}
                 height={450}
-                containerId="spot_mobile_chart"
+                interval="1"
+                theme="dark"
+                container_id="spot_mobile_tradingview_chart"
+                onSymbolChange={handleTradingViewSymbolChange}
               />
             </ErrorBoundary>
           </div>

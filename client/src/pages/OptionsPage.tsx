@@ -1876,19 +1876,41 @@ function OptionsPageContent({
             </div>
           </div>
 
-          {/* Mobile Chart - Optimized spacing and proportions */}
+          {/* Mobile Chart - Optimized spacing and proportions - Using TradingView like desktop */}
           <div className="bg-[#10121E] relative w-full mobile-chart-container" style={{ height: '380px' }}>
             <TradeOverlay
               trades={activeTrades}
               currentPrice={displayPrice}
             />
+            {/* Symbol Selector Overlay - Fixed background issue */}
+            <div className="absolute top-2 right-2 z-10">
+              <select
+                value={selectedSymbol}
+                onChange={(e) => {
+                  const newSymbol = e.target.value;
+                  setSelectedSymbol(newSymbol);
+                  handleTradingViewSymbolChange(newSymbol);
+                }}
+                className="bg-gray-800/90 text-white text-xs font-medium rounded px-2 py-1 border border-gray-600/50 focus:border-blue-500 focus:outline-none min-w-[90px] max-w-[120px] backdrop-blur-sm"
+                style={{ backgroundColor: 'rgba(31, 41, 55, 0.9)' }}
+              >
+                {tradingPairs.map((pair) => (
+                  <option key={pair.rawSymbol} value={pair.rawSymbol} className="bg-gray-800 text-white">
+                    {pair.coin}/USDT
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="w-full h-full">
               <ErrorBoundary>
-                <LightweightChart
-                  symbol={selectedSymbol}
-                  interval="1m"
+                <TradingViewWidget
+                  type="chart"
+                  symbol={`BINANCE:${selectedSymbol}`}
                   height={380}
-                  containerId="options_mobile_chart"
+                  interval="1"
+                  theme="dark"
+                  container_id="options_mobile_tradingview_chart"
+                  onSymbolChange={handleTradingViewSymbolChange}
                 />
               </ErrorBoundary>
             </div>
