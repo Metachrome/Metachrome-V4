@@ -6630,7 +6630,15 @@ app.post('/api/trades/complete', async (req, res) => {
     if (finalOutcome) {
       // Win: add back the trade amount + profit (since balance was already deducted)
       // For wins, we need to return the original amount + profit
-      profitAmount = payout ? (parseFloat(payout) - tradeAmount) : (tradeAmount * 0.8); // Extract profit only
+      if (payout) {
+        profitAmount = parseFloat(payout) - tradeAmount; // Extract profit only
+      } else {
+        // If payout not provided, calculate based on trade duration
+        const duration = existingTrade?.duration || 30; // Default to 30s
+        const profitRate = duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for others
+        profitAmount = tradeAmount * profitRate;
+        console.log(`📊 Calculated profit from duration: ${duration}s → ${(profitRate * 100).toFixed(0)}% → ${profitAmount} USDT`);
+      }
       balanceChange = tradeAmount + profitAmount; // Return original amount + profit
     } else {
       // Lose: balance was already deducted when trade started, so no change needed
