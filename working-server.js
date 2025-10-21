@@ -6948,7 +6948,7 @@ app.post('/api/trades/complete', async (req, res) => {
           // Include complete trade data for notification
           symbol: tradeData?.symbol || 'BTC/USDT',
           direction: tradeData?.direction || 'up',
-          amount: tradeData?.amount || 100,
+          amount: tradeData?.amount || tradeAmount || 100,  // Use tradeAmount parameter as fallback
           entryPrice: tradeData?.entry_price || currentPrice || 0,
           duration: tradeData?.duration || 30,
           profitPercentage: tradeData?.profit_percentage || (tradeData?.duration === 30 ? 10 : 15),
