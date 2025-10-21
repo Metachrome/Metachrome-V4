@@ -6053,7 +6053,20 @@ app.post('/api/trades', async (req, res) => {
 
     // Create trade record
     const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const currentPrice = 65000 + (Math.random() - 0.5) * 2000; // Mock price
+
+    // FETCH REAL PRICE FROM BINANCE API
+    let currentPrice = 65000; // Fallback default
+    try {
+      const priceData = await getCurrentPrice(symbol);
+      if (priceData && priceData.price) {
+        currentPrice = parseFloat(priceData.price);
+        console.log(`✅ Real price fetched for ${symbol}: ${currentPrice}`);
+      } else {
+        console.log(`⚠️ Could not fetch real price for ${symbol}, using fallback: ${currentPrice}`);
+      }
+    } catch (priceError) {
+      console.log(`⚠️ Error fetching price for ${symbol}:`, priceError.message);
+    }
 
     const trade = {
       id: tradeId,
@@ -6073,6 +6086,10 @@ app.post('/api/trades', async (req, res) => {
     // Save trade to storage
     try {
       if (isProduction && supabase) {
+        console.log('💾 SAVING TRADE TO DATABASE:');
+        console.log('💾 Trade ID:', trade.id);
+        console.log('💾 Trade details:', { symbol: trade.symbol, direction: trade.direction, amount: trade.amount, entry_price: trade.entry_price });
+
         const { data, error } = await supabase
           .from('trades')
           .insert(trade)
@@ -6086,12 +6103,14 @@ app.post('/api/trades', async (req, res) => {
 
         trade.id = data.id;
         console.log('✅ Trade saved to database with ID:', data.id);
+        console.log('✅ Saved trade details:', { symbol: data.symbol, direction: data.direction, amount: data.amount, entry_price: data.entry_price });
       } else {
         // Development: Save to local file
         const allTrades = await getTrades();
         allTrades.unshift(trade);
         await saveTrades(allTrades);
         console.log('✅ Trade saved to local storage:', trade.id);
+        console.log('✅ Saved trade details:', { symbol: trade.symbol, direction: trade.direction, amount: trade.amount, entry_price: trade.entry_price });
       }
     } catch (saveError) {
       console.error('❌ Error saving trade:', saveError);
@@ -6102,6 +6121,7 @@ app.post('/api/trades', async (req, res) => {
     setTimeout(async () => {
       try {
         console.log(`⏰ Auto-completing trade ${trade.id} after ${duration} seconds`);
+        console.log(`⏰ Trade details: Symbol=${trade.symbol}, Direction=${trade.direction}, Amount=${trade.amount}, Entry=${trade.entry_price}`);
 
         // Determine outcome based on proper binary options logic
         const entryPrice = parseFloat(trade.entry_price);
@@ -6124,6 +6144,12 @@ app.post('/api/trades', async (req, res) => {
         const finalOutcome = await enforceTradeOutcome(finalUserId, binaryOutcome, 'auto-completion');
 
         // Complete the trade
+        console.log(`📤 SENDING TRADE COMPLETION REQUEST:`);
+        console.log(`📤 Trade ID: ${trade.id}`);
+        console.log(`📤 User ID: ${finalUserId}`);
+        console.log(`📤 Amount: ${tradeAmount}`);
+        console.log(`📤 Won: ${finalOutcome}`);
+
         await fetch(`http://localhost:${PORT}/api/trades/complete`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -6754,6 +6780,7 @@ app.post('/api/trades/complete', async (req, res) => {
 
         if (findError) {
           console.error('❌ Trade not found in database for update:', findError);
+          console.error('❌ Trade ID that was not found:', tradeId);
           console.log('🔍 Searching for trade with user_id instead...');
 
           // Try to find by user_id and recent timestamp
@@ -6763,7 +6790,12 @@ app.post('/api/trades/complete', async (req, res) => {
             .eq('user_id', userId)
             .eq('result', 'pending')
             .order('created_at', { ascending: false })
-            .limit(1);
+            .limit(5); // Get top 5 to see what's available
+
+          console.log('🔍 Recent pending trades found:', recentTrades?.length || 0);
+          if (recentTrades && recentTrades.length > 0) {
+            console.log('🔍 Recent trades:', recentTrades.map(t => ({ id: t.id, symbol: t.symbol, amount: t.amount, created_at: t.created_at })));
+          }
 
           if (searchError || !recentTrades || recentTrades.length === 0) {
             console.error('❌ No active trades found for user:', userId);
@@ -6771,10 +6803,14 @@ app.post('/api/trades/complete', async (req, res) => {
           }
 
           const foundTrade = recentTrades[0];
-          console.log('✅ Found trade by user_id:', foundTrade.id);
+          console.log('⚠️ WARNING: Using fallback trade instead of exact tradeId!');
+          console.log('⚠️ Original tradeId:', tradeId);
+          console.log('⚠️ Fallback tradeId:', foundTrade.id);
+          console.log('⚠️ Fallback trade details:', { symbol: foundTrade.symbol, amount: foundTrade.amount, direction: foundTrade.direction });
           tradeId = foundTrade.id; // Update tradeId to the found one
         } else {
           console.log('✅ Trade found in database:', existingTrade.id);
+          console.log('✅ Trade details:', { symbol: existingTrade.symbol, amount: existingTrade.amount, direction: existingTrade.direction });
         }
 
         // Generate realistic exit price based on trade data
