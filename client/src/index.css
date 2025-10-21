@@ -738,7 +738,6 @@ iframe[src*="tradingview"] {
   #options_mobile_tradingview_chart iframe,
   #spot_mobile_tradingview_chart iframe {
     background-color: #10121E !important;
-    filter: brightness(0.95) !important;
   }
 }
 

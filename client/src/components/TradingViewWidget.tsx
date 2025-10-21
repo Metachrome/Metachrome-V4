@@ -143,12 +143,12 @@ function TradingViewWidget({
         symbol: tradingViewSymbol,
         interval: interval,
         timezone: timezone,
-        theme: theme === "light" ? "light" : "dark",  // Use theme prop, default to dark
-        colorTheme: theme === "light" ? "light" : "dark",  // Also set colorTheme for compatibility
-        backgroundColor: theme === "light" ? "#FFFFFF" : "#10121E",  // Explicit background color
+        theme: "dark",  // FORCE dark theme always
+        colorTheme: "dark",  // FORCE dark color theme always
+        backgroundColor: "#10121E",  // FORCE dark background always
         style: "1",
         locale: locale,
-        toolbar_bg: theme === "light" ? "#FFFFFF" : "#10121E",  // Changed from #1a1a1a to match our dark color
+        toolbar_bg: "#10121E",  // FORCE dark toolbar always
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
@@ -186,13 +186,13 @@ function TradingViewWidget({
         loading_screen: { backgroundColor: theme === "light" ? "#FFFFFF" : "#10121E" },
         overrides: {
           "volumePaneSize": "xtiny",
-          "paneProperties.background": theme === "light" ? "#FFFFFF" : "#10121E",
+          "paneProperties.background": "#10121E",  // FORCE dark background
           "paneProperties.backgroundType": "solid",
-          "paneProperties.vertGridProperties.color": theme === "light" ? "#E5E7EB" : "#1F2937",
-          "paneProperties.horzGridProperties.color": theme === "light" ? "#E5E7EB" : "#1F2937",
+          "paneProperties.vertGridProperties.color": "#1F2937",  // FORCE dark grid
+          "paneProperties.horzGridProperties.color": "#1F2937",  // FORCE dark grid
           "symbolWatermarkProperties.transparency": 90,
-          "scalesProperties.textColor": theme === "light" ? "#374151" : "#D1D5DB",
-          "scalesProperties.backgroundColor": theme === "light" ? "#FFFFFF" : "#10121E",
+          "scalesProperties.textColor": "#D1D5DB",  // FORCE light text
+          "scalesProperties.backgroundColor": "#10121E",  // FORCE dark background
           "mainSeriesProperties.candleStyle.upColor": "#10B981",
           "mainSeriesProperties.candleStyle.downColor": "#EF4444",
           "mainSeriesProperties.candleStyle.borderUpColor": "#10B981",
@@ -214,7 +214,11 @@ function TradingViewWidget({
           "mainSeriesProperties.candleStyle.upColor": "#10B981",
           "mainSeriesProperties.candleStyle.downColor": "#EF4444",
           "paneProperties.background": "#10121E",
-          "paneProperties.backgroundType": "solid"
+          "paneProperties.backgroundType": "solid",
+          "paneProperties.vertGridProperties.color": "#1F2937",
+          "paneProperties.horzGridProperties.color": "#1F2937",
+          "scalesProperties.textColor": "#D1D5DB",
+          "scalesProperties.backgroundColor": "#10121E"
         },
         // Force a chart layout without volume pane with explicit dark theme
         saved_data: JSON.stringify({
