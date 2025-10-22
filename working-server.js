@@ -6455,19 +6455,20 @@ app.post('/api/trades/options', async (req, res) => {
 
         // Note: Trading controls may still override this outcome
 
-        // Calculate payout
+        // Calculate payout - USE trade.amount instead of tradeAmount to ensure correct value
+        const actualAmount = trade.amount;
         let payout = 0;
         if (isWin) {
           const profitRate = duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for others
-          payout = tradeAmount * (1 + profitRate);
+          payout = actualAmount * (1 + profitRate);
         }
 
         console.log(`🎯 CALLING COMPLETION ENDPOINT for trade ${actualTradeId}`);
-        console.log(`🎯 User ID: ${finalUserId}, Outcome: ${isWin ? 'WIN' : 'LOSE'}, Amount: ${tradeAmount}, Payout: ${payout}`);
+        console.log(`🎯 User ID: ${finalUserId}, Outcome: ${isWin ? 'WIN' : 'LOSE'}, Amount: ${actualAmount}, Payout: ${payout}`);
         console.log(`🎯 TRADE DETAILS: Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}, EntryPrice: ${entryPrice}`);
 
         // DIRECT COMPLETION CALL - More reliable than fetch
-        await completeTradeDirectly(actualTradeId, finalUserId, isWin, tradeAmount, payout, direction, symbol, duration, entryPrice);
+        await completeTradeDirectly(actualTradeId, finalUserId, isWin, actualAmount, payout, direction, symbol, duration, entryPrice);
 
       } catch (error) {
         console.error(`❌ SETTIMEOUT COMPLETION FAILED for trade ${actualTradeId}:`, error);
