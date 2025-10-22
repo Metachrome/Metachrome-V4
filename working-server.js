@@ -11957,6 +11957,7 @@ app.get(/^(?!\/api|\/assets).*/, (req, res) => {
 });
 
 // ===== START SERVER WITH WEBSOCKET =====
+// Rebuild trigger: 2025-10-22 18:24
 const server = http.createServer(app);
 
 // Setup WebSocket server
