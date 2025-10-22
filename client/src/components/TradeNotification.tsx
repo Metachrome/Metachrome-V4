@@ -41,15 +41,6 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
   // CRITICAL FIX: Reset visibility when trade changes
   useEffect(() => {
     if (trade) {
-      console.log('🔔 NOTIFICATION: New trade received, showing notification:', trade.id);
-      console.log('🔔 NOTIFICATION: Trade object:', {
-        id: trade.id,
-        amount: trade.amount,
-        amountType: typeof trade.amount,
-        payout: trade.payout,
-        status: trade.status,
-        fullTrade: trade
-      });
       setIsVisible(true);
       const timer = setTimeout(handleClose, 25000); // Increased to 25 seconds for better UX
       return () => clearTimeout(timer);

@@ -1379,7 +1379,6 @@ function OptionsPageContent({
 
               // CRITICAL FIX: Use serverTrade.amount instead of activeTrade.amount to ensure correct amount
               const tradeAmount = parseFloat(serverTrade.amount) || activeTrade.amount;
-              console.log('🔄 POLLING: Trade amount - Server:', serverTrade.amount, 'Active:', activeTrade.amount, 'Using:', tradeAmount);
 
               const completedTrade: ActiveTrade = {
                 ...activeTrade,
@@ -1773,18 +1772,7 @@ function OptionsPageContent({
           status: 'active'
         };
 
-        console.log('🎯 NEW TRADE OBJECT CREATED:', {
-          id: newTrade.id,
-          amount: newTrade.amount,
-          selectedAmount: selectedAmount,
-          amountType: typeof newTrade.amount
-        });
-
-        setActiveTrades(prev => {
-          const updated = [...prev, newTrade];
-          console.log('🎯 ACTIVE TRADES UPDATED:', updated.map(t => ({ id: t.id, amount: t.amount })));
-          return updated;
-        });
+        setActiveTrades(prev => [...prev, newTrade]);
         setCountdown(durationSeconds);
         setIsTrading(true);
 
