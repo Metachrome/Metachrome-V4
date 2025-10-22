@@ -1714,20 +1714,25 @@ function OptionsPageContent({
         entryPrice: safeCurrentPrice
       });
 
+      const tradePayload = {
+        userId: tradingUserId,
+        symbol: selectedSymbol,
+        direction,
+        amount: selectedAmount.toString(),
+        duration: durationSeconds,
+        entryPrice: safeCurrentPrice
+      };
+
+      console.log('💰 CLIENT: Sending trade with amount:', selectedAmount, 'Type:', typeof selectedAmount);
+      console.log('💰 CLIENT: Full payload:', JSON.stringify(tradePayload, null, 2));
+
       const response = await fetch('/api/trades/options', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
-        body: JSON.stringify({
-          userId: tradingUserId,
-          symbol: selectedSymbol,
-          direction,
-          amount: selectedAmount.toString(),
-          duration: durationSeconds,
-          entryPrice: safeCurrentPrice
-        })
+        body: JSON.stringify(tradePayload)
       });
 
       if (!response.ok) {
