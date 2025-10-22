@@ -1134,6 +1134,7 @@ function OptionsPageContent({
       console.log('🔔 BULLETPROOF: Direct notification trigger received:', lastMessage.data);
 
       const tradeData = lastMessage.data;
+      console.log('🔔 WEBSOCKET RECEIVED: Raw tradeData:', JSON.stringify(tradeData, null, 2));
       const testTrade: ActiveTrade = {
         id: tradeData.tradeId,
         direction: tradeData.direction,
@@ -1149,6 +1150,7 @@ function OptionsPageContent({
       };
 
       console.log('🔔 BULLETPROOF: Triggering notification with trade data:', testTrade);
+      console.log('🔔 AMOUNT IN TRADE OBJECT:', testTrade.amount, 'TYPE:', typeof testTrade.amount);
       triggerNotification(testTrade);
       return;
     }
