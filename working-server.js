@@ -6170,17 +6170,9 @@ app.post('/api/trades', async (req, res) => {
         console.log(`📤 Profit Percentage: ${(profitPercentage * 100).toFixed(0)}%`);
         console.log(`📤 Payout: ${payout}`);
 
-        await fetch(`http://localhost:${PORT}/api/trades/complete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tradeId: trade.id,
-            userId: finalUserId,
-            won: finalOutcome,
-            amount: tradeAmount.toString(),
-            payout: payout
-          })
-        });
+        // NOTE: We now use completeTradeDirectly() instead of fetch to avoid duplicate notifications
+        // The fetch call to /api/trades/complete has been removed to prevent conflicts
+        console.log(`📤 Trade will be completed via completeTradeDirectly() function`);
       } catch (error) {
         console.error('❌ Error auto-completing trade:', error);
       }
