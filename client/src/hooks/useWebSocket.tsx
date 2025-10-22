@@ -16,6 +16,7 @@ export function useWebSocket() {
 
   const connect = useCallback(() => {
     try {
+      console.log('🔌 WEBSOCKET DEBUG: ===== CONNECT FUNCTION CALLED =====');
       console.log('🔌 WEBSOCKET DEBUG: Starting connection attempt...');
       console.log('🔌 WEBSOCKET DEBUG: Current location:', window.location.hostname, window.location.port);
       console.log('🔌 WEBSOCKET DEBUG: Full URL:', window.location.href);
@@ -162,13 +163,17 @@ export function useWebSocket() {
   // Connect on mount
   useEffect(() => {
     console.log('🚀 WEBSOCKET HOOK: useEffect triggered - attempting to connect...');
+    console.log('🚀 WEBSOCKET HOOK: connect function:', typeof connect);
+    console.log('🚀 WEBSOCKET HOOK: Calling connect()...');
     connect();
+    console.log('🚀 WEBSOCKET HOOK: connect() called successfully');
 
     // Cleanup on unmount
     return () => {
+      console.log('🚀 WEBSOCKET HOOK: Cleanup - disconnecting...');
       disconnect();
     };
-  }, []);
+  }, [connect, disconnect]);
 
   // Keep-alive ping
   useEffect(() => {
