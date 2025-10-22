@@ -5574,6 +5574,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       };
 
       console.log('🔔 BULLETPROOF: Direct notification message:', JSON.stringify(directNotificationMessage, null, 2));
+      console.log(`🔔 DEBUG: Amount in notification = ${amount}, Payout = ${payout}, Direction = ${direction}, Symbol = ${symbol}, Duration = ${duration}`);
 
       global.wss.clients.forEach(client => {
         if (client.readyState === 1) { // WebSocket.OPEN
@@ -6445,6 +6446,7 @@ app.post('/api/trades/options', async (req, res) => {
 
         console.log(`🎯 CALLING COMPLETION ENDPOINT for trade ${actualTradeId}`);
         console.log(`🎯 User ID: ${finalUserId}, Outcome: ${isWin ? 'WIN' : 'LOSE'}, Amount: ${tradeAmount}, Payout: ${payout}`);
+        console.log(`🎯 TRADE DETAILS: Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}, EntryPrice: ${entryPrice}`);
 
         // DIRECT COMPLETION CALL - More reliable than fetch
         await completeTradeDirectly(actualTradeId, finalUserId, isWin, tradeAmount, payout, direction, symbol, duration, entryPrice);
