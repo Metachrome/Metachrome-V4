@@ -1374,12 +1374,17 @@ function OptionsPageContent({
               const won = serverTrade.result === 'win';
               const profitPercentage = activeTrade.profitPercentage || (activeTrade.duration === 30 ? 10 : 15);
 
+              // CRITICAL FIX: Use serverTrade.amount instead of activeTrade.amount to ensure correct amount
+              const tradeAmount = parseFloat(serverTrade.amount) || activeTrade.amount;
+              console.log('🔄 POLLING: Trade amount - Server:', serverTrade.amount, 'Active:', activeTrade.amount, 'Using:', tradeAmount);
+
               const completedTrade: ActiveTrade = {
                 ...activeTrade,
+                amount: tradeAmount, // Use server amount
                 status: won ? 'won' : 'lost',
                 currentPrice: serverTrade.exit_price || activeTrade.entryPrice,
-                payout: won ? activeTrade.amount * (1 + profitPercentage / 100) : 0,
-                profit: won ? (activeTrade.amount * profitPercentage / 100) : -activeTrade.amount
+                payout: won ? tradeAmount * (1 + profitPercentage / 100) : 0,
+                profit: won ? (tradeAmount * profitPercentage / 100) : -tradeAmount
               };
 
               console.log('🔄 POLLING: Setting completed trade notification:', completedTrade);
