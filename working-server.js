@@ -11967,6 +11967,19 @@ const wss = new WebSocketServer({
 // Store WebSocket server globally for broadcasting
 global.wss = wss;
 
+// Log WebSocket connections
+wss.on('connection', (ws) => {
+  console.log(`🔌 WebSocket client connected! Total clients: ${wss.clients.size}`);
+
+  ws.on('close', () => {
+    console.log(`🔌 WebSocket client disconnected! Total clients: ${wss.clients.size}`);
+  });
+
+  ws.on('error', (error) => {
+    console.error(`🔌 WebSocket error:`, error);
+  });
+});
+
 // REAL-TIME ADMIN NOTIFICATION FUNCTION
 function broadcastToAdmins(message) {
   if (global.wss) {
