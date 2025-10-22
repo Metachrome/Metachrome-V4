@@ -5469,15 +5469,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
           const movementRange = maxMovement - minMovement;
           const movementPercent = (seededRandom * movementRange + minMovement);
 
-          // Determine direction based on trade outcome and direction
-          let priceDirection = 1; // Default up
-          if (trade.direction === 'up') {
-            // For UP trades: WIN means price goes up, LOSE means price goes down
-            priceDirection = finalWon ? 1 : -1;
-          } else if (trade.direction === 'down') {
-            // For DOWN trades: WIN means price goes down, LOSE means price goes up
-            priceDirection = finalWon ? -1 : 1;
-          }
+          // Determine direction based on trade outcome (assume UP for default)
+          let priceDirection = finalWon ? 1 : -1; // UP wins if price goes up, DOWN wins if price goes down
 
           // Calculate realistic exit price
           exitPrice = entryPrice * (1 + (movementPercent * priceDirection));
@@ -5553,22 +5546,34 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
     // BULLETPROOF: Also trigger client-side notification directly
     console.log('🔔 BULLETPROOF: Triggering client-side notification via global function');
     if (global.wss) {
+      // Calculate profit percentage based on duration
+      let profitPercentage = 10; // Default 10% for 30s
+      if (duration === 30) profitPercentage = 10;
+      else if (duration === 60) profitPercentage = 15;
+      else if (duration === 90) profitPercentage = 20;
+      else if (duration === 120) profitPercentage = 25;
+      else if (duration === 180) profitPercentage = 30;
+      else if (duration === 240) profitPercentage = 75;
+      else if (duration === 300) profitPercentage = 100;
+
       const directNotificationMessage = {
         type: 'trigger_mobile_notification',
         data: {
           tradeId: tradeId,
           userId: userId,
-          direction: 'up', // Default direction since trade object not available
-          amount: amount,
-          entryPrice: 50000, // Default entry price
+          direction: direction, // Use actual direction from trade
+          amount: amount, // Use actual amount
+          entryPrice: parseFloat(trade.entry_price) || 50000, // Use actual entry price
           currentPrice: exitPrice,
           status: finalWon ? 'won' : 'lost',
           payout: finalWon ? payout : 0,
-          profitPercentage: finalWon ? 10 : 0, // Default 10% profit
-          symbol: 'BTC/USDT', // Default symbol
-          duration: 30 // Default duration
+          profitPercentage: finalWon ? profitPercentage : 0, // Use calculated profit percentage
+          symbol: symbol || 'BTC/USDT', // Use actual symbol
+          duration: duration // Use actual duration
         }
       };
+
+      console.log('🔔 BULLETPROOF: Direct notification message:', JSON.stringify(directNotificationMessage, null, 2));
 
       global.wss.clients.forEach(client => {
         if (client.readyState === 1) { // WebSocket.OPEN
@@ -6418,8 +6423,11 @@ app.post('/api/trades/options', async (req, res) => {
         // CRITICAL FIX: Use real market data instead of random prices
         const entryPrice = parseFloat(trade.entry_price);
 
-        // Generate realistic exit price based on trading mode outcome
-        const exitPrice = generateRealisticExitPrice(trade, finalWon, tradeId);
+        // First, determine a random outcome (will be overridden by trading controls)
+        let randomWin = Math.random() > 0.5;
+
+        // Generate realistic exit price based on random outcome
+        const exitPrice = generateRealisticExitPrice(trade, randomWin, actualTradeId);
 
         // Binary options logic: UP wins if exit > entry, DOWN wins if exit < entry
         let isWin = false;
