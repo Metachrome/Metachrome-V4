@@ -1352,6 +1352,8 @@ function OptionsPageContent({
   useEffect(() => {
     if (activeTrades.length === 0) return;
 
+    console.log('🔄 POLLING: Checking', activeTrades.length, 'active trades:', activeTrades.map(t => ({ id: t.id, amount: t.amount })));
+
     const pollInterval = setInterval(async () => {
       try {
         // Check if any active trades have completed by polling the server
@@ -1366,6 +1368,7 @@ function OptionsPageContent({
 
           // Find recently completed trades that were active
           activeTrades.forEach(activeTrade => {
+            console.log('🔄 POLLING: Checking active trade:', { id: activeTrade.id, amount: activeTrade.amount });
             const serverTrade = serverTrades.find((st: any) => st.id === activeTrade.id);
 
             if (serverTrade && serverTrade.status === 'completed' && serverTrade.result !== 'pending') {
@@ -1770,7 +1773,18 @@ function OptionsPageContent({
           status: 'active'
         };
 
-        setActiveTrades(prev => [...prev, newTrade]);
+        console.log('🎯 NEW TRADE OBJECT CREATED:', {
+          id: newTrade.id,
+          amount: newTrade.amount,
+          selectedAmount: selectedAmount,
+          amountType: typeof newTrade.amount
+        });
+
+        setActiveTrades(prev => {
+          const updated = [...prev, newTrade];
+          console.log('🎯 ACTIVE TRADES UPDATED:', updated.map(t => ({ id: t.id, amount: t.amount })));
+          return updated;
+        });
         setCountdown(durationSeconds);
         setIsTrading(true);
 
