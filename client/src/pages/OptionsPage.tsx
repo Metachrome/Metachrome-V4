@@ -51,6 +51,11 @@ function OptionsPageContent({
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
+  // Log WebSocket connection status
+  useEffect(() => {
+    console.log('🔌 WebSocket connection status:', connected ? 'CONNECTED' : 'DISCONNECTED');
+  }, [connected]);
+
   // Debug WebSocket connection status
   useEffect(() => {
     console.log('🔌 WEBSOCKET STATUS:', { connected, hasLastMessage: !!lastMessage });
