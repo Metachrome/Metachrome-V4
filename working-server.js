@@ -6945,11 +6945,9 @@ app.post('/api/trades/complete', async (req, res) => {
       console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
 
       // Also broadcast trade completion notification
-      // Fetch the trade data to include complete information in notification
-      let tradeData = null;
       // CRITICAL FIX: Use existingTrade that was already fetched at the beginning
       // This ensures we use the SAME trade data throughout the function
-      const tradeData = existingTrade;
+      let tradeData = existingTrade;
 
       console.log('📡 DEBUG NOTIFICATION DATA:');
       console.log('📡 Using existingTrade for notification:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
