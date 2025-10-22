@@ -6945,12 +6945,37 @@ app.post('/api/trades/complete', async (req, res) => {
       console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
 
       // Also broadcast trade completion notification
-      // CRITICAL FIX: Use existingTrade that was already fetched at the beginning
-      // This ensures we use the SAME trade data throughout the function
+      // CRITICAL FIX: Fetch the UPDATED trade data from database after all updates are complete
       let tradeData = existingTrade;
 
+      if (supabase) {
+        try {
+          const { data: updatedTradeData, error: fetchError } = await supabase
+            .from('trades')
+            .select('*')
+            .eq('id', tradeId)
+            .single();
+
+          if (!fetchError && updatedTradeData) {
+            tradeData = updatedTradeData;
+            console.log('📡 FETCHED UPDATED TRADE DATA FROM DATABASE:', {
+              id: tradeData?.id,
+              symbol: tradeData?.symbol,
+              amount: tradeData?.amount,
+              direction: tradeData?.direction,
+              entry_price: tradeData?.entry_price,
+              exit_price: tradeData?.exit_price
+            });
+          } else {
+            console.log('⚠️ Could not fetch updated trade data, using original:', fetchError);
+          }
+        } catch (error) {
+          console.error('⚠️ Error fetching updated trade data:', error);
+        }
+      }
+
       console.log('📡 DEBUG NOTIFICATION DATA:');
-      console.log('📡 Using existingTrade for notification:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
+      console.log('📡 Using trade data for notification:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
       console.log('📡 tradeData?.amount:', tradeData?.amount, 'type:', typeof tradeData?.amount);
       console.log('📡 tradeAmount (from endpoint):', tradeAmount, 'type:', typeof tradeAmount);
       console.log('📡 profitAmount:', profitAmount);
@@ -6961,13 +6986,13 @@ app.post('/api/trades/complete', async (req, res) => {
           tradeId: tradeId,
           userId: userId,
           result: finalOutcome ? 'win' : 'lose',
-          exitPrice: currentPrice || 0,
+          exitPrice: tradeData?.exit_price || currentPrice || 0,
           profitAmount: profitAmount,
           newBalance: users[userIndex].balance,
-          // Include complete trade data for notification - use existingTrade which was fetched at the start
+          // Include complete trade data for notification - use updated trade data from database
           symbol: tradeData?.symbol || 'BTC/USDT',
           direction: tradeData?.direction || 'up',
-          amount: tradeData?.amount !== undefined ? parseFloat(tradeData.amount) : tradeAmount,  // Use database value, fallback to endpoint parameter
+          amount: tradeData?.amount !== undefined ? parseFloat(tradeData.amount) : tradeAmount,  // Use database value
           entryPrice: tradeData?.entry_price !== undefined ? parseFloat(tradeData.entry_price) : currentPrice || 0,
           duration: tradeData?.duration || 30,
           profitPercentage: tradeData?.profit_percentage || (tradeData?.duration === 30 ? 10 : 15),
