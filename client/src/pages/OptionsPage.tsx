@@ -1176,17 +1176,31 @@ function OptionsPageContent({
 
       if (completedActiveTrade) {
         const won = result === 'win';
-        const profitPercentageValue = completedActiveTrade.profitPercentage || (completedActiveTrade.duration === 30 ? 10 : 15);
+        // CRITICAL FIX: Use profitPercentage from WebSocket message, not from old trade data
+        const profitPercentageValue = profitPercentage || (duration === 30 ? 10 : 15);
 
         const completedTrade: ActiveTrade = {
           ...completedActiveTrade,
+          // CRITICAL FIX: Override with fresh data from WebSocket message
+          symbol: symbol || completedActiveTrade.symbol,
+          direction: (direction as 'up' | 'down') || completedActiveTrade.direction,
+          amount: amount !== undefined ? amount : completedActiveTrade.amount,  // Use WebSocket amount
+          entryPrice: entryPrice !== undefined ? entryPrice : completedActiveTrade.entryPrice,  // Use WebSocket entry price
           status: won ? 'won' : 'lost',
-          currentPrice: exitPrice,
-          payout: won ? completedActiveTrade.amount * (1 + profitPercentageValue / 100) : 0,
-          profit: profitAmount
+          currentPrice: exitPrice || completedActiveTrade.currentPrice,
+          payout: won ? (amount || completedActiveTrade.amount) * (1 + profitPercentageValue / 100) : 0,
+          profit: profitAmount,
+          duration: duration || completedActiveTrade.duration,
+          profitPercentage: profitPercentageValue
         };
 
-        console.log('🎯 WEBSOCKET: Setting completed trade notification:', completedTrade);
+        console.log('🎯 WEBSOCKET: Setting completed trade notification with fresh data:', {
+          amount: completedTrade.amount,
+          entryPrice: completedTrade.entryPrice,
+          exitPrice: completedTrade.currentPrice,
+          profitAmount: completedTrade.profit,
+          profitPercentage: completedTrade.profitPercentage
+        });
 
         // ROBUST NOTIFICATION TRIGGER
         console.log('🔔 WEBSOCKET: About to trigger notification');

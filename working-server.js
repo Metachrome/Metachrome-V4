@@ -6947,26 +6947,12 @@ app.post('/api/trades/complete', async (req, res) => {
       // Also broadcast trade completion notification
       // Fetch the trade data to include complete information in notification
       let tradeData = null;
-      try {
-        if (supabase) {
-          const { data: fetchedTrade } = await supabase
-            .from('trades')
-            .select('*')
-            .eq('id', tradeId)
-            .single();
-          tradeData = fetchedTrade;
-          console.log('✅ Trade data fetched from database:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
-        } else {
-          const trades = await getTrades();
-          tradeData = trades.find(t => t.id === tradeId);
-          console.log('✅ Trade data fetched from local storage:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
-        }
-      } catch (e) {
-        console.error('⚠️ Failed to fetch trade data for notification:', e);
-      }
+      // CRITICAL FIX: Use existingTrade that was already fetched at the beginning
+      // This ensures we use the SAME trade data throughout the function
+      const tradeData = existingTrade;
 
-      // DEBUG: Log what we're using for the notification
       console.log('📡 DEBUG NOTIFICATION DATA:');
+      console.log('📡 Using existingTrade for notification:', { id: tradeData?.id, symbol: tradeData?.symbol, amount: tradeData?.amount, direction: tradeData?.direction });
       console.log('📡 tradeData?.amount:', tradeData?.amount, 'type:', typeof tradeData?.amount);
       console.log('📡 tradeAmount (from endpoint):', tradeAmount, 'type:', typeof tradeAmount);
       console.log('📡 profitAmount:', profitAmount);
@@ -6980,11 +6966,11 @@ app.post('/api/trades/complete', async (req, res) => {
           exitPrice: currentPrice || 0,
           profitAmount: profitAmount,
           newBalance: users[userIndex].balance,
-          // Include complete trade data for notification
+          // Include complete trade data for notification - use existingTrade which was fetched at the start
           symbol: tradeData?.symbol || 'BTC/USDT',
           direction: tradeData?.direction || 'up',
-          amount: tradeData?.amount !== undefined ? tradeData.amount : tradeAmount,  // Prefer database value, fallback to endpoint parameter
-          entryPrice: tradeData?.entry_price || currentPrice || 0,
+          amount: tradeData?.amount !== undefined ? parseFloat(tradeData.amount) : tradeAmount,  // Use database value, fallback to endpoint parameter
+          entryPrice: tradeData?.entry_price !== undefined ? parseFloat(tradeData.entry_price) : currentPrice || 0,
           duration: tradeData?.duration || 30,
           profitPercentage: tradeData?.profit_percentage || (tradeData?.duration === 30 ? 10 : 15),
           timestamp: new Date().toISOString()
