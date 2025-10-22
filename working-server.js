@@ -5410,9 +5410,9 @@ app.get('/api/users/:userId/trades', async (req, res) => {
 });
 
 // ROBUST TRADE COMPLETION FUNCTION
-async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
+async function completeTradeDirectly(tradeId, userId, won, amount, payout, direction, symbol, duration, entryPrice) {
   try {
-    console.log(`🔧 DIRECT COMPLETION: Trade ${tradeId}, User ${userId}, Won: ${won}, Amount: ${amount}, Payout: ${payout}`);
+    console.log(`🔧 DIRECT COMPLETION: Trade ${tradeId}, User ${userId}, Won: ${won}, Amount: ${amount}, Payout: ${payout}, Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}`);
 
     // Get current users
     const users = await getUsers();
@@ -5561,15 +5561,15 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout) {
         data: {
           tradeId: tradeId,
           userId: userId,
-          direction: direction, // Use actual direction from trade
+          direction: direction || 'up', // Use actual direction from trade
           amount: amount, // Use actual amount
-          entryPrice: parseFloat(trade.entry_price) || 50000, // Use actual entry price
+          entryPrice: entryPrice || 50000, // Use actual entry price
           currentPrice: exitPrice,
           status: finalWon ? 'won' : 'lost',
           payout: finalWon ? payout : 0,
           profitPercentage: finalWon ? profitPercentage : 0, // Use calculated profit percentage
           symbol: symbol || 'BTC/USDT', // Use actual symbol
-          duration: duration // Use actual duration
+          duration: duration || 30 // Use actual duration
         }
       };
 
@@ -6447,7 +6447,7 @@ app.post('/api/trades/options', async (req, res) => {
         console.log(`🎯 User ID: ${finalUserId}, Outcome: ${isWin ? 'WIN' : 'LOSE'}, Amount: ${tradeAmount}, Payout: ${payout}`);
 
         // DIRECT COMPLETION CALL - More reliable than fetch
-        await completeTradeDirectly(actualTradeId, finalUserId, isWin, tradeAmount, payout);
+        await completeTradeDirectly(actualTradeId, finalUserId, isWin, tradeAmount, payout, direction, symbol, duration, entryPrice);
 
       } catch (error) {
         console.error(`❌ SETTIMEOUT COMPLETION FAILED for trade ${actualTradeId}:`, error);
