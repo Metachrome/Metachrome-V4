@@ -5412,7 +5412,10 @@ app.get('/api/users/:userId/trades', async (req, res) => {
 // ROBUST TRADE COMPLETION FUNCTION
 async function completeTradeDirectly(tradeId, userId, won, amount, payout, direction, symbol, duration, entryPrice) {
   try {
-    console.log(`🔧 DIRECT COMPLETION: Trade ${tradeId}, User ${userId}, Won: ${won}, Amount: ${amount}, Payout: ${payout}, Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}`);
+    console.log(`🔧 DIRECT COMPLETION: Trade ${tradeId}, User ${userId}, Won: ${won}`);
+    console.log(`🔧 AMOUNT PARAMETER: ${amount} (type: ${typeof amount})`);
+    console.log(`🔧 PAYOUT PARAMETER: ${payout} (type: ${typeof payout})`);
+    console.log(`🔧 Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}`);
 
     // Get current users
     const users = await getUsers();
@@ -5427,6 +5430,19 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     const finalWon = await enforceTradeOutcome(userId, won, 'DIRECT');
     console.log(`🎯 Trading control applied: ${won} → ${finalWon}`);
 
+    // CRITICAL FIX: Recalculate payout if outcome was overridden
+    let finalPayout = payout;
+    if (finalWon && !won) {
+      // Outcome was overridden from LOSE to WIN - recalculate payout
+      const profitRate = duration === 30 ? 0.10 : 0.15;
+      finalPayout = amount * (1 + profitRate);
+      console.log(`🔧 PAYOUT RECALCULATED: ${payout} → ${finalPayout} (outcome overridden from LOSE to WIN)`);
+    } else if (!finalWon && won) {
+      // Outcome was overridden from WIN to LOSE - set payout to 0
+      finalPayout = 0;
+      console.log(`🔧 PAYOUT RECALCULATED: ${payout} → 0 (outcome overridden from WIN to LOSE)`);
+    }
+
     // Update user balance
     const oldBalance = parseFloat(users[userIndex].balance || '0');
     let balanceChange = 0;
@@ -5434,7 +5450,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     let profitAmount = 0;
     if (finalWon) {
       // Win: add back the trade amount + profit (since balance was already deducted)
-      profitAmount = payout - amount; // Extract profit only
+      profitAmount = finalPayout - amount; // Extract profit only
       balanceChange = amount + profitAmount; // Return original amount + profit
       users[userIndex].balance = (oldBalance + balanceChange).toString();
     } else {
@@ -5566,7 +5582,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           entryPrice: entryPrice || 50000, // Use actual entry price
           currentPrice: exitPrice,
           status: finalWon ? 'won' : 'lost',
-          payout: finalWon ? payout : 0,
+          payout: finalWon ? finalPayout : 0,
           profitPercentage: finalWon ? profitPercentage : 0, // Use calculated profit percentage
           symbol: symbol || 'BTC/USDT', // Use actual symbol
           duration: duration || 30 // Use actual duration
@@ -5574,7 +5590,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       };
 
       console.log('🔔 BULLETPROOF: Direct notification message:', JSON.stringify(directNotificationMessage, null, 2));
-      console.log(`🔔 DEBUG: Amount in notification = ${amount}, Payout = ${payout}, Direction = ${direction}, Symbol = ${symbol}, Duration = ${duration}`);
+      console.log(`🔔 DEBUG: Amount in notification = ${amount} (type: ${typeof amount}), Payout = ${finalPayout} (type: ${typeof finalPayout}), Direction = ${direction}, Symbol = ${symbol}, Duration = ${duration}`);
 
       global.wss.clients.forEach(client => {
         if (client.readyState === 1) { // WebSocket.OPEN
@@ -6199,6 +6215,7 @@ app.post('/api/trades/options', async (req, res) => {
   try {
     const { userId, symbol, direction, amount, duration, entryPrice } = req.body;
     console.log('🎯 Options trade request:', { userId, symbol, direction, amount, duration, entryPrice });
+    console.log(`🎯 AMOUNT TYPE: ${typeof amount}, VALUE: ${amount}, PARSED: ${parseFloat(amount)}`);
 
     if (!userId || !symbol || !direction || !amount || !duration || !entryPrice) {
       return res.status(400).json({
