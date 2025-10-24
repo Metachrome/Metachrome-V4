@@ -5538,6 +5538,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       // Generate exit price without relying on trade object (which may not be available)
       const exitPrice = 50000 + (Math.random() - 0.5) * 2000; // Simple price generation
 
+      // CRITICAL FIX: Include ALL necessary fields for the notification
       const tradeCompletionMessage = {
         type: 'trade_completed',
         data: {
@@ -5547,11 +5548,25 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           exitPrice: exitPrice,
           profitAmount: profitAmount,
           newBalance: users[userIndex].balance,
+          // CRITICAL: Include these fields so client can display correct notification
+          amount: amount, // The actual trade amount
+          symbol: symbol || 'BTC/USDT', // The trading symbol
+          direction: direction || 'up', // The trade direction
+          entryPrice: entryPrice || 50000, // The entry price
+          duration: duration || 30, // The trade duration
+          profitPercentage: finalWon ? (duration === 30 ? 10 : 15) : 0, // Profit percentage
           timestamp: new Date().toISOString()
         }
       };
 
       console.log('📡 Broadcasting trade completion via WebSocket:', tradeCompletionMessage);
+      console.log('📡 CRITICAL FIELDS IN MESSAGE:', {
+        amount: tradeCompletionMessage.data.amount,
+        symbol: tradeCompletionMessage.data.symbol,
+        direction: tradeCompletionMessage.data.direction,
+        entryPrice: tradeCompletionMessage.data.entryPrice,
+        duration: tradeCompletionMessage.data.duration
+      });
 
       let broadcastCount = 0;
       global.wss.clients.forEach(client => {
