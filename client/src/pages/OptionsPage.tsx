@@ -1166,6 +1166,7 @@ function OptionsPageContent({
       processedMessagesRef.current.add(messageId);
 
       console.log('🎯 WEBSOCKET: Trade completion notification received:', lastMessage.data);
+      console.log('🎯 WEBSOCKET: Amount from message:', lastMessage.data?.amount, 'Type:', typeof lastMessage.data?.amount);
 
       const { tradeId, result, exitPrice, profitAmount, newBalance, symbol, direction, amount, entryPrice, duration, profitPercentage } = lastMessage.data;
 
@@ -1179,16 +1180,30 @@ function OptionsPageContent({
         // CRITICAL FIX: Use profitPercentage from WebSocket message, not from old trade data
         const profitPercentageValue = profitPercentage || (duration === 30 ? 10 : 15);
 
+        // CRITICAL FIX: Always prefer WebSocket amount over local trade data
+        // The WebSocket message has the authoritative amount from the server
+        const finalAmount = (amount !== undefined && amount > 0) ? amount : completedActiveTrade.amount;
+        const finalEntryPrice = (entryPrice !== undefined && entryPrice > 0) ? entryPrice : completedActiveTrade.entryPrice;
+
+        console.log('🎯 WEBSOCKET: Amount resolution:', {
+          websocketAmount: amount,
+          localAmount: completedActiveTrade.amount,
+          finalAmount: finalAmount,
+          websocketEntryPrice: entryPrice,
+          localEntryPrice: completedActiveTrade.entryPrice,
+          finalEntryPrice: finalEntryPrice
+        });
+
         const completedTrade: ActiveTrade = {
           ...completedActiveTrade,
           // CRITICAL FIX: Override with fresh data from WebSocket message
           symbol: symbol || completedActiveTrade.symbol,
           direction: (direction as 'up' | 'down') || completedActiveTrade.direction,
-          amount: amount !== undefined ? amount : completedActiveTrade.amount,  // Use WebSocket amount
-          entryPrice: entryPrice !== undefined ? entryPrice : completedActiveTrade.entryPrice,  // Use WebSocket entry price
+          amount: finalAmount,  // Use resolved amount (prefer WebSocket)
+          entryPrice: finalEntryPrice,  // Use resolved entry price (prefer WebSocket)
           status: won ? 'won' : 'lost',
           currentPrice: exitPrice || completedActiveTrade.currentPrice,
-          payout: won ? (amount || completedActiveTrade.amount) * (1 + profitPercentageValue / 100) : 0,
+          payout: won ? finalAmount * (1 + profitPercentageValue / 100) : 0,
           profit: profitAmount,
           duration: duration || completedActiveTrade.duration,
           profitPercentage: profitPercentageValue
@@ -1208,21 +1223,30 @@ function OptionsPageContent({
       } else {
         // FALLBACK: Use data from WebSocket message if available, otherwise use defaults
         console.log('⚠️ WEBSOCKET: Active trade not found, using WebSocket data for notification');
+        console.log('⚠️ WEBSOCKET: Fallback amount from message:', amount, 'profitAmount:', profitAmount);
 
         const won = result === 'win';
         const profitPercentageValue = profitPercentage || (duration === 30 ? 10 : 15);
+
+        // Ensure we have a valid amount - prefer WebSocket amount
+        let finalFallbackAmount = amount;
+        if (!finalFallbackAmount || finalFallbackAmount <= 0) {
+          // Calculate from profit if amount is missing
+          finalFallbackAmount = Math.abs(profitAmount) / (won ? profitPercentageValue / 100 : 1);
+          console.log('⚠️ WEBSOCKET: Calculated amount from profit:', finalFallbackAmount);
+        }
 
         const fallbackTrade: ActiveTrade = {
           id: tradeId,
           symbol: symbol || 'BTC/USDT', // Use symbol from WebSocket
           direction: (direction || 'up') as 'up' | 'down', // Use direction from WebSocket
-          amount: amount || Math.abs(profitAmount) / (won ? profitPercentageValue / 100 : 1), // Use amount from WebSocket
+          amount: finalFallbackAmount, // Use amount from WebSocket (or calculated)
           entryPrice: entryPrice || (exitPrice * (won ? 0.99 : 1.01)), // Use entryPrice from WebSocket
           currentPrice: exitPrice,
           status: won ? 'won' : 'lost',
           duration: duration || 30, // Use duration from WebSocket
           profitPercentage: profitPercentageValue,
-          payout: won ? (amount || 100) * (1 + profitPercentageValue / 100) : 0,
+          payout: won ? finalFallbackAmount * (1 + profitPercentageValue / 100) : 0,
           profit: profitAmount,
           startTime: Date.now() - ((duration || 30) * 1000),
           endTime: Date.now()
