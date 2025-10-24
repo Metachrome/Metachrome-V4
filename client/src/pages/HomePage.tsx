@@ -431,26 +431,24 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0D0B1F] text-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-black py-8">
-        {/* Hero Image Banner with Container */}
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="relative">
-            <img
-              src={heroDesktopImage}
-              alt="METACHROME Hero Banner - We believe in the future"
-              className="w-full h-auto object-contain rounded-lg"
-              style={{ maxHeight: '440px' }}
-            />
+      <section className="relative overflow-hidden bg-black py-8 w-full">
+        {/* Hero Image Banner - Full Width */}
+        <div className="relative w-full px-6">
+          <img
+            src={heroDesktopImage}
+            alt="METACHROME Hero Banner - We believe in the future"
+            className="w-full h-auto object-cover rounded-lg"
+            style={{ maxHeight: '440px' }}
+          />
 
-            {/* Start Trading Button Overlay - Positioned right below the text */}
-            <div className="absolute top-80 left-40 z-20">
-              <Button
-                onClick={() => setLocation("/trade/options")}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-4 rounded-lg text-lg font-semibold border-0 shadow-lg transform hover:scale-105 transition-all duration-300"
-              >
-                Start Trading
-              </Button>
-            </div>
+          {/* Start Trading Button Overlay - Positioned right below the text */}
+          <div className="absolute top-80 left-40 z-20">
+            <Button
+              onClick={() => setLocation("/trade/options")}
+              className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-4 rounded-lg text-lg font-semibold border-0 shadow-lg transform hover:scale-105 transition-all duration-300"
+            >
+              Start Trading
+            </Button>
           </div>
         </div>
       </section>
