@@ -233,7 +233,8 @@
 
 html {
   overflow-x: hidden;
-  width: 100%;
+  width: 100vw;
+  max-width: 100%;
 }
 
 body {
@@ -241,9 +242,14 @@ body {
   background-color: hsl(var(--dark-300));
   color: hsl(var(--foreground));
   overflow-x: hidden;
-  width: 100%;
+  width: 100vw;
+  max-width: 100%;
   margin: 0;
   padding: 0;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 /* Override Tailwind's min-h-screen to use 50vh instead of 100vh */
