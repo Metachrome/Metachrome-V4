@@ -81,6 +81,14 @@ const PORT = process.env.PORT || 3005;
 // Fast startup - minimal logging
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Redirect non-www to www
+app.use((req, res, next) => {
+  if (req.hostname === 'metachrome.io') {
+    return res.redirect(301, `https://www.metachrome.io${req.originalUrl}`);
+  }
+  next();
+});
+
 // Supabase client setup
 let supabase = null;
 try {
