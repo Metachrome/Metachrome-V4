@@ -985,21 +985,27 @@ async function getUserFromToken(token) {
     // Handle different token formats
     if (token.startsWith('user-session-')) {
       // Extract user ID from session token
+      // Token format: user-session-{base64EncodedUserId}-{timestamp}
       const parts = token.split('-');
-      console.log('🔍 Token parts:', parts);
+      console.log('🔍 Token parts count:', parts.length);
 
       let userId = null;
       if (parts.length >= 4) {
-        // For tokens like: user-session-user-angela-1758186127890
-        // Parts: ['user', 'session', 'user', 'angela', '1758186127890']
-        // We need to reconstruct the userId from parts 2 onwards, excluding the last part (timestamp)
-        const userIdParts = parts.slice(2, -1); // Get all parts except first 2 and last 1
-        userId = userIdParts.join('-');
+        // The encoded user ID is the 3rd part (index 2)
+        // The timestamp is the last part
+        const encodedUserId = parts[2];
 
-        // Additional debug logging
-        console.log('🔍 Token parts:', parts);
-        console.log('🔍 User ID parts:', userIdParts);
-        console.log('🔍 Final extracted userId:', userId);
+        try {
+          // Decode the Base64 encoded user ID
+          userId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
+          console.log('🔍 Decoded userId from Base64:', userId);
+        } catch (decodeError) {
+          console.error('🔍 Failed to decode Base64 user ID:', decodeError.message);
+          // Fallback to old logic for backward compatibility
+          const userIdParts = parts.slice(2, -1);
+          userId = userIdParts.join('-');
+          console.log('🔍 Using fallback userId extraction:', userId);
+        }
 
         if (isProduction && supabase) {
           try {
@@ -1450,9 +1456,13 @@ app.post('/api/auth', async (req, res) => {
           existingUser.last_login = new Date().toISOString();
           await updateUser(existingUser.id, { last_login: existingUser.last_login });
 
+          // Encode user ID in Base64 to avoid issues with UUID hyphens
+          const encodedUserId = Buffer.from(existingUser.id).toString('base64');
+          const token = `user-session-${encodedUserId}-${Date.now()}`;
+
           return res.json({
             success: true,
-            token: `user-session-${existingUser.id}-${Date.now()}`,
+            token: token,
             user: {
               id: existingUser.id,
               username: existingUser.username,
@@ -1502,9 +1512,13 @@ app.post('/api/auth', async (req, res) => {
             }
           });
 
+          // Encode user ID in Base64 to avoid issues with UUID hyphens
+          const encodedUserId = Buffer.from(newUser.id).toString('base64');
+          const token = `user-session-${encodedUserId}-${Date.now()}`;
+
           return res.json({
             success: true,
-            token: `user-session-${newUser.id}-${Date.now()}`,
+            token: token,
             user: {
               id: newUser.id,
               username: newUser.username,
@@ -1608,8 +1622,11 @@ app.post('/api/auth', async (req, res) => {
         }
       });
 
-      const token = `user-session-${newUser.id}-${Date.now()}`;
+      // Encode user ID in Base64 to avoid issues with UUID hyphens
+      const encodedUserId = Buffer.from(newUser.id).toString('base64');
+      const token = `user-session-${encodedUserId}-${Date.now()}`;
       console.log('🔑 Generated token for new user:', token);
+      console.log('🔑 Token debug - Original ID:', newUser.id, 'Encoded:', encodedUserId);
 
       res.json({
         success: true,
@@ -1647,9 +1664,13 @@ app.post('/api/auth', async (req, res) => {
 
       if (isValidPassword) {
         console.log('✅ User login successful:', username);
+        // Encode user ID in Base64 to avoid issues with UUID hyphens
+        const encodedUserId = Buffer.from(user.id).toString('base64');
+        const token = `user-session-${encodedUserId}-${Date.now()}`;
+
         res.json({
           success: true,
-          token: `user-session-${user.id}-${Date.now()}`,
+          token: token,
           user: {
             id: user.id,
             username: user.username,
@@ -1943,7 +1964,9 @@ app.post('/api/auth/register', async (req, res) => {
     }
     console.log('✅ User creation verified in database');
     // Generate a simple token for authentication
-    const token = `user-session-${newUser.id}-${Date.now()}`;
+    // Encode user ID in Base64 to avoid issues with UUID hyphens
+    const encodedUserId = Buffer.from(newUser.id).toString('base64');
+    const token = `user-session-${encodedUserId}-${Date.now()}`;
 
     res.json({
       success: true,
@@ -2033,7 +2056,9 @@ app.post('/api/auth/user/register', async (req, res) => {
     });
 
     // Generate a simple token for authentication
-    const token = `user-session-${newUser.id}-${Date.now()}`;
+    // Encode user ID in Base64 to avoid issues with UUID hyphens
+    const encodedUserId = Buffer.from(newUser.id).toString('base64');
+    const token = `user-session-${encodedUserId}-${Date.now()}`;
 
     res.json({
       success: true,
@@ -2077,9 +2102,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (isValidPassword) {
       console.log('✅ User login successful:', username);
+      // Encode user ID in Base64 to avoid issues with UUID hyphens
+      const encodedUserId = Buffer.from(user.id).toString('base64');
+      const token = `user-session-${encodedUserId}-${Date.now()}`;
+
       res.json({
         success: true,
-        token: `user-session-${user.id}-${Date.now()}`,
+        token: token,
         user: {
           id: user.id,
           username: user.username,
@@ -2129,9 +2158,13 @@ app.post('/api/auth/user/login', async (req, res) => {
 
     if (isValidPassword) {
       console.log('✅ User login successful:', username);
+      // Encode user ID in Base64 to avoid issues with UUID hyphens
+      const encodedUserId = Buffer.from(user.id).toString('base64');
+      const token = `user-session-${encodedUserId}-${Date.now()}`;
+
       res.json({
         success: true,
-        token: `user-session-${user.id}-${Date.now()}`,
+        token: token,
         user: {
           id: user.id,
           username: user.username,
@@ -2258,7 +2291,9 @@ app.get('/api/auth/google/callback', async (req, res) => {
     }
 
     // Generate token and redirect to dashboard
-    const token = `user-session-${user.id}-${Date.now()}`;
+    // Encode user ID in Base64 to avoid issues with UUID hyphens
+    const encodedUserId = Buffer.from(user.id).toString('base64');
+    const token = `user-session-${encodedUserId}-${Date.now()}`;
 
     // Redirect to frontend with token
     res.redirect(`/dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify({
