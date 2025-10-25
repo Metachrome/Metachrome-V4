@@ -2270,7 +2270,8 @@ app.get('/api/auth/google/callback', async (req, res) => {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
-      hasUploadedDocuments: user.has_uploaded_documents || false
+      hasUploadedDocuments: user.has_uploaded_documents || false,
+      hasPassword: !!user.password_hash
     }))}`);
 
   } catch (error) {
