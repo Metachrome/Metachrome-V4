@@ -6740,10 +6740,12 @@ app.post('/api/trades/complete', async (req, res) => {
         console.log(`📊 Calculated profit from duration: ${duration}s → ${(profitRate * 100).toFixed(0)}% → ${profitAmount} USDT`);
       }
       balanceChange = tradeAmount + profitAmount; // Return original amount + profit
+      console.log(`✅ WIN: Returning ${tradeAmount} + ${profitAmount} profit = ${balanceChange} to balance`);
     } else {
-      // Lose: balance was already deducted when trade started, so no change needed
-      profitAmount = -tradeAmount; // Loss amount (negative)
-      balanceChange = -tradeAmount; // Record the loss amount for transaction history
+      // Lose: balance was already deducted when trade started, so NO ADDITIONAL CHANGE
+      profitAmount = -tradeAmount; // Loss amount (negative) - for record keeping only
+      balanceChange = 0; // CRITICAL FIX: Balance was already deducted at trade start, don't deduct again!
+      console.log(`❌ LOSE: Balance already deducted at trade start. No additional change needed. balanceChange = 0`);
     }
 
     // Update user balance and trade count
