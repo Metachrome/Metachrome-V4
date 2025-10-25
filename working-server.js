@@ -8512,7 +8512,12 @@ app.post('/api/user/upload-verification', (req, res, next) => {
 
   } catch (error) {
     console.error('❌ Error uploading verification document:', error);
-    res.status(500).json({ error: 'Failed to upload verification document' });
+    console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to upload verification document',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 

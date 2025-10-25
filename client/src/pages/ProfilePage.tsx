@@ -228,8 +228,13 @@ export default function ProfilePage() {
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Failed to upload document');
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || errorData.details || 'Failed to upload document');
+        } catch (e) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Failed to upload document');
+        }
       }
 
       return await response.json();
