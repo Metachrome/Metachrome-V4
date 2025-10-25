@@ -5478,11 +5478,10 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     if (supabase) {
       try {
         // Generate realistic exit price based on entry price and trade outcome
-        // Note: We'll fetch the trade data from database to get entry price
-        let entryPrice = 50000; // Default entry price
-        let exitPrice = 0;
+        // CRITICAL FIX: Use the entryPrice parameter passed in, not a hardcoded default!
+        let calculatedExitPrice = 0;
 
-        if (entryPrice > 0) {
+        if (entryPrice && entryPrice > 0) {
           // Use trade ID as seed for consistent price generation
           const seed = parseInt(tradeId.toString().slice(-6)) || 123456;
           const seededRandom = (seed * 9301 + 49297) % 233280 / 233280;
@@ -5497,19 +5496,19 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           let priceDirection = finalWon ? 1 : -1; // UP wins if price goes up, DOWN wins if price goes down
 
           // Calculate realistic exit price
-          exitPrice = entryPrice * (1 + (movementPercent * priceDirection));
+          calculatedExitPrice = entryPrice * (1 + (movementPercent * priceDirection));
 
           // Ensure minimum price difference (at least $0.01 for Bitcoin)
           const minDifference = 0.01;
-          if (Math.abs(exitPrice - entryPrice) < minDifference) {
-            exitPrice = entryPrice + (priceDirection * minDifference);
+          if (Math.abs(calculatedExitPrice - entryPrice) < minDifference) {
+            calculatedExitPrice = entryPrice + (priceDirection * minDifference);
           }
 
-          console.log(`📊 Generated realistic exit price for trade ${tradeId}: Entry=${entryPrice}, Exit=${exitPrice}, Movement=${((exitPrice - entryPrice) / entryPrice * 100).toFixed(4)}%`);
+          console.log(`📊 Generated realistic exit price for trade ${tradeId}: Entry=${entryPrice}, Exit=${calculatedExitPrice}, Movement=${((calculatedExitPrice - entryPrice) / entryPrice * 100).toFixed(4)}%`);
         } else {
           // Fallback to current market price if no entry price
           const currentMarketPrice = await getCurrentPrice('BTCUSDT');
-          exitPrice = currentMarketPrice ? parseFloat(currentMarketPrice.price) : 0;
+          calculatedExitPrice = currentMarketPrice ? parseFloat(currentMarketPrice.price) : 0;
         }
 
         const { error } = await supabase
@@ -5517,7 +5516,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           .update({
             result: finalWon ? 'win' : 'lose',
             status: 'completed',
-            exit_price: exitPrice, // Use actual current price
+            exit_price: calculatedExitPrice, // Use actual current price
             profit_loss: profitAmount,
             updated_at: new Date().toISOString()
           })
@@ -5535,8 +5534,35 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
     // Broadcast trade completion notification via WebSocket
     if (global.wss) {
-      // Generate exit price without relying on trade object (which may not be available)
-      const exitPrice = 50000 + (Math.random() - 0.5) * 2000; // Simple price generation
+      // CRITICAL FIX: Use the actual entry price parameter, not a hardcoded default!
+      // Generate realistic exit price based on entry price
+      let wsExitPrice = 0;
+      if (entryPrice && entryPrice > 0) {
+        // Use trade ID as seed for consistent price generation
+        const seed = parseInt(tradeId.toString().slice(-6)) || 123456;
+        const seededRandom = (seed * 9301 + 49297) % 233280 / 233280;
+
+        // Generate realistic price movement
+        const maxMovement = 0.005; // 0.5% maximum movement
+        const minMovement = 0.0001; // 0.01% minimum movement
+        const movementRange = maxMovement - minMovement;
+        const movementPercent = (seededRandom * movementRange + minMovement);
+
+        // Determine direction based on trade outcome
+        let priceDirection = finalWon ? 1 : -1;
+
+        // Calculate realistic exit price
+        wsExitPrice = entryPrice * (1 + (movementPercent * priceDirection));
+
+        // Ensure minimum price difference
+        const minDifference = 0.01;
+        if (Math.abs(wsExitPrice - entryPrice) < minDifference) {
+          wsExitPrice = entryPrice + (priceDirection * minDifference);
+        }
+      } else {
+        // Fallback if no entry price
+        wsExitPrice = 50000 + (Math.random() - 0.5) * 2000;
+      }
 
       // CRITICAL FIX: Include ALL necessary fields for the notification
       const tradeCompletionMessage = {
@@ -5545,14 +5571,14 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           tradeId: tradeId,
           userId: userId,
           result: finalWon ? 'win' : 'lose',
-          exitPrice: exitPrice,
+          exitPrice: wsExitPrice,
           profitAmount: profitAmount,
           newBalance: users[userIndex].balance,
           // CRITICAL: Include these fields so client can display correct notification
           amount: amount, // The actual trade amount
           symbol: symbol || 'BTC/USDT', // The trading symbol
           direction: direction || 'up', // The trade direction
-          entryPrice: entryPrice || 50000, // The entry price
+          entryPrice: entryPrice, // CRITICAL: Use the actual entry price parameter!
           duration: duration || 30, // The trade duration
           profitPercentage: finalWon ? (duration === 30 ? 10 : 15) : 0, // Profit percentage
           timestamp: new Date().toISOString()
