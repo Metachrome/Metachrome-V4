@@ -986,72 +986,79 @@ async function getUserFromToken(token) {
     if (token.startsWith('user-session-')) {
       // Extract user ID from session token
       // Token format: user-session-{base64EncodedUserId}-{timestamp}
-      const parts = token.split('-');
-      console.log('🔍 Token parts count:', parts.length);
+      console.log('🔍 Full token:', token);
+
+      // Find the last hyphen which separates the timestamp
+      const lastHyphenIndex = token.lastIndexOf('-');
+      if (lastHyphenIndex === -1) {
+        console.error('🔍 Invalid token format - no timestamp separator found');
+        return null;
+      }
+
+      // Extract the part between "user-session-" and the last hyphen
+      const prefix = 'user-session-';
+      const encodedUserId = token.substring(prefix.length, lastHyphenIndex);
+      const timestamp = token.substring(lastHyphenIndex + 1);
+
+      console.log('🔍 Token parts:', { encodedUserId, timestamp });
 
       let userId = null;
-      if (parts.length >= 4) {
-        // The encoded user ID is the 3rd part (index 2)
-        // The timestamp is the last part
-        const encodedUserId = parts[2];
-
-        try {
-          // Decode the Base64 encoded user ID
-          userId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
-          console.log('🔍 Decoded userId from Base64:', userId);
-        } catch (decodeError) {
-          console.error('🔍 Failed to decode Base64 user ID:', decodeError.message);
-          // Fallback to old logic for backward compatibility
-          const userIdParts = parts.slice(2, -1);
-          userId = userIdParts.join('-');
-          console.log('🔍 Using fallback userId extraction:', userId);
-        }
-
-        if (isProduction && supabase) {
-          try {
-            console.log('🔍 Querying Supabase for user ID:', userId);
-            const { data, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', userId)
-              .single();
-
-            if (error && error.code !== 'PGRST116') {
-              console.error('🔍 Supabase error:', error);
-              throw error; // PGRST116 = no rows returned
-            }
-
-            // CRITICAL FIX: Log the actual data being returned
-            if (data) {
-              console.log('🔍 getUserFromToken - Fresh user data from Supabase:', {
-                id: data.id,
-                username: data.username,
-                verification_status: data.verification_status,
-                has_uploaded_documents: data.has_uploaded_documents,
-                verified_at: data.verified_at
-              });
-              return data;
-            } else {
-              console.log('🔍 No user found in Supabase for ID:', userId);
-              return null;
-            }
-          } catch (supabaseError) {
-            console.error('🔍 Supabase query failed:', supabaseError.message);
-            // Fallback to local users if Supabase fails
-            const users = await getUsers();
-            const foundUser = users.find(u => u.id === userId);
-            console.log('🔍 Found user in local storage:', foundUser ? foundUser.username : 'NOT FOUND');
-            return foundUser || null;
-          }
-        } else {
-          // Development fallback
-          const users = await getUsers();
-          console.log('🔍 Available users:', users.map(u => ({ id: u.id, username: u.username })));
-          const foundUser = users.find(u => u.id === userId);
-          console.log('🔍 Found user:', foundUser ? foundUser.username : 'NOT FOUND');
-          return foundUser;
-        }
+      try {
+        // Decode the Base64 encoded user ID
+        userId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
+        console.log('🔍 Decoded userId from Base64:', userId);
+      } catch (decodeError) {
+        console.error('🔍 Failed to decode Base64 user ID:', decodeError.message);
+        // If Base64 decode fails, assume it's the old format
+        userId = encodedUserId;
+        console.log('🔍 Using raw userId (Base64 decode failed):', userId);
       }
+
+      if (isProduction && supabase) {
+        try {
+          console.log('🔍 Querying Supabase for user ID:', userId);
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          if (error && error.code !== 'PGRST116') {
+            console.error('🔍 Supabase error:', error);
+            throw error; // PGRST116 = no rows returned
+          }
+
+          // CRITICAL FIX: Log the actual data being returned
+          if (data) {
+            console.log('🔍 getUserFromToken - Fresh user data from Supabase:', {
+              id: data.id,
+              username: data.username,
+              verification_status: data.verification_status,
+              has_uploaded_documents: data.has_uploaded_documents,
+              verified_at: data.verified_at
+            });
+            return data;
+          } else {
+            console.log('🔍 No user found in Supabase for ID:', userId);
+            return null;
+          }
+        } catch (supabaseError) {
+          console.error('🔍 Supabase query failed:', supabaseError.message);
+          // Fallback to local users if Supabase fails
+          const users = await getUsers();
+          const foundUser = users.find(u => u.id === userId);
+          console.log('🔍 Found user in local storage:', foundUser ? foundUser.username : 'NOT FOUND');
+          return foundUser || null;
+        }
+      } else {
+        // Development fallback
+        const users = await getUsers();
+        console.log('🔍 Available users:', users.map(u => ({ id: u.id, username: u.username })));
+        const foundUser = users.find(u => u.id === userId);
+        console.log('🔍 Found user:', foundUser ? foundUser.username : 'NOT FOUND');
+        return foundUser;
+      }
+    }
     } else if (token.startsWith('admin-session-')) {
       // Handle admin tokens
       const parts = token.split('-');
