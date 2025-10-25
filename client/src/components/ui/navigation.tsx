@@ -143,10 +143,10 @@ export function Navigation() {
     <header className="bg-[#34344E] border-b border-gray-700/30">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-16">
-          {/* Logo */}
-          <div className="flex items-center">
+          {/* Logo - Desktop only */}
+          <div className="hidden md:flex items-center">
             <Link href="/">
-              <div className="flex items-center">
+              <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
                 <img
                   src={metachromeLogo}
                   alt="METACHROME"
