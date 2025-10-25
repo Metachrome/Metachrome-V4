@@ -8406,17 +8406,21 @@ app.get('/api/debug/verification-status/:username', async (req, res) => {
   }
 });
 
-// Middleware to handle multer errors
-const handleMulterError = (err, req, res, next) => {
-  if (err) {
-    console.error('❌ Multer error:', err.message);
-    return res.status(400).json({ error: err.message || 'File upload failed' });
-  }
-  next();
+// Helper to wrap multer middleware
+const multerSingle = (fieldName) => {
+  return (req, res, next) => {
+    upload.single(fieldName)(req, res, (err) => {
+      if (err) {
+        console.error('❌ Multer error:', err.message);
+        return res.status(400).json({ error: err.message || 'File upload failed' });
+      }
+      next();
+    });
+  };
 };
 
 // Upload verification document
-app.post('/api/user/upload-verification', upload.single('document'), handleMulterError, async (req, res) => {
+app.post('/api/user/upload-verification', multerSingle('document'), async (req, res) => {
   try {
     console.log('📄 Verification document upload request');
     console.log('📄 Request headers:', req.headers.authorization ? 'Authorization header present' : 'No authorization header');
