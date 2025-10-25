@@ -232,8 +232,8 @@ export default function ProfilePage() {
           const errorData = await response.json();
           throw new Error(errorData.error || errorData.details || 'Failed to upload document');
         } catch (e) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to upload document');
+          // If JSON parsing fails, just throw a generic error
+          throw new Error('Failed to upload document');
         }
       }
 
