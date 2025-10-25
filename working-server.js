@@ -1002,25 +1002,37 @@ async function getUserFromToken(token) {
         console.log('🔍 Final extracted userId:', userId);
 
         if (isProduction && supabase) {
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
+          try {
+            const { data, error } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', userId)
+              .single();
 
-          if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+            if (error && error.code !== 'PGRST116') {
+              console.error('🔍 Supabase error:', error);
+              throw error; // PGRST116 = no rows returned
+            }
 
-          // CRITICAL FIX: Log the actual data being returned
-          if (data) {
-            console.log('🔍 getUserFromToken - Fresh user data from Supabase:', {
-              username: data.username,
-              verification_status: data.verification_status,
-              has_uploaded_documents: data.has_uploaded_documents,
-              verified_at: data.verified_at
-            });
+            // CRITICAL FIX: Log the actual data being returned
+            if (data) {
+              console.log('🔍 getUserFromToken - Fresh user data from Supabase:', {
+                username: data.username,
+                verification_status: data.verification_status,
+                has_uploaded_documents: data.has_uploaded_documents,
+                verified_at: data.verified_at
+              });
+            }
+
+            return data;
+          } catch (supabaseError) {
+            console.error('🔍 Supabase query failed, falling back to local users:', supabaseError);
+            // Fallback to local users if Supabase fails
+            const users = await getUsers();
+            const foundUser = users.find(u => u.id === userId);
+            console.log('🔍 Found user in local storage:', foundUser ? foundUser.username : 'NOT FOUND');
+            return foundUser || null;
           }
-
-          return data;
         } else {
           // Development fallback
           const users = await getUsers();
