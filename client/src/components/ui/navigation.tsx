@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../ui/dropdown-menu";
-import { Menu, X, User, LogOut, Settings, UserCircle, ChevronDown } from "lucide-react";
+import { Menu, X, User, LogOut, Settings, UserCircle, ChevronDown, Home } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { apiRequest } from "../../lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
@@ -233,9 +233,10 @@ export function Navigation() {
                   </div>
                 ) : (
                   <Link href={item.path}>
-                    <span className={`text-gray-300 hover:text-white px-3 py-2 text-sm font-medium ${
+                    <span className={`text-gray-300 hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2 ${
                       location === item.path ? 'text-white' : ''
                     }`}>
+                      {item.path === "/" && <Home className="w-4 h-4" />}
                       {item.label}
                     </span>
                   </Link>
