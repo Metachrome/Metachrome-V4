@@ -123,8 +123,8 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: function (req, file, cb) {
-    // Accept images and PDFs only
-    if (!file.originalname.match(/\.(jpg|jpeg|png|gif|pdf)$/)) {
+    // Accept images and PDFs only (case-insensitive)
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif|pdf)$/i)) {
       return cb(new Error('Only image and PDF files are allowed!'), false);
     }
     cb(null, true);
