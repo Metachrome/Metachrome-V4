@@ -2290,7 +2290,7 @@ function OptionsPageContent({
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium text-base transition-colors relative"
                 >
-                  <div>Buy Up</div>
+                  <div>Buy/Up</div>
                   <div className="text-xs mt-0.5">
                     Profit: {getProfitPercentage(selectedDuration)}% •
                     Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
@@ -2301,7 +2301,7 @@ function OptionsPageContent({
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium text-base transition-colors relative"
                 >
-                  <div>Buy Down</div>
+                  <div>Sell/Down</div>
                   <div className="text-xs mt-0.5">
                     Profit: {getProfitPercentage(selectedDuration)}% •
                     Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
@@ -2439,7 +2439,7 @@ function OptionsPageContent({
                           <div key={trade.id} className="bg-gray-800 rounded p-3">
                             <div className="flex justify-between items-center mb-2">
                               <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                                {trade.direction.toUpperCase()} • {trade.amount} USDT
+                                {trade.direction === 'up' ? 'UP' : 'SELL'} • {trade.amount} USDT
                               </span>
                               <span className={`font-bold text-sm ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                                 {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
@@ -3175,7 +3175,7 @@ function OptionsPageContent({
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 rounded font-medium text-lg transition-colors relative"
                 >
-                  <div>Buy Up</div>
+                  <div>Buy/Up</div>
                   <div className="text-xs mt-1">
                     Profit: {getProfitPercentage(selectedDuration)}% •
                     Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
@@ -3186,7 +3186,7 @@ function OptionsPageContent({
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 rounded font-medium text-lg transition-colors relative"
                 >
-                  <div>Buy Down</div>
+                  <div>Sell/Down</div>
                   <div className="text-xs mt-1">
                     Profit: {getProfitPercentage(selectedDuration)}% •
                     Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
@@ -3585,7 +3585,7 @@ function OptionsPageContent({
                           <div className="flex flex-col min-w-0">
                             <span className="text-gray-400 text-xs truncate">{marketPair}</span>
                             <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                              {trade.direction.toUpperCase()}
+                              {trade.direction === 'up' ? 'UP' : 'SELL'}
                             </span>
                           </div>
                           <span className="text-gray-300 truncate text-center">{trade.entryPrice.toFixed(2)}</span>

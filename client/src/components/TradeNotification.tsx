@@ -130,7 +130,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
           >
             <span className="text-gray-200">Trade:</span>
             <span className="font-bold">
-              {trade.direction === 'up' ? 'BUY UP' : 'BUY DOWN'}
+              {trade.direction === 'up' ? 'BUY/UP' : 'SELL/DOWN'}
             </span>
           </div>
           <div
