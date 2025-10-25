@@ -1325,10 +1325,17 @@ function OptionsPageContent({
               const exitPrice = parseFloat(serverTrade.exit_price) || activeTrade.entryPrice;
 
               const completedTrade: ActiveTrade = {
-                ...activeTrade,
-                amount: tradeAmount, // Use server amount
-                entryPrice: entryPrice, // Use server entry price
-                currentPrice: exitPrice, // Use server exit price
+                id: activeTrade.id,
+                direction: activeTrade.direction,
+                duration: activeTrade.duration,
+                startTime: activeTrade.startTime,
+                endTime: activeTrade.endTime,
+                profitPercentage: profitPercentage,
+                symbol: activeTrade.symbol,
+                // CRITICAL: Use server values, not local trade values
+                amount: tradeAmount,
+                entryPrice: entryPrice,
+                currentPrice: exitPrice,
                 status: won ? 'won' : 'lost',
                 payout: won ? tradeAmount * (1 + profitPercentage / 100) : 0,
                 profit: won ? (tradeAmount * profitPercentage / 100) : -tradeAmount
@@ -1478,10 +1485,17 @@ function OptionsPageContent({
             const serverExitPrice = parseFloat(serverTrade.exit_price) || finalPrice;
 
             const fallbackTrade: ActiveTrade = {
-              ...trade,
-              amount: serverAmount, // Use server amount, not local trade amount
-              entryPrice: serverEntryPrice, // Use server entry price
-              currentPrice: serverExitPrice, // Use server exit price
+              id: trade.id,
+              direction: trade.direction,
+              duration: trade.duration,
+              startTime: trade.startTime,
+              endTime: trade.endTime,
+              profitPercentage: profitPercentage,
+              symbol: trade.symbol,
+              // CRITICAL: Use server values, not local trade values
+              amount: serverAmount,
+              entryPrice: serverEntryPrice,
+              currentPrice: serverExitPrice,
               status: actualWon ? 'won' : 'lost',
               payout: actualWon ? serverAmount * (1 + profitPercentage / 100) : 0,
               profit: actualWon ? (serverAmount * profitPercentage / 100) : -serverAmount
