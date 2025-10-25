@@ -123,6 +123,16 @@ function OptionsPageContent({
       return;
     }
 
+    // CRITICAL: Check if trade is too old (more than 60 seconds old)
+    // This prevents showing stale notifications from previous trades
+    if (trade.startTime && typeof trade.startTime === 'number') {
+      const tradeAge = Date.now() - trade.startTime;
+      if (tradeAge > 60000) { // More than 60 seconds old
+        console.log('⚠️ TRIGGER: Skipping notification - trade is too old:', tradeAge, 'ms');
+        return;
+      }
+    }
+
     // Check for duplicate notifications within 5 seconds (but allow test messages)
     const now = Date.now();
     const isTestTrade = trade.id.includes('test-');
@@ -156,6 +166,15 @@ function OptionsPageContent({
     localStorage.setItem('completedTrade', JSON.stringify(trade));
 
     console.log('🔔 TRIGGER: Notification set for trade:', trade.id);
+    console.log('🔔 TRIGGER: Full trade object being displayed:', JSON.stringify({
+      id: trade.id,
+      amount: trade.amount,
+      entryPrice: trade.entryPrice,
+      currentPrice: trade.currentPrice,
+      status: trade.status,
+      duration: trade.duration,
+      profitPercentage: trade.profitPercentage
+    }, null, 2));
 
     // Auto-hide after 25 seconds (reduced from 60 for better UX)
     setTimeout(() => {
