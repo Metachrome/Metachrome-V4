@@ -3322,7 +3322,16 @@ app.post('/api/transactions/deposit-request', async (req, res) => {
 });
 
 // ===== WALLET PAGE DEPOSIT ENDPOINT =====
-app.post('/api/deposits', upload.single('receipt'), async (req, res) => {
+app.post('/api/deposits', (req, res, next) => {
+  // Handle multer errors
+  upload.single('receipt')(req, res, (err) => {
+    if (err) {
+      console.error('❌ Multer error:', err.message);
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     console.log('💰 Wallet page deposit request');
     console.log('💰 Request body:', req.body);
@@ -3446,7 +3455,16 @@ app.post('/api/deposits', upload.single('receipt'), async (req, res) => {
 });
 
 // ===== SUBMIT PROOF ENDPOINT =====
-app.post('/api/transactions/submit-proof', upload.single('receipt'), async (req, res) => {
+app.post('/api/transactions/submit-proof', (req, res, next) => {
+  // Handle multer errors
+  upload.single('receipt')(req, res, (err) => {
+    if (err) {
+      console.error('❌ Multer error:', err.message);
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+    next();
+  });
+}, async (req, res) => {
   console.log('📄 Submitting proof');
   console.log('📄 Request body:', req.body);
   console.log('📄 Request file:', req.file);
@@ -8377,7 +8395,16 @@ app.get('/api/debug/verification-status/:username', async (req, res) => {
 });
 
 // Upload verification document
-app.post('/api/user/upload-verification', upload.single('document'), async (req, res) => {
+app.post('/api/user/upload-verification', (req, res, next) => {
+  // Handle multer errors
+  upload.single('document')(req, res, (err) => {
+    if (err) {
+      console.error('❌ Multer error:', err.message);
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     console.log('📄 Verification document upload request');
     console.log('📄 Request headers:', req.headers.authorization ? 'Authorization header present' : 'No authorization header');
