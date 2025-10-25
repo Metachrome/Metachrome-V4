@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePolling } from "./usePolling";
 
 interface WebSocketMessage {
   type: string;
@@ -6,20 +7,16 @@ interface WebSocketMessage {
 }
 
 export function useWebSocket() {
-  console.log('🚀 WEBSOCKET HOOK: useWebSocket() called - hook is being used!');
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 5;
+  const [usePollingFallback, setUsePollingFallback] = useState(false);
+  const pollingHook = usePolling();
+  const connectionAttemptRef = useRef(0);
 
   const connect = useCallback(() => {
     try {
       console.log('🔌 WEBSOCKET DEBUG: ===== CONNECT FUNCTION CALLED =====');
-      console.log('🔌 WEBSOCKET DEBUG: Starting connection attempt...');
-      console.log('🔌 WEBSOCKET DEBUG: Current location:', window.location.hostname, window.location.port);
-      console.log('🔌 WEBSOCKET DEBUG: Full URL:', window.location.href);
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
@@ -31,10 +28,6 @@ export function useWebSocket() {
       // Check if we're on Vercel or Railway
       const isVercel = window.location.hostname.includes('vercel.app');
       const isRailway = window.location.hostname.includes('railway.app');
-
-      console.log('🔌 WEBSOCKET DEBUG: Environment check:', { isLocal, isVercel, isRailway });
-      console.log('🔌 WEBSOCKET DEBUG: Current hostname:', window.location.hostname);
-      console.log('🔌 WEBSOCKET DEBUG: Current protocol:', window.location.protocol);
 
       // Use correct WebSocket URL
       let wsUrl;
@@ -49,28 +42,30 @@ export function useWebSocket() {
         wsUrl = `${backendProtocol}//${backendHost}/ws`;
         console.log('🔌 CUSTOM BACKEND: Using provided backend URL:', wsUrl);
       } else if (isLocal) {
-        wsUrl = 'ws://127.0.0.1:3005/ws'; // FIXED: Use port 3005 to match server
-      } else if (isVercel) {
-        // Vercel doesn't support WebSockets in serverless functions
-        // We'll use polling instead for Vercel deployment
-        console.log('🔌 Vercel deployment detected - WebSocket not available, using polling');
+        wsUrl = 'ws://127.0.0.1:3005/ws';
+      } else if (isVercel || isRailway) {
+        // Both Vercel and Railway have issues with WebSocket through reverse proxies
+        // Use polling instead
+        console.log('🔌 Cloud deployment detected - WebSocket not available, using polling');
+        setUsePollingFallback(true);
         return;
-      } else if (isRailway) {
-        // Railway supports WebSockets - use the same host and port
-        wsUrl = `${protocol}//${window.location.host}/ws`;
-        console.log('🔌 Railway deployment detected - using WebSocket:', wsUrl);
-        console.log('🔌 RAILWAY DEBUG: Full WebSocket URL will be:', wsUrl);
       } else {
         // For any other deployment (including custom domains like www.metachrome.io)
         wsUrl = `${protocol}//${window.location.host}/ws`;
-        console.log('🔌 CUSTOM DOMAIN DEPLOYMENT: Using WebSocket URL:', wsUrl);
-        console.log('🔌 CUSTOM DOMAIN DEBUG: hostname=', window.location.hostname, 'host=', window.location.host, 'protocol=', protocol);
+        console.log('🔌 CUSTOM DOMAIN DEPLOYMENT: Attempting WebSocket at:', wsUrl);
       }
 
+      // Only attempt WebSocket connection once per session
+      if (connectionAttemptRef.current > 0) {
+        console.log('🔌 WEBSOCKET: Already attempted connection, using polling fallback');
+        setUsePollingFallback(true);
+        return;
+      }
+
+      connectionAttemptRef.current++;
       console.log('🔌 WEBSOCKET DEBUG: Attempting to connect to:', wsUrl);
-      console.log('🔌 WEBSOCKET DEBUG: Creating WebSocket instance...');
       const ws = new WebSocket(wsUrl);
-      console.log('🔌 WEBSOCKET DEBUG: WebSocket instance created:', ws);
+      console.log('🔌 WEBSOCKET DEBUG: WebSocket instance created');
 
       ws.onopen = () => {
         console.log("🔌 WEBSOCKET DEBUG: WebSocket connected successfully!");
@@ -131,25 +126,13 @@ export function useWebSocket() {
         setConnected(false);
         setSocket(null);
 
-        // Attempt to reconnect if not intentionally closed
-        if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
-          console.log(`Attempting to reconnect in ${delay}ms...`);
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            reconnectAttemptsRef.current++;
-            connect();
-          }, delay);
-        }
+        // Don't attempt to reconnect - use polling instead
+        // WebSocket is not reliable on cloud deployments with reverse proxies
       };
 
       ws.onerror = (error) => {
-        console.error("🔌 WEBSOCKET DEBUG: WebSocket error:", error);
-        console.error("🔌 WEBSOCKET DEBUG: Error details:", {
-          url: wsUrl,
-          readyState: ws.readyState,
-          protocol: ws.protocol
-        });
+        console.error("🔌 WEBSOCKET DEBUG: WebSocket error - falling back to polling");
+        setConnected(false);
       };
 
       setSocket(ws);
@@ -192,11 +175,8 @@ export function useWebSocket() {
 
   // Connect on mount
   useEffect(() => {
-    console.log('🚀 WEBSOCKET HOOK: useEffect triggered - attempting to connect...');
-    console.log('🚀 WEBSOCKET HOOK: connect function:', typeof connect);
-    console.log('🚀 WEBSOCKET HOOK: Calling connect()...');
+    console.log('🚀 WEBSOCKET HOOK: useEffect triggered');
     connect();
-    console.log('🚀 WEBSOCKET HOOK: connect() called successfully');
 
     // Cleanup on unmount
     return () => {
@@ -204,6 +184,14 @@ export function useWebSocket() {
       disconnect();
     };
   }, [connect, disconnect]);
+
+  // If WebSocket fails, use polling fallback
+  useEffect(() => {
+    if (usePollingFallback) {
+      console.log('📡 WEBSOCKET HOOK: Switching to polling fallback');
+      return;
+    }
+  }, [usePollingFallback]);
 
   // Keep-alive ping
   useEffect(() => {
@@ -215,6 +203,20 @@ export function useWebSocket() {
 
     return () => clearInterval(pingInterval);
   }, [connected, sendMessage]);
+
+  // Use polling data if WebSocket is not available
+  if (usePollingFallback) {
+    return {
+      socket: null,
+      connected: pollingHook.connected,
+      lastMessage: pollingHook.lastMessage || lastMessage,
+      sendMessage: pollingHook.sendMessage,
+      subscribe: pollingHook.subscribe,
+      unsubscribe: pollingHook.unsubscribe,
+      connect: pollingHook.connect,
+      disconnect: pollingHook.disconnect,
+    };
+  }
 
   return {
     socket,
