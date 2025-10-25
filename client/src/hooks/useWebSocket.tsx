@@ -38,7 +38,17 @@ export function useWebSocket() {
 
       // Use correct WebSocket URL
       let wsUrl;
-      if (isLocal) {
+
+      // Check for custom backend URL from environment or query parameter
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || new URLSearchParams(window.location.search).get('backend');
+
+      if (backendUrl) {
+        // Use custom backend URL if provided
+        const backendProtocol = backendUrl.startsWith('https') ? 'wss:' : 'ws:';
+        const backendHost = backendUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '');
+        wsUrl = `${backendProtocol}//${backendHost}/ws`;
+        console.log('🔌 CUSTOM BACKEND: Using provided backend URL:', wsUrl);
+      } else if (isLocal) {
         wsUrl = 'ws://127.0.0.1:3005/ws'; // FIXED: Use port 3005 to match server
       } else if (isVercel) {
         // Vercel doesn't support WebSockets in serverless functions
