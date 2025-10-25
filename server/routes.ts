@@ -289,6 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: user.email || undefined,
           role: user.role || 'user',
           walletAddress: user.walletAddress || undefined,
+          hasPassword: !!user.password,
         };
 
         return res.status(200).json({
@@ -330,6 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: user.email || undefined,
           role: user.role || 'user',
           walletAddress: user.walletAddress || undefined,
+          hasPassword: !!user.password,
         };
 
         // Generate token for the response
@@ -378,6 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email || undefined,
         role: user.role || 'user',
         walletAddress: user.walletAddress || undefined,
+        hasPassword: !!user.password,
       };
 
       // Generate JWT token for admins
