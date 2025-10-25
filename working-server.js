@@ -8434,6 +8434,15 @@ app.post('/api/user/upload-verification', (req, res, next) => {
         const parts = authToken.split('-');
         console.log('📄 Token parts count:', parts.length);
         console.log('📄 Token parts:', parts.map((part, i) => `${i}: ${part.substring(0, 20)}...`));
+
+        // Try to extract userId more carefully
+        const lastPart = parts[parts.length - 1];
+        const isTimestamp = /^\d+$/.test(lastPart);
+        if (isTimestamp && parts.length >= 4) {
+          const extractedUserId = parts.slice(2, -1).join('-');
+          console.log('📄 Extracted userId from token:', extractedUserId);
+          console.log('📄 Is timestamp:', isTimestamp);
+        }
       }
 
       return res.status(401).json({ error: 'Invalid authentication' });
