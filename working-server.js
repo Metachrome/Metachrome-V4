@@ -268,6 +268,16 @@ app.get('/api/health', (req, res) => {
   res.status(200).send('OK');
 });
 
+// WebSocket status endpoint
+app.get('/api/ws-status', (req, res) => {
+  res.json({
+    status: 'ready',
+    wsClients: wss ? wss.clients.size : 0,
+    wsPath: '/ws',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // WebSocket test endpoint
 app.get('/test-websocket', (req, res) => {
   res.send(`
@@ -12199,12 +12209,14 @@ app.get(/^(?!\/api|\/assets).*/, (req, res) => {
 // Rebuild trigger: 2025-10-22 18:24
 const server = http.createServer(app);
 
-// Setup WebSocket server with proper CORS handling
+// Setup WebSocket server with proper CORS handling and Railway support
 const wss = new WebSocketServer({
   server,
   path: '/ws',
   perMessageDeflate: false,
-  clientTracking: true
+  clientTracking: true,
+  maxPayload: 100 * 1024 * 1024, // 100MB max payload
+  backlog: 100
 });
 
 // Store WebSocket server globally for broadcasting
@@ -12298,8 +12310,24 @@ wss.on('connection', (ws, req) => {
   }));
 });
 
+// Handle WebSocket upgrade requests
+server.on('upgrade', (request, socket, head) => {
+  console.log('🔌 WebSocket upgrade request received for path:', request.url);
+
+  if (request.url === '/ws') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      console.log('🔌 WebSocket upgrade successful');
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    console.log('🔌 WebSocket upgrade rejected - invalid path:', request.url);
+    socket.destroy();
+  }
+});
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 METACHROME V2 READY - Port ${PORT}`);
+  console.log(`🔌 WebSocket server ready at ws://0.0.0.0:${PORT}/ws`);
 }).on('error', (err) => {
   console.error('❌ Server error:', err.message);
   process.exit(1);
