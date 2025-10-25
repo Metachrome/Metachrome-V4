@@ -1469,12 +1469,16 @@ function OptionsPageContent({
             const actualWon = serverTrade.result === 'win';
             const profitPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
 
+            // CRITICAL FIX: Use serverTrade.amount instead of trade.amount to ensure correct amount
+            const serverAmount = parseFloat(serverTrade.amount) || trade.amount;
+
             const fallbackTrade: ActiveTrade = {
               ...trade,
+              amount: serverAmount, // Use server amount, not local trade amount
               status: actualWon ? 'won' : 'lost',
               currentPrice: serverTrade.exit_price || finalPrice,
-              payout: actualWon ? trade.amount * (1 + profitPercentage / 100) : 0,
-              profit: actualWon ? (trade.amount * profitPercentage / 100) : -trade.amount
+              payout: actualWon ? serverAmount * (1 + profitPercentage / 100) : 0,
+              profit: actualWon ? (serverAmount * profitPercentage / 100) : -serverAmount
             };
 
             console.log('🔄 FALLBACK: Triggering notification with server result:', fallbackTrade);
