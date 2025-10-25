@@ -217,8 +217,16 @@ export function setupOAuth(app: Express) {
       }),
       (req, res) => {
         try {
-          // Store user in session
-          req.session.user = req.user as any;
+          // Store user in session with hasPassword field
+          const user = req.user as any;
+          req.session.user = {
+            id: user.id,
+            username: user.username || undefined,
+            email: user.email || undefined,
+            role: user.role || 'user',
+            walletAddress: user.walletAddress || undefined,
+            hasPassword: !!user.password,
+          };
           console.log('✅ Google login successful, user:', req.user);
           console.log('✅ Redirecting to dashboard');
           res.redirect('/dashboard');
@@ -243,8 +251,16 @@ export function setupOAuth(app: Express) {
       }),
       (req, res) => {
         try {
-          // Store user in session
-          req.session.user = req.user as any;
+          // Store user in session with hasPassword field
+          const user = req.user as any;
+          req.session.user = {
+            id: user.id,
+            username: user.username || undefined,
+            email: user.email || undefined,
+            role: user.role || 'user',
+            walletAddress: user.walletAddress || undefined,
+            hasPassword: !!user.password,
+          };
           console.log('✅ LinkedIn login successful, user:', req.user);
           console.log('✅ Redirecting to dashboard');
           res.redirect('/dashboard');
@@ -275,8 +291,16 @@ export function setupOAuth(app: Express) {
       }),
       (req, res) => {
         try {
-          // Store user in session
-          req.session.user = req.user as any;
+          // Store user in session with hasPassword field
+          const user = req.user as any;
+          req.session.user = {
+            id: user.id,
+            username: user.username || undefined,
+            email: user.email || undefined,
+            role: user.role || 'user',
+            walletAddress: user.walletAddress || undefined,
+            hasPassword: !!user.password,
+          };
           console.log('✅ Twitter login successful, user:', req.user);
           console.log('✅ Redirecting to dashboard');
           res.redirect('/dashboard');
