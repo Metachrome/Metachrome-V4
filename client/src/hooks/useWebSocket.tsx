@@ -64,7 +64,25 @@ export function useWebSocket() {
         console.log("🔌 WEBSOCKET DEBUG: WebSocket connected successfully!");
         setConnected(true);
         reconnectAttemptsRef.current = 0;
-        
+
+        // Send user identification message
+        const authToken = localStorage.getItem('authToken');
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            console.log('🔌 Sending user identification to WebSocket:', user.id);
+            ws.send(JSON.stringify({
+              type: "identify_user",
+              userId: user.id,
+              username: user.username,
+              authToken: authToken
+            }));
+          } catch (e) {
+            console.error('🔌 Failed to parse user data:', e);
+          }
+        }
+
         // Send ping to keep connection alive
         ws.send(JSON.stringify({ type: "ping" }));
       };

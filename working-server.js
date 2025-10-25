@@ -9809,13 +9809,35 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
           forceRefresh: true // Force frontend to refresh user data
         };
 
-        wss.clients.forEach(client => {
-          if (client.readyState === 1) { // WebSocket.OPEN
-            client.send(JSON.stringify(message));
-          }
-        });
+        // Send to specific user's clients
+        const userClients = userClientMap.get(document.user_id);
+        if (userClients && userClients.size > 0) {
+          console.log(`📡 Sending verification update to ${userClients.size} client(s) for user ${document.user_id}`);
+          userClients.forEach(client => {
+            if (client.readyState === 1) { // WebSocket.OPEN
+              try {
+                client.send(JSON.stringify(message));
+                console.log(`📡 Verification update sent to user ${document.user_id}`);
+              } catch (error) {
+                console.error(`❌ Failed to send verification update to user ${document.user_id}:`, error);
+              }
+            }
+          });
+        } else {
+          // Fallback: broadcast to all clients if user mapping not found
+          console.log(`⚠️ User ${document.user_id} not found in client map, broadcasting to all clients`);
+          wss.clients.forEach(client => {
+            if (client.readyState === 1) { // WebSocket.OPEN
+              try {
+                client.send(JSON.stringify(message));
+              } catch (error) {
+                console.error('❌ Failed to broadcast verification update:', error);
+              }
+            }
+          });
+        }
 
-        console.log('📡 Broadcasted verification status update via WebSocket');
+        console.log('📡 Verification status update sent via WebSocket');
       }
 
       // Also update user data in development mode if using local storage
@@ -12093,12 +12115,52 @@ const wss = new WebSocketServer({
 // Store WebSocket server globally for broadcasting
 global.wss = wss;
 
+// Track user-to-client mappings for targeted messaging
+const userClientMap = new Map(); // userId -> Set of WebSocket clients
+
 // Log WebSocket connections
 wss.on('connection', (ws) => {
   console.log(`🔌 WebSocket client connected! Total clients: ${wss.clients.size}`);
 
+  let userId = null;
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+
+      // Handle user identification
+      if (data.type === 'identify_user') {
+        userId = data.userId;
+        console.log(`🔌 User identified: ${userId}`);
+
+        // Track this client for the user
+        if (!userClientMap.has(userId)) {
+          userClientMap.set(userId, new Set());
+        }
+        userClientMap.get(userId).add(ws);
+        console.log(`🔌 Mapped user ${userId} to WebSocket client. Total users: ${userClientMap.size}`);
+      }
+
+      // Handle ping/pong
+      if (data.type === 'ping') {
+        ws.send(JSON.stringify({ type: 'pong' }));
+      }
+    } catch (error) {
+      console.error('❌ WebSocket message error:', error);
+    }
+  });
+
   ws.on('close', () => {
     console.log(`🔌 WebSocket client disconnected! Total clients: ${wss.clients.size}`);
+
+    // Remove this client from user mapping
+    if (userId && userClientMap.has(userId)) {
+      userClientMap.get(userId).delete(ws);
+      if (userClientMap.get(userId).size === 0) {
+        userClientMap.delete(userId);
+        console.log(`🔌 Removed user ${userId} from mapping`);
+      }
+    }
   });
 
   ws.on('error', (error) => {
