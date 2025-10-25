@@ -1058,7 +1058,6 @@ async function getUserFromToken(token) {
         console.log('🔍 Found user:', foundUser ? foundUser.username : 'NOT FOUND');
         return foundUser;
       }
-    }
     } else if (token.startsWith('admin-session-')) {
       // Handle admin tokens
       const parts = token.split('-');
