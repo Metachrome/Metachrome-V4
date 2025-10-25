@@ -1201,17 +1201,20 @@ function OptionsPageContent({
         });
 
         const completedTrade: ActiveTrade = {
-          ...completedActiveTrade,
-          // CRITICAL FIX: Override with fresh data from WebSocket message
+          // CRITICAL: Do NOT spread old trade object - explicitly set all properties to prevent stale data
+          id: completedActiveTrade.id,
           symbol: symbol || completedActiveTrade.symbol,
           direction: (direction as 'up' | 'down') || completedActiveTrade.direction,
+          startTime: completedActiveTrade.startTime,
+          endTime: completedActiveTrade.endTime,
+          duration: duration || completedActiveTrade.duration,
+          // CRITICAL FIX: Use fresh data from WebSocket message, not local trade values
           amount: finalAmount,  // Use resolved amount (prefer WebSocket)
           entryPrice: finalEntryPrice,  // Use resolved entry price (prefer WebSocket)
-          status: won ? 'won' : 'lost',
           currentPrice: exitPrice || completedActiveTrade.currentPrice,
+          status: won ? 'won' : 'lost',
           payout: won ? finalAmount * (1 + profitPercentageValue / 100) : 0,
           profit: profitAmount,
-          duration: duration || completedActiveTrade.duration,
           profitPercentage: profitPercentageValue
         };
 
@@ -1322,7 +1325,7 @@ function OptionsPageContent({
               // CRITICAL FIX: Use server values instead of local trade values
               const tradeAmount = parseFloat(serverTrade.amount) || activeTrade.amount;
               const entryPrice = parseFloat(serverTrade.entry_price) || activeTrade.entryPrice;
-              const exitPrice = parseFloat(serverTrade.exit_price) || activeTrade.entryPrice;
+              const exitPrice = parseFloat(serverTrade.exit_price) || activeTrade.currentPrice || activeTrade.entryPrice;
 
               const completedTrade: ActiveTrade = {
                 id: activeTrade.id,
