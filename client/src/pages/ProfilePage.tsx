@@ -132,18 +132,11 @@ export default function ProfilePage() {
     },
   });
 
-  // Change password mutation - Fixed verification status property names
+  // Change password mutation
   const changePasswordMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log('🔐 Password change attempt with data:', data);
-      // EMERGENCY FIX: Try hotfix endpoint first, fallback to regular endpoint
-      try {
-        console.log('🚨 Trying hotfix endpoint first...');
-        return await apiRequest('PUT', '/api/user/password-hotfix', data);
-      } catch (error) {
-        console.log('🔄 Hotfix endpoint failed, trying regular endpoint...', error);
-        return await apiRequest('PUT', '/api/user/password', data);
-      }
+      return await apiRequest('PUT', '/api/user/password', data);
     },
     onSuccess: (data: any) => {
       toast({
@@ -312,77 +305,7 @@ export default function ProfilePage() {
     }
   };
 
-  // Emergency verification status fix
-  const emergencyVerificationFix = async () => {
-    setIsRefreshing(true);
-    try {
-      console.log('🚨 Running emergency verification fix...');
 
-      const response = await apiRequest('POST', '/api/user/emergency-verification-fix');
-      console.log('🚨 Emergency fix response:', response);
-
-      if (response.fixed) {
-        // SUPER NUCLEAR OPTION: Complete system reset
-        console.log('🚨🚨🚨 SUPER NUCLEAR FIX APPLIED - COMPLETE SYSTEM RESET 🚨🚨🚨');
-
-        // Clear ALL browser storage
-        localStorage.clear();
-        sessionStorage.clear();
-
-        // Clear ALL React Query cache
-        queryClient.clear();
-
-        // Clear ALL cookies (if possible)
-        document.cookie.split(";").forEach((c) => {
-          const eqPos = c.indexOf("=");
-          const name = eqPos > -1 ? c.substr(0, eqPos) : c;
-          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-        });
-
-        const isSuper = response.superNuclear;
-
-        toast({
-          title: isSuper ? "🚨🚨🚨 SUPER NUCLEAR FIX APPLIED!" : response.nuclear ? "🚨 NUCLEAR FIX APPLIED!" : "✅ Verification Status Fixed!",
-          description: response.message || "Your verification status has been corrected.",
-          duration: isSuper ? 10000 : 5000,
-        });
-
-        // Force immediate complete browser refresh for super nuclear fix
-        if (isSuper) {
-          console.log('🚨🚨🚨 SUPER NUCLEAR: Forcing complete browser refresh in 3 seconds');
-          setTimeout(() => {
-            // Force complete page reload with cache bypass
-            window.location.href = window.location.protocol + '//' + window.location.host + window.location.pathname + '?t=' + Date.now();
-          }, 3000);
-        } else if (response.nuclear) {
-          console.log('🚨 NUCLEAR: Forcing immediate page reload');
-          window.location.href = window.location.href; // Force complete page reload
-        } else {
-          // Regular fix - delayed reload
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        }
-      } else {
-        toast({
-          title: "Status Check Complete",
-          description: response.message || "Your verification status is already correct.",
-        });
-      }
-
-      setTestResults(`✅ Emergency fix completed! Fixed: ${response.fixed}, Status: ${response.user?.verification_status}`);
-    } catch (error: any) {
-      console.error('❌ Emergency fix error:', error);
-      toast({
-        title: "Emergency Fix Failed",
-        description: error.message || "Failed to fix verification status",
-        variant: "destructive",
-      });
-      setTestResults(`❌ Emergency fix failed: ${error.message || error}`);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   // Test function for debugging mobile verification issues
   const testMobileVerificationFix = async () => {
@@ -1065,65 +988,26 @@ export default function ProfilePage() {
                           If you were verified on desktop, tap refresh to sync your status
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={forceRefreshVerification}
-                          disabled={isRefreshing}
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          {isRefreshing ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <RefreshCw className="w-4 h-4 mr-1" />
-                              Refresh
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          onClick={emergencyVerificationFix}
-                          disabled={isRefreshing}
-                          size="sm"
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          🚨 Fix
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Emergency Verification Fix Notice - Desktop */}
-                {!isMobile && user?.verificationStatus !== 'verified' && (
-                  <div className="p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-red-100 font-medium mb-1">🚨 Verification Status Issue</h3>
-                        <p className="text-red-200 text-sm">
-                          If you should be verified but showing as unverified, click the emergency fix button
-                        </p>
-                      </div>
                       <Button
-                        onClick={emergencyVerificationFix}
+                        onClick={forceRefreshVerification}
                         disabled={isRefreshing}
-                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         {isRefreshing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Fixing...
-                          </>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
                         ) : (
                           <>
-                            <AlertTriangle className="w-4 h-4 mr-2" />
-                            🚨 Emergency Fix
+                            <RefreshCw className="w-4 h-4 mr-1" />
+                            Refresh
                           </>
                         )}
                       </Button>
                     </div>
                   </div>
                 )}
+
+
 
                 {/* Alternative Password Setting for Non-Verified Users */}
                 {!user?.hasPassword && user?.verificationStatus !== 'verified' && (
