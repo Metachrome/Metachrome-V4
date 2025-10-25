@@ -1644,6 +1644,13 @@ app.post('/api/auth', async (req, res) => {
       const token = `user-session-${encodedUserId}-${Date.now()}`;
       console.log('🔑 Generated token for new user:', token);
       console.log('🔑 Token debug - Original ID:', newUser.id, 'Encoded:', encodedUserId);
+      console.log('🔑 Token parts breakdown:', {
+        prefix: 'user-session-',
+        encodedUserId: encodedUserId,
+        timestamp: Date.now(),
+        fullToken: token,
+        tokenLength: token.length
+      });
 
       res.json({
         success: true,
