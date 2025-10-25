@@ -18,7 +18,8 @@ import {
   Plus,
   Copy,
   Upload,
-  CheckCircle
+  CheckCircle,
+  Wallet
 } from 'lucide-react';
 
 export default function UserDashboard() {
@@ -489,7 +490,7 @@ export default function UserDashboard() {
                 >
                   {showBalance ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
                 </Button>
-                <DollarSign className="h-4 w-4 text-green-500" />
+                <Wallet className="h-4 w-4 text-green-500" />
               </div>
             </CardHeader>
             <CardContent>
