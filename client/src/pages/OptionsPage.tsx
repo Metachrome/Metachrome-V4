@@ -1279,96 +1279,11 @@ function OptionsPageContent({
       }
     }
 
-    // AGGRESSIVE FALLBACK: Check for any trade-related messages (ONLY if not already processed)
-    if (lastMessage && user?.id && !processedMessagesRef.current.has(messageId)) {
-      const messageStr = JSON.stringify(lastMessage).toLowerCase();
-      const isTradeRelated = messageStr.includes('trade') ||
-                           messageStr.includes('win') ||
-                           messageStr.includes('lose') ||
-                           messageStr.includes('profit') ||
-                           messageStr.includes('payout') ||
-                           messageStr.includes('result');
-
-      if (isTradeRelated && lastMessage.data?.userId === user?.id) {
-        console.log('🚨 AGGRESSIVE: Found trade-related message:', lastMessage);
-        console.log('🚨 AGGRESSIVE: Message data fields:', Object.keys(lastMessage.data || {}));
-        console.log('🚨 AGGRESSIVE: Full message data:', lastMessage.data);
-
-        // Try to extract trade info and trigger notification
-        const data = lastMessage.data;
-
-        // Enhanced detection for balance_update messages that indicate trade completion
-        const isTradeCompletion = data && (
-          data.result === 'win' || data.result === 'lose' ||
-          data.status === 'won' || data.status === 'lost' ||
-          (data.changeType === 'trade_completion') ||
-          (data.changeType === 'trade_end') ||
-          (data.changeType === 'trade_win') ||
-          (data.changeType === 'trade_lose') ||
-          // Only trigger on positive balance changes (wins) or explicit completion messages
-          // Exclude trade_start messages which are just the initial deduction
-          (data.changeType !== 'trade_start' && data.change && data.change > 0 && activeTrades.length > 0)
-        );
-
-        console.log('🚨 AGGRESSIVE: Trade completion check:', {
-          changeType: data?.changeType,
-          change: data?.change,
-          activeTrades: activeTrades.length,
-          isTradeCompletion
-        });
-
-        if (isTradeCompletion) {
-          // Mark message as processed to prevent ultra fallback from also processing it
-          processedMessagesRef.current.add(messageId);
-
-          console.log('🚨 AGGRESSIVE: Triggering notification for trade-related message');
-
-          // For balance_update messages, infer win/lose from balance change
-          let won = false;
-          if (data.result === 'win' || data.status === 'won') {
-            won = true;
-          } else if (data.result === 'lose' || data.status === 'lost') {
-            won = false;
-          } else if (data.change && data.change > 0) {
-            // Positive balance change = win
-            won = true;
-          } else if (data.change && data.change < 0) {
-            // Negative balance change = lose (but this might be the initial deduction)
-            won = false;
-          } else if (activeTrades.length > 0) {
-            // If we have active trades and got a balance update, assume it's a win
-            // (since your balance increased from 58162 to 58272)
-            won = true;
-          }
-
-          // CRITICAL: Only use this fallback if we have actual trade data with amount
-          // Skip if amount is missing to avoid showing 100 USDT default
-          if (!data.amount || data.amount <= 0) {
-            console.log('⚠️ AGGRESSIVE: Skipping notification - no valid amount in data');
-            return;
-          }
-
-          const aggressiveTrade: ActiveTrade = {
-            id: data.tradeId || data.id || 'aggressive-' + Date.now(),
-            symbol: data.symbol || 'BTC/USDT',
-            direction: data.direction || 'up',
-            amount: data.amount, // Use actual amount, don't default to 100
-            entryPrice: data.entryPrice || data.entry_price || 50000,
-            currentPrice: data.exitPrice || data.currentPrice || data.current_price || 51000,
-            status: won ? 'won' : 'lost',
-            duration: data.duration || 30,
-            profitPercentage: won ? (data.profitPercentage || 10) : 0,
-            payout: won ? (data.payout || data.amount * 1.1) : 0,
-            profit: data.profitAmount || data.profit || (won ? (data.amount * (data.profitPercentage || 10) / 100) : -data.amount)
-          };
-
-          console.log('🚨 AGGRESSIVE: About to trigger notification with trade:', aggressiveTrade);
-          triggerNotification(aggressiveTrade);
-        } else {
-          console.log('🚨 AGGRESSIVE: Message detected but no valid trade completion indicators found');
-        }
-      }
-    }
+    // AGGRESSIVE FALLBACK: DISABLED - Only use main trade_completed handler and polling
+    // The AGGRESSIVE FALLBACK was causing notifications with incomplete data and hardcoded defaults (50000, 51000)
+    // This resulted in showing wrong amounts (100 USDT) and wrong prices from previous trades
+    // The main trade_completed handler and polling system are sufficient for all cases
+    console.log('🔄 AGGRESSIVE FALLBACK: Disabled - using only main trade_completed handler and polling');
 
     // REMOVED: ULTRA FALLBACK that was using hardcoded amount: 100
     // This was causing the notification to show 100 USDT initially
