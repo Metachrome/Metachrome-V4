@@ -8472,6 +8472,13 @@ app.post('/api/user/upload-verification', (req, res, next) => {
 
     // Save to database
     if (isProduction && supabase) {
+      console.log('📄 Attempting to insert document into Supabase with data:', {
+        user_id: user.id,
+        document_type: documentType,
+        document_url: documentUrl,
+        verification_status: 'pending'
+      });
+
       const { data, error } = await supabase
         .from('user_verification_documents')
         .insert({
@@ -8483,7 +8490,10 @@ app.post('/api/user/upload-verification', (req, res, next) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('📄 Supabase insert error:', error);
+        throw error;
+      }
 
       // Update user verification status to pending and mark as having uploaded documents
       await supabase
@@ -8533,11 +8543,14 @@ app.post('/api/user/upload-verification', (req, res, next) => {
 
   } catch (error) {
     console.error('❌ Error uploading verification document:', error);
+    console.error('❌ Error type:', error?.constructor?.name);
     console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('❌ Full error object:', JSON.stringify(error, null, 2));
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to upload verification document',
-      details: error instanceof Error ? error.message : String(error)
+      details: error instanceof Error ? error.message : String(error),
+      type: error?.constructor?.name
     });
   }
 });
