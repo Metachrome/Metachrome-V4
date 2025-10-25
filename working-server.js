@@ -1396,11 +1396,12 @@ app.get('/api/auth', async (req, res) => {
         });
       }
 
-      // Try to find the actual admin user from database
+      // Try to find the actual admin user from database - MUST match the specific user ID
       const users = await getUsers();
-      const adminUser = users.find(u => u.id === userId || u.role === 'super_admin' || u.role === 'admin');
+      const adminUser = users.find(u => u.id === userId);
 
       if (adminUser) {
+        console.log('✅ Admin user found in database:', adminUser.username);
         return res.json({
           id: adminUser.id,
           username: adminUser.username,
@@ -1409,14 +1410,9 @@ app.get('/api/auth', async (req, res) => {
           balance: adminUser.balance
         });
       } else {
-        // Fallback to default admin
-        return res.json({
-          id: 'superadmin-1',
-          username: 'superadmin',
-          email: 'superadmin@metachrome.io',
-          role: 'super_admin',
-          balance: 1000000
-        });
+        // User was deleted - return 401 Unauthorized instead of fallback
+        console.log('❌ Admin user not found in database (may have been deleted):', userId);
+        return res.status(401).json({ error: 'User not found or has been deleted' });
       }
     }
 

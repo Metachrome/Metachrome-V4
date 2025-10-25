@@ -148,6 +148,17 @@ export function useAuth() {
       } catch (error) {
         console.log("🔴 Auth query error:", error);
 
+        // Check if this is a 401 Unauthorized error (user deleted or invalid)
+        const is401Error = error?.response?.status === 401 || error?.message?.includes('401') || error?.message?.includes('User not found');
+
+        if (is401Error) {
+          console.log("❌ 401 Unauthorized - User not found or deleted. Clearing auth data.");
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('demoUser');
+          localStorage.removeItem('user');
+          return null;
+        }
+
         // For mock tokens (including admin tokens and user session tokens), try to use stored user data instead of clearing
         const authToken = localStorage.getItem('authToken');
         if (authToken && (authToken.startsWith('mock-jwt-token') || authToken === 'mock-jwt-token' || authToken === 'mock-admin-token' || authToken.startsWith('token_admin-001_') || authToken.startsWith('token_superadmin-001_') || authToken.startsWith('admin-token-') || authToken.startsWith('user-session-'))) {
