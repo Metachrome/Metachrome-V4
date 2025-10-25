@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
 import { useAuth } from "../hooks/useAuth";
 import { useIsMobile } from "../hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -31,7 +30,6 @@ import {
 } from "lucide-react";
 
 export default function ProfilePage() {
-  const router = useRouter();
   const { user, refreshAuth } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -97,10 +95,12 @@ export default function ProfilePage() {
 
   // Read tab from query parameter
   useEffect(() => {
-    if (router.isReady && router.query.tab) {
-      setActiveTab(router.query.tab as string);
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setActiveTab(tab);
     }
-  }, [router.isReady, router.query.tab]);
+  }, []);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
