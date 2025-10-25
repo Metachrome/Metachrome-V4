@@ -426,7 +426,7 @@ export default function UserDashboard() {
                       This is required for security and regulatory compliance.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
-                      <Link href="/profile">
+                      <Link href="/profile?tab=verification">
                         <Button className="bg-yellow-600 hover:bg-yellow-700 text-white">
                           <Upload className="w-4 h-4 mr-2" />
                           Upload Documents Now

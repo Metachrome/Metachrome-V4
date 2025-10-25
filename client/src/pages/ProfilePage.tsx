@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/router";
 import { useAuth } from "../hooks/useAuth";
 import { useIsMobile } from "../hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -30,10 +31,12 @@ import {
 } from "lucide-react";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { user, refreshAuth } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState('profile');
 
 
 
@@ -91,6 +94,13 @@ export default function ProfilePage() {
       }));
     }
   }, [user]);
+
+  // Read tab from query parameter
+  useEffect(() => {
+    if (router.isReady && router.query.tab) {
+      setActiveTab(router.query.tab as string);
+    }
+  }, [router.isReady, router.query.tab]);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -565,7 +575,7 @@ export default function ProfilePage() {
           <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Manage your account information and preferences</p>
         </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Mobile-optimized TabsList */}
           <TabsList className={`grid w-full bg-gray-800 border-gray-700 ${
             isMobile
