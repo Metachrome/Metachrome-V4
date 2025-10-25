@@ -1645,7 +1645,10 @@ app.post('/api/auth', async (req, res) => {
           firstName: newUser.firstName,
           lastName: newUser.lastName,
           balance: newUser.balance,
-          role: newUser.role
+          role: newUser.role,
+          hasPassword: !!(newUser.password_hash && newUser.password_hash.length > 0),
+          verificationStatus: newUser.verification_status || 'unverified',
+          hasUploadedDocuments: newUser.has_uploaded_documents || false
         }
       });
     }
@@ -1685,7 +1688,10 @@ app.post('/api/auth', async (req, res) => {
             balance: user.balance,
             role: user.role,
             verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
-            hasUploadedDocuments: user.has_uploaded_documents || false
+            hasUploadedDocuments: user.has_uploaded_documents || false,
+            hasPassword: !!(user.password_hash && user.password_hash.length > 0),
+            firstName: user.firstName || '',
+            lastName: user.lastName || ''
           }
         });
       } else {
@@ -1985,7 +1991,10 @@ app.post('/api/auth/register', async (req, res) => {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         role: newUser.role,
-        balance: newUser.balance
+        balance: newUser.balance,
+        hasPassword: !!(newUser.password_hash && newUser.password_hash.length > 0),
+        verificationStatus: newUser.verification_status || 'unverified',
+        hasUploadedDocuments: newUser.has_uploaded_documents || false
       },
       token
     });
@@ -2077,7 +2086,10 @@ app.post('/api/auth/user/register', async (req, res) => {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         role: newUser.role,
-        balance: newUser.balance
+        balance: newUser.balance,
+        hasPassword: !!(newUser.password_hash && newUser.password_hash.length > 0),
+        verificationStatus: newUser.verification_status || 'unverified',
+        hasUploadedDocuments: newUser.has_uploaded_documents || false
       },
       token
     });
@@ -2124,7 +2136,10 @@ app.post('/api/auth/login', async (req, res) => {
           balance: user.balance,
           walletAddress: user.wallet_address || user.walletAddress,
           verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
-          hasUploadedDocuments: user.has_uploaded_documents || false
+          hasUploadedDocuments: user.has_uploaded_documents || false,
+          hasPassword: !!(user.password_hash && user.password_hash.length > 0),
+          firstName: user.firstName || '',
+          lastName: user.lastName || ''
         }
       });
     } else {
@@ -2179,7 +2194,10 @@ app.post('/api/auth/user/login', async (req, res) => {
           balance: user.balance,
           walletAddress: user.wallet_address || user.walletAddress,
           verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
-          hasUploadedDocuments: user.has_uploaded_documents || false
+          hasUploadedDocuments: user.has_uploaded_documents || false,
+          hasPassword: !!(user.password_hash && user.password_hash.length > 0),
+          firstName: user.firstName || '',
+          lastName: user.lastName || ''
         }
       });
     } else {
