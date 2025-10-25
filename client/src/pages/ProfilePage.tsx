@@ -262,10 +262,12 @@ export default function ProfilePage() {
   // Fetch verification status
   const fetchVerificationStatus = async () => {
     try {
+      console.log('📄 Fetching verification status...');
       const response = await apiRequest('GET', '/api/user/verification-status');
+      console.log('📄 Verification status response:', response);
       setVerificationStatus(response);
     } catch (error) {
-      console.error('Failed to fetch verification status:', error);
+      console.error('❌ Failed to fetch verification status:', error);
     }
   };
 
@@ -392,6 +394,14 @@ export default function ProfilePage() {
       fetchAvailableCodes();
     }
   }, [user?.id, fetchAvailableCodes]);
+
+  // Load verification status on component mount
+  useEffect(() => {
+    if (user?.id) {
+      console.log('📄 Component mounted, fetching verification status for user:', user.id);
+      fetchVerificationStatus();
+    }
+  }, [user?.id]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
