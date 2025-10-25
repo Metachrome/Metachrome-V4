@@ -1003,6 +1003,7 @@ async function getUserFromToken(token) {
 
         if (isProduction && supabase) {
           try {
+            console.log('🔍 Querying Supabase for user ID:', userId);
             const { data, error } = await supabase
               .from('users')
               .select('*')
@@ -1017,16 +1018,19 @@ async function getUserFromToken(token) {
             // CRITICAL FIX: Log the actual data being returned
             if (data) {
               console.log('🔍 getUserFromToken - Fresh user data from Supabase:', {
+                id: data.id,
                 username: data.username,
                 verification_status: data.verification_status,
                 has_uploaded_documents: data.has_uploaded_documents,
                 verified_at: data.verified_at
               });
+              return data;
+            } else {
+              console.log('🔍 No user found in Supabase for ID:', userId);
+              return null;
             }
-
-            return data;
           } catch (supabaseError) {
-            console.error('🔍 Supabase query failed, falling back to local users:', supabaseError);
+            console.error('🔍 Supabase query failed:', supabaseError.message);
             // Fallback to local users if Supabase fails
             const users = await getUsers();
             const foundUser = users.find(u => u.id === userId);
@@ -8430,10 +8434,21 @@ app.post('/api/user/upload-verification', (req, res, next) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Get user from token with enhanced error handling
+    // Get user from token with retry logic for newly created users
     console.log('📄 Getting user from token...');
-    const user = await getUserFromToken(authToken);
+    let user = await getUserFromToken(authToken);
     console.log('📄 User from token:', user ? { id: user.id, username: user.username } : 'NOT FOUND');
+
+    // If user not found, retry up to 3 times (for newly created users)
+    if (!user && authToken.startsWith('user-session-')) {
+      console.log('📄 User not found on first attempt, retrying for newly created user...');
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between retries
+        user = await getUserFromToken(authToken);
+        console.log(`📄 Retry attempt ${attempt}: User found?`, !!user);
+        if (user) break;
+      }
+    }
 
     if (!user) {
       console.log('❌ Invalid authentication - user not found for token:', authToken.substring(0, 50) + '...');
