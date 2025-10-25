@@ -61,8 +61,10 @@ export function useWebSocket() {
         console.log('🔌 Railway deployment detected - using WebSocket:', wsUrl);
         console.log('🔌 RAILWAY DEBUG: Full WebSocket URL will be:', wsUrl);
       } else {
+        // For any other deployment (including custom domains like www.metachrome.io)
         wsUrl = `${protocol}//${window.location.host}/ws`;
-        console.log('🔌 GENERIC DEPLOYMENT: Using WebSocket URL:', wsUrl);
+        console.log('🔌 CUSTOM DOMAIN DEPLOYMENT: Using WebSocket URL:', wsUrl);
+        console.log('🔌 CUSTOM DOMAIN DEBUG: hostname=', window.location.hostname, 'host=', window.location.host, 'protocol=', protocol);
       }
 
       console.log('🔌 WEBSOCKET DEBUG: Attempting to connect to:', wsUrl);

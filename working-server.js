@@ -12199,10 +12199,12 @@ app.get(/^(?!\/api|\/assets).*/, (req, res) => {
 // Rebuild trigger: 2025-10-22 18:24
 const server = http.createServer(app);
 
-// Setup WebSocket server
+// Setup WebSocket server with proper CORS handling
 const wss = new WebSocketServer({
   server,
-  path: '/ws'
+  path: '/ws',
+  perMessageDeflate: false,
+  clientTracking: true
 });
 
 // Store WebSocket server globally for broadcasting
@@ -12211,55 +12213,7 @@ global.wss = wss;
 // Track user-to-client mappings for targeted messaging
 const userClientMap = new Map(); // userId -> Set of WebSocket clients
 
-// Log WebSocket connections
-wss.on('connection', (ws) => {
-  console.log(`🔌 WebSocket client connected! Total clients: ${wss.clients.size}`);
 
-  let userId = null;
-
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message.toString());
-
-      // Handle user identification
-      if (data.type === 'identify_user') {
-        userId = data.userId;
-        console.log(`🔌 User identified: ${userId}`);
-
-        // Track this client for the user
-        if (!userClientMap.has(userId)) {
-          userClientMap.set(userId, new Set());
-        }
-        userClientMap.get(userId).add(ws);
-        console.log(`🔌 Mapped user ${userId} to WebSocket client. Total users: ${userClientMap.size}`);
-      }
-
-      // Handle ping/pong
-      if (data.type === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong' }));
-      }
-    } catch (error) {
-      console.error('❌ WebSocket message error:', error);
-    }
-  });
-
-  ws.on('close', () => {
-    console.log(`🔌 WebSocket client disconnected! Total clients: ${wss.clients.size}`);
-
-    // Remove this client from user mapping
-    if (userId && userClientMap.has(userId)) {
-      userClientMap.get(userId).delete(ws);
-      if (userClientMap.get(userId).size === 0) {
-        userClientMap.delete(userId);
-        console.log(`🔌 Removed user ${userId} from mapping`);
-      }
-    }
-  });
-
-  ws.on('error', (error) => {
-    console.error(`🔌 WebSocket error:`, error);
-  });
-});
 
 // REAL-TIME ADMIN NOTIFICATION FUNCTION
 function broadcastToAdmins(message) {
@@ -12289,10 +12243,25 @@ wss.on('connection', (ws, req) => {
   console.log('🔌 ✅ WEBSOCKET CLIENT CONNECTED from:', req.socket.remoteAddress);
   console.log('🔌 ✅ WEBSOCKET CONNECTION ESTABLISHED - Total clients:', wss.clients.size);
 
+  let userId = null;
+
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message.toString());
       console.log('📨 ✅ WEBSOCKET MESSAGE RECEIVED:', data);
+
+      // Handle user identification
+      if (data.type === 'identify_user') {
+        userId = data.userId;
+        console.log(`🔌 User identified: ${userId}`);
+
+        // Track this client for the user
+        if (!userClientMap.has(userId)) {
+          userClientMap.set(userId, new Set());
+        }
+        userClientMap.get(userId).add(ws);
+        console.log(`🔌 Mapped user ${userId} to WebSocket client. Total users: ${userClientMap.size}`);
+      }
 
       // Handle ping/pong for keep-alive
       if (data.type === 'ping') {
@@ -12306,6 +12275,15 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     console.log('🔌 ❌ WEBSOCKET CLIENT DISCONNECTED - Remaining clients:', wss.clients.size);
+
+    // Remove this client from user mapping
+    if (userId && userClientMap.has(userId)) {
+      userClientMap.get(userId).delete(ws);
+      if (userClientMap.get(userId).size === 0) {
+        userClientMap.delete(userId);
+        console.log(`🔌 Removed user ${userId} from mapping`);
+      }
+    }
   });
 
   ws.on('error', (error) => {
