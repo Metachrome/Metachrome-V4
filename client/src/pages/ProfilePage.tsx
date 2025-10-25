@@ -26,7 +26,9 @@ import {
   Upload,
   CheckCircle,
   FileText,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 
 export default function ProfilePage() {
