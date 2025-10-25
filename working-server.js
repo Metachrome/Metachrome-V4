@@ -8505,7 +8505,9 @@ app.post('/api/user/upload-verification', (req, res, next) => {
 
     // Check authentication
     const authToken = req.headers.authorization?.replace('Bearer ', '');
-    console.log('📄 Auth token:', authToken ? authToken.substring(0, 30) + '...' : 'NONE');
+    console.log('📄 Auth token (first 50 chars):', authToken ? authToken.substring(0, 50) : 'NONE');
+    console.log('📄 Full auth token:', authToken);
+    console.log('📄 Auth token length:', authToken?.length);
 
     if (!authToken) {
       console.log('❌ No authentication token provided');
