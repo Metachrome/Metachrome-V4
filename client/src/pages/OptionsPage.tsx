@@ -109,7 +109,19 @@ function OptionsPageContent({
 
   // ROBUST NOTIFICATION TRIGGER FUNCTION
   const triggerNotification = (trade: ActiveTrade) => {
-    console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id);
+    console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id, 'Amount:', trade.amount);
+
+    // CRITICAL: Validate that we have essential trade data before showing notification
+    // This prevents showing incomplete notifications with default values like 100 USDT
+    if (!trade.amount || trade.amount <= 0) {
+      console.log('⚠️ TRIGGER: Skipping notification - invalid amount:', trade.amount);
+      return;
+    }
+
+    if (!trade.id) {
+      console.log('⚠️ TRIGGER: Skipping notification - no trade ID');
+      return;
+    }
 
     // Check for duplicate notifications within 5 seconds (but allow test messages)
     const now = Date.now();
@@ -1131,34 +1143,9 @@ function OptionsPageContent({
       }
     }
 
-    // BULLETPROOF: Handle direct notification trigger
-    if (lastMessage?.type === 'trigger_mobile_notification' && lastMessage.data?.userId === user?.id) {
-      // Mark message as processed
-      processedMessagesRef.current.add(messageId);
-
-      console.log('🔔 BULLETPROOF: Direct notification trigger received:', lastMessage.data);
-
-      const tradeData = lastMessage.data;
-      console.log('🔔 WEBSOCKET RECEIVED: Raw tradeData:', JSON.stringify(tradeData, null, 2));
-      const testTrade: ActiveTrade = {
-        id: tradeData.tradeId,
-        direction: tradeData.direction,
-        amount: tradeData.amount,
-        entryPrice: tradeData.entryPrice,
-        currentPrice: tradeData.currentPrice,
-        status: tradeData.status,
-        payout: tradeData.payout,
-        profitPercentage: tradeData.profitPercentage,
-        symbol: tradeData.symbol,
-        duration: tradeData.duration,
-        profit: tradeData.status === 'won' ? (tradeData.payout - tradeData.amount) : -tradeData.amount
-      };
-
-      console.log('🔔 BULLETPROOF: Triggering notification with trade data:', testTrade);
-      console.log('🔔 AMOUNT IN TRADE OBJECT:', testTrade.amount, 'TYPE:', typeof testTrade.amount);
-      triggerNotification(testTrade);
-      return;
-    }
+    // REMOVED: BULLETPROOF handler for 'trigger_mobile_notification'
+    // This was causing duplicate notifications - the main 'trade_completed' handler below is sufficient
+    // and handles all the necessary data correctly
 
     // MAIN HANDLER: Process trade_completed messages
     if (lastMessage?.type === 'trade_completed' && lastMessage.data?.userId === user?.id) {
@@ -1335,18 +1322,25 @@ function OptionsPageContent({
             won = true;
           }
 
+          // CRITICAL: Only use this fallback if we have actual trade data with amount
+          // Skip if amount is missing to avoid showing 100 USDT default
+          if (!data.amount || data.amount <= 0) {
+            console.log('⚠️ AGGRESSIVE: Skipping notification - no valid amount in data');
+            return;
+          }
+
           const aggressiveTrade: ActiveTrade = {
             id: data.tradeId || data.id || 'aggressive-' + Date.now(),
             symbol: data.symbol || 'BTC/USDT',
             direction: data.direction || 'up',
-            amount: data.amount || 100,
+            amount: data.amount, // Use actual amount, don't default to 100
             entryPrice: data.entryPrice || data.entry_price || 50000,
             currentPrice: data.exitPrice || data.currentPrice || data.current_price || 51000,
             status: won ? 'won' : 'lost',
             duration: data.duration || 30,
             profitPercentage: won ? (data.profitPercentage || 10) : 0,
             payout: won ? (data.payout || data.amount * 1.1) : 0,
-            profit: data.profitAmount || data.profit || (won ? 10 : -100)
+            profit: data.profitAmount || data.profit || (won ? (data.amount * (data.profitPercentage || 10) / 100) : -data.amount)
           };
 
           console.log('🚨 AGGRESSIVE: About to trigger notification with trade:', aggressiveTrade);
@@ -1357,33 +1351,9 @@ function OptionsPageContent({
       }
     }
 
-    // ULTRA FALLBACK: Any message with userId match and result field (ONLY if not already processed)
-    if (lastMessage?.data?.userId === user?.id && lastMessage?.data?.result && !processedMessagesRef.current.has(messageId)) {
-      // Mark message as processed
-      processedMessagesRef.current.add(messageId);
-
-      console.log('🔥 ULTRA FALLBACK: Message with userId match and result field:', lastMessage);
-
-      const data = lastMessage.data;
-      const won = data.result === 'win';
-
-      const ultraTrade: ActiveTrade = {
-        id: data.tradeId || 'ultra-' + Date.now(),
-        symbol: 'BTC/USDT',
-        direction: 'up',
-        amount: 100,
-        entryPrice: 50000,
-        currentPrice: data.exitPrice || 51000,
-        status: won ? 'won' : 'lost',
-        duration: 30,
-        profitPercentage: won ? 10 : 0,
-        payout: won ? 110 : 0,
-        profit: data.profitAmount || (won ? 10 : -100)
-      };
-
-      console.log('🔥 ULTRA FALLBACK: Triggering notification:', ultraTrade);
-      triggerNotification(ultraTrade);
-    }
+    // REMOVED: ULTRA FALLBACK that was using hardcoded amount: 100
+    // This was causing the notification to show 100 USDT initially
+    // The main handler (lines 1164-1256) now properly handles all trade_completed messages with correct amounts
   }, [lastMessage, user?.id, activeTrades, queryClient]);
 
   // Backup polling system for trade completion (fallback if WebSocket fails)
