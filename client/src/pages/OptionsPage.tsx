@@ -1319,14 +1319,17 @@ function OptionsPageContent({
               const won = serverTrade.result === 'win';
               const profitPercentage = activeTrade.profitPercentage || (activeTrade.duration === 30 ? 10 : 15);
 
-              // CRITICAL FIX: Use serverTrade.amount instead of activeTrade.amount to ensure correct amount
+              // CRITICAL FIX: Use server values instead of local trade values
               const tradeAmount = parseFloat(serverTrade.amount) || activeTrade.amount;
+              const entryPrice = parseFloat(serverTrade.entry_price) || activeTrade.entryPrice;
+              const exitPrice = parseFloat(serverTrade.exit_price) || activeTrade.entryPrice;
 
               const completedTrade: ActiveTrade = {
                 ...activeTrade,
                 amount: tradeAmount, // Use server amount
+                entryPrice: entryPrice, // Use server entry price
+                currentPrice: exitPrice, // Use server exit price
                 status: won ? 'won' : 'lost',
-                currentPrice: serverTrade.exit_price || activeTrade.entryPrice,
                 payout: won ? tradeAmount * (1 + profitPercentage / 100) : 0,
                 profit: won ? (tradeAmount * profitPercentage / 100) : -tradeAmount
               };
@@ -1469,14 +1472,17 @@ function OptionsPageContent({
             const actualWon = serverTrade.result === 'win';
             const profitPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
 
-            // CRITICAL FIX: Use serverTrade.amount instead of trade.amount to ensure correct amount
+            // CRITICAL FIX: Use server values instead of local trade values
             const serverAmount = parseFloat(serverTrade.amount) || trade.amount;
+            const serverEntryPrice = parseFloat(serverTrade.entry_price) || trade.entryPrice;
+            const serverExitPrice = parseFloat(serverTrade.exit_price) || finalPrice;
 
             const fallbackTrade: ActiveTrade = {
               ...trade,
               amount: serverAmount, // Use server amount, not local trade amount
+              entryPrice: serverEntryPrice, // Use server entry price
+              currentPrice: serverExitPrice, // Use server exit price
               status: actualWon ? 'won' : 'lost',
-              currentPrice: serverTrade.exit_price || finalPrice,
               payout: actualWon ? serverAmount * (1 + profitPercentage / 100) : 0,
               profit: actualWon ? (serverAmount * profitPercentage / 100) : -serverAmount
             };
