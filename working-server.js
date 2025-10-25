@@ -987,9 +987,12 @@ async function getUserFromToken(token) {
       // Extract user ID from session token
       // Token format: user-session-{base64EncodedUserId}-{timestamp}
       console.log('🔍 Full token:', token);
+      console.log('🔍 Token length:', token.length);
 
       // Find the last hyphen which separates the timestamp
       const lastHyphenIndex = token.lastIndexOf('-');
+      console.log('🔍 Last hyphen index:', lastHyphenIndex);
+
       if (lastHyphenIndex === -1) {
         console.error('🔍 Invalid token format - no timestamp separator found');
         return null;
@@ -1000,13 +1003,21 @@ async function getUserFromToken(token) {
       const encodedUserId = token.substring(prefix.length, lastHyphenIndex);
       const timestamp = token.substring(lastHyphenIndex + 1);
 
-      console.log('🔍 Token parts:', { encodedUserId, timestamp });
+      console.log('🔍 Token parts:', {
+        prefix,
+        encodedUserId,
+        encodedUserIdLength: encodedUserId.length,
+        timestamp,
+        timestampIsValid: /^\d+$/.test(timestamp)
+      });
 
       let userId = null;
       try {
         // Decode the Base64 encoded user ID
+        console.log('🔍 Attempting to decode Base64:', encodedUserId);
         userId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
         console.log('🔍 Decoded userId from Base64:', userId);
+        console.log('🔍 Decoded userId length:', userId.length);
       } catch (decodeError) {
         console.error('🔍 Failed to decode Base64 user ID:', decodeError.message);
         // If Base64 decode fails, assume it's the old format
