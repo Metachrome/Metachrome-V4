@@ -341,8 +341,9 @@ export function useAuth() {
     }) => {
       try {
         // Try the main auth endpoint first
+        // apiRequest already returns parsed JSON, don't call .json() again
         const response = await apiRequest("POST", "/api/auth", userData);
-        return response.json();
+        return response;
       } catch (error: any) {
         console.warn('Main auth endpoint failed, trying fallback:', error);
 
@@ -353,7 +354,8 @@ export function useAuth() {
             email: userData.email,
             password: userData.password
           });
-          const result = await fallbackResponse.json();
+          // apiRequest already returns parsed JSON, don't call .json() again
+          const result = fallbackResponse;
 
           // Add a note that firstName/lastName weren't saved
           if (userData.firstName || userData.lastName) {
