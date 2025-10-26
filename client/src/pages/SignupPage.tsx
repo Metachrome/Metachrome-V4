@@ -98,11 +98,16 @@ export default function SignupPage() {
       });
 
       console.log('✅ Registration successful:', registrationResult);
+      console.log('✅ Registration result keys:', Object.keys(registrationResult));
+      console.log('✅ Token from result:', registrationResult.token ? registrationResult.token.substring(0, 50) + '...' : 'NO TOKEN');
 
       // Store authentication data immediately for document upload
       if (registrationResult.token) {
         localStorage.setItem('authToken', registrationResult.token);
         console.log('🔑 Stored auth token for immediate use');
+        console.log('🔑 Token in localStorage:', localStorage.getItem('authToken') ? localStorage.getItem('authToken').substring(0, 50) + '...' : 'NOT FOUND');
+      } else {
+        console.error('❌ NO TOKEN IN REGISTRATION RESULT!');
       }
       if (registrationResult.user) {
         localStorage.setItem('user', JSON.stringify(registrationResult.user));
