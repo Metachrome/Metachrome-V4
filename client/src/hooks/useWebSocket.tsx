@@ -13,6 +13,8 @@ export function useWebSocket() {
   const [usePollingFallback, setUsePollingFallback] = useState(false);
   const pollingHook = usePolling();
   const connectionAttemptRef = useRef(0);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectAttemptsRef = useRef(0);
 
   const connect = useCallback(() => {
     try {
