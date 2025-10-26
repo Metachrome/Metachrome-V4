@@ -150,7 +150,12 @@ const corsOptions = {
       'https://metachrome.io'
     ];
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Check if origin is in allowed list or is a Railway domain
+    const isAllowed = allowedOrigins.indexOf(origin) !== -1 ||
+                      origin.includes('.railway.app') ||
+                      origin.includes('.vercel.app');
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
