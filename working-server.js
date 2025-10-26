@@ -737,25 +737,23 @@ async function createUser(userData) {
       // Clean the userData to only include valid columns
       // NOTE: Do NOT include 'id' field - let Supabase generate UUID
       // We'll use the returned UUID for token generation
+      // Only include columns that actually exist in Supabase users table
+      // Supabase schema: id, email, username, password, first_name, last_name,
+      // profile_image_url, wallet_address, role, is_active, admin_notes, last_login, created_at, updated_at
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password_hash: userData.password_hash || userData.password,
-        firstName: userData.firstName || '',
-        lastName: userData.lastName || '',
-        balance: userData.balance !== undefined ? userData.balance : 0,
-        role: userData.role || 'user',
-        status: userData.status || 'active',
-        trading_mode: userData.trading_mode || 'normal',
+        password: userData.password_hash || userData.password, // Column is 'password', not 'password_hash'
+        first_name: userData.firstName || '', // Column is 'first_name', not 'firstName'
+        last_name: userData.lastName || '', // Column is 'last_name', not 'lastName'
         wallet_address: userData.wallet_address || userData.walletAddress,
-        isActive: userData.isActive !== undefined ? userData.isActive : true,
-        verification_status: userData.verification_status || 'unverified',
-        has_uploaded_documents: userData.has_uploaded_documents || false,
-        referral_code: userData.referral_code || null,
-        referred_by: userData.referred_by || null,
-        total_trades: userData.total_trades || 0,
+        role: userData.role || 'user',
+        is_active: userData.isActive !== undefined ? userData.isActive : true, // Column is 'is_active', not 'isActive'
         created_at: userData.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString()
+        // NOTE: balance, status, trading_mode, verification_status, has_uploaded_documents,
+        // referral_code, referred_by, total_trades are NOT in the Supabase schema
+        // These should be stored in separate tables or added to the schema
       };
 
       console.log('📝 Creating user in Supabase with data:', { ...cleanUserData, password_hash: '[HIDDEN]' });
