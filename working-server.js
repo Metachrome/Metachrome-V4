@@ -232,20 +232,32 @@ app.use('/assets', express.static(assetsPath, {
   }
 }));
 
-// Serve other static files from dist/public
-app.use(express.static(distPath, {
-  setHeaders: (res, path) => {
-    // Prevent caching for development to show changes immediately
-    if (!isProduction) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
+// Serve other static files from dist/public (but NOT for API routes)
+app.use((req, res, next) => {
+  // Skip static file serving for API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
   }
-}));
+  express.static(distPath, {
+    setHeaders: (res, path) => {
+      // Prevent caching for development to show changes immediately
+      if (!isProduction) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  })(req, res, next);
+});
 
-// Also serve files from the root directory for testing
-app.use(express.static(__dirname));
+// Also serve files from the root directory for testing (but NOT for API routes)
+app.use((req, res, next) => {
+  // Skip static file serving for API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  express.static(__dirname)(req, res, next);
+});
 
 // DEBUG: Fallback handler for /assets to see what's being requested
 app.get('/assets/*', (req, res) => {
