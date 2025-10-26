@@ -10,16 +10,20 @@ const getApiBaseUrl = () => {
   // Check if we're on Vercel (vercel.app domain)
   const isVercel = window.location.hostname.includes('vercel.app');
 
+  // Check if we're on Railway (railway.app domain)
+  const isRailway = window.location.hostname.includes('railway.app');
+
   console.log('🔧 API Base URL Detection:', {
     hostname: window.location.hostname,
     isLocal,
     isVercel,
+    isRailway,
     isProd: import.meta.env.PROD
   });
 
-  // Production deployment on Vercel - use relative URLs
-  if (isVercel || (import.meta.env.PROD && !isLocal)) {
-    console.log('🌐 Using Vercel API endpoints (relative URLs)');
+  // Production deployment on Vercel or Railway - use relative URLs
+  if ((isVercel || isRailway) || (import.meta.env.PROD && !isLocal)) {
+    console.log('🌐 Using production API endpoints (relative URLs)');
     return '';
   }
 
