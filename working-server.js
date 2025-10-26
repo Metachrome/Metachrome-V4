@@ -5283,7 +5283,10 @@ app.get('/api/users/:userId/balance', async (req, res) => {
 // Generic balance endpoint (for frontend compatibility) - PROPERLY AUTHENTICATED
 app.get('/api/balances', async (req, res) => {
   try {
-    console.log('💰 BALANCE ENDPOINT: Properly authenticated version called');
+    console.log('💰💰💰 BALANCE ENDPOINT CALLED 💰💰💰');
+    console.log('💰 Request path:', req.path);
+    console.log('💰 Request URL:', req.url);
+    console.log('💰 Request method:', req.method);
 
     // Get user from auth token
     const authToken = req.headers.authorization?.replace('Bearer ', '');
@@ -12469,7 +12472,12 @@ server.on('upgrade', (request, socket, head) => {
 
 // Catch-all route for SPA - serve index.html for non-API routes
 app.get('*', (req, res) => {
-  console.log('🔴 CATCH-ALL GET ROUTE HIT:', req.path);
+  console.log('🔴🔴🔴 CATCH-ALL GET ROUTE HIT 🔴🔴🔴');
+  console.log('🔴 Path:', req.path);
+  console.log('🔴 URL:', req.url);
+  console.log('🔴 Starts with /api/:', req.path.startsWith('/api/'));
+  console.log('🔴 Includes dot:', req.path.includes('.'));
+
   // Don't serve index.html for API routes or asset requests
   if (req.path.startsWith('/api/') || req.path.includes('.')) {
     console.log('🔴 Returning 404 for:', req.path);
