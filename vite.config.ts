@@ -39,12 +39,12 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:3005',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:3005',
         ws: true,
         changeOrigin: true,
       },
