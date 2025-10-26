@@ -5286,22 +5286,14 @@ app.get('/api/users/:userId/balance', async (req, res) => {
 // Generic balance endpoint (for frontend compatibility) - PROPERLY AUTHENTICATED
 app.get('/api/balances', async (req, res) => {
   try {
-    console.log('💰💰💰 BALANCE ENDPOINT CALLED 💰💰💰');
-    console.log('💰 Request path:', req.path);
-    console.log('💰 Request URL:', req.url);
-    console.log('💰 Request method:', req.method);
-
     // Get user from auth token
     const authToken = req.headers.authorization?.replace('Bearer ', '');
-    console.log('💰 BALANCE ENDPOINT: Auth token:', authToken?.substring(0, 30) + '...');
 
     if (!authToken) {
-      console.log('💰 ERROR: No auth token provided');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
     const users = await getUsers();
-    console.log('💰 BALANCE ENDPOINT: Total users loaded:', users.length);
 
     let currentUser = null;
 
@@ -12460,34 +12452,25 @@ wss.on('connection', (ws, req) => {
 
 // Handle WebSocket upgrade requests
 server.on('upgrade', (request, socket, head) => {
-  console.log('🔌 WebSocket upgrade request received for path:', request.url);
-
   if (request.url === '/ws') {
+    // handleUpgrade will automatically emit 'connection' event
+    // Don't emit it manually to avoid "handleUpgrade() was called more than once" error
     wss.handleUpgrade(request, socket, head, (ws) => {
-      console.log('🔌 WebSocket upgrade successful');
-      wss.emit('connection', ws, request);
+      // Connection is already handled by wss.emit('connection', ws, request)
+      // inside handleUpgrade, so we don't need to do anything here
     });
   } else {
-    console.log('🔌 WebSocket upgrade rejected - invalid path:', request.url);
     socket.destroy();
   }
 });
 
 // Catch-all route for SPA - serve index.html for non-API routes
 app.get('*', (req, res) => {
-  console.log('🔴🔴🔴 CATCH-ALL GET ROUTE HIT 🔴🔴🔴');
-  console.log('🔴 Path:', req.path);
-  console.log('🔴 URL:', req.url);
-  console.log('🔴 Starts with /api/:', req.path.startsWith('/api/'));
-  console.log('🔴 Includes dot:', req.path.includes('.'));
-
   // Don't serve index.html for API routes or asset requests
   if (req.path.startsWith('/api/') || req.path.includes('.')) {
-    console.log('🔴 Returning 404 for:', req.path);
     return res.status(404).json({ error: 'Not found' });
   }
 
-  console.log('🔴 Serving index.html for:', req.path);
   const indexPath = path.join(distPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
