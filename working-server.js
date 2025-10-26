@@ -995,8 +995,6 @@ async function getUserFromToken(token) {
   if (!token) return null;
 
   try {
-    console.log('🔍 getUserFromToken - Token:', token ? token.substring(0, 30) + '...' : 'NONE');
-
     // Handle different token formats
     if (token.startsWith('user-session-')) {
       // Extract user ID from session token
@@ -1318,33 +1316,21 @@ async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown')
 
 // GET /api/auth - Verify authentication and return user data
 app.get('/api/auth', async (req, res) => {
-  console.log('🔐 Auth verification request');
-
   try {
     // Get token from Authorization header or query params
     const authHeader = req.headers.authorization;
     const token = authHeader?.replace('Bearer ', '') || req.query.token;
 
     if (!token) {
-      console.log('❌ No token provided');
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    console.log('🔐 Verifying token:', token.substring(0, 20) + '...');
-
     // For user tokens (including wallet sessions)
     if (token.startsWith('user-token-') || token.startsWith('user-session-')) {
-      console.log('🔍 Parsing user token:', token);
-
       // CRITICAL FIX: Use getUserFromToken function instead of getUsers() for consistency
       const user = await getUserFromToken(token);
 
       if (user) {
-        console.log('✅ Token verified, returning user:', user.username);
-        console.log('🔍 User verification status:', user.verification_status);
-        console.log('🔍 User has_uploaded_documents:', user.has_uploaded_documents);
-        console.log('🔍 User verified_at:', user.verified_at);
-
         const responseData = {
           id: user.id,
           username: user.username,
@@ -1359,23 +1345,12 @@ app.get('/api/auth', async (req, res) => {
           hasPassword: !!(user.password_hash && user.password_hash.length > 0)
         };
 
-        console.log('📤 Sending user data to frontend:', {
-          username: responseData.username,
-          verificationStatus: responseData.verificationStatus,
-          hasUploadedDocuments: responseData.hasUploadedDocuments,
-          walletAddress: responseData.walletAddress,
-          hasPassword: responseData.hasPassword
-        });
-
         return res.json(responseData);
-      } else {
-        console.log('❌ User not found for token');
       }
     }
 
     // For admin tokens
     if (token.startsWith('admin-token-') || token.startsWith('admin-session-')) {
-      console.log('✅ Admin token verified');
 
       // Extract user ID from token: admin-session-{id}-{timestamp}
       const tokenParts = token.split('-');
