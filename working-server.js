@@ -213,73 +213,50 @@ if (fs.existsSync(assetsPath)) {
   console.log('   Assets files:', files.slice(0, 5).join(', '), files.length > 5 ? `... (${files.length} total)` : '');
 }
 
-// CRITICAL: Explicitly serve /assets/* files FIRST before any other routes
+// Serve static files ONLY for specific paths (not for API routes)
+// This prevents static middleware from intercepting API requests
 app.use('/assets', express.static(assetsPath, {
   setHeaders: (res, filePath) => {
-    console.log('📦 Serving asset:', filePath);
     // Set correct MIME types
     if (filePath.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
     } else if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    } else if (filePath.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    } else if (filePath.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    } else if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (filePath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    } else if (filePath.endsWith('.woff')) {
+      res.setHeader('Content-Type', 'font/woff');
+    } else if (filePath.endsWith('.woff2')) {
+      res.setHeader('Content-Type', 'font/woff2');
+    } else if (filePath.endsWith('.ttf')) {
+      res.setHeader('Content-Type', 'font/ttf');
     }
-    // Prevent caching for development
-    if (!isProduction) {
+    // Add cache headers for assets
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+}));
+
+// Serve other static files from dist/public (index.html, favicon, etc)
+app.use(express.static(distPath, {
+  setHeaders: (res, filePath) => {
+    // Prevent caching for HTML files
+    if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
     }
   }
 }));
-
-// Create static middleware for dist/public
-const staticDistMiddleware = express.static(distPath, {
-  setHeaders: (res, path) => {
-    // Prevent caching for development to show changes immediately
-    if (!isProduction) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-  }
-});
-
-// Create static middleware for root directory
-const staticRootMiddleware = express.static(__dirname);
-
-// Serve other static files from dist/public (but NOT for API routes)
-app.use((req, res, next) => {
-  // Skip static file serving for API routes
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-  staticDistMiddleware(req, res, next);
-});
-
-// Also serve files from the root directory for testing (but NOT for API routes)
-app.use((req, res, next) => {
-  // Skip static file serving for API routes
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-  staticRootMiddleware(req, res, next);
-});
-
-// DEBUG: Fallback handler for /assets to see what's being requested
-app.get('/assets/*', (req, res) => {
-  const requestedFile = req.path;
-  const fullPath = path.join(assetsPath, requestedFile.replace('/assets/', ''));
-  console.log('❌ Asset not found by static middleware:', requestedFile);
-  console.log('   Looking for:', fullPath);
-  console.log('   File exists:', fs.existsSync(fullPath));
-
-  if (fs.existsSync(assetsPath)) {
-    const files = fs.readdirSync(assetsPath);
-    console.log('   Available files:', files.join(', '));
-  }
-
-  res.status(404).send(`Asset not found: ${requestedFile}`);
-});
 
 // Ultra-fast health check for Railway
 app.get('/api/health', (req, res) => {
