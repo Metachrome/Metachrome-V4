@@ -12479,6 +12479,21 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
+// Catch-all route for SPA - serve index.html for non-API routes
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes or asset requests
+  if (req.path.startsWith('/api/') || req.path.includes('.')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  const indexPath = path.join(distPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({ error: 'index.html not found' });
+  }
+});
+
 // Global error handler for uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('❌ UNCAUGHT EXCEPTION:', error);
@@ -12492,7 +12507,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // Express error handler middleware
-app.use((err, req, res) => {
+app.use((err, _req, res) => {
   console.error('❌ EXPRESS ERROR:', err.message);
   res.status(500).json({ error: 'Internal server error', message: err.message });
 });
