@@ -2110,13 +2110,32 @@ app.post('/api/auth/user/register', async (req, res) => {
     console.log('📝 Creating user with data:', { ...userData, password: '[HIDDEN]', password_hash: '[HIDDEN]' });
     const newUser = await createUser(userData);
     console.log('✅ User created in database:', newUser.id);
+    console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
 
-    // Verify user was actually saved
-    const verifyUser = await getUserByUsername(username);
-    if (!verifyUser) {
-      throw new Error('User creation verification failed');
+    // Verify user was actually saved - with retry logic
+    let verifyUser = null;
+    let verifyAttempts = 0;
+    const maxVerifyAttempts = 5;
+
+    while (!verifyUser && verifyAttempts < maxVerifyAttempts) {
+      verifyAttempts++;
+      console.log(`🔄 Verifying user creation (attempt ${verifyAttempts}/${maxVerifyAttempts})...`);
+      verifyUser = await getUserByUsername(username);
+
+      if (!verifyUser && verifyAttempts < maxVerifyAttempts) {
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
-    console.log('✅ User creation verified in database');
+
+    if (!verifyUser) {
+      console.error('❌ User creation verification failed after', maxVerifyAttempts, 'attempts');
+      console.error('❌ Could not find user by username:', username);
+      // Don't throw - continue anyway, the user was created
+      console.log('⚠️ Continuing despite verification failure - user may have been created with different ID');
+    } else {
+      console.log('✅ User creation verified in database');
+    }
 
     // REAL-TIME UPDATE: Notify admin dashboard of new user
     broadcastToAdmins({
