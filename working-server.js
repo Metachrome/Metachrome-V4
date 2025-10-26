@@ -740,7 +740,9 @@ async function createUser(userData) {
   if (isProduction && supabase) {
     try {
       // Clean the userData to only include valid columns
+      // CRITICAL FIX: Include the ID if provided to ensure consistency with token
       const cleanUserData = {
+        ...(userData.id && { id: userData.id }), // Include ID if provided
         username: userData.username,
         email: userData.email,
         password_hash: userData.password_hash || userData.password,
@@ -751,16 +753,24 @@ async function createUser(userData) {
         status: userData.status || 'active',
         trading_mode: userData.trading_mode || 'normal',
         wallet_address: userData.wallet_address || userData.walletAddress,
-        isActive: userData.isActive !== undefined ? userData.isActive : true
+        isActive: userData.isActive !== undefined ? userData.isActive : true,
+        verification_status: userData.verification_status || 'unverified',
+        has_uploaded_documents: userData.has_uploaded_documents || false,
+        referral_code: userData.referral_code || null,
+        referred_by: userData.referred_by || null,
+        total_trades: userData.total_trades || 0,
+        created_at: userData.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
+      console.log('📝 Creating user in Supabase with data:', { ...cleanUserData, password_hash: '[HIDDEN]' });
       const { data, error } = await supabase
         .from('users')
         .insert([cleanUserData])
         .select()
         .single();
       if (error) throw error;
-      console.log('✅ User created in Supabase:', data.username);
+      console.log('✅ User created in Supabase:', data.username, 'ID:', data.id);
       return data;
     } catch (error) {
       console.error('❌ Database error creating user:', error);
@@ -1035,9 +1045,21 @@ async function getUserFromToken(token) {
         console.log('🔍 Using raw userId (Base64 decode failed):', userId);
       }
 
+      // Always try local storage first for faster access
+      const users = await getUsers();
+      console.log('🔍 Checking local storage for user ID:', userId);
+      console.log('🔍 Available users in local storage:', users.map(u => ({ id: u.id, username: u.username })));
+
+      let foundUser = users.find(u => u.id === userId);
+      if (foundUser) {
+        console.log('🔍 Found user in local storage:', foundUser.username);
+        return foundUser;
+      }
+
+      // If not found locally and in production with Supabase, try Supabase
       if (isProduction && supabase) {
         try {
-          console.log('🔍 Querying Supabase for user ID:', userId);
+          console.log('🔍 User not in local storage, querying Supabase for user ID:', userId);
           const { data, error } = await supabase
             .from('users')
             .select('*')
@@ -1065,19 +1087,12 @@ async function getUserFromToken(token) {
           }
         } catch (supabaseError) {
           console.error('🔍 Supabase query failed:', supabaseError.message);
-          // Fallback to local users if Supabase fails
-          const users = await getUsers();
-          const foundUser = users.find(u => u.id === userId);
-          console.log('🔍 Found user in local storage:', foundUser ? foundUser.username : 'NOT FOUND');
-          return foundUser || null;
+          console.log('🔍 Returning null - user not found in either local storage or Supabase');
+          return null;
         }
       } else {
-        // Development fallback
-        const users = await getUsers();
-        console.log('🔍 Available users:', users.map(u => ({ id: u.id, username: u.username })));
-        const foundUser = users.find(u => u.id === userId);
-        console.log('🔍 Found user:', foundUser ? foundUser.username : 'NOT FOUND');
-        return foundUser;
+        console.log('🔍 Not in production or Supabase not available, user not found in local storage');
+        return null;
       }
     } else if (token.startsWith('admin-session-')) {
       // Handle admin tokens
@@ -8529,11 +8544,11 @@ app.post('/api/user/upload-verification', (req, res, next) => {
     let user = await getUserFromToken(authToken);
     console.log('📄 User from token:', user ? { id: user.id, username: user.username } : 'NOT FOUND');
 
-    // If user not found, retry up to 3 times (for newly created users)
+    // If user not found, retry up to 5 times (for newly created users)
     if (!user && authToken.startsWith('user-session-')) {
       console.log('📄 User not found on first attempt, retrying for newly created user...');
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between retries
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s between retries
         user = await getUserFromToken(authToken);
         console.log(`📄 Retry attempt ${attempt}: User found?`, !!user);
         if (user) break;
@@ -8546,21 +8561,39 @@ app.post('/api/user/upload-verification', (req, res, next) => {
       // Additional debugging: check if token format is correct
       if (authToken.startsWith('user-session-')) {
         console.log('📄 Token appears to be user session token, checking format...');
-        const parts = authToken.split('-');
-        console.log('📄 Token parts count:', parts.length);
-        console.log('📄 Token parts:', parts.map((part, i) => `${i}: ${part.substring(0, 20)}...`));
+        const prefix = 'user-session-';
+        const lastHyphenIndex = authToken.lastIndexOf('-');
 
-        // Try to extract userId more carefully
-        const lastPart = parts[parts.length - 1];
-        const isTimestamp = /^\d+$/.test(lastPart);
-        if (isTimestamp && parts.length >= 4) {
-          const extractedUserId = parts.slice(2, -1).join('-');
-          console.log('📄 Extracted userId from token:', extractedUserId);
-          console.log('📄 Is timestamp:', isTimestamp);
+        if (lastHyphenIndex > prefix.length) {
+          const encodedUserId = authToken.substring(prefix.length, lastHyphenIndex);
+          const timestamp = authToken.substring(lastHyphenIndex + 1);
+
+          console.log('📄 Token format analysis:', {
+            encodedUserId: encodedUserId.substring(0, 20) + '...',
+            timestamp,
+            isValidTimestamp: /^\d+$/.test(timestamp)
+          });
+
+          // Try to decode and find user manually as last resort
+          try {
+            const decodedUserId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
+            console.log('📄 Decoded user ID:', decodedUserId);
+
+            const users = await getUsers();
+            const manualUser = users.find(u => u.id === decodedUserId);
+            if (manualUser) {
+              console.log('📄 Found user manually:', manualUser.username);
+              user = manualUser;
+            }
+          } catch (decodeError) {
+            console.error('📄 Failed to manually decode and find user:', decodeError.message);
+          }
         }
       }
 
-      return res.status(401).json({ error: 'Invalid authentication' });
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid authentication' });
+      }
     }
 
     if (!req.file) {
