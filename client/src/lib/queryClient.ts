@@ -84,6 +84,11 @@ export async function apiRequest(
   // Only add Authorization header if we have a token AND it's not a login request
   if (token && !url.includes('/auth/admin/login') && !url.includes('/auth/user/login') && !url.includes('/admin-auth') && !url.includes('/admin-login')) {
     headers["Authorization"] = `Bearer ${token}`;
+    if (import.meta.env.DEV) {
+      console.log(`🔐 Adding Authorization header for ${url}: Bearer ${token.substring(0, 30)}...`);
+    }
+  } else if (import.meta.env.DEV && url.includes('/auth')) {
+    console.log(`🔐 NOT adding Authorization header for ${url} - token: ${token ? 'exists' : 'missing'}`);
   }
 
   const res = await fetch(fullUrl, {
