@@ -232,22 +232,28 @@ app.use('/assets', express.static(assetsPath, {
   }
 }));
 
+// Create static middleware for dist/public
+const staticDistMiddleware = express.static(distPath, {
+  setHeaders: (res, path) => {
+    // Prevent caching for development to show changes immediately
+    if (!isProduction) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+});
+
+// Create static middleware for root directory
+const staticRootMiddleware = express.static(__dirname);
+
 // Serve other static files from dist/public (but NOT for API routes)
 app.use((req, res, next) => {
   // Skip static file serving for API routes
   if (req.path.startsWith('/api/')) {
     return next();
   }
-  express.static(distPath, {
-    setHeaders: (res, path) => {
-      // Prevent caching for development to show changes immediately
-      if (!isProduction) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-      }
-    }
-  })(req, res, next);
+  staticDistMiddleware(req, res, next);
 });
 
 // Also serve files from the root directory for testing (but NOT for API routes)
@@ -256,7 +262,7 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return next();
   }
-  express.static(__dirname)(req, res, next);
+  staticRootMiddleware(req, res, next);
 });
 
 // DEBUG: Fallback handler for /assets to see what's being requested
