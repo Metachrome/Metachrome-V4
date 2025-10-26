@@ -31,36 +31,15 @@ export function usePolling() {
       // Poll for updates every 5 seconds
       pollingIntervalRef.current = setInterval(async () => {
         try {
-          // Poll for balance updates
-          const balanceResponse = await fetch('/api/user/balance', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            }
-          });
+          // Just check if server is alive with health check
+          const healthResponse = await fetch('/api/health');
 
-          if (balanceResponse.ok) {
-            const balanceData = await balanceResponse.json();
+          if (healthResponse.ok) {
+            // Server is alive, emit a keep-alive message
             setLastMessage({
-              type: 'balance_update',
-              data: balanceData
+              type: 'keep_alive',
+              data: { timestamp: new Date().toISOString() }
             });
-          }
-
-          // Poll for trade updates
-          const tradesResponse = await fetch('/api/trades/recent', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-            }
-          });
-
-          if (tradesResponse.ok) {
-            const tradesData = await tradesResponse.json();
-            if (tradesData.trades && tradesData.trades.length > 0) {
-              setLastMessage({
-                type: 'trade_update',
-                data: tradesData.trades[0]
-              });
-            }
           }
         } catch (error) {
           console.error('📡 POLLING: Error fetching updates:', error);
