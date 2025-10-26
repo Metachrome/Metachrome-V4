@@ -76,10 +76,46 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static files with proper MIME types
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      // Set correct MIME types for assets
+      if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      } else if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      } else if (filePath.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      } else if (filePath.endsWith('.svg')) {
+        res.setHeader('Content-Type', 'image/svg+xml');
+      } else if (filePath.endsWith('.png')) {
+        res.setHeader('Content-Type', 'image/png');
+      } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+        res.setHeader('Content-Type', 'image/jpeg');
+      } else if (filePath.endsWith('.gif')) {
+        res.setHeader('Content-Type', 'image/gif');
+      } else if (filePath.endsWith('.webp')) {
+        res.setHeader('Content-Type', 'image/webp');
+      } else if (filePath.endsWith('.woff')) {
+        res.setHeader('Content-Type', 'font/woff');
+      } else if (filePath.endsWith('.woff2')) {
+        res.setHeader('Content-Type', 'font/woff2');
+      } else if (filePath.endsWith('.ttf')) {
+        res.setHeader('Content-Type', 'font/ttf');
+      }
+      // Add cache headers for assets
+      if (filePath.includes('/assets/')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    }
+  }));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // fall through to index.html if the file doesn't exist (only for HTML routes)
+  app.use("*", (req, res) => {
+    // Don't serve index.html for asset requests
+    if (req.path.startsWith('/assets/') || req.path.includes('.')) {
+      return res.status(404).send('Not Found');
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
