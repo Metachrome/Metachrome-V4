@@ -759,16 +759,21 @@ async function createUser(userData) {
       };
 
       console.log('📝 Creating user in Supabase with data:', { ...cleanUserData, password_hash: '[HIDDEN]' });
+      console.log('📝 isProduction:', isProduction, 'supabase available:', !!supabase);
       const { data, error } = await supabase
         .from('users')
         .insert([cleanUserData])
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase insert error:', error);
+        throw error;
+      }
       console.log('✅ User created in Supabase:', data.username, 'with UUID:', data.id);
       return data;
     } catch (error) {
-      console.error('❌ Database error creating user:', error);
+      console.error('❌ Database error creating user:', error.message);
+      console.error('❌ Full error:', error);
       console.log('🔄 Falling back to file storage...');
       // Don't throw error, fall back to file storage instead
     }
