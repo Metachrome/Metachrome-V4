@@ -1473,7 +1473,9 @@ app.get('/api/auth', async (req, res) => {
 
 // Generic auth endpoint (handles both login and registration)
 app.post('/api/auth', async (req, res) => {
-  console.log('🔐 Generic auth endpoint:', req.body);
+  console.log('🔐🔐🔐 GENERIC AUTH ENDPOINT CALLED 🔐🔐🔐');
+  console.log('🔐 Request headers:', req.headers);
+  console.log('🔐 Request body:', req.body);
   const { username, password, email, walletAddress, firstName, lastName } = req.body;
 
   console.log('🔍 Debug - username:', !!username, 'password:', !!password, 'email:', !!email, 'walletAddress:', !!walletAddress);
@@ -12458,11 +12460,14 @@ server.on('upgrade', (request, socket, head) => {
 
 // Catch-all route for SPA - serve index.html for non-API routes
 app.get('*', (req, res) => {
+  console.log('🔴 CATCH-ALL GET ROUTE HIT:', req.path);
   // Don't serve index.html for API routes or asset requests
   if (req.path.startsWith('/api/') || req.path.includes('.')) {
+    console.log('🔴 Returning 404 for:', req.path);
     return res.status(404).json({ error: 'Not found' });
   }
 
+  console.log('🔴 Serving index.html for:', req.path);
   const indexPath = path.join(distPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
