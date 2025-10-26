@@ -1789,12 +1789,21 @@ app.get('/api/auth/user', async (req, res) => {
   try {
     const authToken = req.headers.authorization?.replace('Bearer ', '');
 
+    console.log('🔐 /api/auth/user called');
+    console.log('🔐 Authorization header:', req.headers.authorization);
+    console.log('🔐 Extracted token:', authToken ? authToken.substring(0, 50) + '...' : 'NONE');
+
     if (!authToken) {
+      console.log('❌ No auth token provided');
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    console.log('🔐 Calling getUserFromToken with token:', authToken.substring(0, 50) + '...');
     const user = await getUserFromToken(authToken);
+    console.log('🔐 getUserFromToken result:', user ? { id: user.id, username: user.username } : 'NULL');
+
     if (!user) {
+      console.log('❌ User not found from token');
       return res.status(401).json({ error: 'Invalid authentication' });
     }
 
