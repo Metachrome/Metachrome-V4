@@ -3514,7 +3514,9 @@ function OptionsPageContent({
                   const priceChange = safeCurrentPrice - trade.entryPrice;
                   const isWinning = (trade.direction === 'up' && priceChange > 0) ||
                                    (trade.direction === 'down' && priceChange < 0);
-                  const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -trade.amount;
+                  // CRITICAL FIX: For losses, show the loss percentage (10% or 15%), not the full amount
+                  const lossPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
+                  const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -(trade.amount * lossPercentage / 100);
 
                   return (
                     <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
