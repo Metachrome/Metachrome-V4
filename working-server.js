@@ -130,6 +130,69 @@ app.get('/api/system-status', (req, res) => {
   });
 });
 
+// DIAGNOSTIC ENDPOINT - Test user creation
+app.post('/api/test-user-creation', async (req, res) => {
+  try {
+    console.log('🧪 TEST: Starting user creation test...');
+
+    const testUser = {
+      username: `testuser${Date.now()}`,
+      email: `test${Date.now()}@example.com`,
+      password_hash: 'test_password_hash_12345',
+      firstName: 'Test',
+      lastName: 'User'
+    };
+
+    console.log('🧪 TEST: Attempting to create user:', testUser);
+
+    if (!isSupabaseConfigured || !supabase) {
+      return res.status(500).json({
+        error: 'Supabase not configured',
+        isSupabaseConfigured,
+        supabaseExists: !!supabase
+      });
+    }
+
+    // Try minimal insert
+    console.log('🧪 TEST: Trying minimal insert with username, email, password_hash...');
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        username: testUser.username,
+        email: testUser.email,
+        password_hash: testUser.password_hash
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('🧪 TEST: Insert failed:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'User creation failed',
+        errorCode: error.code,
+        errorMessage: error.message,
+        errorDetails: error.details,
+        fullError: error
+      });
+    }
+
+    console.log('🧪 TEST: User created successfully:', data);
+    res.json({
+      success: true,
+      message: 'Test user created successfully',
+      user: data
+    });
+  } catch (error) {
+    console.error('🧪 TEST: Exception:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      fullError: error.toString()
+    });
+  }
+});
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -2024,15 +2087,19 @@ app.post('/api/auth/register', async (req, res) => {
     };
 
     console.log('📝 Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
+    console.log('📝 isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
+
     const newUser = await createUser(userData);
 
     if (!newUser || !newUser.id) {
       console.error('❌ User creation failed - no user ID returned');
-      return res.status(500).json({ error: 'Failed to create user' });
+      console.error('❌ newUser object:', newUser);
+      return res.status(500).json({ error: 'Failed to create user', details: 'No user ID returned' });
     }
 
     console.log('✅ User created in database:', newUser.id);
     console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
+    console.log('✅ User source:', newUser.id.includes('-') ? 'Supabase (UUID)' : 'Local storage');
 
     // FIXED: Wait a bit to ensure user is fully persisted in database before generating token
     // This prevents 401 errors when user tries to upload documents immediately after signup
