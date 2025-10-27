@@ -1,5 +1,6 @@
 -- Create user_verification_documents table for Supabase
 -- Run this SQL in your Supabase dashboard SQL Editor
+-- This version handles existing policies gracefully
 
 CREATE TABLE IF NOT EXISTS public.user_verification_documents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -21,6 +22,12 @@ CREATE INDEX IF NOT EXISTS idx_user_verification_documents_created_at ON public.
 -- Enable RLS (Row Level Security)
 ALTER TABLE public.user_verification_documents ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own documents" ON public.user_verification_documents;
+DROP POLICY IF EXISTS "Users can insert their own documents" ON public.user_verification_documents;
+DROP POLICY IF EXISTS "Admins can view all documents" ON public.user_verification_documents;
+DROP POLICY IF EXISTS "Admins can update documents" ON public.user_verification_documents;
+
 -- Create policies for RLS
 -- Users can view their own documents
 CREATE POLICY "Users can view their own documents" ON public.user_verification_documents
@@ -34,7 +41,7 @@ CREATE POLICY "Users can insert their own documents" ON public.user_verification
 CREATE POLICY "Admins can view all documents" ON public.user_verification_documents
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM public.users 
+      SELECT 1 FROM public.users
       WHERE id = auth.uid()::text AND role IN ('admin', 'super_admin')
     )
   );
@@ -43,7 +50,7 @@ CREATE POLICY "Admins can view all documents" ON public.user_verification_docume
 CREATE POLICY "Admins can update documents" ON public.user_verification_documents
   FOR UPDATE USING (
     EXISTS (
-      SELECT 1 FROM public.users 
+      SELECT 1 FROM public.users
       WHERE id = auth.uid()::text AND role IN ('admin', 'super_admin')
     )
   );

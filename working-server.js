@@ -743,23 +743,27 @@ async function createUser(userData) {
       // NOTE: Do NOT include 'id' field - let Supabase generate UUID
       // We'll use the returned UUID for token generation
       // Only include columns that actually exist in Supabase users table
-      // Supabase schema: id, email, username, password, first_name, last_name,
-      // profile_image_url, wallet_address, role, is_active, admin_notes, last_login, created_at, updated_at
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password: userData.password_hash || userData.password, // Column is 'password', not 'password_hash'
+        password_hash: userData.password_hash || userData.password, // Use password_hash column
         first_name: userData.firstName || '', // Column is 'first_name', not 'firstName'
         last_name: userData.lastName || '', // Column is 'last_name', not 'lastName'
         wallet_address: userData.wallet_address || userData.walletAddress,
         role: userData.role || 'user',
-        is_active: userData.isActive !== undefined ? userData.isActive : true, // Column is 'is_active', not 'isActive'
+        status: userData.status || 'active',
+        trading_mode: userData.trading_mode || 'normal',
+        verification_status: userData.verification_status || 'unverified',
+        has_uploaded_documents: userData.has_uploaded_documents || false,
+        balance: userData.balance || 0,
+        referral_code: userData.referral_code,
+        referred_by: userData.referred_by,
+        total_trades: userData.total_trades || 0,
         created_at: userData.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString()
-        // NOTE: balance, status, trading_mode, verification_status, has_uploaded_documents,
-        // referral_code, referred_by, total_trades are NOT in the Supabase schema
-        // These should be stored in separate tables or added to the schema
       };
+
+      console.log('📝 Inserting user to Supabase with data:', { ...cleanUserData, password_hash: '[HIDDEN]' });
 
       const { data, error } = await supabase
         .from('users')
@@ -8467,6 +8471,8 @@ app.post('/api/user/upload-verification', (req, res, next) => {
 
     // Get user from token with retry logic for newly created users
     console.log('📄 Getting user from token...');
+    console.log('📄 Auth token format:', authToken.substring(0, 50) + '...');
+
     let user = await getUserFromToken(authToken);
     console.log('📄 User from token:', user ? { id: user.id, username: user.username } : 'NOT FOUND');
 
@@ -8474,7 +8480,7 @@ app.post('/api/user/upload-verification', (req, res, next) => {
     if (!user && authToken.startsWith('user-session-')) {
       console.log('📄 User not found on first attempt, retrying for newly created user...');
       for (let attempt = 1; attempt <= 5; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s between retries
+        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between retries
         user = await getUserFromToken(authToken);
         console.log(`📄 Retry attempt ${attempt}: User found?`, !!user);
         if (user) break;
@@ -8505,11 +8511,32 @@ app.post('/api/user/upload-verification', (req, res, next) => {
             const decodedUserId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
             console.log('📄 Decoded user ID:', decodedUserId);
 
-            const users = await getUsers();
-            const manualUser = users.find(u => u.id === decodedUserId);
-            if (manualUser) {
-              console.log('📄 Found user manually:', manualUser.username);
-              user = manualUser;
+            // Try Supabase first if in production
+            if (isProduction && supabase) {
+              try {
+                const { data, error } = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('id', decodedUserId)
+                  .single();
+
+                if (!error && data) {
+                  console.log('📄 Found user in Supabase:', data.username);
+                  user = data;
+                }
+              } catch (supabaseError) {
+                console.log('📄 Supabase lookup failed, trying local storage...');
+              }
+            }
+
+            // Fall back to local storage
+            if (!user) {
+              const users = await getUsers();
+              const manualUser = users.find(u => u.id === decodedUserId);
+              if (manualUser) {
+                console.log('📄 Found user in local storage:', manualUser.username);
+                user = manualUser;
+              }
             }
           } catch (decodeError) {
             console.error('📄 Failed to manually decode and find user:', decodeError.message);
