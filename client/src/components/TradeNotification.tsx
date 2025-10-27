@@ -60,7 +60,13 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
     isMobile,
     screenWidth: window.innerWidth,
     isVisible,
-    position: isMobile ? 'centered' : 'top-right'
+    position: isMobile ? 'centered' : 'top-right',
+    // CRITICAL DEBUG: Log profit calculation
+    tradeProfit: trade.profit,
+    tradeAmount: trade.amount,
+    tradePayout: trade.payout,
+    calculatedPnl: pnl,
+    isWin: isWin
   });
 
   return (
