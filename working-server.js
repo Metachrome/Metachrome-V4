@@ -6000,6 +6000,15 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       const finalProfitAmount = profitAmount !== undefined && profitAmount !== null ? profitAmount :
         (finalWon ? (amount * profitPercentageDecimal) : -(amount * profitPercentageDecimal));
 
+      // Calculate profitPercentage based on duration (same logic as above)
+      let profitPercentageForNotification = 10; // Default
+      if (duration === 30) profitPercentageForNotification = 10;
+      else if (duration === 60) profitPercentageForNotification = 15;
+      else if (duration === 120) profitPercentageForNotification = 20;
+      else if (duration === 180) profitPercentageForNotification = 30;
+      else if (duration === 240) profitPercentageForNotification = 75;
+      else if (duration === 300) profitPercentageForNotification = 100;
+
       const directNotificationMessage = {
         type: 'trigger_mobile_notification',
         data: {
@@ -6011,8 +6020,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           currentPrice: exitPrice,
           status: finalWon ? 'won' : 'lost',
           payout: finalWon ? finalPayout : 0,
-          // CRITICAL FIX: For loss trades, include the loss percentage (10% or 15%), not 0
-          profitPercentage: duration === 30 ? 10 : 15, // Always include percentage for both win and loss
+          // CRITICAL FIX: Use calculated profitPercentage, not hardcoded value
+          profitPercentage: profitPercentageForNotification, // Always include percentage for both win and loss
           symbol: symbol || 'BTC/USDT', // Use actual symbol
           duration: duration || 30, // Use actual duration
           // CRITICAL FIX: Include profitAmount for accurate P&L display in notification
