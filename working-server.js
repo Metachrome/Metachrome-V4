@@ -130,6 +130,59 @@ app.get('/api/system-status', (req, res) => {
   });
 });
 
+// DIAGNOSTIC ENDPOINT - Test Supabase connection and user creation
+app.get('/api/test/supabase-status', async (req, res) => {
+  console.log('🧪 Testing Supabase connection...');
+
+  try {
+    if (!isSupabaseConfigured || !supabase) {
+      return res.json({
+        status: 'NOT_CONFIGURED',
+        message: 'Supabase is not configured',
+        isSupabaseConfigured,
+        supabaseExists: !!supabase
+      });
+    }
+
+    // Try to fetch users from Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase query error:', error);
+      return res.json({
+        status: 'ERROR',
+        message: 'Supabase connection failed',
+        error: error.message,
+        errorCode: error.code,
+        errorDetails: error.details
+      });
+    }
+
+    // Count total users
+    const { count } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+
+    res.json({
+      status: 'CONNECTED',
+      message: 'Supabase is connected and working',
+      totalUsers: count,
+      isSupabaseConfigured,
+      supabaseExists: !!supabase
+    });
+  } catch (error) {
+    console.error('❌ Supabase test error:', error);
+    res.json({
+      status: 'ERROR',
+      message: 'Supabase test failed',
+      error: error.message
+    });
+  }
+});
+
 // DIAGNOSTIC ENDPOINT - Test user creation (GET and POST)
 const testUserCreation = async (req, res) => {
   try {
@@ -840,41 +893,29 @@ async function createUser(userData) {
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password: userData.password_hash || userData.password // Try 'password' column first
+        password_hash: userData.password_hash || userData.password // Use password_hash column
       };
 
-      console.log('📝 Attempting minimal insert to Supabase:', { ...cleanUserData, password: '[HIDDEN]' });
+      console.log('📝 [CREATE_USER] Attempting insert to Supabase with:', { ...cleanUserData, password_hash: '[HIDDEN]' });
 
-      let result = await supabase
+      const result = await supabase
         .from('users')
         .insert([cleanUserData])
         .select()
         .single();
 
-      // If minimal insert fails, try with more columns
-      if (result.error) {
-        console.log('📝 Minimal insert failed, trying with password_hash column...');
-        cleanUserData.password = undefined;
-        cleanUserData.password_hash = userData.password_hash || userData.password;
-
-        result = await supabase
-          .from('users')
-          .insert([cleanUserData])
-          .select()
-          .single();
-      }
-
       const { data, error } = result;
 
       if (error) {
-        console.error('❌ Supabase insert error:', error);
-        console.error('❌ Error code:', error.code);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error details:', error.details);
+        console.error('❌ [CREATE_USER] Supabase insert error:', error);
+        console.error('❌ [CREATE_USER] Error code:', error.code);
+        console.error('❌ [CREATE_USER] Error message:', error.message);
+        console.error('❌ [CREATE_USER] Error details:', error.details);
+        console.error('❌ [CREATE_USER] Full error object:', JSON.stringify(error, null, 2));
         throw error;
       }
 
-      console.log('✅ User created in Supabase:', data.username, 'ID:', data.id);
+      console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'ID:', data.id);
 
       // Now update with additional fields if they exist
       if (userData.firstName || userData.lastName || userData.role || userData.balance !== undefined) {
