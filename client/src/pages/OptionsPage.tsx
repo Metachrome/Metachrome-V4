@@ -1162,9 +1162,42 @@ function OptionsPageContent({
       }
     }
 
-    // REMOVED: BULLETPROOF handler for 'trigger_mobile_notification'
-    // This was causing duplicate notifications - the main 'trade_completed' handler below is sufficient
-    // and handles all the necessary data correctly
+    // HANDLER: Process trigger_mobile_notification messages (fallback if trade_completed doesn't arrive)
+    if (lastMessage?.type === 'trigger_mobile_notification' && lastMessage.data?.userId === user?.id) {
+      const messageId = `${lastMessage.type}-${lastMessage.data?.tradeId}`;
+
+      // Skip if already processed
+      if (processedMessagesRef.current.has(messageId)) {
+        console.log('⏭️ WEBSOCKET: Skipping duplicate trigger_mobile_notification message');
+        return;
+      }
+
+      processedMessagesRef.current.add(messageId);
+
+      console.log('🔔 WEBSOCKET: trigger_mobile_notification received:', lastMessage.data);
+
+      const { tradeId, direction, amount, entryPrice, currentPrice, status, payout, profitPercentage, symbol, duration, profitAmount } = lastMessage.data;
+
+      // Create trade object from notification data
+      const notificationTrade: ActiveTrade = {
+        id: tradeId,
+        symbol: symbol || 'BTC/USDT',
+        direction: (direction as 'up' | 'down') || 'up',
+        amount: amount || 100,
+        entryPrice: entryPrice || 50000,
+        currentPrice: currentPrice || entryPrice || 50000,
+        status: (status as 'won' | 'lost') || 'won',
+        duration: duration || 30,
+        profitPercentage: profitPercentage || (duration === 30 ? 10 : 15),
+        payout: payout || 0,
+        profit: profitAmount, // CRITICAL: Use profitAmount from WebSocket
+        startTime: Date.now() - ((duration || 30) * 1000),
+        endTime: Date.now()
+      };
+
+      console.log('🔔 WEBSOCKET: Triggering notification from trigger_mobile_notification:', notificationTrade);
+      triggerNotification(notificationTrade);
+    }
 
     // MAIN HANDLER: Process trade_completed messages
     if (lastMessage?.type === 'trade_completed' && lastMessage.data?.userId === user?.id) {

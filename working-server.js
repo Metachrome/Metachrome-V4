@@ -5992,7 +5992,9 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           payout: finalWon ? finalPayout : 0,
           profitPercentage: finalWon ? profitPercentage : 0, // Use calculated profit percentage
           symbol: symbol || 'BTC/USDT', // Use actual symbol
-          duration: duration || 30 // Use actual duration
+          duration: duration || 30, // Use actual duration
+          // CRITICAL FIX: Include profitAmount for accurate P&L display in notification
+          profitAmount: profitAmount
         }
       };
 
