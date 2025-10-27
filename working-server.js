@@ -177,6 +177,64 @@ app.get('/api/test/supabase-status', async (req, res) => {
   }
 });
 
+// DIAGNOSTIC ENDPOINT - Test user creation in Supabase
+app.post('/api/test/create-user', async (req, res) => {
+  console.log('🧪 Testing user creation...');
+
+  try {
+    if (!isSupabaseConfigured || !supabase) {
+      return res.json({
+        status: 'NOT_CONFIGURED',
+        message: 'Supabase is not configured'
+      });
+    }
+
+    const testUsername = `testuser_${Date.now()}`;
+    const testEmail = `test_${Date.now()}@example.com`;
+    const testPassword = 'TestPassword123!';
+
+    console.log('🧪 Attempting to create test user:', testUsername);
+
+    // Try to create a user directly
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{
+        username: testUsername,
+        email: testEmail,
+        password: testPassword
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ User creation failed:', error);
+      return res.json({
+        status: 'ERROR',
+        message: 'User creation failed',
+        error: error.message,
+        errorCode: error.code,
+        errorDetails: error.details,
+        fullError: JSON.stringify(error, null, 2)
+      });
+    }
+
+    console.log('✅ Test user created successfully:', data);
+    res.json({
+      status: 'SUCCESS',
+      message: 'Test user created successfully',
+      user: data
+    });
+  } catch (error) {
+    console.error('❌ Test error:', error);
+    res.json({
+      status: 'ERROR',
+      message: 'Test failed',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // DIAGNOSTIC ENDPOINT - Test user creation (GET and POST)
 const testUserCreation = async (req, res) => {
   try {
