@@ -3046,6 +3046,25 @@ app.put('/api/admin/balances/:userId', async (req, res) => {
     // Save the updated users data
     await saveUsers(users);
 
+    // CRITICAL: Also update Supabase to keep databases in sync
+    if (isSupabaseConfigured && supabase) {
+      try {
+        console.log('💰 [BALANCE UPDATE] Syncing balance to Supabase for user:', userId);
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ balance: user.balance })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.error('❌ [BALANCE UPDATE] Supabase sync failed:', updateError.message);
+        } else {
+          console.log('✅ [BALANCE UPDATE] Supabase balance synced:', user.balance);
+        }
+      } catch (supabaseError) {
+        console.error('❌ [BALANCE UPDATE] Supabase sync exception:', supabaseError.message);
+      }
+    }
+
     // Create transaction record
     const transaction = {
       id: `txn-${Date.now()}`,
