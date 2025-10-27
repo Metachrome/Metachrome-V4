@@ -1952,31 +1952,8 @@ app.post('/api/auth/register', async (req, res) => {
     console.log('✅ User created in database:', newUser.id);
     console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
 
-    // Verify user was actually saved - with retry logic
-    let verifyUser = null;
-    let verifyAttempts = 0;
-    const maxVerifyAttempts = 5;
-
-    while (!verifyUser && verifyAttempts < maxVerifyAttempts) {
-      verifyAttempts++;
-      console.log(`🔄 Verifying user creation (attempt ${verifyAttempts}/${maxVerifyAttempts})...`);
-      verifyUser = await getUserByUsername(username);
-
-      if (!verifyUser && verifyAttempts < maxVerifyAttempts) {
-        // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-
-    if (!verifyUser) {
-      console.error('❌ User creation verification failed after', maxVerifyAttempts, 'attempts');
-      console.error('❌ Could not find user by username:', username);
-      // Don't throw - continue anyway, the user was created
-      console.log('⚠️ Continuing despite verification failure - user may have been created with different ID');
-    } else {
-      console.log('✅ User creation verified in database');
-    }
     // Generate a simple token for authentication
+    // Use the actual user ID from the database (which may be a Supabase UUID)
     // Encode user ID in Base64 to avoid issues with UUID hyphens
     const encodedUserId = Buffer.from(newUser.id).toString('base64');
     const token = `user-session-${encodedUserId}-${Date.now()}`;
@@ -2051,31 +2028,6 @@ app.post('/api/auth/user/register', async (req, res) => {
     console.log('✅ User created in database:', newUser.id);
     console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
 
-    // Verify user was actually saved - with retry logic
-    let verifyUser = null;
-    let verifyAttempts = 0;
-    const maxVerifyAttempts = 5;
-
-    while (!verifyUser && verifyAttempts < maxVerifyAttempts) {
-      verifyAttempts++;
-      console.log(`🔄 Verifying user creation (attempt ${verifyAttempts}/${maxVerifyAttempts})...`);
-      verifyUser = await getUserByUsername(username);
-
-      if (!verifyUser && verifyAttempts < maxVerifyAttempts) {
-        // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-
-    if (!verifyUser) {
-      console.error('❌ User creation verification failed after', maxVerifyAttempts, 'attempts');
-      console.error('❌ Could not find user by username:', username);
-      // Don't throw - continue anyway, the user was created
-      console.log('⚠️ Continuing despite verification failure - user may have been created with different ID');
-    } else {
-      console.log('✅ User creation verified in database');
-    }
-
     // REAL-TIME UPDATE: Notify admin dashboard of new user
     broadcastToAdmins({
       type: 'new_user_registered',
@@ -2091,6 +2043,7 @@ app.post('/api/auth/user/register', async (req, res) => {
     });
 
     // Generate a simple token for authentication
+    // Use the actual user ID from the database (which may be a Supabase UUID)
     // Encode user ID in Base64 to avoid issues with UUID hyphens
     const encodedUserId = Buffer.from(newUser.id).toString('base64');
     const token = `user-session-${encodedUserId}-${Date.now()}`;
