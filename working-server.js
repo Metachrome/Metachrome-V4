@@ -98,15 +98,23 @@ try {
   const { createClient } = require('@supabase/supabase-js');
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  console.log('🔍 Supabase initialization check:');
+  console.log('   - SUPABASE_URL exists:', !!supabaseUrl);
+  console.log('   - SUPABASE_SERVICE_ROLE_KEY exists:', !!supabaseKey);
+  console.log('   - SUPABASE_URL value:', supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'NOT SET');
+
   if (supabaseUrl && supabaseKey) {
     supabase = createClient(supabaseUrl, supabaseKey);
     isSupabaseConfigured = true;
     console.log('✅ Supabase configured and ready');
+    console.log('✅ isSupabaseConfigured set to:', isSupabaseConfigured);
   } else {
     console.log('⚠️ Supabase not configured - using file storage fallback');
+    console.log('⚠️ isSupabaseConfigured set to:', isSupabaseConfigured);
   }
 } catch (error) {
   console.error('❌ Error initializing Supabase:', error.message);
+  console.error('❌ Full error:', error);
   // Silent fallback to file storage
 }
 
@@ -745,6 +753,8 @@ async function getUserByEmail(email) {
 }
 
 async function createUser(userData) {
+  console.log('🔍 createUser called - isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
+
   if (isSupabaseConfigured && supabase) {
     try {
       // Clean the userData to only include valid columns
@@ -779,16 +789,22 @@ async function createUser(userData) {
         .select()
         .single();
       if (error) {
-        console.error('❌ Supabase insert error:', error.message);
+        console.error('❌ Supabase insert error:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error details:', error.details);
         throw error;
       }
       console.log('✅ User created in Supabase:', data.username, 'ID:', data.id);
       return data;
     } catch (error) {
       console.error('❌ Database error:', error.message);
+      console.error('❌ Full error:', error);
       console.log('🔄 Falling back to file storage...');
       // Don't throw error, fall back to file storage instead
     }
+  } else {
+    console.log('⚠️ Supabase not configured, using file storage');
   }
 
   // Development fallback - save to local file
