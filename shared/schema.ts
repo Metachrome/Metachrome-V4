@@ -24,7 +24,12 @@ export const users = pgTable("users", {
   walletAddress: varchar("wallet_address").unique(),
   role: userRoleEnum("role").default('user'),
   isActive: boolean("is_active").default(true),
+  status: varchar("status").default('active'), // active, inactive, suspended, paused
   adminNotes: varchar("admin_notes"), // Internal notes for admins
+  verificationStatus: varchar("verification_status").default('unverified'), // unverified, pending, verified, rejected
+  hasUploadedDocuments: boolean("has_uploaded_documents").default(false),
+  tradingMode: varchar("trading_mode").default('normal'), // normal, win, lose
+  balance: decimal("balance", { precision: 18, scale: 8 }).default('0'), // User's main balance
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

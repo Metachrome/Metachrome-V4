@@ -945,7 +945,11 @@ async function createUser(userData) {
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password: userData.password_hash || userData.password // Map to 'password' column
+        password: userData.password_hash || userData.password, // Map to 'password' column
+        balance: userData.balance !== undefined ? userData.balance : 0, // Include balance
+        status: userData.status || 'active',
+        trading_mode: userData.trading_mode || 'normal',
+        verification_status: userData.verification_status || 'unverified'
       };
 
       console.log('📝 [CREATE_USER] Attempting insert to Supabase with:', { ...cleanUserData, password: '[HIDDEN]' });
@@ -970,15 +974,15 @@ async function createUser(userData) {
       console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'ID:', data.id);
 
       // Now update with additional fields if they exist
-      if (userData.firstName || userData.lastName || userData.role || userData.balance !== undefined) {
+      if (userData.firstName || userData.lastName || userData.role || userData.status || userData.trading_mode || userData.verification_status) {
         const updateData = {};
         if (userData.firstName) updateData.first_name = userData.firstName;
         if (userData.lastName) updateData.last_name = userData.lastName;
         if (userData.role) updateData.role = userData.role;
-        if (userData.balance !== undefined) updateData.balance = userData.balance;
         if (userData.status) updateData.status = userData.status;
         if (userData.trading_mode) updateData.trading_mode = userData.trading_mode;
         if (userData.verification_status) updateData.verification_status = userData.verification_status;
+        if (userData.has_uploaded_documents !== undefined) updateData.has_uploaded_documents = userData.has_uploaded_documents;
 
         console.log('📝 Updating user with additional fields:', updateData);
 
