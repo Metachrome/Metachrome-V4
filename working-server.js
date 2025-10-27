@@ -5936,7 +5936,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           direction: direction || 'up', // The trade direction
           entryPrice: entryPrice, // CRITICAL: Use the actual entry price parameter!
           duration: duration || 30, // The trade duration
-          profitPercentage: finalWon ? (duration === 30 ? 10 : 15) : 0, // Profit percentage
+          // CRITICAL FIX: For loss trades, include the loss percentage (10% or 15%), not 0
+          profitPercentage: duration === 30 ? 10 : 15, // Always include percentage for both win and loss
           timestamp: new Date().toISOString()
         }
       };
@@ -5990,7 +5991,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           currentPrice: exitPrice,
           status: finalWon ? 'won' : 'lost',
           payout: finalWon ? finalPayout : 0,
-          profitPercentage: finalWon ? profitPercentage : 0, // Use calculated profit percentage
+          // CRITICAL FIX: For loss trades, include the loss percentage (10% or 15%), not 0
+          profitPercentage: duration === 30 ? 10 : 15, // Always include percentage for both win and loss
           symbol: symbol || 'BTC/USDT', // Use actual symbol
           duration: duration || 30, // Use actual duration
           // CRITICAL FIX: Include profitAmount for accurate P&L display in notification
