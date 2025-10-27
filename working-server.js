@@ -2806,15 +2806,12 @@ app.get('/api/debug/balance/:userId', async (req, res) => {
   }
 });
 
-// FORCE BALANCE SYNC ENDPOINT
+// FORCE BALANCE SYNC ENDPOINT - Sync all balances from local file to Supabase
 app.post('/api/admin/force-balance-sync', async (req, res) => {
   try {
     console.log('🔄 FORCE BALANCE SYNC: Starting...');
 
-    // Clear any caches
-    usersCache = null;
-
-    // Get fresh user data
+    // Get fresh user data from local file
     const users = await getUsers();
     console.log('🔄 FORCE BALANCE SYNC: Loaded', users.length, 'users');
 
@@ -2822,6 +2819,35 @@ app.post('/api/admin/force-balance-sync', async (req, res) => {
     users.forEach(user => {
       console.log(`🔄 User ${user.username} (${user.id}): Balance = ${user.balance} (${typeof user.balance})`);
     });
+
+    // CRITICAL: Sync all balances to Supabase
+    if (isSupabaseConfigured && supabase) {
+      console.log('🔄 FORCE BALANCE SYNC: Syncing balances to Supabase...');
+      let syncedCount = 0;
+      let errorCount = 0;
+
+      for (const user of users) {
+        try {
+          const { error } = await supabase
+            .from('users')
+            .update({ balance: parseFloat(user.balance || 0) })
+            .eq('id', user.id);
+
+          if (error) {
+            console.error(`❌ Failed to sync balance for ${user.username}:`, error.message);
+            errorCount++;
+          } else {
+            console.log(`✅ Synced balance for ${user.username}: ${user.balance}`);
+            syncedCount++;
+          }
+        } catch (syncError) {
+          console.error(`❌ Exception syncing balance for ${user.username}:`, syncError.message);
+          errorCount++;
+        }
+      }
+
+      console.log(`🔄 FORCE BALANCE SYNC: Complete - Synced: ${syncedCount}, Errors: ${errorCount}`);
+    }
 
     res.json({
       success: true,
