@@ -5452,17 +5452,41 @@ app.get('/api/balances', async (req, res) => {
 
     // Try to extract user ID from token
     if (authToken.startsWith('user-session-')) {
-      // Extract user ID from token format: user-session-{userId}-{timestamp}
-      const tokenParts = authToken.replace('user-session-', '').split('-');
-      userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
-      console.log('💰 Extracted user ID from user-session token:', userId);
+      // Extract user ID from token format: user-session-{base64EncodedUserId}-{timestamp}
+      // Find the last hyphen which separates the timestamp
+      const lastHyphenIndex = authToken.lastIndexOf('-');
+      if (lastHyphenIndex !== -1) {
+        const prefix = 'user-session-';
+        const encodedUserId = authToken.substring(prefix.length, lastHyphenIndex);
+        try {
+          // Decode the Base64 encoded user ID
+          userId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
+          console.log('💰 Extracted user ID from user-session token:', userId, '(decoded from:', encodedUserId, ')');
+        } catch (decodeError) {
+          // If Base64 decode fails, assume it's the old format
+          userId = encodedUserId;
+          console.log('💰 Base64 decode failed, using raw encoded ID:', userId);
+        }
+      }
     }
     // Handle admin session tokens
     else if (authToken.startsWith('admin-session-')) {
-      // Extract user ID from token format: admin-session-{userId}-{timestamp}
-      const tokenParts = authToken.replace('admin-session-', '').split('-');
-      userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
-      console.log('💰 Extracted user ID from admin-session token:', userId);
+      // Extract user ID from token format: admin-session-{base64EncodedUserId}-{timestamp}
+      // Find the last hyphen which separates the timestamp
+      const lastHyphenIndex = authToken.lastIndexOf('-');
+      if (lastHyphenIndex !== -1) {
+        const prefix = 'admin-session-';
+        const encodedUserId = authToken.substring(prefix.length, lastHyphenIndex);
+        try {
+          // Decode the Base64 encoded user ID
+          userId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
+          console.log('💰 Extracted user ID from admin-session token:', userId, '(decoded from:', encodedUserId, ')');
+        } catch (decodeError) {
+          // If Base64 decode fails, assume it's the old format
+          userId = encodedUserId;
+          console.log('💰 Base64 decode failed, using raw encoded ID:', userId);
+        }
+      }
     }
 
     if (!userId) {
