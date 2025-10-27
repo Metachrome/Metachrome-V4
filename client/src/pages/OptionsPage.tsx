@@ -2389,7 +2389,7 @@ function OptionsPageContent({
                         <div key={trade.id} className="bg-gray-800 rounded p-3 mb-2">
                           <div className="flex justify-between items-center mb-2">
                             <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                              {trade.direction.toUpperCase()} • {trade.amount} USDT
+                              {trade.direction === 'up' ? 'BUY' : 'SELL'} • {trade.amount} USDT
                             </span>
                             <span className="text-yellow-400 font-bold text-sm">{timeRemaining}s</span>
                           </div>
@@ -2439,7 +2439,7 @@ function OptionsPageContent({
                           <div key={trade.id} className="bg-gray-800 rounded p-3">
                             <div className="flex justify-between items-center mb-2">
                               <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                                {trade.direction === 'up' ? 'UP' : 'SELL'} • {trade.amount} USDT
+                                {trade.direction === 'up' ? 'BUY' : 'SELL'} • {trade.amount} USDT
                               </span>
                               <span className={`font-bold text-sm ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                                 {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
@@ -2891,7 +2891,7 @@ function OptionsPageContent({
                       <div key={trade.id} className="p-2 bg-gray-700 rounded text-sm">
                         <div className="flex justify-between items-center">
                           <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.direction.toUpperCase()} {trade.amount} USDT
+                            {trade.direction === 'up' ? 'BUY' : 'SELL'} {trade.amount} USDT
                           </span>
                           <span className="text-yellow-400 font-bold">{timeRemaining}s</span>
                         </div>
@@ -3585,7 +3585,7 @@ function OptionsPageContent({
                           <div className="flex flex-col min-w-0">
                             <span className="text-gray-400 text-xs truncate">{marketPair}</span>
                             <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                              {trade.direction === 'up' ? 'UP' : 'SELL'}
+                              {trade.direction === 'up' ? 'BUY' : 'SELL'}
                             </span>
                           </div>
                           <span className="text-gray-300 text-center">{trade.entryPrice.toFixed(2)}</span>
