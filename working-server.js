@@ -6891,6 +6891,8 @@ app.post('/api/trades/options', async (req, res) => {
       }
     }, duration * 1000);
 
+    console.log(`⏰ TRADE COMPLETION SCHEDULED: Trade ${actualTradeId} will complete in ${duration} seconds at ${new Date(Date.now() + duration * 1000).toISOString()}`);
+
     // Add client-expected fields to response (but don't save them to database)
     const responseTradeData = {
       ...trade,
