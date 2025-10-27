@@ -2479,6 +2479,7 @@ function OptionsPageContent({
                 completedTrade.amount + (completedTrade.amount * (completedTrade.profitPercentage || 10) / 100) :
                 0),
               profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15),
+              profit: completedTrade.profit, // CRITICAL: Pass profit field for accurate P&L display
               symbol: selectedSymbol.replace('USDT', '/USDT'), // Convert BTCUSDT to BTC/USDT format
               duration: parseInt(selectedDuration.replace('s', '')) // Convert "30s" to 30
             } : null}
@@ -3669,6 +3670,7 @@ function OptionsPageContent({
             completedTrade.amount + (completedTrade.amount * (completedTrade.profitPercentage || 10) / 100) :
             0),
           profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15),
+          profit: completedTrade.profit, // CRITICAL: Pass profit field for accurate P&L display
           symbol: selectedSymbol.replace('USDT', '/USDT'), // Convert BTCUSDT to BTC/USDT format
           duration: parseInt(selectedDuration.replace('s', '')) // Convert "30s" to 30
         } : null}

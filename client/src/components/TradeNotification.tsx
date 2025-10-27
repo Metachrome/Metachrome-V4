@@ -12,6 +12,7 @@ interface TradeNotificationProps {
     profitPercentage: number;
     symbol?: string;
     duration?: number;
+    profit?: number; // CRITICAL: Add profit field for accurate P&L display
   } | null;
   onClose: () => void;
 }
@@ -50,7 +51,8 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
   if (!trade || !isVisible) return null;
 
   const isWin = trade.status === 'won';
-  const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
+  // CRITICAL FIX: Use profit field from WebSocket if available (accurate P&L), otherwise calculate from payout
+  const pnl = trade.profit !== undefined ? trade.profit : (isWin ? (trade.payout! - trade.amount) : -trade.amount);
 
   // Debug log for mobile
   console.log('NOTIFICATION RENDER:', {
