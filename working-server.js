@@ -7106,7 +7106,16 @@ app.post('/api/trades/complete', async (req, res) => {
       // Win: Return full amount + profit
       // At trade start, only loss percentage was deducted, so we need to return full amount + profit
       const duration = existingTrade?.duration || 30; // Default to 30s
-      const profitRate = duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for others
+
+      // CRITICAL FIX: Calculate profitRate based on duration (same logic as profitPercentage)
+      let profitRate = 0.10; // Default 10%
+      if (duration === 30) profitRate = 0.10;
+      else if (duration === 60) profitRate = 0.15;
+      else if (duration === 120) profitRate = 0.20;
+      else if (duration === 180) profitRate = 0.30;
+      else if (duration === 240) profitRate = 0.75;
+      else if (duration === 300) profitRate = 1.00;
+
       profitAmount = tradeAmount * profitRate; // Profit amount
       balanceChange = tradeAmount + profitAmount; // Return original amount + profit
       console.log(`✅ WIN: Returning full amount (${tradeAmount}) + profit (${profitAmount}) = ${balanceChange} USDT`);
