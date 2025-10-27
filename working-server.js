@@ -5990,12 +5990,11 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     // BULLETPROOF: Also trigger client-side notification directly
     console.log('🔔 BULLETPROOF: Triggering client-side notification via global function');
     if (global.wss) {
-      // Calculate profit percentage based on duration
+      // Calculate profit percentage based on duration (MUST MATCH profitRate calculation above)
       let profitPercentage = 10; // Default 10% for 30s
       if (duration === 30) profitPercentage = 10;
       else if (duration === 60) profitPercentage = 15;
-      else if (duration === 90) profitPercentage = 20;
-      else if (duration === 120) profitPercentage = 25;
+      else if (duration === 120) profitPercentage = 20;
       else if (duration === 180) profitPercentage = 30;
       else if (duration === 240) profitPercentage = 75;
       else if (duration === 300) profitPercentage = 100;
@@ -6623,12 +6622,11 @@ app.post('/api/trades', async (req, res) => {
         console.log(`📤 Won: ${finalOutcome}`);
         console.log(`📤 Duration: ${duration}`);
 
-        // Calculate payout based on duration-specific profit percentage
+        // Calculate payout based on duration-specific profit percentage (MUST MATCH profitRate calculation)
         let profitPercentage = 0.10; // Default 10% for 30s
         if (duration === 30) profitPercentage = 0.10;
         else if (duration === 60) profitPercentage = 0.15;
-        else if (duration === 90) profitPercentage = 0.20;
-        else if (duration === 120) profitPercentage = 0.25;
+        else if (duration === 120) profitPercentage = 0.20;
         else if (duration === 180) profitPercentage = 0.30;
         else if (duration === 240) profitPercentage = 0.75;
         else if (duration === 300) profitPercentage = 1.00;
@@ -7459,7 +7457,17 @@ app.post('/api/trades/complete', async (req, res) => {
           amount: tradeData?.amount !== undefined ? parseFloat(tradeData.amount) : tradeAmount,  // Use database value
           entryPrice: tradeData?.entry_price !== undefined ? parseFloat(tradeData.entry_price) : currentPrice || 0,
           duration: tradeData?.duration || 30,
-          profitPercentage: tradeData?.profit_percentage || (tradeData?.duration === 30 ? 10 : 15),
+          // CRITICAL FIX: Calculate profitPercentage based on duration (MUST MATCH profitRate calculation)
+          profitPercentage: (() => {
+            const dur = tradeData?.duration || 30;
+            if (dur === 30) return 10;
+            else if (dur === 60) return 15;
+            else if (dur === 120) return 20;
+            else if (dur === 180) return 30;
+            else if (dur === 240) return 75;
+            else if (dur === 300) return 100;
+            return 10; // Default
+          })(),
           timestamp: new Date().toISOString()
         }
       };
