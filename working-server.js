@@ -889,14 +889,14 @@ async function createUser(userData) {
   if (isSupabaseConfigured && supabase) {
     try {
       // MINIMAL insert - only include columns that MUST exist
-      // Start with the absolute minimum required columns
+      // IMPORTANT: The Supabase table has 'password' column, NOT 'password_hash'
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password_hash: userData.password_hash || userData.password // Use password_hash column
+        password: userData.password_hash || userData.password // Map to 'password' column
       };
 
-      console.log('📝 [CREATE_USER] Attempting insert to Supabase with:', { ...cleanUserData, password_hash: '[HIDDEN]' });
+      console.log('📝 [CREATE_USER] Attempting insert to Supabase with:', { ...cleanUserData, password: '[HIDDEN]' });
 
       const result = await supabase
         .from('users')
