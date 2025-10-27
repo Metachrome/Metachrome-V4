@@ -5403,68 +5403,66 @@ app.get('/api/balances', async (req, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const users = await getUsers();
+    let userId = null;
 
-    let currentUser = null;
-
-    // Try to find user by token
+    // Try to extract user ID from token
     if (authToken.startsWith('user-session-')) {
       // Extract user ID from token format: user-session-{userId}-{timestamp}
       const tokenParts = authToken.replace('user-session-', '').split('-');
-      const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+      userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
       console.log('💰 Extracted user ID from user-session token:', userId);
-
-      currentUser = users.find(u => u.id === userId);
-      if (currentUser) {
-        console.log('💰 Found user by user-session:', currentUser.username || currentUser.email);
-      }
     }
     // Handle admin session tokens
     else if (authToken.startsWith('admin-session-')) {
       // Extract user ID from token format: admin-session-{userId}-{timestamp}
       const tokenParts = authToken.replace('admin-session-', '').split('-');
-      const userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
+      userId = tokenParts.length > 1 ? tokenParts.slice(0, -1).join('-') : tokenParts[0];
       console.log('💰 Extracted user ID from admin-session token:', userId);
+    }
 
-      currentUser = users.find(u => u.id === userId);
+    if (!userId) {
+      console.log('💰 ERROR: Could not extract user ID from token');
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+
+    // PRIORITY 1: Try to get balance from Supabase first
+    let userBalance = null;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        console.log('💰 [/api/balances] Querying Supabase for user:', userId);
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('id, username, email, balance')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error('❌ [/api/balances] Supabase error:', error.message);
+        } else if (user) {
+          console.log('✅ [/api/balances] Found user in Supabase:', user.username, 'Balance:', user.balance);
+          userBalance = parseFloat(user.balance || 0);
+        }
+      } catch (dbError) {
+        console.error('❌ [/api/balances] Supabase query exception:', dbError.message);
+      }
+    }
+
+    // PRIORITY 2: Fallback to local file storage if Supabase fails
+    if (userBalance === null) {
+      console.log('💰 [/api/balances] Supabase unavailable, checking local file storage');
+      const users = await getUsers();
+      const currentUser = users.find(u => u.id === userId);
+
       if (currentUser) {
-        console.log('💰 Found admin user by admin-session:', currentUser.username || currentUser.email);
-      }
-    }
-    // Handle JWT tokens (from Google OAuth)
-    else if (authToken.includes('.')) {
-      // This looks like a JWT token, find the most recent user
-      const recentUser = users[users.length - 1];
-      if (recentUser) {
-        currentUser = recentUser;
-        console.log('💰 Found user by JWT token:', currentUser.username || currentUser.email);
+        console.log('✅ [/api/balances] Found user in local storage:', currentUser.username, 'Balance:', currentUser.balance);
+        userBalance = parseFloat(currentUser.balance || 0);
+      } else {
+        console.log('❌ [/api/balances] User not found in local storage');
+        return res.status(404).json({ error: 'User not found' });
       }
     }
 
-    if (!currentUser) {
-      console.log('💰 ERROR: User not found for token');
-      console.log('💰 ERROR: Token format:', authToken.substring(0, 30) + '...');
-      console.log('💰 ERROR: Available users:', users.map(u => ({ id: u.id, username: u.username })));
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    console.log('💰 AUTHENTICATED USER:', currentUser.username || currentUser.email, 'Balance:', currentUser.balance);
-
-    // This section is now handled above - removed duplicate
-
-    console.log('💰 Returning balance for user:', currentUser.username, 'Balance:', currentUser.balance);
-
-    // BALANCE SYNC DEBUG: Log detailed user info
-    console.log('💰 BALANCE SYNC DEBUG:');
-    console.log('💰 - User ID:', currentUser.id);
-    console.log('💰 - Username:', currentUser.username);
-    console.log('💰 - Email:', currentUser.email);
-    console.log('💰 - Raw balance:', currentUser.balance);
-    console.log('💰 - Balance type:', typeof currentUser.balance);
-
-    // BALANCE SYNC FIX: Ensure we're using the most up-to-date balance
-    const userBalance = parseFloat(currentUser.balance || 0);
-    console.log('💰 BALANCE SYNC: Parsed balance as number:', userBalance);
+    console.log('💰 [/api/balances] Final balance:', userBalance);
 
     // Return only USDT balance (real cryptocurrency balances come from actual trading)
     const balances = [
@@ -5475,10 +5473,7 @@ app.get('/api/balances', async (req, res) => {
       }
     ];
 
-    console.log('💰 BALANCE ENDPOINT: Final response for', currentUser.username);
-    console.log('💰 BALANCE ENDPOINT: User balance:', userBalance);
-    console.log('💰 BALANCE ENDPOINT: USDT available:', balances[0].available);
-    console.log('💰 BALANCE ENDPOINT: Full response:', JSON.stringify(balances, null, 2));
+    console.log('💰 [/api/balances] Response:', JSON.stringify(balances, null, 2));
     res.json(balances);
   } catch (error) {
     console.error('❌ Error getting balances:', error);
