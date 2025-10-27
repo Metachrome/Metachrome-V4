@@ -1773,7 +1773,10 @@ export default function WorkingAdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {Array.isArray(users) ? users.map((user) => (
+                      {Array.isArray(users) ? (
+                        <>
+                          {console.log('📊 Rendering users table with', users.length, 'users')}
+                          {users.map((user) => (
                         <TableRow key={user.id} className="border-gray-700 hover:bg-gray-700/50">
                           <TableCell>
                             <div className="flex items-center space-x-3">
@@ -1927,7 +1930,9 @@ export default function WorkingAdminDashboard() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      )) : []}
+                          ))}
+                        </>
+                      ) : []}
                     </TableBody>
                   </Table>
                 </div>
