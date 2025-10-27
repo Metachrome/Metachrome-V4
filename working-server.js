@@ -936,23 +936,17 @@ async function getUserByEmail(email) {
 }
 
 async function createUser(userData) {
-  console.log('🔍 [CREATE_USER] Called - isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
-
   if (isSupabaseConfigured && supabase) {
     try {
-      // MINIMAL insert - only include columns that MUST exist
-      // IMPORTANT: The Supabase table has 'password' column, NOT 'password_hash'
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password: userData.password_hash || userData.password, // Map to 'password' column
-        balance: userData.balance !== undefined ? userData.balance : 0, // Include balance
+        password: userData.password_hash || userData.password,
+        balance: userData.balance !== undefined ? userData.balance : 0,
         status: userData.status || 'active',
         trading_mode: userData.trading_mode || 'normal',
         verification_status: userData.verification_status || 'unverified'
       };
-
-      console.log('📝 [CREATE_USER] Attempting insert to Supabase with:', { ...cleanUserData, password: '[HIDDEN]' });
 
       const result = await supabase
         .from('users')
@@ -963,20 +957,13 @@ async function createUser(userData) {
       const { data, error } = result;
 
       if (error) {
-        console.error('❌ [CREATE_USER] Supabase insert error:', error);
-        console.error('❌ [CREATE_USER] Error code:', error.code);
-        console.error('❌ [CREATE_USER] Error message:', error.message);
-        console.error('❌ [CREATE_USER] Error details:', error.details);
-        console.error('❌ [CREATE_USER] Full error object:', JSON.stringify(error, null, 2));
+        console.error('❌ [CREATE_USER] Supabase error:', error.code, error.message);
         throw error;
       }
 
-      console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'ID:', data.id);
-      console.log('✅ [CREATE_USER] Full user data returned:', JSON.stringify(data, null, 2));
-      console.log('✅ [CREATE_USER] Data object keys:', Object.keys(data));
-      console.log('✅ [CREATE_USER] Data.id type:', typeof data.id, 'Value:', data.id);
+      console.log('✅ [CREATE_USER] User created in Supabase:', data.username);
 
-      // Now update with additional fields if they exist
+      // Update additional fields if they exist
       if (userData.firstName || userData.lastName || userData.role || userData.status || userData.trading_mode || userData.verification_status) {
         const updateData = {};
         if (userData.firstName) updateData.first_name = userData.firstName;
@@ -986,8 +973,6 @@ async function createUser(userData) {
         if (userData.trading_mode) updateData.trading_mode = userData.trading_mode;
         if (userData.verification_status) updateData.verification_status = userData.verification_status;
         if (userData.has_uploaded_documents !== undefined) updateData.has_uploaded_documents = userData.has_uploaded_documents;
-
-        console.log('📝 Updating user with additional fields:', updateData);
 
         const { error: updateError } = await supabase
           .from('users')
@@ -999,38 +984,15 @@ async function createUser(userData) {
         }
       }
 
-      // CRITICAL: Verify user was actually created by fetching it back
-      console.log('🔍 [CREATE_USER] Verifying user was created by fetching from Supabase...');
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.id)
-        .single();
-
-      if (verifyError) {
-        console.error('❌ [CREATE_USER] VERIFICATION FAILED - User not found after creation:', verifyError);
-      } else {
-        console.log('✅ [CREATE_USER] VERIFICATION SUCCESS - User confirmed in Supabase:', verifyData.username);
-      }
-
       return data;
     } catch (error) {
-      console.error('❌ Database error:', error.message);
-      console.error('❌ Full error:', error);
-      console.error('❌ Error stack:', error.stack);
-      console.log('🔄 Falling back to file storage...');
-      // Don't throw error, fall back to file storage instead
+      console.error('❌ [CREATE_USER] Supabase failed, falling back to file storage:', error.message);
     }
-  } else {
-    console.log('⚠️ Supabase not configured, using file storage');
   }
 
-  // Development fallback - save to local file
-  console.log('📝 [CREATE_USER] FALLBACK: Creating user in local file storage');
+  // Fallback - save to local file
   try {
     const users = await getUsers();
-
-    // Generate a UUID-like ID for consistency with Supabase
     const generateUUID = () => {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
@@ -1040,7 +1002,7 @@ async function createUser(userData) {
     };
 
     const newUser = {
-      id: generateUUID(), // Generate UUID-like ID for consistency
+      id: generateUUID(),
       ...userData,
       created_at: userData.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -1048,8 +1010,7 @@ async function createUser(userData) {
 
     users.push(newUser);
     await saveUsers(users);
-    console.log('✅ [CREATE_USER] FALLBACK: User saved to local file:', newUser.username, 'ID:', newUser.id);
-    console.log('⚠️ [CREATE_USER] WARNING: User was saved to LOCAL FILE, not Supabase!');
+    console.log('⚠️ [CREATE_USER] User saved to LOCAL FILE (not Supabase):', newUser.username);
     return newUser;
   } catch (error) {
     console.error('❌ Error saving user to local file:', error);
@@ -1286,7 +1247,6 @@ async function getUserFromToken(token) {
       // If Supabase is configured, prioritize Supabase
       if (isSupabaseConfigured && supabase) {
         try {
-          console.log('🔍 [GET_USER_FROM_TOKEN] Querying Supabase for user ID:', userId);
           const { data, error } = await supabase
             .from('users')
             .select('*')
@@ -1294,18 +1254,13 @@ async function getUserFromToken(token) {
             .single();
 
           if (error && error.code !== 'PGRST116') {
-            console.error('❌ [GET_USER_FROM_TOKEN] Supabase error:', error);
-            throw error; // PGRST116 = no rows returned
+            throw error;
           }
 
           if (data) {
-            console.log('✅ [GET_USER_FROM_TOKEN] User found in Supabase:', data.username);
             return data;
-          } else {
-            console.warn('⚠️ [GET_USER_FROM_TOKEN] User not found in Supabase for ID:', userId);
           }
         } catch (supabaseError) {
-          console.error('❌ [GET_USER_FROM_TOKEN] Supabase query failed:', supabaseError);
           // Fall through to local storage
         }
       }
@@ -2009,8 +1964,6 @@ app.get('/api/auth/user', async (req, res) => {
     let currentUser;
 
     if (isSupabaseConfigured && supabase) {
-      // In production, try Supabase first, then fallback to file storage
-      console.log('👤 Fetching fresh user data from Supabase for:', user.id);
       const { data: freshUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
@@ -2018,24 +1971,17 @@ app.get('/api/auth/user', async (req, res) => {
         .single();
 
       if (fetchError) {
-        console.error('❌ Error fetching fresh user data from Supabase:', fetchError);
-        console.log('🔄 Falling back to file-based storage...');
-
         // Fallback to file-based storage
         const users = await getUsers();
         currentUser = users.find(u => u.id === user.id);
 
         if (!currentUser) {
-          return res.status(404).json({ error: 'User not found in both Supabase and file storage' });
+          return res.status(404).json({ error: 'User not found' });
         }
-
-        console.log('✅ User found in file storage:', currentUser.username);
       } else {
         currentUser = freshUser;
-        console.log('✅ User found in Supabase:', currentUser.username);
       }
     } else {
-      // In development, use file-based storage
       const users = await getUsers();
       currentUser = users.find(u => u.id === user.id);
     }
@@ -2043,13 +1989,6 @@ app.get('/api/auth/user', async (req, res) => {
     if (!currentUser) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    console.log('👤 Returning current user data:', {
-      username: currentUser.username,
-      balance: currentUser.balance,
-      id: currentUser.id,
-      source: isProduction ? 'Supabase' : 'File'
-    });
 
     // Debug logging for password and verification status
     console.log('🔍 Debug user data:', {
@@ -2219,44 +2158,15 @@ app.post('/api/auth/register', async (req, res) => {
       last_login: new Date().toISOString()
     };
 
-    console.log('📝 [SIGNUP] Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
-    console.log('📝 [SIGNUP] isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
-
-    console.log('📝 [SIGNUP] Calling createUser()...');
     const newUser = await createUser(userData);
-    console.log('📝 [SIGNUP] createUser() returned:', newUser ? { id: newUser.id, username: newUser.username } : 'NULL');
 
     if (!newUser || !newUser.id) {
-      console.error('❌ [SIGNUP] User creation failed - no user ID returned');
-      console.error('❌ [SIGNUP] newUser object:', newUser);
-      return res.status(500).json({ error: 'Failed to create user', details: 'No user ID returned' });
+      console.error('❌ User creation failed');
+      return res.status(500).json({ error: 'Failed to create user' });
     }
 
-    console.log('✅ [SIGNUP] User created in database:', newUser.id);
-    console.log('✅ [SIGNUP] Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
-    console.log('✅ [SIGNUP] User source:', newUser.id.includes('-') ? 'Supabase (UUID)' : 'Local storage');
-
-    // FIXED: Wait a bit to ensure user is fully persisted in database before generating token
-    // This prevents 401 errors when user tries to upload documents immediately after signup
+    // Wait a bit to ensure user is fully persisted
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Verify user was actually saved by trying to fetch it
-    let verifiedUser = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const users = await getUsers();
-      verifiedUser = users.find(u => u.id === newUser.id);
-      if (verifiedUser) {
-        console.log('✅ User verified in database after creation');
-        break;
-      }
-      if (attempt < 2) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-    }
-
-    if (!verifiedUser) {
-      console.warn('⚠️ User not found in database after creation, but proceeding with token generation');
-    }
 
     // Generate a simple token for authentication
     // Use the actual user ID from the database (which is a Supabase UUID)
