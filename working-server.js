@@ -144,11 +144,10 @@ app.get('/api/test/supabase-status', async (req, res) => {
       });
     }
 
-    // Try to fetch users from Supabase
-    const { data, error } = await supabase
+    // Try to fetch users from Supabase with count
+    const { data, count, error } = await supabase
       .from('users')
-      .select('count')
-      .single();
+      .select('*', { count: 'exact', head: true });
 
     if (error) {
       console.error('❌ Supabase query error:', error);
@@ -161,15 +160,10 @@ app.get('/api/test/supabase-status', async (req, res) => {
       });
     }
 
-    // Count total users
-    const { count } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true });
-
     res.json({
       status: 'CONNECTED',
       message: 'Supabase is connected and working',
-      totalUsers: count,
+      totalUsers: count || 0,
       isSupabaseConfigured,
       supabaseExists: !!supabase
     });
