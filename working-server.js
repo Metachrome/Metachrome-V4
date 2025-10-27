@@ -5947,7 +5947,9 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         symbol: tradeCompletionMessage.data.symbol,
         direction: tradeCompletionMessage.data.direction,
         entryPrice: tradeCompletionMessage.data.entryPrice,
-        duration: tradeCompletionMessage.data.duration
+        duration: tradeCompletionMessage.data.duration,
+        profitAmount: tradeCompletionMessage.data.profitAmount, // CRITICAL: Log profitAmount
+        result: tradeCompletionMessage.data.result
       });
 
       let broadcastCount = 0;
