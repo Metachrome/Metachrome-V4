@@ -130,8 +130,8 @@ app.get('/api/system-status', (req, res) => {
   });
 });
 
-// DIAGNOSTIC ENDPOINT - Test user creation
-app.post('/api/test-user-creation', async (req, res) => {
+// DIAGNOSTIC ENDPOINT - Test user creation (GET and POST)
+const testUserCreation = async (req, res) => {
   try {
     console.log('🧪 TEST: Starting user creation test...');
 
@@ -191,7 +191,10 @@ app.post('/api/test-user-creation', async (req, res) => {
       fullError: error.toString()
     });
   }
-});
+};
+
+app.get('/api/test-user-creation', testUserCreation);
+app.post('/api/test-user-creation', testUserCreation);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
