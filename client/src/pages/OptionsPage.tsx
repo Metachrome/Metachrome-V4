@@ -3588,15 +3588,15 @@ function OptionsPageContent({
                               {trade.direction === 'up' ? 'UP' : 'SELL'}
                             </span>
                           </div>
-                          <span className="text-gray-300 truncate text-center">{trade.entryPrice.toFixed(2)}</span>
-                          <span className="text-gray-300 truncate text-center">{trade.currentPrice?.toFixed(2) || 'N/A'}</span>
-                          <span className="text-gray-300 truncate text-center">{trade.amount}</span>
-                          <span className="text-gray-300 truncate text-center">{profitPercentage}%</span>
-                          <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                          <span className="text-gray-300 text-center">{trade.entryPrice.toFixed(2)}</span>
+                          <span className="text-gray-300 text-center">{trade.currentPrice?.toFixed(2) || 'N/A'}</span>
+                          <span className="text-gray-300 text-center">{trade.amount}</span>
+                          <span className="text-gray-300 text-center">{profitPercentage}%</span>
+                          <span className={`font-bold text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)}
                           </span>
-                          <span className="text-gray-400 text-xs truncate text-center">{new Date(trade.endTime).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-                          <span className={`font-bold truncate text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                          <span className="text-gray-400 text-xs text-center">{new Date(trade.endTime).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                          <span className={`font-bold text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? 'WIN' : 'LOSE'}
                           </span>
                         </div>
