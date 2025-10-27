@@ -118,6 +118,18 @@ try {
   // Silent fallback to file storage
 }
 
+// DIAGNOSTIC ENDPOINT - Check system configuration
+app.get('/api/system-status', (req, res) => {
+  res.json({
+    isSupabaseConfigured,
+    supabaseUrl: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 50) + '...' : 'NOT SET',
+    supabaseKeySet: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    nodeEnv: process.env.NODE_ENV,
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -810,8 +822,18 @@ async function createUser(userData) {
   // Development fallback - save to local file
   try {
     const users = await getUsers();
+
+    // Generate a UUID-like ID for consistency with Supabase
+    const generateUUID = () => {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+
     const newUser = {
-      id: userData.id || `dev-${Date.now()}`,
+      id: generateUUID(), // Generate UUID-like ID for consistency
       ...userData,
       created_at: userData.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString()
