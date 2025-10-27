@@ -973,6 +973,8 @@ async function createUser(userData) {
 
       console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'ID:', data.id);
       console.log('✅ [CREATE_USER] Full user data returned:', JSON.stringify(data, null, 2));
+      console.log('✅ [CREATE_USER] Data object keys:', Object.keys(data));
+      console.log('✅ [CREATE_USER] Data.id type:', typeof data.id, 'Value:', data.id);
 
       // Now update with additional fields if they exist
       if (userData.firstName || userData.lastName || userData.role || userData.status || userData.trading_mode || userData.verification_status) {
@@ -1015,6 +1017,7 @@ async function createUser(userData) {
     } catch (error) {
       console.error('❌ Database error:', error.message);
       console.error('❌ Full error:', error);
+      console.error('❌ Error stack:', error.stack);
       console.log('🔄 Falling back to file storage...');
       // Don't throw error, fall back to file storage instead
     }
@@ -1023,6 +1026,7 @@ async function createUser(userData) {
   }
 
   // Development fallback - save to local file
+  console.log('📝 [CREATE_USER] FALLBACK: Creating user in local file storage');
   try {
     const users = await getUsers();
 
@@ -1044,7 +1048,8 @@ async function createUser(userData) {
 
     users.push(newUser);
     await saveUsers(users);
-    console.log('✅ User saved to local file:', newUser.username, 'ID:', newUser.id);
+    console.log('✅ [CREATE_USER] FALLBACK: User saved to local file:', newUser.username, 'ID:', newUser.id);
+    console.log('⚠️ [CREATE_USER] WARNING: User was saved to LOCAL FILE, not Supabase!');
     return newUser;
   } catch (error) {
     console.error('❌ Error saving user to local file:', error);
