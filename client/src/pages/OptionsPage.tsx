@@ -1176,6 +1176,10 @@ function OptionsPageContent({
 
       const { tradeId, result, exitPrice, profitAmount, newBalance, symbol, direction, amount, entryPrice, duration, profitPercentage } = lastMessage.data;
 
+      // CRITICAL DEBUG: Log all fields from WebSocket message
+      console.log('🎯 WEBSOCKET MESSAGE FULL DATA:', lastMessage.data);
+      console.log('🎯 WEBSOCKET profitAmount:', profitAmount, 'Type:', typeof profitAmount);
+
       // Find the active trade that just completed
       const completedActiveTrade = activeTrades.find(trade => trade.id === tradeId);
       console.log('🔍 WEBSOCKET: Looking for active trade:', tradeId, 'Found:', !!completedActiveTrade);
