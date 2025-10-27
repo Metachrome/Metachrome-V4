@@ -831,7 +831,7 @@ async function getUserByEmail(email) {
 }
 
 async function createUser(userData) {
-  console.log('🔍 createUser called - isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
+  console.log('🔍 [CREATE_USER] Called - isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -2050,19 +2050,26 @@ app.post('/api/auth/register', async (req, res) => {
   }
 
   try {
+    console.log('📝 [SIGNUP] Starting registration for:', username);
+
     // Check if user already exists
+    console.log('📝 [SIGNUP] Checking if user already exists...');
     const existingUser = await getUserByUsername(username);
     if (existingUser) {
+      console.log('📝 [SIGNUP] Username already exists');
       return res.status(400).json({ message: 'Username already exists' });
     }
 
     // Check if email already exists
+    console.log('📝 [SIGNUP] Checking if email already exists...');
     const existingEmail = await getUserByEmail(email);
     if (existingEmail) {
+      console.log('📝 [SIGNUP] Email already exists');
       return res.status(400).json({ message: 'Email already exists' });
     }
 
     // Hash password
+    console.log('📝 [SIGNUP] Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate unique referral code for new user
@@ -2089,20 +2096,22 @@ app.post('/api/auth/register', async (req, res) => {
       last_login: new Date().toISOString()
     };
 
-    console.log('📝 Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
-    console.log('📝 isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
+    console.log('📝 [SIGNUP] Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
+    console.log('📝 [SIGNUP] isSupabaseConfigured:', isSupabaseConfigured, 'supabase exists:', !!supabase);
 
+    console.log('📝 [SIGNUP] Calling createUser()...');
     const newUser = await createUser(userData);
+    console.log('📝 [SIGNUP] createUser() returned:', newUser ? { id: newUser.id, username: newUser.username } : 'NULL');
 
     if (!newUser || !newUser.id) {
-      console.error('❌ User creation failed - no user ID returned');
-      console.error('❌ newUser object:', newUser);
+      console.error('❌ [SIGNUP] User creation failed - no user ID returned');
+      console.error('❌ [SIGNUP] newUser object:', newUser);
       return res.status(500).json({ error: 'Failed to create user', details: 'No user ID returned' });
     }
 
-    console.log('✅ User created in database:', newUser.id);
-    console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
-    console.log('✅ User source:', newUser.id.includes('-') ? 'Supabase (UUID)' : 'Local storage');
+    console.log('✅ [SIGNUP] User created in database:', newUser.id);
+    console.log('✅ [SIGNUP] Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
+    console.log('✅ [SIGNUP] User source:', newUser.id.includes('-') ? 'Supabase (UUID)' : 'Local storage');
 
     // FIXED: Wait a bit to ensure user is fully persisted in database before generating token
     // This prevents 401 errors when user tries to upload documents immediately after signup
