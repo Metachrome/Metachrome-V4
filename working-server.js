@@ -1981,6 +1981,28 @@ app.post('/api/auth/register', async (req, res) => {
     console.log('✅ User created in database:', newUser.id);
     console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
 
+    // FIXED: Wait a bit to ensure user is fully persisted in database before generating token
+    // This prevents 401 errors when user tries to upload documents immediately after signup
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Verify user was actually saved by trying to fetch it
+    let verifiedUser = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const users = await getUsers();
+      verifiedUser = users.find(u => u.id === newUser.id);
+      if (verifiedUser) {
+        console.log('✅ User verified in database after creation');
+        break;
+      }
+      if (attempt < 2) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
+    if (!verifiedUser) {
+      console.warn('⚠️ User not found in database after creation, but proceeding with token generation');
+    }
+
     // Generate a simple token for authentication
     // Use the actual user ID from the database (which may be a Supabase UUID)
     // Encode user ID in Base64 to avoid issues with UUID hyphens
@@ -2448,30 +2470,17 @@ app.get('/api/admin/users', async (req, res) => {
 
     const users = await getUsers();
 
-    // Filter users based on verification status for regular admins
-    // Superadmin sees all users, regular admin sees only verified users
-    const currentUser = req.user || {}; // Assuming auth middleware sets req.user
-    const isSuperAdmin = currentUser.role === 'super_admin';
-
-    let filteredUsers = users;
-    if (!isSuperAdmin) {
-      // For regular admins, only show users who have uploaded verification documents
-      filteredUsers = users.filter(user => {
-        return user.verification_status || user.has_uploaded_documents ||
-               // Include test users for demo purposes
-               user.email === 'john.doe@example.com' || user.email === 'jane.smith@example.com';
-      });
-    }
-
-    console.log('👥 Getting users list - Total:', users.length, 'Filtered:', filteredUsers.length);
+    // FIXED: Superadmin sees ALL users regardless of verification status
+    // This ensures newly registered users appear in the admin dashboard immediately
+    console.log('👥 Getting users list - Total:', users.length);
 
     // Ensure balance consistency - log current balances for debugging
-    filteredUsers.forEach(user => {
+    users.forEach(user => {
       console.log(`💰 User ${user.username} balance: ${user.balance}`);
     });
 
     // BALANCE SYNC FIX: Ensure all users have consistent balance format
-    const usersWithSyncedBalances = filteredUsers.map(user => ({
+    const usersWithSyncedBalances = users.map(user => ({
       ...user,
       balance: parseFloat(user.balance || 0) // Ensure balance is a number
     }));
@@ -8485,7 +8494,6 @@ app.post('/api/user/upload-verification', (req, res, next) => {
     // Check authentication
     const authToken = req.headers.authorization?.replace('Bearer ', '');
     console.log('📄 Auth token (first 50 chars):', authToken ? authToken.substring(0, 50) : 'NONE');
-    console.log('📄 Full auth token:', authToken);
     console.log('📄 Auth token length:', authToken?.length);
 
     if (!authToken) {
@@ -8495,16 +8503,14 @@ app.post('/api/user/upload-verification', (req, res, next) => {
 
     // Get user from token with retry logic for newly created users
     console.log('📄 Getting user from token...');
-    console.log('📄 Auth token format:', authToken.substring(0, 50) + '...');
-
     let user = await getUserFromToken(authToken);
     console.log('📄 User from token:', user ? { id: user.id, username: user.username } : 'NOT FOUND');
 
-    // If user not found, retry up to 5 times (for newly created users)
+    // If user not found, retry up to 10 times (for newly created users)
     if (!user && authToken.startsWith('user-session-')) {
       console.log('📄 User not found on first attempt, retrying for newly created user...');
-      for (let attempt = 1; attempt <= 5; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between retries
+      for (let attempt = 1; attempt <= 10; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 300)); // Wait 300ms between retries
         user = await getUserFromToken(authToken);
         console.log(`📄 Retry attempt ${attempt}: User found?`, !!user);
         if (user) break;
