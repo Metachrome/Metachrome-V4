@@ -5920,9 +5920,19 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         wsExitPrice = 50000 + (Math.random() - 0.5) * 2000;
       }
 
+      // CRITICAL FIX: Calculate profitPercentage based on duration (same logic as below)
+      let profitPercentageForMessage = 10; // Default
+      if (duration === 30) profitPercentageForMessage = 10;
+      else if (duration === 60) profitPercentageForMessage = 15;
+      else if (duration === 120) profitPercentageForMessage = 20;
+      else if (duration === 180) profitPercentageForMessage = 30;
+      else if (duration === 240) profitPercentageForMessage = 75;
+      else if (duration === 300) profitPercentageForMessage = 100;
+
       // CRITICAL FIX: Ensure profitAmount is always set correctly
+      const profitPercentageDecimal2 = profitPercentageForMessage / 100;
       const finalProfitAmount2 = profitAmount !== undefined && profitAmount !== null ? profitAmount :
-        (finalWon ? (amount * (duration === 30 ? 0.10 : 0.15)) : -(amount * (duration === 30 ? 0.10 : 0.15)));
+        (finalWon ? (amount * profitPercentageDecimal2) : -(amount * profitPercentageDecimal2));
 
       // CRITICAL FIX: Include ALL necessary fields for the notification
       const tradeCompletionMessage = {
@@ -5940,8 +5950,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           direction: direction || 'up', // The trade direction
           entryPrice: entryPrice, // CRITICAL: Use the actual entry price parameter!
           duration: duration || 30, // The trade duration
-          // CRITICAL FIX: For loss trades, include the loss percentage (10% or 15%), not 0
-          profitPercentage: duration === 30 ? 10 : 15, // Always include percentage for both win and loss
+          // CRITICAL FIX: Use the calculated profitPercentage, not hardcoded value
+          profitPercentage: profitPercentageForMessage, // Use calculated percentage for both win and loss
           timestamp: new Date().toISOString()
         }
       };
@@ -5985,8 +5995,10 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       else if (duration === 300) profitPercentage = 100;
 
       // CRITICAL FIX: Ensure profitAmount is always set correctly
+      // Use profitPercentage that was calculated above (lines 5977-5985)
+      const profitPercentageDecimal = profitPercentage / 100;
       const finalProfitAmount = profitAmount !== undefined && profitAmount !== null ? profitAmount :
-        (finalWon ? (amount * (duration === 30 ? 0.10 : 0.15)) : -(amount * (duration === 30 ? 0.10 : 0.15)));
+        (finalWon ? (amount * profitPercentageDecimal) : -(amount * profitPercentageDecimal));
 
       const directNotificationMessage = {
         type: 'trigger_mobile_notification',
