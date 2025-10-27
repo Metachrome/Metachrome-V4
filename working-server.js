@@ -1956,8 +1956,8 @@ app.post('/api/auth/register', async (req, res) => {
     const userReferralCode = `REF${username.toUpperCase().substring(0, 4)}${Date.now().toString().slice(-4)}`;
 
     // Create new user with proper structure including new fields
+    // NOTE: Do NOT include 'id' field - let Supabase generate UUID
     const userData = {
-      id: `user-${Date.now()}`,
       username,
       email,
       password_hash: hashedPassword,
@@ -1978,6 +1978,12 @@ app.post('/api/auth/register', async (req, res) => {
 
     console.log('📝 Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
     const newUser = await createUser(userData);
+
+    if (!newUser || !newUser.id) {
+      console.error('❌ User creation failed - no user ID returned');
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+
     console.log('✅ User created in database:', newUser.id);
     console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
 
@@ -2004,7 +2010,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Generate a simple token for authentication
-    // Use the actual user ID from the database (which may be a Supabase UUID)
+    // Use the actual user ID from the database (which is a Supabase UUID)
     // Encode user ID in Base64 to avoid issues with UUID hyphens
     const encodedUserId = Buffer.from(newUser.id).toString('base64');
     const token = `user-session-${encodedUserId}-${Date.now()}`;
@@ -2058,11 +2064,10 @@ app.post('/api/auth/user/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user with firstName and lastName support
+    // NOTE: Do NOT include 'id' field - let Supabase generate UUID
     const userData = {
-      id: `user-${Date.now()}`,
       username,
       email,
-      password: hashedPassword,
       password_hash: hashedPassword,
       firstName: firstName || '',
       lastName: lastName || '',
@@ -2074,8 +2079,14 @@ app.post('/api/auth/user/register', async (req, res) => {
       last_login: new Date().toISOString()
     };
 
-    console.log('📝 Creating user with data:', { ...userData, password: '[HIDDEN]', password_hash: '[HIDDEN]' });
+    console.log('📝 Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
     const newUser = await createUser(userData);
+
+    if (!newUser || !newUser.id) {
+      console.error('❌ User creation failed - no user ID returned');
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+
     console.log('✅ User created in database:', newUser.id);
     console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
 
@@ -2094,7 +2105,7 @@ app.post('/api/auth/user/register', async (req, res) => {
     });
 
     // Generate a simple token for authentication
-    // Use the actual user ID from the database (which may be a Supabase UUID)
+    // Use the actual user ID from the database (which is a Supabase UUID)
     // Encode user ID in Base64 to avoid issues with UUID hyphens
     const encodedUserId = Buffer.from(newUser.id).toString('base64');
     const token = `user-session-${encodedUserId}-${Date.now()}`;
@@ -2313,8 +2324,8 @@ app.get('/api/auth/google/callback', async (req, res) => {
 
     if (!user) {
       // Create new user
+      // NOTE: Do NOT include 'id' field - let Supabase generate UUID
       const userData = {
-        id: `google-${Date.now()}`,
         username: googleUser.email.split('@')[0] + '_' + Date.now(),
         email: googleUser.email,
         password_hash: '', // No password for OAuth users
@@ -2330,6 +2341,12 @@ app.get('/api/auth/google/callback', async (req, res) => {
 
       console.log('📝 Creating new Google user:', googleUser.email);
       user = await createUser(userData);
+
+      if (!user || !user.id) {
+        console.error('❌ Google user creation failed');
+        return res.status(500).json({ error: 'Failed to create user' });
+      }
+
       console.log('✅ Google user created in database:', user.id);
     } else {
       // Update last login
