@@ -2330,7 +2330,7 @@ function OptionsPageContent({
                   <div>Buy/Up</div>
                   <div className="text-xs mt-0.5">
                     Profit: {getProfitPercentage(selectedDuration)}% •
-                    Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
+                    Payout: +{(selectedAmount * getProfitPercentage(selectedDuration) / 100).toFixed(0)} USDT
                   </div>
                 </button>
                 <button
@@ -2341,7 +2341,7 @@ function OptionsPageContent({
                   <div>Sell/Down</div>
                   <div className="text-xs mt-0.5">
                     Profit: {getProfitPercentage(selectedDuration)}% •
-                    Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
+                    Payout: +{(selectedAmount * getProfitPercentage(selectedDuration) / 100).toFixed(0)} USDT
                   </div>
                 </button>
               </div>
@@ -3216,7 +3216,7 @@ function OptionsPageContent({
                   <div>Buy/Up</div>
                   <div className="text-xs mt-1">
                     Profit: {getProfitPercentage(selectedDuration)}% •
-                    Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
+                    Payout: +{(selectedAmount * getProfitPercentage(selectedDuration) / 100).toFixed(0)} USDT
                   </div>
                 </button>
                 <button
@@ -3227,7 +3227,7 @@ function OptionsPageContent({
                   <div>Sell/Down</div>
                   <div className="text-xs mt-1">
                     Profit: {getProfitPercentage(selectedDuration)}% •
-                    Payout: {(selectedAmount * (1 + getProfitPercentage(selectedDuration) / 100)).toFixed(0)} USDT
+                    Payout: +{(selectedAmount * getProfitPercentage(selectedDuration) / 100).toFixed(0)} USDT
                   </div>
                 </button>
               </div>

@@ -5920,6 +5920,10 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         wsExitPrice = 50000 + (Math.random() - 0.5) * 2000;
       }
 
+      // CRITICAL FIX: Ensure profitAmount is always set correctly
+      const finalProfitAmount2 = profitAmount !== undefined && profitAmount !== null ? profitAmount :
+        (finalWon ? (amount * (duration === 30 ? 0.10 : 0.15)) : -(amount * (duration === 30 ? 0.10 : 0.15)));
+
       // CRITICAL FIX: Include ALL necessary fields for the notification
       const tradeCompletionMessage = {
         type: 'trade_completed',
@@ -5928,7 +5932,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           userId: userId,
           result: finalWon ? 'win' : 'lose',
           exitPrice: wsExitPrice,
-          profitAmount: profitAmount,
+          profitAmount: finalProfitAmount2,
           newBalance: users[userIndex].balance,
           // CRITICAL: Include these fields so client can display correct notification
           amount: amount, // The actual trade amount
@@ -5980,6 +5984,10 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       else if (duration === 240) profitPercentage = 75;
       else if (duration === 300) profitPercentage = 100;
 
+      // CRITICAL FIX: Ensure profitAmount is always set correctly
+      const finalProfitAmount = profitAmount !== undefined && profitAmount !== null ? profitAmount :
+        (finalWon ? (amount * (duration === 30 ? 0.10 : 0.15)) : -(amount * (duration === 30 ? 0.10 : 0.15)));
+
       const directNotificationMessage = {
         type: 'trigger_mobile_notification',
         data: {
@@ -5996,7 +6004,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           symbol: symbol || 'BTC/USDT', // Use actual symbol
           duration: duration || 30, // Use actual duration
           // CRITICAL FIX: Include profitAmount for accurate P&L display in notification
-          profitAmount: profitAmount
+          profitAmount: finalProfitAmount
         }
       };
 
