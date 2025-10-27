@@ -17,7 +17,7 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
   username: varchar("username").unique(),
-  password: varchar("password"), // For admin login (hashed)
+  // NOTE: Password is managed by Supabase Auth, not stored in this table
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),

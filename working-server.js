@@ -938,14 +938,20 @@ async function getUserByEmail(email) {
 async function createUser(userData) {
   if (isSupabaseConfigured && supabase) {
     try {
+      // IMPORTANT: Don't try to insert password into users table
+      // Supabase Auth manages passwords separately
+      // We only insert profile data into the users table
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password: userData.password_hash || userData.password,
+        // DO NOT include password - Supabase Auth handles this
         balance: userData.balance !== undefined ? userData.balance : 0,
         status: userData.status || 'active',
         trading_mode: userData.trading_mode || 'normal',
-        verification_status: userData.verification_status || 'unverified'
+        verification_status: userData.verification_status || 'unverified',
+        first_name: userData.firstName || '',
+        last_name: userData.lastName || '',
+        role: userData.role || 'user'
       };
 
       const result = await supabase
@@ -962,28 +968,6 @@ async function createUser(userData) {
       }
 
       console.log('✅ [CREATE_USER] User created in Supabase:', data.username);
-
-      // Update additional fields if they exist
-      if (userData.firstName || userData.lastName || userData.role || userData.status || userData.trading_mode || userData.verification_status) {
-        const updateData = {};
-        if (userData.firstName) updateData.first_name = userData.firstName;
-        if (userData.lastName) updateData.last_name = userData.lastName;
-        if (userData.role) updateData.role = userData.role;
-        if (userData.status) updateData.status = userData.status;
-        if (userData.trading_mode) updateData.trading_mode = userData.trading_mode;
-        if (userData.verification_status) updateData.verification_status = userData.verification_status;
-        if (userData.has_uploaded_documents !== undefined) updateData.has_uploaded_documents = userData.has_uploaded_documents;
-
-        const { error: updateError } = await supabase
-          .from('users')
-          .update(updateData)
-          .eq('id', data.id);
-
-        if (updateError) {
-          console.warn('⚠️ Could not update additional fields:', updateError.message);
-        }
-      }
-
       return data;
     } catch (error) {
       console.error('❌ [CREATE_USER] Supabase failed, falling back to file storage:', error.message);
