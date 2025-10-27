@@ -769,37 +769,37 @@ async function createUser(userData) {
 
   if (isSupabaseConfigured && supabase) {
     try {
-      // Clean the userData to only include valid columns
-      // NOTE: Do NOT include 'id' field - let Supabase generate UUID
-      // We'll use the returned UUID for token generation
-      // Only include columns that actually exist in Supabase users table
+      // MINIMAL insert - only include columns that MUST exist
+      // Start with the absolute minimum required columns
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        password_hash: userData.password_hash || userData.password, // Use password_hash column
-        first_name: userData.firstName || '', // Column is 'first_name', not 'firstName'
-        last_name: userData.lastName || '', // Column is 'last_name', not 'lastName'
-        wallet_address: userData.wallet_address || userData.walletAddress,
-        role: userData.role || 'user',
-        status: userData.status || 'active',
-        trading_mode: userData.trading_mode || 'normal',
-        verification_status: userData.verification_status || 'unverified',
-        has_uploaded_documents: userData.has_uploaded_documents || false,
-        balance: userData.balance || 0,
-        referral_code: userData.referral_code,
-        referred_by: userData.referred_by,
-        total_trades: userData.total_trades || 0,
-        created_at: userData.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        password: userData.password_hash || userData.password // Try 'password' column first
       };
 
-      console.log('📝 Inserting user to Supabase with data:', { ...cleanUserData, password_hash: '[HIDDEN]' });
+      console.log('📝 Attempting minimal insert to Supabase:', { ...cleanUserData, password: '[HIDDEN]' });
 
-      const { data, error } = await supabase
+      let result = await supabase
         .from('users')
         .insert([cleanUserData])
         .select()
         .single();
+
+      // If minimal insert fails, try with more columns
+      if (result.error) {
+        console.log('📝 Minimal insert failed, trying with password_hash column...');
+        cleanUserData.password = undefined;
+        cleanUserData.password_hash = userData.password_hash || userData.password;
+
+        result = await supabase
+          .from('users')
+          .insert([cleanUserData])
+          .select()
+          .single();
+      }
+
+      const { data, error } = result;
+
       if (error) {
         console.error('❌ Supabase insert error:', error);
         console.error('❌ Error code:', error.code);
@@ -807,7 +807,32 @@ async function createUser(userData) {
         console.error('❌ Error details:', error.details);
         throw error;
       }
+
       console.log('✅ User created in Supabase:', data.username, 'ID:', data.id);
+
+      // Now update with additional fields if they exist
+      if (userData.firstName || userData.lastName || userData.role || userData.balance !== undefined) {
+        const updateData = {};
+        if (userData.firstName) updateData.first_name = userData.firstName;
+        if (userData.lastName) updateData.last_name = userData.lastName;
+        if (userData.role) updateData.role = userData.role;
+        if (userData.balance !== undefined) updateData.balance = userData.balance;
+        if (userData.status) updateData.status = userData.status;
+        if (userData.trading_mode) updateData.trading_mode = userData.trading_mode;
+        if (userData.verification_status) updateData.verification_status = userData.verification_status;
+
+        console.log('📝 Updating user with additional fields:', updateData);
+
+        const { error: updateError } = await supabase
+          .from('users')
+          .update(updateData)
+          .eq('id', data.id);
+
+        if (updateError) {
+          console.warn('⚠️ Could not update additional fields:', updateError.message);
+        }
+      }
+
       return data;
     } catch (error) {
       console.error('❌ Database error:', error.message);
