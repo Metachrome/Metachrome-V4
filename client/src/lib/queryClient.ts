@@ -85,8 +85,11 @@ export async function apiRequest(
     headers["Content-Type"] = "application/json";
   }
 
-  // Only add Authorization header if we have a token AND it's not a login request
-  if (token && !url.includes('/auth/admin/login') && !url.includes('/auth/user/login') && !url.includes('/admin-auth') && !url.includes('/admin-login')) {
+  // Only add Authorization header if we have a token AND it's not a login/register request
+  // FIXED: /api/auth/user should get the Authorization header (it's not a login endpoint)
+  const isLoginOrRegisterRequest = url.includes('/login') || url.includes('/register');
+
+  if (token && !isLoginOrRegisterRequest) {
     headers["Authorization"] = `Bearer ${token}`;
     if (import.meta.env.DEV) {
       console.log(`🔐 Adding Authorization header for ${url}: Bearer ${token.substring(0, 30)}...`);
