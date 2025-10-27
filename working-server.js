@@ -6711,9 +6711,13 @@ app.post('/api/trades/options', async (req, res) => {
       });
     }
 
-    // Deduct balance
-    console.log('🔥 OPTIONS: DEDUCTING BALANCE:', userBalance, '-', tradeAmount, '=', (userBalance - tradeAmount));
-    user.balance = (userBalance - tradeAmount).toString();
+    // CRITICAL FIX: Only deduct the loss percentage, not the full amount
+    // This way: WIN trades return full amount + profit, LOSE trades lose only the percentage
+    const lossPercentage = duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for others
+    const deductionAmount = tradeAmount * lossPercentage; // Only deduct the loss percentage
+
+    console.log(`🔥 OPTIONS: DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (${(lossPercentage * 100).toFixed(0)}% of ${tradeAmount}) = ${userBalance - deductionAmount}`);
+    user.balance = (userBalance - deductionAmount).toString();
     console.log('💰 OPTIONS: NEW BALANCE SET TO:', user.balance);
 
     // CRITICAL FIX: Save balance to Supabase (ALWAYS - removed production check)
@@ -6751,7 +6755,7 @@ app.post('/api/trades/options', async (req, res) => {
           username: user.username,
           oldBalance: userBalance.toString(),
           newBalance: user.balance,
-          change: -tradeAmount,
+          change: -deductionAmount, // Use the deduction amount (loss percentage), not full trade amount
           changeType: 'trade_start',
           tradeId: `trade-${Date.now()}`,
           timestamp: new Date().toISOString()
