@@ -1260,11 +1260,15 @@ function OptionsPageContent({
           entryPrice: completedTrade.entryPrice,
           exitPrice: completedTrade.currentPrice,
           profitAmount: completedTrade.profit,
-          profitPercentage: completedTrade.profitPercentage
+          profitPercentage: completedTrade.profitPercentage,
+          // CRITICAL DEBUG: Log what we received from WebSocket
+          websocketProfitAmount: profitAmount,
+          websocketProfitPercentage: profitPercentage
         });
 
         // ROBUST NOTIFICATION TRIGGER
         console.log('🔔 WEBSOCKET: About to trigger notification');
+        console.log('🔔 WEBSOCKET: Trade object being sent to notification:', JSON.stringify(completedTrade, null, 2));
         triggerNotification(completedTrade);
       } else {
         // FALLBACK: Use data from WebSocket message if available, otherwise use defaults

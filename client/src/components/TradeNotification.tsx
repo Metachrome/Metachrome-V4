@@ -54,17 +54,20 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
   // CRITICAL FIX: Use profit field from WebSocket if available (accurate P&L), otherwise calculate from payout
   // For LOSE trades: Use profitPercentage to calculate loss, not full amount
   let pnl = 0;
-  if (trade.profit !== undefined) {
+  if (trade.profit !== undefined && trade.profit !== null) {
     // Use profit from WebSocket (most accurate)
     pnl = trade.profit;
+    console.log('✅ NOTIFICATION: Using profit from WebSocket:', pnl);
   } else if (isWin) {
     // Win: payout - amount
     pnl = trade.payout! - trade.amount;
+    console.log('✅ NOTIFICATION: Calculating win profit:', pnl, '=', trade.payout, '-', trade.amount);
   } else {
     // CRITICAL FIX: Loss should be percentage-based, not full amount
     // Loss percentage = profitPercentage (10% for 30s, 15% for 60s)
     const lossPercentage = (trade.profitPercentage || 15) / 100;
     pnl = -(trade.amount * lossPercentage);
+    console.log('✅ NOTIFICATION: Calculating loss profit:', pnl, '= -(', trade.amount, '*', lossPercentage, ')');
   }
 
   // Debug log for mobile
@@ -78,6 +81,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
     tradeProfit: trade.profit,
     tradeAmount: trade.amount,
     tradePayout: trade.payout,
+    tradeProfilePercentage: trade.profitPercentage,
     calculatedPnl: pnl,
     isWin: isWin
   });
