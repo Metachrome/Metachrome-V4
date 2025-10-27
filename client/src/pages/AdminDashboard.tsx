@@ -2064,12 +2064,12 @@ export default function WorkingAdminDashboard() {
                                 ) : (
                                   <ArrowDown className="w-4 h-4 text-red-500" />
                                 )}
-                                <span className="text-white">{(trade.direction || 'up').toUpperCase()}</span>
+                                <span className="text-white">{trade.direction === 'up' ? 'BUY' : 'SELL'}</span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-white">${trade.amount.toLocaleString()}</TableCell>
+                            <TableCell className="text-white">{trade.amount.toLocaleString()} USDT</TableCell>
                             <TableCell className="text-white">{trade.duration}s</TableCell>
-                            <TableCell className="text-white font-mono">${trade.entry_price}</TableCell>
+                            <TableCell className="text-white font-mono">{trade.entry_price} USDT</TableCell>
                             <TableCell>
                               <Badge variant={
                                 trade.result === 'win' ? 'default' :
