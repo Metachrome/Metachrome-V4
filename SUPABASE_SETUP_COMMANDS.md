@@ -31,46 +31,54 @@ Copy and paste this entire SQL block into the SQL Editor and click "Run":
 
 ```sql
 -- Create user_verification_documents table
-CREATE TABLE IF NOT EXISTS user_verification_documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS public.user_verification_documents (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   document_type VARCHAR(50) NOT NULL,
   document_url TEXT NOT NULL,
-  verification_status VARCHAR(50) DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(user_id, document_type)
+  verification_status VARCHAR(50) DEFAULT 'pending' CHECK (verification_status IN ('pending', 'approved', 'rejected')),
+  admin_notes TEXT,
+  verified_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_user_verification_documents_user_id ON user_verification_documents(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_verification_documents_status ON user_verification_documents(verification_status);
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_user_verification_documents_user_id ON public.user_verification_documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_verification_documents_status ON public.user_verification_documents(verification_status);
+CREATE INDEX IF NOT EXISTS idx_user_verification_documents_created_at ON public.user_verification_documents(created_at);
 
 -- Enable RLS
-ALTER TABLE user_verification_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_verification_documents ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can view their own documents" ON user_verification_documents;
-DROP POLICY IF EXISTS "Users can insert their own documents" ON user_verification_documents;
-DROP POLICY IF EXISTS "Admins can view all documents" ON user_verification_documents;
-DROP POLICY IF EXISTS "Admins can update documents" ON user_verification_documents;
+DROP POLICY IF EXISTS "Users can view their own documents" ON public.user_verification_documents;
+DROP POLICY IF EXISTS "Users can insert their own documents" ON public.user_verification_documents;
+DROP POLICY IF EXISTS "Admins can view all documents" ON public.user_verification_documents;
+DROP POLICY IF EXISTS "Admins can update documents" ON public.user_verification_documents;
 
 -- Create RLS policies
-CREATE POLICY "Users can view their own documents"
-  ON user_verification_documents FOR SELECT
-  USING (auth.uid() = user_id OR auth.jwt() ->> 'role' IN ('admin', 'super_admin'));
+CREATE POLICY "Users can view their own documents" ON public.user_verification_documents
+  FOR SELECT USING (user_id = auth.uid()::text);
 
-CREATE POLICY "Users can insert their own documents"
-  ON user_verification_documents FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own documents" ON public.user_verification_documents
+  FOR INSERT WITH CHECK (user_id = auth.uid()::text);
 
-CREATE POLICY "Admins can view all documents"
-  ON user_verification_documents FOR SELECT
-  USING (auth.jwt() ->> 'role' IN ('admin', 'super_admin'));
+CREATE POLICY "Admins can view all documents" ON public.user_verification_documents
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid()::text AND role IN ('admin', 'super_admin')
+    )
+  );
 
-CREATE POLICY "Admins can update documents"
-  ON user_verification_documents FOR UPDATE
-  USING (auth.jwt() ->> 'role' IN ('admin', 'super_admin'));
+CREATE POLICY "Admins can update documents" ON public.user_verification_documents
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid()::text AND role IN ('admin', 'super_admin')
+    )
+  );
 ```
 
 **Expected result:** "Success. No rows returned"
