@@ -972,6 +972,7 @@ async function createUser(userData) {
       }
 
       console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'ID:', data.id);
+      console.log('✅ [CREATE_USER] Full user data returned:', JSON.stringify(data, null, 2));
 
       // Now update with additional fields if they exist
       if (userData.firstName || userData.lastName || userData.role || userData.status || userData.trading_mode || userData.verification_status) {
@@ -994,6 +995,20 @@ async function createUser(userData) {
         if (updateError) {
           console.warn('⚠️ Could not update additional fields:', updateError.message);
         }
+      }
+
+      // CRITICAL: Verify user was actually created by fetching it back
+      console.log('🔍 [CREATE_USER] Verifying user was created by fetching from Supabase...');
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.id)
+        .single();
+
+      if (verifyError) {
+        console.error('❌ [CREATE_USER] VERIFICATION FAILED - User not found after creation:', verifyError);
+      } else {
+        console.log('✅ [CREATE_USER] VERIFICATION SUCCESS - User confirmed in Supabase:', verifyData.username);
       }
 
       return data;
@@ -1266,6 +1281,7 @@ async function getUserFromToken(token) {
       // If Supabase is configured, prioritize Supabase
       if (isSupabaseConfigured && supabase) {
         try {
+          console.log('🔍 [GET_USER_FROM_TOKEN] Querying Supabase for user ID:', userId);
           const { data, error } = await supabase
             .from('users')
             .select('*')
@@ -1273,13 +1289,18 @@ async function getUserFromToken(token) {
             .single();
 
           if (error && error.code !== 'PGRST116') {
+            console.error('❌ [GET_USER_FROM_TOKEN] Supabase error:', error);
             throw error; // PGRST116 = no rows returned
           }
 
           if (data) {
+            console.log('✅ [GET_USER_FROM_TOKEN] User found in Supabase:', data.username);
             return data;
+          } else {
+            console.warn('⚠️ [GET_USER_FROM_TOKEN] User not found in Supabase for ID:', userId);
           }
         } catch (supabaseError) {
+          console.error('❌ [GET_USER_FROM_TOKEN] Supabase query failed:', supabaseError);
           // Fall through to local storage
         }
       }
