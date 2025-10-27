@@ -81,6 +81,9 @@ const PORT = process.env.PORT || 3005;
 // Fast startup - minimal logging
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Check if Supabase is configured (regardless of NODE_ENV)
+let isSupabaseConfigured = false;
+
 // Redirect non-www to www
 app.use((req, res, next) => {
   if (req.hostname === 'metachrome.io') {
@@ -97,8 +100,13 @@ try {
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (supabaseUrl && supabaseKey) {
     supabase = createClient(supabaseUrl, supabaseKey);
+    isSupabaseConfigured = true;
+    console.log('✅ Supabase configured and ready');
+  } else {
+    console.log('⚠️ Supabase not configured - using file storage fallback');
   }
 } catch (error) {
+  console.error('❌ Error initializing Supabase:', error.message);
   // Silent fallback to file storage
 }
 
@@ -567,7 +575,7 @@ function normalizeVerificationStatus(status) {
 }
 
 async function getUsers() {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase.from('users').select('*');
       if (error) throw error;
@@ -640,7 +648,7 @@ async function getUsers() {
 }
 
 async function saveUsers(users) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     // In production, users are saved individually via other functions
     console.log('⚠️ Bulk user save not implemented for production');
     return;
@@ -663,7 +671,7 @@ async function saveUsers(users) {
 }
 
 async function saveTransactions(transactions) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     // In production, transactions are saved individually via other functions
     console.log('⚠️ Bulk transaction save not implemented for production');
     return;
@@ -681,7 +689,7 @@ async function saveTransactions(transactions) {
 }
 
 async function getUserByUsername(username) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       // First try to find by username
       let { data, error } = await supabase
@@ -716,7 +724,7 @@ async function getUserByUsername(username) {
 }
 
 async function getUserByEmail(email) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -737,7 +745,7 @@ async function getUserByEmail(email) {
 }
 
 async function createUser(userData) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       // Clean the userData to only include valid columns
       // NOTE: Do NOT include 'id' field - let Supabase generate UUID
@@ -804,7 +812,7 @@ async function createUser(userData) {
 }
 
 async function updateUser(userId, updateData) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -838,7 +846,7 @@ async function updateUser(userId, updateData) {
 }
 
 async function updateUserBalance(userId, newBalance) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -937,7 +945,7 @@ async function getTrades() {
 
 // Save trades to storage
 async function saveTrades(trades) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     // In production, we don't bulk save trades since they're saved individually
     // This function is mainly for development mode
     console.log('📈 Production mode: Trades are saved individually via Supabase operations');
@@ -955,7 +963,7 @@ async function saveTrades(trades) {
 
 // Save individual trade to Supabase (production) or local file (development)
 async function saveTradeToDatabase(trade) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
         .from('trades')
@@ -1029,8 +1037,8 @@ async function getUserFromToken(token) {
         userId = encodedUserId;
       }
 
-      // In production with Supabase, prioritize Supabase
-      if (isProduction && supabase) {
+      // If Supabase is configured, prioritize Supabase
+      if (isSupabaseConfigured && supabase) {
         try {
           const { data, error } = await supabase
             .from('users')
@@ -1066,7 +1074,7 @@ async function getUserFromToken(token) {
         const userIdParts = parts.slice(2, -1); // Get all parts except first 2 and last 1
         const userId = userIdParts.join('-');
 
-        if (isProduction && supabase) {
+        if (isSupabaseConfigured && supabase) {
           const { data, error } = await supabase
             .from('users')
             .select('*')
@@ -1094,7 +1102,7 @@ async function getUserFromToken(token) {
 // Helper function to check if user is verified (approved by admin)
 async function isUserVerified(userId) {
   try {
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Check user's verification status in the users table
       const { data: user, error } = await supabase
         .from('users')
@@ -1122,7 +1130,7 @@ async function isUserVerified(userId) {
 
 // Database functions for transactions
 async function getTransactions(userId = null) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       let query = supabase
         .from('transactions')
@@ -1187,7 +1195,7 @@ async function getTransactions(userId = null) {
 }
 
 async function createTransaction(transactionData) {
-  if (isProduction && supabase) {
+  if (isSupabaseConfigured && supabase) {
     try {
       // Strip any non-UUID id to satisfy Supabase UUID column
       const insertData = { ...transactionData };
@@ -1251,7 +1259,7 @@ async function enforceTradeOutcome(userId, originalOutcome, context = 'unknown')
     console.log(`🔍 TRADE CONTROL DEBUG: User found - ${user.username}, trading_mode from file: ${tradingMode}`);
 
     // Double-check from database if available
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       try {
         const { data: dbUser, error } = await supabase
           .from('users')
@@ -1563,7 +1571,7 @@ app.post('/api/auth', async (req, res) => {
       const newUser = await createUser(userData);
 
       // Handle referral if provided
-      if (referralCode && isProduction && supabase) {
+      if (referralCode && isSupabaseConfigured && supabase) {
         try {
           // Find referrer by code
           const { data: referrer, error: referrerError } = await supabase
@@ -1748,7 +1756,7 @@ app.get('/api/auth/user', async (req, res) => {
     // Return user data with current balance (fresh from database/file)
     let currentUser;
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // In production, try Supabase first, then fallback to file storage
       console.log('👤 Fetching fresh user data from Supabase for:', user.id);
       const { data: freshUser, error: fetchError } = await supabase
@@ -2334,7 +2342,7 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     console.log('🔐 Password hashed successfully');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Update password in Supabase
       const { data, error } = await supabase
         .from('users')
@@ -2377,7 +2385,7 @@ app.put('/api/admin/users/update-wallet', async (req, res) => {
   const { userId, walletAddress } = req.body;
 
   try {
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Production: Update in Supabase
       const { data, error } = await supabase
         .from('users')
@@ -2753,7 +2761,7 @@ app.put('/api/admin/users/:id', async (req, res) => {
       updated_at: new Date().toISOString()
     };
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Production: Update in Supabase
       console.log('🔄 Updating user in Supabase...');
       const { data, error } = await supabase
@@ -2896,7 +2904,7 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
       return res.status(403).json({ error: 'Cannot delete super admin user' });
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Production: Delete from Supabase
       console.log('🔄 Deleting user from Supabase...');
       const { error } = await supabase
@@ -2947,7 +2955,7 @@ app.post('/api/admin/trading-controls', async (req, res) => {
       });
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Production: Update in Supabase
       console.log('🔄 Updating trading mode in Supabase...');
       const { error } = await supabase
@@ -3862,7 +3870,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       console.log('✅ Deposit approved, user balance updated:', currentBalance, '→', newBalance);
 
       // Update balance in database (production) or file (development)
-      if (isProduction && supabase) {
+      if (isSupabaseConfigured && supabase) {
         try {
           console.log('🔄 Updating balance in Supabase for deposit approval:', user.id, newBalance);
           const { data: updateData, error: updateError } = await supabase
@@ -4748,7 +4756,7 @@ app.put('/api/user/profile', async (req, res) => {
 
     let updatedUser;
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Production: Update in Supabase database
       try {
         console.log('🔄 Attempting database update with data:', updateData);
@@ -5051,7 +5059,7 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
       user.balance = newBalance.toString();
 
       // Update balance in database
-      if (isProduction && supabase) {
+      if (isSupabaseConfigured && supabase) {
         try {
           console.log('🔄 Deducting balance in Supabase:', user.id, newBalance);
           const { data: updateData, error: updateError } = await supabase
@@ -5793,7 +5801,7 @@ app.post('/api/spot/orders', async (req, res) => {
       user.balance = parseFloat(newUsdtBalance.toFixed(2));
 
       // Add cryptocurrency to user's balance in database
-      if (isProduction && supabase) {
+      if (isSupabaseConfigured && supabase) {
         try {
           // Check if user already has this cryptocurrency balance
           const { data: existingBalance, error: fetchError } = await supabase
@@ -5854,7 +5862,7 @@ app.post('/api/spot/orders', async (req, res) => {
       const totalReceived = tradeAmount * tradePrice;
 
       // Check if user has enough cryptocurrency to sell
-      if (isProduction && supabase) {
+      if (isSupabaseConfigured && supabase) {
         try {
           const { data: cryptoBalance, error: fetchError } = await supabase
             .from('balances')
@@ -5920,7 +5928,7 @@ app.post('/api/spot/orders', async (req, res) => {
     await saveUsers(users);
 
     // Also update Supabase if in production
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       try {
         const { error: balanceError } = await supabase
           .from('users')
@@ -5959,7 +5967,7 @@ app.post('/api/spot/orders', async (req, res) => {
 
     // Save order to database/storage
     try {
-      if (isProduction && supabase) {
+      if (isSupabaseConfigured && supabase) {
         // Save to Supabase in production
         const { data, error } = await supabase
           .from('trades')
@@ -6219,7 +6227,7 @@ app.post('/api/trades', async (req, res) => {
 
     // Save trade to storage
     try {
-      if (isProduction && supabase) {
+      if (isSupabaseConfigured && supabase) {
         console.log('💾 SAVING TRADE TO DATABASE:');
         console.log('💾 Trade ID:', trade.id);
         console.log('💾 Trade details:', { symbol: trade.symbol, direction: trade.direction, amount: trade.amount, entry_price: trade.entry_price });
@@ -6674,7 +6682,7 @@ app.post('/api/trades/complete', async (req, res) => {
     console.log(`🎯 User ${user.username} trading mode from local data: ${tradingMode}`);
 
     // DOUBLE-CHECK trading mode from database to ensure consistency
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       try {
         const { data: dbUser, error } = await supabase
           .from('users')
@@ -7418,7 +7426,7 @@ app.get('/api/admin/check-schema', async (req, res) => {
   try {
     console.log('🔍 Checking database schema...');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Check transactions table structure
       const { data, error } = await supabase
         .from('information_schema.columns')
@@ -8119,7 +8127,7 @@ app.post('/api/superadmin/deposit', async (req, res) => {
 
     // Update in Supabase if in production
     console.log('🔧 Debug: isProduction =', isProduction, 'supabase =', !!supabase);
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       console.log('🔧 Attempting Supabase update for user:', userId, 'new balance:', newBalance);
       const { data, error } = await supabase
         .from('users')
@@ -8179,7 +8187,7 @@ app.post('/api/superadmin/withdrawal', async (req, res) => {
     const newBalance = Math.max(0, oldBalance - amount); // Prevent negative balance
 
     // Update in Supabase if in production
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('users')
         .update({
@@ -8237,7 +8245,7 @@ app.post('/api/superadmin/change-password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update in Supabase if in production
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('users')
         .update({
@@ -8291,7 +8299,7 @@ app.post('/api/superadmin/update-wallet', async (req, res) => {
     const currentWallet = user.wallet_address;
 
     // Update in Supabase if in production
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('users')
         .update({
@@ -8382,7 +8390,7 @@ app.get('/api/debug/verification-status/:username', async (req, res) => {
     const { username } = req.params;
     console.log('🔍 DEBUG: Checking verification status for:', username);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Check user in Supabase
       const { data: user, error: userError } = await supabase
         .from('users')
@@ -8511,8 +8519,8 @@ app.post('/api/user/upload-verification', (req, res, next) => {
             const decodedUserId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
             console.log('📄 Decoded user ID:', decodedUserId);
 
-            // Try Supabase first if in production
-            if (isProduction && supabase) {
+            // Try Supabase first if configured
+            if (isSupabaseConfigured && supabase) {
               try {
                 const { data, error } = await supabase
                   .from('users')
@@ -8560,7 +8568,7 @@ app.post('/api/user/upload-verification', (req, res, next) => {
     const documentUrl = `/api/admin/verification-document/${req.file.filename}`;
 
     // Save to database
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       console.log('📄 Attempting to insert document into Supabase with data:', {
         user_id: user.id,
         document_type: documentType,
@@ -8750,7 +8758,7 @@ app.post('/api/user/force-refresh', async (req, res) => {
     // Get fresh user data from database
     let freshUserData = null;
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -8810,7 +8818,7 @@ app.get('/api/user/verification-status', async (req, res) => {
       return res.status(401).json({ error: 'Invalid authentication' });
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: documents, error } = await supabase
         .from('user_verification_documents')
         .select('*')
@@ -9461,7 +9469,7 @@ app.get('/api/admin/redeem-codes', async (req, res) => {
   try {
     console.log('🎁 Getting admin redeem codes');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: codes, error } = await supabase
         .from('redeem_codes')
         .select('*')
@@ -9627,7 +9635,7 @@ app.post('/api/admin/redeem-codes', async (req, res) => {
       });
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: newCode, error } = await supabase
         .from('redeem_codes')
         .insert({
@@ -9700,7 +9708,7 @@ app.put('/api/admin/redeem-codes/:id', async (req, res) => {
     const { status } = req.body;
     console.log('🎁 Updating redeem code:', id, status);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('redeem_codes')
         .update({ is_active: status === 'active' })
@@ -9745,7 +9753,7 @@ app.delete('/api/admin/redeem-codes/:id', async (req, res) => {
     const { id } = req.params;
     console.log('🎁 Deleting redeem code:', id);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('redeem_codes')
         .delete()
@@ -9791,7 +9799,7 @@ app.get('/api/admin/pending-verifications', async (req, res) => {
   try {
     console.log('📄 Getting pending verification documents');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: documents, error } = await supabase
         .from('user_verification_documents')
         .select(`
@@ -9833,7 +9841,7 @@ app.get('/api/admin/pending-verifications-enhanced', async (req, res) => {
   try {
     console.log('📄 ENHANCED Getting pending verification documents');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       console.log('📄 Fetching from Supabase...');
 
       const { data: documents, error } = await supabase
@@ -9928,7 +9936,7 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid verification status' });
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Update document status
       const { data: document, error: docError } = await supabase
         .from('user_verification_documents')
@@ -10112,7 +10120,7 @@ app.post('/api/user/force-refresh-verification', async (req, res) => {
 
     console.log('🔄 Force refreshing verification status for:', user.username);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Get fresh user data from Supabase
       const { data: freshUser, error } = await supabase
         .from('users')
@@ -10199,7 +10207,7 @@ app.post('/api/user/emergency-verification-fix', async (req, res) => {
 
     console.log('🚨 SUPER NUCLEAR: Targeting user:', targetUsername, 'with ID:', targetUserId);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // STEP 1: Force update user verification status in database
       console.log('🚨 STEP 1: Force updating user verification status in database');
       const { data: updatedUser, error: updateError } = await supabase
@@ -10295,7 +10303,7 @@ app.post('/api/instant-verify-angela', async (req, res) => {
   try {
     console.log('🚨🚨🚨 INSTANT VERIFICATION FIX FOR ANGELA 🚨🚨🚨');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Force update angela.soenoko to verified status
       const { data: updatedUser, error: updateError } = await supabase
         .from('users')
@@ -10352,7 +10360,7 @@ app.post('/api/user/generate-referral-code', async (req, res) => {
     // Generate unique referral code
     const referralCode = `REF${user.username.toUpperCase().substring(0, 4)}${Date.now().toString().slice(-4)}`;
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('users')
         .update({ referral_code: referralCode })
@@ -10376,7 +10384,7 @@ app.get('/api/admin/verification/:docId/view', async (req, res) => {
     const { docId } = req.params;
     console.log('👁️ Viewing verification document:', docId);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: document, error } = await supabase
         .from('user_verification_documents')
         .select('document_url, document_type')
@@ -10466,7 +10474,7 @@ app.post('/api/admin/verify-document/:docId', async (req, res) => {
     const { status, adminNotes } = req.body;
     console.log('✅ Verifying document:', docId, 'Status:', status);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Update document status
       const { error: docError } = await supabase
         .from('user_verification_documents')
@@ -10576,7 +10584,7 @@ app.get('/api/user/referral-stats', async (req, res) => {
       referralCode = `REF${user.username.toUpperCase().substring(0, 4)}${Date.now().toString().slice(-4)}`;
       console.log('🔗 Generated new referral code for user:', user.username, '→', referralCode);
 
-      if (isProduction && supabase) {
+      if (isSupabaseConfigured && supabase) {
         const { error: updateError } = await supabase
           .from('users')
           .update({ referral_code: referralCode })
@@ -10596,7 +10604,7 @@ app.get('/api/user/referral-stats', async (req, res) => {
       }
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: referrals, error } = await supabase
         .from('user_referrals')
         .select(`
@@ -10671,7 +10679,7 @@ app.put('/api/user/password-hotfix', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password in database
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('users')
         .update({
@@ -10747,7 +10755,7 @@ app.get('/api/debug/password-status', async (req, res) => {
     let supabaseUser = null;
     let fileUser = null;
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -10851,7 +10859,7 @@ app.put('/api/user/password', async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password in database
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { error } = await supabase
         .from('users')
         .update({
@@ -11419,7 +11427,7 @@ app.get('/api/user/redeem-history', async (req, res) => {
       return res.status(401).json({ error: 'Invalid authentication' });
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: history, error } = await supabase
         .from('user_redeem_history')
         .select('*')
@@ -11452,7 +11460,7 @@ app.get('/api/user/available-codes', async (req, res) => {
   try {
     console.log('🎁 Getting available redeem codes for user');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Get all active codes from Supabase
       const { data: codes, error } = await supabase
         .from('redeem_codes')
@@ -11851,7 +11859,7 @@ app.get('/api/user/withdrawal-eligibility', async (req, res) => {
       return res.status(401).json({ error: 'Invalid authentication' });
     }
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       const { data: restrictions, error } = await supabase
         .from('user_redeem_history')
         .select('*')
@@ -11932,7 +11940,7 @@ app.get('/api/admin/redeem-codes/:codeId/usage', async (req, res) => {
 
     console.log('📊 Getting redeem code usage:', codeId);
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Get actual redemption history from Supabase
       const { data: history, error } = await supabase
         .from('user_redeem_history')
@@ -12015,7 +12023,7 @@ app.get('/api/admin/redeem-codes-usage-all', async (req, res) => {
   try {
     console.log('📊 Getting all redeem code usage');
 
-    if (isProduction && supabase) {
+    if (isSupabaseConfigured && supabase) {
       // Get all redemption history from Supabase
       const { data: history, error } = await supabase
         .from('user_redeem_history')
