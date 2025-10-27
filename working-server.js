@@ -2647,6 +2647,35 @@ app.get('/api/test/server-status', (req, res) => {
   });
 });
 
+// DIAGNOSTIC ENDPOINT - Check what admin endpoint returns
+app.get('/api/test/admin-users-check', async (req, res) => {
+  try {
+    const users = await getUsers();
+    const testUser = users.find(u => u.username === 'testuser1761548089137');
+
+    res.json({
+      totalUsers: users.length,
+      testUserFound: !!testUser,
+      testUser: testUser ? {
+        id: testUser.id,
+        username: testUser.username,
+        email: testUser.email,
+        balance: testUser.balance,
+        role: testUser.role,
+        status: testUser.status
+      } : null,
+      firstFiveUsers: users.slice(0, 5).map(u => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        balance: u.balance
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Debug endpoint to check user data
 app.get('/api/test/debug-users', async (req, res) => {
   try {
