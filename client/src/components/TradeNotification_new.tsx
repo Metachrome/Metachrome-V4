@@ -22,9 +22,10 @@ const MobileTradeNotification = ({ trade, onClose }: TradeNotificationProps) => 
   if (!trade) return null;
 
   const isWin = trade.status === 'won';
-  const pnl = isWin ? 
-    (trade.amount * trade.profitPercentage / 100) : 
-    -trade.amount;
+  // CRITICAL FIX: Loss should be percentage-based, not full amount
+  const pnl = isWin ?
+    (trade.amount * trade.profitPercentage / 100) :
+    -(trade.amount * trade.profitPercentage / 100);
 
   console.log('Mobile notification rendering:', { trade, isWin, pnl });
 
@@ -150,7 +151,8 @@ const DesktopTradeNotification = ({ trade, onClose }: TradeNotificationProps) =>
   if (!trade || !isVisible) return null;
 
   const isWin = trade.status === 'won';
-  const pnl = isWin ? (trade.payout! - trade.amount) : -trade.amount;
+  // CRITICAL FIX: Loss should be percentage-based, not full amount
+  const pnl = isWin ? (trade.payout! - trade.amount) : -(trade.amount * trade.profitPercentage / 100);
 
   return (
     <div className="trade-notification fixed top-4 right-4 z-50 max-w-[320px] min-w-[300px]">
