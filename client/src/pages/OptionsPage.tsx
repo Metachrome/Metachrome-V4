@@ -3556,7 +3556,7 @@ function OptionsPageContent({
                       <div className="flex flex-col min-w-0">
                         <span className="text-gray-400 text-xs truncate">{selectedSymbol.replace('USDT', '/USDT')}</span>
                         <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                          {trade.direction.toUpperCase()}
+                          {trade.direction === 'up' ? 'BUY' : 'SELL'}
                         </span>
                       </div>
                       <span className="text-gray-300 truncate text-center">{trade.entryPrice.toFixed(2)}</span>

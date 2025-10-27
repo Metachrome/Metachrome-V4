@@ -183,7 +183,7 @@ export default function EnhancedTradingDashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm">Total Volume</p>
-                <p className="text-3xl font-bold text-white">${totalVolume.toLocaleString()}</p>
+                <p className="text-3xl font-bold text-white">{totalVolume.toLocaleString()} USDT</p>
               </div>
               <BarChart3 className="w-8 h-8 text-purple-200" />
             </div>
@@ -196,7 +196,7 @@ export default function EnhancedTradingDashboard({
               <div>
                 <p className="text-orange-100 text-sm">Total P&L</p>
                 <p className={`text-3xl font-bold ${totalProfit >= 0 ? 'text-white' : 'text-red-200'}`}>
-                  ${totalProfit.toLocaleString()}
+                  {totalProfit.toLocaleString()} USDT
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-orange-200" />
@@ -230,11 +230,11 @@ export default function EnhancedTradingDashboard({
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Min Amount:</span>
-                      <span className="text-white">${setting.min_amount}</span>
+                      <span className="text-white">{setting.min_amount} USDT</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Max Amount:</span>
-                      <span className="text-white">${setting.max_amount || 'Unlimited'}</span>
+                      <span className="text-white">{setting.max_amount ? `${setting.max_amount} USDT` : 'Unlimited'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Profit %:</span>
@@ -345,19 +345,19 @@ export default function EnhancedTradingDashboard({
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         {getDirectionIcon(trade.direction)}
-                        <span className="text-white">{trade.direction.toUpperCase()}</span>
+                        <span className="text-white">{trade.direction === 'up' ? 'BUY' : 'SELL'}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-white">${trade.amount}</div>
+                      <div className="text-white">{trade.amount} USDT</div>
                       {trade.leverage && (
                         <div className="text-gray-400 text-sm">{trade.leverage}x leverage</div>
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="text-white font-mono">${trade.entry_price}</div>
+                      <div className="text-white font-mono">{trade.entry_price} USDT</div>
                       {trade.exit_price && (
-                        <div className="text-gray-400 text-sm font-mono">${trade.exit_price}</div>
+                        <div className="text-gray-400 text-sm font-mono">{trade.exit_price} USDT</div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -373,7 +373,7 @@ export default function EnhancedTradingDashboard({
                       <div className={`text-sm font-medium ${
                         parseFloat(String(trade.profit || 0)) >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
-                        ${parseFloat(String(trade.profit || 0)).toFixed(2)}
+                        {parseFloat(String(trade.profit || 0)).toFixed(2)} USDT
                       </div>
                       {trade.pnlPercentage && (
                         <div className="text-gray-400 text-xs">
