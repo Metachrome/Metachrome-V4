@@ -1025,15 +1025,7 @@ async function getUserFromToken(token) {
         userId = encodedUserId;
       }
 
-      // Always try local storage first for faster access
-      const users = await getUsers();
-
-      let foundUser = users.find(u => u.id === userId);
-      if (foundUser) {
-        return foundUser;
-      }
-
-      // If not found locally and in production with Supabase, try Supabase
+      // In production with Supabase, prioritize Supabase
       if (isProduction && supabase) {
         try {
           const { data, error } = await supabase
@@ -1046,13 +1038,22 @@ async function getUserFromToken(token) {
             throw error; // PGRST116 = no rows returned
           }
 
-          return data || null;
+          if (data) {
+            return data;
+          }
         } catch (supabaseError) {
-          return null;
+          // Fall through to local storage
         }
-      } else {
-        return null;
       }
+
+      // Fall back to local storage
+      const users = await getUsers();
+      let foundUser = users.find(u => u.id === userId);
+      if (foundUser) {
+        return foundUser;
+      }
+
+      return null;
     } else if (token.startsWith('admin-session-')) {
       // Handle admin tokens
       const parts = token.split('-');
