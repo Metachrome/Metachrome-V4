@@ -87,7 +87,6 @@ function TradingViewWidget({
       // Advanced chart widget for trading pages
       const script = document.createElement("script");
       // Use advanced chart with aggressive volume removal
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
       script.type = "text/javascript";
       script.async = true;
 
@@ -245,6 +244,9 @@ function TradingViewWidget({
       };
 
       script.innerHTML = JSON.stringify(config);
+
+      // Set src AFTER innerHTML so TradingView can read the config
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
 
       script.onload = () => {
         console.log('✅ TradingView widget loaded successfully');
