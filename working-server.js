@@ -9652,9 +9652,36 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
         console.log(`📊 Response status: ${response.status}, ok: ${response.ok}`);
 
         if (response.ok) {
-          const scriptContent = await response.text();
+          let scriptContent = await response.text();
           console.log(`✅ Successfully fetched ${scriptName} from ${cdnUrl} (${scriptContent.length} bytes)`);
           console.log(`📄 Script preview (first 200 chars): ${scriptContent.substring(0, 200)}`);
+
+          // Inject dark theme CSS into the script for advanced-chart
+          if (scriptName === 'embed-widget-advanced-chart.js') {
+            // Add CSS injection code to force dark theme
+            const darkThemeInjection = `
+              // Force dark theme CSS injection
+              (function() {
+                const style = document.createElement('style');
+                style.textContent = \`
+                  .tradingview-widget-container {
+                    background-color: #000000 !important;
+                  }
+                  .tradingview-widget-container__widget {
+                    background-color: #000000 !important;
+                  }
+                  .tv-lightweight-charts {
+                    background-color: #000000 !important;
+                  }
+                  body {
+                    background-color: #000000 !important;
+                  }
+                \`;
+                document.head.appendChild(style);
+              })();
+            `;
+            scriptContent = darkThemeInjection + '\n' + scriptContent;
+          }
 
           // Set cache headers to cache for 7 days
           res.setHeader('Content-Type', 'application/javascript');
