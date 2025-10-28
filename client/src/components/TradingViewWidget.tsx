@@ -903,7 +903,6 @@ function TradingViewWidget({
 
   return (
     <div
-      id={container_id}
       className={`tradingview-widget-container ${type === 'ticker' ? 'w-full overflow-hidden bg-transparent' : 'bg-[#10121E]'}`}
       ref={containerRef}
       style={{
