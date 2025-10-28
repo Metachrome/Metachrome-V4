@@ -38,6 +38,27 @@ function TradingViewWidget({
     // Clear container
     containerRef.current.innerHTML = '';
 
+    // Add CSS to force black background on TradingView widget
+    const style = document.createElement('style');
+    style.textContent = `
+      #${container_id} {
+        background-color: #000000 !important;
+      }
+      #${container_id} iframe {
+        background-color: #000000 !important;
+      }
+      #${container_id} > div {
+        background-color: #000000 !important;
+      }
+      .tradingview-widget-container {
+        background-color: #000000 !important;
+      }
+      .tradingview-widget-container__widget {
+        background-color: #000000 !important;
+      }
+    `;
+    document.head.appendChild(style);
+
     if (type === 'ticker') {
       // Ticker tape widget for homepage
       const script = document.createElement("script");
@@ -120,7 +141,9 @@ function TradingViewWidget({
         overrides: {
           "paneProperties.background": "#000000",
           "paneProperties.backgroundType": "solid",
-          "scalesProperties.backgroundColor": "#000000"
+          "scalesProperties.backgroundColor": "#000000",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350"
         }
       };
 
