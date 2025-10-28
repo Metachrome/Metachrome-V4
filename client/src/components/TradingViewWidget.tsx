@@ -254,13 +254,19 @@ function TradingViewWidget({
       // Use server proxy to load TradingView script (CDN is unreachable)
       script.src = "/api/tradingview-script/embed-widget-advanced-chart.js";
 
+      console.log('📝 Script element created, src set to:', script.src);
+      console.log('📝 Script innerHTML length:', script.innerHTML.length);
+      console.log('📝 About to append script to document body');
+
       script.onerror = () => {
         console.error('❌ TradingView script failed to load!');
+        console.error('❌ Script src:', script.src);
         setIsLoading(false);
       };
 
       script.onload = () => {
         // Hide loading state immediately after script loads
+        (script as any).__onloadFired = true;
         console.log('✅ TradingView script loaded successfully from proxy');
         console.log('📊 Checking if TradingView widget is rendering...');
         console.log('🔍 Window keys:', Object.keys(window).filter(k => k.includes('Trading') || k.includes('trading')));
@@ -860,6 +866,13 @@ function TradingViewWidget({
         // TradingView script will find the container by ID
         document.body.appendChild(script);
         console.log('✅ TradingView script appended to document body');
+        console.log('📝 Script now in DOM, waiting for onload/onerror...');
+
+        // Set a timeout to check if script loaded after 5 seconds
+        setTimeout(() => {
+          console.log('⏱️ 5 second check - onload fired?', (script as any).__onloadFired);
+          console.log('⏱️ TradingView object exists?', !!(window as any).TradingView);
+        }, 5000);
       } catch (error) {
         console.error('Error appending TradingView script:', error);
       }
