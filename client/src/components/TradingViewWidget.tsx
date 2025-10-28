@@ -868,11 +868,19 @@ function TradingViewWidget({
         console.log('✅ TradingView script appended to document body');
         console.log('📝 Script now in DOM, waiting for onload/onerror...');
 
-        // Set a timeout to check if script loaded after 5 seconds
-        setTimeout(() => {
-          console.log('⏱️ 5 second check - onload fired?', (script as any).__onloadFired);
-          console.log('⏱️ TradingView object exists?', !!(window as any).TradingView);
-        }, 5000);
+        // Check multiple times to see when TradingView object appears
+        const checkIntervals = [1000, 2000, 3000, 5000, 7000, 10000];
+        checkIntervals.forEach(delay => {
+          setTimeout(() => {
+            const tvExists = !!(window as any).TradingView;
+            const iframeExists = !!document.querySelector(`#${container_id} iframe`);
+            console.log(`⏱️ ${delay}ms check - TradingView: ${tvExists}, iframe: ${iframeExists}`);
+            if (tvExists) {
+              console.log('✅ TradingView object NOW exists!');
+              console.log('📋 TradingView keys:', Object.keys((window as any).TradingView).slice(0, 10));
+            }
+          }, delay);
+        });
       } catch (error) {
         console.error('Error appending TradingView script:', error);
       }
