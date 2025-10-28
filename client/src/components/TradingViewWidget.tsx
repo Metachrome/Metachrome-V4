@@ -30,38 +30,19 @@ function TradingViewWidget({
   onSymbolChange
 }: TradingViewWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear container
-    containerRef.current.innerHTML = '';
-
-    // Add CSS to force black background on TradingView widget
-    const style = document.createElement('style');
-    style.textContent = `
-      #${container_id} {
-        background-color: #000000 !important;
-      }
-      #${container_id} iframe {
-        background-color: #000000 !important;
-      }
-      #${container_id} > div {
-        background-color: #000000 !important;
-      }
-      .tradingview-widget-container {
-        background-color: #000000 !important;
-      }
-      .tradingview-widget-container__widget {
-        background-color: #000000 !important;
-      }
-    `;
-    document.head.appendChild(style);
+    try {
+      containerRef.current.innerHTML = '';
+    } catch (error) {
+      console.log('Error clearing container:', error);
+    }
 
     if (type === 'ticker') {
-      // Ticker tape widget for homepage
       const script = document.createElement("script");
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
       script.type = "text/javascript";
       script.async = true;
       script.innerHTML = JSON.stringify({
@@ -79,13 +60,10 @@ function TradingViewWidget({
         "displayMode": "adaptive",
         "locale": "en"
       });
-
-      script.src = "/api/tradingview-script/embed-widget-ticker-tape.js";
       containerRef.current.appendChild(script);
-      setIsLoading(false);
     } else {
-      // Advanced chart widget - Use TradingView's embed script with proper config
       const script = document.createElement("script");
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
       script.type = "text/javascript";
       script.async = true;
 
@@ -98,23 +76,23 @@ function TradingViewWidget({
           : `BINANCE:${symbol}`;
       }
 
-      // Create config object (NOT stringified - TradingView script will handle it)
       const config = {
         autosize: true,
         symbol: tradingViewSymbol,
         interval: interval,
         timezone: timezone,
         theme: "dark",
+        colorTheme: "dark",
         style: "1",
         locale: locale,
-        backgroundColor: "#000000",
-        toolbar_bg: "#000000",
+        toolbar_bg: "#10121E",
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
         hide_volume: true,
         hide_top_toolbar: false,
         hide_legend: false,
+        save_image: false,
         disabled_features: [
           "volume_force_overlay",
           "create_volume_indicator_by_default",
@@ -138,53 +116,78 @@ function TradingViewWidget({
           "remove_library_container_border",
           "disable_resolution_rebuild"
         ],
+        loading_screen: { backgroundColor: "#10121E" },
         overrides: {
-          "paneProperties.background": "#000000",
+          "paneProperties.background": "#10121E",
           "paneProperties.backgroundType": "solid",
-          "scalesProperties.backgroundColor": "#000000",
-          "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
-          "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350"
+          "paneProperties.vertGridProperties.color": "#1F2937",
+          "paneProperties.horzGridProperties.color": "#1F2937",
+          "symbolWatermarkProperties.transparency": 90,
+          "scalesProperties.textColor": "#D1D5DB",
+          "scalesProperties.backgroundColor": "#10121E",
+          "mainSeriesProperties.candleStyle.upColor": "#10B981",
+          "mainSeriesProperties.candleStyle.downColor": "#EF4444",
+          "mainSeriesProperties.candleStyle.borderUpColor": "#10B981",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#EF4444",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#10B981",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#EF4444"
         }
       };
 
-      // Set innerHTML to JSON string of config
       script.innerHTML = JSON.stringify(config);
-      script.src = "/api/tradingview-script/embed-widget-advanced-chart.js";
 
       script.onload = () => {
-        console.log('✅ TradingView script loaded');
-        setIsLoading(false);
+        console.log('✅ TradingView widget loaded successfully');
       };
 
       script.onerror = () => {
         console.error('❌ TradingView script failed to load');
-        setIsLoading(false);
       };
 
-      containerRef.current.appendChild(script);
+      try {
+        containerRef.current.appendChild(script);
+      } catch (error) {
+        console.error('Error appending TradingView script:', error);
+      }
     }
 
     return () => {
-      // Cleanup
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      try {
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
+      } catch (error) {
+        console.log('Error during cleanup:', error);
       }
     };
-  }, [type, symbol, interval, timezone, container_id]);
+  }, [type, symbol, height, interval, theme, style, locale, timezone, allow_symbol_change, container_id]);
 
   return (
     <div
+      className={`tradingview-widget-container ${type === 'ticker' ? 'w-full overflow-hidden bg-transparent' : 'bg-[#10121E]'}`}
       ref={containerRef}
-      id={container_id}
       style={{
-        width: '100%',
-        height: typeof height === 'number' ? `${height}px` : height,
-        position: 'relative',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        backgroundColor: '#10121E'
+        height: type === 'ticker' ? '50px' : (typeof height === 'number' ? `${height}px` : height),
+        width: "100%",
+        position: "relative",
+        backgroundColor: type === 'ticker' ? 'transparent' : '#10121E'
       }}
-    />
+    >
+      {type === 'ticker' ? (
+        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          <div className="animate-pulse">Loading market data...</div>
+        </div>
+      ) : (
+        <div
+          id={container_id}
+          className="tradingview-widget-container__widget"
+          style={{
+            height: "100%",
+            width: "100%"
+          }}
+        />
+      )}
+    </div>
   );
 }
 
