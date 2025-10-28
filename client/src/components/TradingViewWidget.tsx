@@ -253,24 +253,8 @@ function TradingViewWidget({
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
 
       script.onload = () => {
-        console.log('✅ TradingView widget loaded successfully');
-        console.log('🔍 Widget config:', JSON.stringify(config, null, 2));
-        console.log('📱 Mobile detection:', isMobile);
-        console.log('🎨 Theme setting:', theme);
-        console.log('🎨 Config theme:', config.theme);
-
         // Hide loading state immediately after script loads
         setIsLoading(false);
-
-        // Verify the widget was created
-        setTimeout(() => {
-          const iframe = containerRef.current?.querySelector('iframe');
-          if (iframe) {
-            console.log('✅ TradingView iframe found and rendered');
-          } else {
-            console.warn('⚠️ TradingView iframe not found after load');
-          }
-        }, 1000);
 
         // Force dark theme on the iframe after loading - multiple attempts
         const forceThemeAttempts = [500, 1000, 1500, 2000, 3000];
@@ -838,10 +822,7 @@ function TradingViewWidget({
       }; // End of script.onload
 
       script.onerror = (error) => {
-        console.error('❌ TradingView widget failed to load:', error);
-        console.error('❌ Script src:', script.src);
-        console.error('❌ Container ID:', container_id);
-        console.error('❌ Container exists:', !!containerRef.current);
+        console.error('❌ TradingView widget error:', error);
         setIsLoading(false);
       };
 
