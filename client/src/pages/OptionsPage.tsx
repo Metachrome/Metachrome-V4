@@ -1454,7 +1454,7 @@ function OptionsPageContent({
   const completeTrade = async (trade: ActiveTrade, won: boolean, finalPrice: number) => {
     // Calculate profit correctly: positive for wins, negative for losses
     const profitPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
-    const profit = won ? (trade.amount * profitPercentage / 100) : -trade.amount;
+    const profit = won ? (trade.amount * profitPercentage / 100) : -(trade.amount * profitPercentage / 100);
 
     const updatedTrade: ActiveTrade = {
       ...trade,
@@ -1543,7 +1543,7 @@ function OptionsPageContent({
               currentPrice: serverExitPrice,
               status: actualWon ? 'won' : 'lost',
               payout: actualWon ? serverAmount * (1 + profitPercentage / 100) : 0,
-              profit: actualWon ? (serverAmount * profitPercentage / 100) : -serverAmount
+              profit: actualWon ? (serverAmount * profitPercentage / 100) : -(serverAmount * profitPercentage / 100)
             };
 
             console.log('🔄 FALLBACK: Triggering notification with server result:', fallbackTrade);
@@ -2425,7 +2425,7 @@ function OptionsPageContent({
                       const priceChange = safeCurrentPrice - trade.entryPrice;
                       const isWinning = (trade.direction === 'up' && priceChange > 0) ||
                                        (trade.direction === 'down' && priceChange < 0);
-                      const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -trade.amount;
+                      const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -(trade.amount * trade.profitPercentage / 100);
 
                       return (
                         <div key={trade.id} className="bg-gray-800 rounded p-3 mb-2">
