@@ -9713,8 +9713,11 @@ app.get('/api/tradingview-widget/:widgetType', async (req, res) => {
         console.log(`✅ Successfully fetched ${widgetType} widget (${widgetContent.length} bytes)`);
 
         // Set appropriate headers for HTML content
+        // NO CACHE to prevent disk cache issues
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.send(widgetContent);
         return;
