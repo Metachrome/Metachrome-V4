@@ -10,6 +10,10 @@ const http = require('http');
 // Import fetch for Node.js
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+// VERSION TRACKING FOR DEPLOYMENT VERIFICATION
+const SERVER_VERSION = '2025-10-28-v2-PROFIT-FIX-DEPLOYED';
+console.log(`🚀 SERVER STARTING - VERSION: ${SERVER_VERSION}`);
+
 // In-memory user sessions cache
 const userSessions = {};
 
