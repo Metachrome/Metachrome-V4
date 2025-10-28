@@ -2636,12 +2636,7 @@ app.get('/api/admin/users', async (req, res) => {
 
     // FIXED: Superadmin sees ALL users regardless of verification status
     // This ensures newly registered users appear in the admin dashboard immediately
-    console.log('👥 Getting users list - Total:', users.length);
-
-    // Ensure balance consistency - log current balances for debugging
-    users.forEach(user => {
-      console.log(`💰 User ${user.username} balance: ${user.balance}`);
-    });
+    // REMOVED: Excessive logging that was hitting Railway's 500 logs/sec rate limit
 
     // BALANCE SYNC FIX: Ensure all users have consistent balance format
     const usersWithSyncedBalances = users.map(user => ({
@@ -9410,7 +9405,8 @@ app.get('/api/binance/price', async (req, res) => {
       timestamp: Date.now()
     };
 
-    console.log('✅ [Binance Price] Current:', priceData.price, 'Change:', priceData.priceChangePercent24h + '%');
+    // Reduced logging to avoid hitting Railway's 500 logs/sec rate limit
+    // Only log errors, not every successful price fetch
 
     res.json({
       success: true,
@@ -9453,12 +9449,9 @@ const CMC_CACHE_DURATION = 300000; // 5 minutes cache to avoid rate limiting (Co
 // Fetch data from CoinMarketCap API
 async function fetchCoinMarketCapData() {
   try {
-    console.log('🪙 Fetching data from CoinMarketCap API...');
-
     // Check cache first
     const now = Date.now();
     if (cmcDataCache && (now - cmcCacheTimestamp) < CMC_CACHE_DURATION) {
-      console.log('📦 Using cached CoinMarketCap data');
       return cmcDataCache;
     }
 
@@ -9622,15 +9615,11 @@ function getFallbackMarketData() {
 // Get all market data - now using CoinMarketCap
 app.get('/api/market-data', async (req, res) => {
   try {
-    console.log('📊 Market data request received');
-
     const marketData = await fetchCoinMarketCapData();
-
     res.json(marketData);
   } catch (error) {
     console.error('❌ Market data error:', error);
     // Return fallback data instead of error so charts still display
-    console.log('📊 Returning fallback market data due to API error');
     res.json(getFallbackMarketData());
   }
 });
