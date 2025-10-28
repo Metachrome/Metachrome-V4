@@ -250,10 +250,30 @@ function TradingViewWidget({
       script.innerHTML = JSON.stringify(config);
 
       // Set src AFTER innerHTML so TradingView can read the config
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+      // Try multiple CDN endpoints in case one is blocked
+      const cdnUrls = [
+        "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js",
+        "https://charting-library.tradingview.com/embed-widget-advanced-chart.js",
+        "https://www.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+      ];
+
+      let currentCdnIndex = 0;
+
+      const loadFromCdn = () => {
+        if (currentCdnIndex >= cdnUrls.length) {
+          console.error('❌ All TradingView CDN endpoints failed');
+          setIsLoading(false);
+          return;
+        }
+
+        script.src = cdnUrls[currentCdnIndex];
+        console.log(`📡 Attempting to load TradingView from CDN ${currentCdnIndex + 1}/${cdnUrls.length}: ${script.src}`);
+        currentCdnIndex++;
+      };
 
       script.onload = () => {
         // Hide loading state immediately after script loads
+        console.log('✅ TradingView script loaded successfully');
         setIsLoading(false);
 
         // Force dark theme on the iframe after loading - multiple attempts
@@ -822,9 +842,18 @@ function TradingViewWidget({
       }; // End of script.onload
 
       script.onerror = (error) => {
-        console.error('❌ TradingView widget error:', error);
-        setIsLoading(false);
+        console.warn(`⚠️ TradingView CDN ${currentCdnIndex} failed:`, error);
+        if (currentCdnIndex < cdnUrls.length) {
+          console.log(`🔄 Trying next CDN endpoint...`);
+          loadFromCdn();
+        } else {
+          console.error('❌ All TradingView CDN endpoints failed');
+          setIsLoading(false);
+        }
       };
+
+      // Start loading from first CDN
+      loadFromCdn();
 
       // Ensure loading state is cleared after 10 seconds max (TradingView can be slow)
       const loadingTimeout = setTimeout(() => {
