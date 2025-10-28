@@ -9672,10 +9672,37 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
       }
     }
 
-    // If all CDNs fail, return error
+    // If all CDNs fail, return a stub that prevents errors
     console.error(`❌ All CDN endpoints failed for ${scriptName}:`, lastError?.message);
     console.error(`❌ Last error type:`, lastError?.constructor.name);
-    res.status(503).json({ error: 'TradingView CDN unavailable' });
+
+    // Return a stub script that creates the TradingView object
+    // This prevents errors and allows the page to load
+    const stubScript = `
+      console.log('📦 TradingView stub loaded - CDN unavailable');
+      window.TradingView = window.TradingView || {
+        widget: function(config) {
+          console.log('📦 TradingView.widget() called with config:', config);
+          if (config && config.container_id) {
+            const container = document.getElementById(config.container_id);
+            if (container) {
+              container.innerHTML = '<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#10121E; color:#fff; font-family:Arial;">TradingView Chart (CDN Unavailable)</div>';
+            }
+          }
+          return {};
+        },
+        onready: function(callback) {
+          console.log('📦 TradingView.onready() called');
+          if (callback) callback();
+        }
+      };
+      console.log('✅ TradingView stub initialized');
+    `;
+
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.send(stubScript);
 
   } catch (error) {
     console.error('❌ TradingView proxy error:', error);
