@@ -9678,6 +9678,61 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
   }
 });
 
+// Proxy endpoint for TradingView widget HTML (advanced-chart, ticker-tape, etc)
+app.get('/api/tradingview-widget/:widgetType', async (req, res) => {
+  try {
+    const { widgetType } = req.params;
+    const locale = req.query.locale || 'en';
+
+    // Whitelist allowed widget types
+    const allowedWidgets = ['advanced-chart', 'ticker-tape', 'market-overview'];
+
+    if (!allowedWidgets.includes(widgetType)) {
+      console.warn(`⚠️ Invalid widget type requested: ${widgetType}`);
+      return res.status(400).json({ error: 'Invalid widget type' });
+    }
+
+    console.log(`📡 Proxying TradingView widget: ${widgetType}?locale=${locale}`);
+
+    // Build the widget URL
+    const widgetUrl = `https://www.tradingview-widget.com/embed-widget/${widgetType}/?locale=${locale}`;
+
+    try {
+      console.log(`🔄 Fetching widget from: ${widgetUrl}`);
+      const response = await fetch(widgetUrl, {
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Referer': 'https://www.metachrome.io/',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
+      });
+
+      if (response.ok) {
+        const widgetContent = await response.text();
+        console.log(`✅ Successfully fetched ${widgetType} widget (${widgetContent.length} bytes)`);
+
+        // Set appropriate headers for HTML content
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.send(widgetContent);
+        return;
+      } else {
+        console.warn(`⚠️ Widget endpoint returned status ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to fetch ${widgetType} widget:`, error.message);
+    }
+
+    res.status(503).json({ error: 'TradingView widget unavailable' });
+
+  } catch (error) {
+    console.error('❌ TradingView widget proxy error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all market data - now using CoinMarketCap
 app.get('/api/market-data', async (req, res) => {
   try {

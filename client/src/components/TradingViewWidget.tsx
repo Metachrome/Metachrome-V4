@@ -259,6 +259,30 @@ function TradingViewWidget({
         console.log('✅ TradingView script loaded successfully from proxy');
         console.log('📊 Checking if TradingView widget is rendering...');
 
+        // Intercept fetch calls to redirect TradingView widget requests to our proxy
+        const originalFetch = window.fetch;
+        (window as any).fetch = function(input: RequestInfo | URL, init?: RequestInit) {
+          let url = typeof input === 'string' ? input : input.toString();
+
+          // Intercept tradingview-widget.com requests
+          if (url.includes('tradingview-widget.com')) {
+            console.log(`🔄 Intercepting TradingView widget request: ${url}`);
+
+            // Extract the widget type and query params
+            const urlObj = new URL(url, window.location.origin);
+            const widgetMatch = url.match(/embed-widget\/([^/?]+)/);
+            const widgetType = widgetMatch ? widgetMatch[1] : 'advanced-chart';
+            const locale = urlObj.searchParams.get('locale') || 'en';
+
+            // Redirect to our proxy
+            const proxyUrl = `/api/tradingview-widget/${widgetType}?locale=${locale}`;
+            console.log(`✅ Redirecting to proxy: ${proxyUrl}`);
+            url = proxyUrl;
+          }
+
+          return originalFetch(url, init);
+        };
+
         // Check if TradingView object exists
         if ((window as any).TradingView) {
           console.log('✅ TradingView object found on window');
