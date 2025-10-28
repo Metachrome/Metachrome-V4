@@ -1382,7 +1382,8 @@ function OptionsPageContent({
                 currentPrice: exitPrice,
                 status: won ? 'won' : 'lost',
                 payout: won ? tradeAmount * (1 + profitPercentage / 100) : 0,
-                profit: won ? (tradeAmount * profitPercentage / 100) : -tradeAmount
+                // CRITICAL FIX: Use percentage-based loss, not full amount
+                profit: won ? (tradeAmount * profitPercentage / 100) : -(tradeAmount * profitPercentage / 100)
               };
 
               console.log('🔄 POLLING: Setting completed trade notification:', completedTrade);
