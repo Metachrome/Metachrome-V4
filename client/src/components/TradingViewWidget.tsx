@@ -35,12 +35,8 @@ function TradingViewWidget({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Clear any existing widget safely
-    try {
-      containerRef.current.innerHTML = '';
-    } catch (error) {
-      console.log('Error clearing container:', error);
-    }
+    // Clear container
+    containerRef.current.innerHTML = '';
 
     if (type === 'ticker') {
       // Ticker tape widget for homepage
@@ -64,12 +60,15 @@ function TradingViewWidget({
       });
 
       script.src = "/api/tradingview-script/embed-widget-ticker-tape.js";
-      document.body.appendChild(script);
+      containerRef.current.appendChild(script);
       setIsLoading(false);
     } else {
-      // Advanced chart widget - Use iframe approach
-      let tradingViewSymbol = symbol;
+      // Advanced chart widget - Use TradingView's embed script with proper config
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.async = true;
 
+      let tradingViewSymbol = symbol;
       if (!symbol.includes(':')) {
         tradingViewSymbol = symbol.includes('USDT')
           ? `BINANCE:${symbol}`
@@ -78,76 +77,71 @@ function TradingViewWidget({
           : `BINANCE:${symbol}`;
       }
 
-      // Create iframe for TradingView chart
-      const iframe = document.createElement('iframe');
-      iframe.id = container_id;
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = 'none';
-      iframe.style.borderRadius = '8px';
-      iframe.frameBorder = '0';
-      iframe.allowFullscreen = true;
-      
-      // Build TradingView chart URL with parameters
-      const chartParams = new URLSearchParams({
+      // Create config object (NOT stringified - TradingView script will handle it)
+      const config = {
+        autosize: true,
         symbol: tradingViewSymbol,
         interval: interval,
-        theme: 'dark',
-        locale: locale,
         timezone: timezone,
-        hide_volume: 'true',
-        hide_top_toolbar: 'false',
-        hide_legend: 'false',
-        allow_symbol_change: 'false'
-      });
-      
-      iframe.src = `https://www.tradingview.com/chart/?${chartParams.toString()}`;
-      
-      console.log('📺 Creating TradingView iframe with URL:', iframe.src);
-      
-      // Append iframe to container
-      if (containerRef.current) {
-        containerRef.current.appendChild(iframe);
-      }
-      
-      setIsLoading(false);
-      
-      // Setup symbol change monitoring for iframe
-      if (onSymbolChange) {
-        const checkIframeSymbol = () => {
-          try {
-            const currentSrc = iframe.src;
-            const symbolMatch = currentSrc.match(/symbol=([^&]+)/);
-            if (symbolMatch && symbolMatch[1]) {
-              const detectedSymbol = decodeURIComponent(symbolMatch[1]);
-              console.log('🔄 Detected symbol from iframe URL:', detectedSymbol);
-              onSymbolChange(detectedSymbol);
-            }
-          } catch (error) {
-            // Silent error handling
-          }
-        };
-        
-        const symbolCheckInterval = setInterval(checkIframeSymbol, 2000);
-        
-        return () => {
-          clearInterval(symbolCheckInterval);
-        };
-      }
+        theme: "dark",
+        style: "1",
+        locale: locale,
+        toolbar_bg: "#10121E",
+        enable_publishing: false,
+        allow_symbol_change: false,
+        container_id: container_id,
+        hide_volume: true,
+        hide_top_toolbar: false,
+        hide_legend: false,
+        disabled_features: [
+          "volume_force_overlay",
+          "create_volume_indicator_by_default",
+          "study_templates",
+          "header_indicators",
+          "header_compare",
+          "header_undo_redo",
+          "header_screenshot",
+          "header_chart_type",
+          "timeframes_toolbar",
+          "edit_buttons_in_legend",
+          "context_menus",
+          "control_bar",
+          "left_toolbar",
+          "header_saveload",
+          "header_settings",
+          "use_localstorage_for_settings"
+        ],
+        enabled_features: [
+          "hide_last_na_study_output",
+          "remove_library_container_border",
+          "disable_resolution_rebuild"
+        ]
+      };
+
+      // Set innerHTML to JSON string of config
+      script.innerHTML = JSON.stringify(config);
+      script.src = "/api/tradingview-script/embed-widget-advanced-chart.js";
+
+      script.onload = () => {
+        console.log('✅ TradingView script loaded');
+        setIsLoading(false);
+      };
+
+      script.onerror = () => {
+        console.error('❌ TradingView script failed to load');
+        setIsLoading(false);
+      };
+
+      containerRef.current.appendChild(script);
     }
 
     return () => {
-      try {
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
-      } catch (error) {
-        console.log('Error during cleanup:', error);
+      // Cleanup
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
       }
     };
-  }, [type, symbol, height, interval, theme, style, locale, timezone, allow_symbol_change, container_id, onSymbolChange]);
-
-  console.log('🎯 TradingViewWidget render - type:', type, 'onSymbolChange:', !!onSymbolChange, 'symbol:', symbol);
+  }, [type, symbol, interval, timezone, container_id]);
 
   return (
     <div
@@ -161,24 +155,7 @@ function TradingViewWidget({
         overflow: 'hidden',
         backgroundColor: '#10121E'
       }}
-    >
-      {isLoading && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#10121E',
-          zIndex: 1
-        }}>
-          <div style={{ color: '#fff', fontSize: '14px' }}>Loading chart...</div>
-        </div>
-      )}
-    </div>
+    />
   );
 }
 
