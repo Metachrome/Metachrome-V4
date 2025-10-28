@@ -225,7 +225,7 @@ function TradingViewWidget({
           "scalesProperties.backgroundColor": "#10121E"
         },
         // Force a chart layout without volume pane with explicit dark theme
-        saved_data: JSON.stringify({
+        saved_data: {
           "version": 1,
           "charts": [{
             "panes": [{
@@ -245,7 +245,7 @@ function TradingViewWidget({
           }],
           "studies": [],
           "theme": "dark"
-        })
+        }
       };
 
       script.innerHTML = JSON.stringify(config);
