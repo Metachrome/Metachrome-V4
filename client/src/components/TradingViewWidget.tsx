@@ -86,7 +86,8 @@ function TradingViewWidget({
         theme: "dark",
         style: "1",
         locale: locale,
-        toolbar_bg: "#10121E",
+        backgroundColor: "#000000",
+        toolbar_bg: "#000000",
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
@@ -115,7 +116,12 @@ function TradingViewWidget({
           "hide_last_na_study_output",
           "remove_library_container_border",
           "disable_resolution_rebuild"
-        ]
+        ],
+        overrides: {
+          "paneProperties.background": "#000000",
+          "paneProperties.backgroundType": "solid",
+          "scalesProperties.backgroundColor": "#000000"
+        }
       };
 
       // Set innerHTML to JSON string of config
