@@ -9448,7 +9448,7 @@ const COINMARKETCAP_BASE_URL = 'https://pro-api.coinmarketcap.com/v1';
 // Cache for CoinMarketCap data to avoid hitting rate limits
 let cmcDataCache = null;
 let cmcCacheTimestamp = 0;
-const CMC_CACHE_DURATION = 30000; // 30 seconds cache for more real-time data
+const CMC_CACHE_DURATION = 300000; // 5 minutes cache to avoid rate limiting (CoinMarketCap free tier: 333 requests/day)
 
 // Fetch data from CoinMarketCap API
 async function fetchCoinMarketCapData() {
@@ -9629,10 +9629,9 @@ app.get('/api/market-data', async (req, res) => {
     res.json(marketData);
   } catch (error) {
     console.error('❌ Market data error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch market data',
-      fallback: getFallbackMarketData()
-    });
+    // Return fallback data instead of error so charts still display
+    console.log('📊 Returning fallback market data due to API error');
+    res.json(getFallbackMarketData());
   }
 });
 
