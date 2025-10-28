@@ -254,16 +254,24 @@ function TradingViewWidget({
       // Use server proxy to load TradingView script (CDN is unreachable)
       script.src = "/api/tradingview-script/embed-widget-advanced-chart.js";
 
+      script.onerror = () => {
+        console.error('❌ TradingView script failed to load!');
+        setIsLoading(false);
+      };
+
       script.onload = () => {
         // Hide loading state immediately after script loads
         console.log('✅ TradingView script loaded successfully from proxy');
         console.log('📊 Checking if TradingView widget is rendering...');
+        console.log('🔍 Window keys:', Object.keys(window).filter(k => k.includes('Trading') || k.includes('trading')));
 
         // Check if TradingView object exists
         if ((window as any).TradingView) {
           console.log('✅ TradingView object found on window');
+          console.log('📋 TradingView methods:', Object.keys((window as any).TradingView));
         } else {
           console.warn('⚠️ TradingView object NOT found on window');
+          console.log('🔍 All window properties:', Object.keys(window).slice(0, 50));
         }
 
         setIsLoading(false);

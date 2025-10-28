@@ -9711,6 +9711,7 @@ app.get('/api/tradingview-widget/:widgetType', async (req, res) => {
       if (response.ok) {
         const widgetContent = await response.text();
         console.log(`✅ Successfully fetched ${widgetType} widget (${widgetContent.length} bytes)`);
+        console.log(`📄 Widget HTML preview (first 500 chars):\n${widgetContent.substring(0, 500)}`);
 
         // Set appropriate headers for HTML content
         // NO CACHE to prevent disk cache issues
@@ -9719,6 +9720,8 @@ app.get('/api/tradingview-widget/:widgetType', async (req, res) => {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
         res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         res.send(widgetContent);
         return;
       } else {
@@ -9734,6 +9737,14 @@ app.get('/api/tradingview-widget/:widgetType', async (req, res) => {
     console.error('❌ TradingView widget proxy error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Handle OPTIONS requests for CORS preflight
+app.options('/api/tradingview-widget/:widgetType', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(200);
 });
 
 // Get all market data - now using CoinMarketCap
