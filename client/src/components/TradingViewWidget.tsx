@@ -826,11 +826,11 @@ function TradingViewWidget({
         setIsLoading(false);
       };
 
-      // Ensure loading state is cleared after 5 seconds max
+      // Ensure loading state is cleared after 10 seconds max (TradingView can be slow)
       const loadingTimeout = setTimeout(() => {
         console.warn('⏱️ TradingView widget loading timeout - clearing loading state');
         setIsLoading(false);
-      }, 5000);
+      }, 10000);
 
       // Store timeout for cleanup
       (script as any).loadingTimeout = loadingTimeout;
