@@ -12734,11 +12734,8 @@ wss.on('connection', (ws, req) => {
 server.on('upgrade', (request, socket, head) => {
   if (request.url === '/ws') {
     // handleUpgrade will automatically emit 'connection' event
-    // Don't emit it manually to avoid "handleUpgrade() was called more than once" error
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      // Connection is already handled by wss.emit('connection', ws, request)
-      // inside handleUpgrade, so we don't need to do anything here
-    });
+    // Pass empty callback to avoid double handling
+    wss.handleUpgrade(request, socket, head, () => {});
   } else {
     socket.destroy();
   }
