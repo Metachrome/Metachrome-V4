@@ -3,7 +3,6 @@ import { Navigation } from "../components/ui/navigation";
 import { Footer } from "../components/ui/footer";
 import { MobileBottomNav } from "../components/ui/mobile-bottom-nav";
 import { MobileHeader } from "../components/ui/mobile-header";
-import TradingViewWidget from "../components/TradingViewWidget";
 import LightweightChart from "../components/LightweightChart";
 import CustomTradingChart from "../components/CustomTradingChart";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -1937,14 +1936,11 @@ function OptionsPageContent({
             </div>
             <div className="w-full h-full">
               <ErrorBoundary>
-                <TradingViewWidget
-                  type="chart"
-                  symbol={`BINANCE:${selectedSymbol}`}
+                <LightweightChart
+                  symbol={selectedSymbol}
+                  interval="1m"
                   height={380}
-                  interval="1"
-                  theme="dark"
-                  container_id="options_mobile_tradingview_chart"
-                  onSymbolChange={handleTradingViewSymbolChange}
+                  containerId="options_mobile_chart"
                 />
               </ErrorBoundary>
             </div>
@@ -2805,14 +2801,11 @@ function OptionsPageContent({
                 </div>
 
                 <ErrorBoundary>
-                  <TradingViewWidget
-                    type="chart"
-                    symbol={`BINANCE:${selectedSymbol}`}
+                  <LightweightChart
+                    symbol={selectedSymbol}
+                    interval="1m"
                     height={490}
-                    interval="1"
-                    theme="dark"
-                    container_id="options_tradingview_chart"
-                    onSymbolChange={handleTradingViewSymbolChange}
+                    containerId="options_desktop_chart"
                   />
                 </ErrorBoundary>
               </div>
