@@ -11,7 +11,7 @@ const http = require('http');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // VERSION TRACKING FOR DEPLOYMENT VERIFICATION
-const SERVER_VERSION = '2025-10-28-v2-PROFIT-FIX-DEPLOYED';
+const SERVER_VERSION = '2025-10-28-v3-AGGRESSIVE-PROFIT-FIX';
 console.log(`🚀 SERVER STARTING - VERSION: ${SERVER_VERSION}`);
 
 // In-memory user sessions cache
@@ -5833,7 +5833,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       // DON'T CHANGE BALANCE - it was already deducted when trade started
       // users[userIndex].balance remains as oldBalance (which already has the deduction)
       console.log(`❌ LOSE: Loss calculated as ${(profitRate * 100).toFixed(0)}% of ${amount} = ${Math.abs(profitAmount)} USDT (already deducted at trade start)`);
-    console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitAmount=${profitAmount}, duration=${duration}`);
+      console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitAmount=${profitAmount}, duration=${duration}`);
+      console.log(`🔍 CRITICAL: LOSS CALCULATION - amount=${amount}, profitRate=${profitRate}, result=${profitAmount}`);
     }
 
     console.log(`💰 Balance update: ${users[userIndex].username} ${oldBalance} → ${users[userIndex].balance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
@@ -5977,6 +5978,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         profitAmount: tradeCompletionMessage.data.profitAmount, // CRITICAL: Log profitAmount
         result: tradeCompletionMessage.data.result
       });
+      console.log(`🚨 FINAL PROFIT AMOUNT BEING SENT: ${tradeCompletionMessage.data.profitAmount} (should be ${finalWon ? amount * (profitPercentageForMessage/100) : -(amount * (profitPercentageForMessage/100))})`);
 
       let broadcastCount = 0;
       global.wss.clients.forEach(client => {
