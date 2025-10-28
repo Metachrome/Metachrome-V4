@@ -147,16 +147,15 @@ function TradingViewWidget({
         symbol: tradingViewSymbol,
         interval: interval,
         timezone: timezone,
-        theme: "dark",  // FORCE dark theme always
-        colorTheme: "dark",  // FORCE dark color theme always
-        backgroundColor: "#10121E",  // FORCE dark background always
+        theme: "dark",
+        colorTheme: "dark",
+        backgroundColor: "#10121E",
         style: "1",
         locale: locale,
-        toolbar_bg: "#10121E",  // FORCE dark toolbar always
+        toolbar_bg: "#10121E",
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
-        // AGGRESSIVE VOLUME REMOVAL
         studies: [],
         hide_volume: true,
         volume: false,
@@ -187,16 +186,16 @@ function TradingViewWidget({
           "remove_library_container_border",
           "disable_resolution_rebuild"
         ],
-        loading_screen: { backgroundColor: theme === "light" ? "#FFFFFF" : "#10121E" },
+        loading_screen: { backgroundColor: "#10121E" },
         overrides: {
           "volumePaneSize": "xtiny",
-          "paneProperties.background": "#10121E",  // FORCE dark background
+          "paneProperties.background": "#10121E",
           "paneProperties.backgroundType": "solid",
-          "paneProperties.vertGridProperties.color": "#1F2937",  // FORCE dark grid
-          "paneProperties.horzGridProperties.color": "#1F2937",  // FORCE dark grid
+          "paneProperties.vertGridProperties.color": "#1F2937",
+          "paneProperties.horzGridProperties.color": "#1F2937",
           "symbolWatermarkProperties.transparency": 90,
-          "scalesProperties.textColor": "#D1D5DB",  // FORCE light text
-          "scalesProperties.backgroundColor": "#10121E",  // FORCE dark background
+          "scalesProperties.textColor": "#D1D5DB",
+          "scalesProperties.backgroundColor": "#10121E",
           "mainSeriesProperties.candleStyle.upColor": "#10B981",
           "mainSeriesProperties.candleStyle.downColor": "#EF4444",
           "mainSeriesProperties.candleStyle.borderUpColor": "#10B981",
@@ -212,7 +211,6 @@ function TradingViewWidget({
           "volume.volume ma.transparency": 100,
           "volume.show ma": false
         },
-        // FORCE DARK THEME - override any user preferences
         settings_overrides: {
           "theme": "dark",
           "mainSeriesProperties.candleStyle.upColor": "#10B981",
@@ -223,28 +221,6 @@ function TradingViewWidget({
           "paneProperties.horzGridProperties.color": "#1F2937",
           "scalesProperties.textColor": "#D1D5DB",
           "scalesProperties.backgroundColor": "#10121E"
-        },
-        // Force a chart layout without volume pane with explicit dark theme
-        saved_data: {
-          "version": 1,
-          "charts": [{
-            "panes": [{
-              "sources": [{
-                "type": "MainSeries",
-                "id": "main_series",
-                "state": {
-                  "style": 1,
-                  "esdShowDividends": true,
-                  "esdShowSplits": true,
-                  "esdShowEarnings": true,
-                  "esdShowBreaks": false,
-                  "esdFlagSize": 2
-                }
-              }]
-            }]
-          }],
-          "studies": [],
-          "theme": "dark"
         }
       };
 
