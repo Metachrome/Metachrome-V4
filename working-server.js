@@ -9649,9 +9649,12 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
           }
         });
 
+        console.log(`📊 Response status: ${response.status}, ok: ${response.ok}`);
+
         if (response.ok) {
           const scriptContent = await response.text();
           console.log(`✅ Successfully fetched ${scriptName} from ${cdnUrl} (${scriptContent.length} bytes)`);
+          console.log(`📄 Script preview (first 200 chars): ${scriptContent.substring(0, 200)}`);
 
           // Set cache headers to cache for 7 days
           res.setHeader('Content-Type', 'application/javascript');
@@ -9665,11 +9668,13 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
       } catch (error) {
         lastError = error;
         console.warn(`⚠️ CDN ${cdnUrl} failed:`, error.message);
+        console.warn(`⚠️ Error type:`, error.constructor.name);
       }
     }
 
     // If all CDNs fail, return error
     console.error(`❌ All CDN endpoints failed for ${scriptName}:`, lastError?.message);
+    console.error(`❌ Last error type:`, lastError?.constructor.name);
     res.status(503).json({ error: 'TradingView CDN unavailable' });
 
   } catch (error) {
