@@ -45,7 +45,6 @@ function TradingViewWidget({
     if (type === 'ticker') {
       // Ticker tape widget for homepage
       const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
       script.type = "text/javascript";
       script.async = true;
       script.innerHTML = JSON.stringify({
@@ -82,7 +81,12 @@ function TradingViewWidget({
         "locale": "en"
       });
 
-      containerRef.current.appendChild(script);
+      // Set src AFTER innerHTML so TradingView can read the config
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+
+      // Append to document body instead of container
+      // TradingView script will find the container by ID
+      document.body.appendChild(script);
     } else {
       // Advanced chart widget for trading pages
       const script = document.createElement("script");
@@ -851,7 +855,10 @@ function TradingViewWidget({
       (script as any).loadingTimeout = loadingTimeout;
 
       try {
-        containerRef.current.appendChild(script);
+        // Append to document body instead of container
+        // TradingView script will find the container by ID
+        document.body.appendChild(script);
+        console.log('✅ TradingView script appended to document body');
       } catch (error) {
         console.error('Error appending TradingView script:', error);
       }
