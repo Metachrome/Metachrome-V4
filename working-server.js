@@ -5945,6 +5945,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       const profitPercentageDecimal2 = profitPercentageForMessage / 100;
       const finalProfitAmount2 = profitAmount !== undefined && profitAmount !== null ? profitAmount :
         (finalWon ? (amount * profitPercentageDecimal2) : -(amount * profitPercentageDecimal2));
+      console.log(`🔍 WEBSOCKET: profitAmount=${profitAmount}, finalProfitAmount2=${finalProfitAmount2}, finalWon=${finalWon}, amount=${amount}, profitPercentageForMessage=${profitPercentageForMessage}`);
 
       // CRITICAL FIX: Include ALL necessary fields for the notification
       const tradeCompletionMessage = {
@@ -5978,7 +5979,10 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         profitAmount: tradeCompletionMessage.data.profitAmount, // CRITICAL: Log profitAmount
         result: tradeCompletionMessage.data.result
       });
-      console.log(`🚨 FINAL PROFIT AMOUNT BEING SENT: ${tradeCompletionMessage.data.profitAmount} (should be ${finalWon ? amount * (profitPercentageForMessage/100) : -(amount * (profitPercentageForMessage/100))})`);
+      const sentProfitAmount = tradeCompletionMessage.data.profitAmount;
+      const expectedProfitAmount = finalWon ? amount * (profitPercentageForMessage/100) : -(amount * (profitPercentageForMessage/100));
+      console.log(`🚨 FINAL PROFIT AMOUNT BEING SENT: ${sentProfitAmount}`);
+      console.log(`🚨 EXPECTED PROFIT AMOUNT: ${expectedProfitAmount}`);
 
       let broadcastCount = 0;
       global.wss.clients.forEach(client => {
