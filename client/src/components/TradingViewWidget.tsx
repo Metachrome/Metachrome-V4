@@ -862,6 +862,15 @@ function TradingViewWidget({
       (script as any).loadingTimeout = loadingTimeout;
 
       try {
+        // First, verify the container exists
+        const container = document.getElementById(container_id);
+        console.log('🔍 Container check:', {
+          container_id,
+          containerExists: !!container,
+          containerHTML: container?.outerHTML.substring(0, 100),
+          containerParent: container?.parentElement?.className
+        });
+
         // Append to document body instead of container
         // TradingView script will find the container by ID
         document.body.appendChild(script);
@@ -869,15 +878,20 @@ function TradingViewWidget({
         console.log('📝 Script now in DOM, waiting for onload/onerror...');
 
         // Check multiple times to see when TradingView object appears
-        const checkIntervals = [1000, 2000, 3000, 5000, 7000, 10000];
+        const checkIntervals = [500, 1000, 2000, 3000, 5000, 7000, 10000];
         checkIntervals.forEach(delay => {
           setTimeout(() => {
             const tvExists = !!(window as any).TradingView;
+            const container = document.getElementById(container_id);
             const iframeExists = !!document.querySelector(`#${container_id} iframe`);
-            console.log(`⏱️ ${delay}ms check - TradingView: ${tvExists}, iframe: ${iframeExists}`);
+            const containerHTML = container?.innerHTML;
+            console.log(`⏱️ ${delay}ms check - TradingView: ${tvExists}, iframe: ${iframeExists}, containerHTML length: ${containerHTML?.length || 0}`);
             if (tvExists) {
               console.log('✅ TradingView object NOW exists!');
               console.log('📋 TradingView keys:', Object.keys((window as any).TradingView).slice(0, 10));
+            }
+            if (containerHTML && containerHTML.length > 0) {
+              console.log('📄 Container HTML:', containerHTML.substring(0, 200));
             }
           }, delay);
         });
