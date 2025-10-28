@@ -9624,6 +9624,7 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
     ];
 
     if (!allowedScripts.includes(scriptName)) {
+      console.warn(`⚠️ Invalid script requested: ${scriptName}`);
       return res.status(400).json({ error: 'Invalid script name' });
     }
 
@@ -9650,13 +9651,16 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
 
         if (response.ok) {
           const scriptContent = await response.text();
-          console.log(`✅ Successfully fetched ${scriptName} from ${cdnUrl}`);
+          console.log(`✅ Successfully fetched ${scriptName} from ${cdnUrl} (${scriptContent.length} bytes)`);
 
           // Set cache headers to cache for 7 days
           res.setHeader('Content-Type', 'application/javascript');
           res.setHeader('Cache-Control', 'public, max-age=604800');
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.send(scriptContent);
           return;
+        } else {
+          console.warn(`⚠️ CDN ${cdnUrl} returned status ${response.status}`);
         }
       } catch (error) {
         lastError = error;
@@ -9665,7 +9669,7 @@ app.get('/api/tradingview-script/:scriptName', async (req, res) => {
     }
 
     // If all CDNs fail, return error
-    console.error(`❌ All CDN endpoints failed for ${scriptName}:`, lastError);
+    console.error(`❌ All CDN endpoints failed for ${scriptName}:`, lastError?.message);
     res.status(503).json({ error: 'TradingView CDN unavailable' });
 
   } catch (error) {

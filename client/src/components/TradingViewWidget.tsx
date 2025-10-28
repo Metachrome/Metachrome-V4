@@ -256,7 +256,16 @@ function TradingViewWidget({
 
       script.onload = () => {
         // Hide loading state immediately after script loads
-        console.log('✅ TradingView script loaded successfully');
+        console.log('✅ TradingView script loaded successfully from proxy');
+        console.log('📊 Checking if TradingView widget is rendering...');
+
+        // Check if TradingView object exists
+        if ((window as any).TradingView) {
+          console.log('✅ TradingView object found on window');
+        } else {
+          console.warn('⚠️ TradingView object NOT found on window');
+        }
+
         setIsLoading(false);
 
         // Force dark theme on the iframe after loading - multiple attempts
