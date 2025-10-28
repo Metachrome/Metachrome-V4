@@ -9612,6 +9612,68 @@ function getFallbackMarketData() {
   ];
 }
 
+// Proxy endpoint for TradingView scripts (since CDN is unreachable)
+app.get('/api/tradingview-script/:scriptName', async (req, res) => {
+  try {
+    const { scriptName } = req.params;
+
+    // Whitelist allowed scripts to prevent abuse
+    const allowedScripts = [
+      'embed-widget-advanced-chart.js',
+      'embed-widget-ticker-tape.js'
+    ];
+
+    if (!allowedScripts.includes(scriptName)) {
+      return res.status(400).json({ error: 'Invalid script name' });
+    }
+
+    console.log(`📡 Proxying TradingView script: ${scriptName}`);
+
+    // Try multiple CDN endpoints
+    const cdnUrls = [
+      `https://s3.tradingview.com/external-embedding/${scriptName}`,
+      `https://charting-library.tradingview.com/${scriptName}`,
+      `https://www.tradingview.com/external-embedding/${scriptName}`
+    ];
+
+    let lastError = null;
+
+    for (const cdnUrl of cdnUrls) {
+      try {
+        console.log(`🔄 Trying CDN: ${cdnUrl}`);
+        const response = await fetch(cdnUrl, {
+          timeout: 5000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+
+        if (response.ok) {
+          const scriptContent = await response.text();
+          console.log(`✅ Successfully fetched ${scriptName} from ${cdnUrl}`);
+
+          // Set cache headers to cache for 7 days
+          res.setHeader('Content-Type', 'application/javascript');
+          res.setHeader('Cache-Control', 'public, max-age=604800');
+          res.send(scriptContent);
+          return;
+        }
+      } catch (error) {
+        lastError = error;
+        console.warn(`⚠️ CDN ${cdnUrl} failed:`, error.message);
+      }
+    }
+
+    // If all CDNs fail, return error
+    console.error(`❌ All CDN endpoints failed for ${scriptName}:`, lastError);
+    res.status(503).json({ error: 'TradingView CDN unavailable' });
+
+  } catch (error) {
+    console.error('❌ TradingView proxy error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all market data - now using CoinMarketCap
 app.get('/api/market-data', async (req, res) => {
   try {
