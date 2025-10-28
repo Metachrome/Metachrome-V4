@@ -5829,6 +5829,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       // DON'T CHANGE BALANCE - it was already deducted when trade started
       // users[userIndex].balance remains as oldBalance (which already has the deduction)
       console.log(`❌ LOSE: Loss calculated as ${(profitRate * 100).toFixed(0)}% of ${amount} = ${Math.abs(profitAmount)} USDT (already deducted at trade start)`);
+    console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitAmount=${profitAmount}, duration=${duration}`);
     }
 
     console.log(`💰 Balance update: ${users[userIndex].username} ${oldBalance} → ${users[userIndex].balance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
