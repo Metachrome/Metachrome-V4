@@ -3917,7 +3917,7 @@ function OptionsPageContent({
         </div>
 
         {/* Trade Content */}
-        <div className="px-4 py-2 max-h-[300px] overflow-y-auto">
+        <div className="py-2 max-h-[300px] overflow-y-auto">
           {activeTab === "open" && (
             <>
               {activeTrades.length === 0 ? (
@@ -3952,7 +3952,7 @@ function OptionsPageContent({
                   const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -(trade.amount * lossPercentage / 100);
 
                   return (
-                    <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
+                    <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden px-4">
                       <div className="flex flex-col min-w-0">
                         <span className="text-gray-400 text-xs truncate">{selectedSymbol.replace('USDT', '/USDT')}</span>
                         <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
@@ -4033,7 +4033,7 @@ function OptionsPageContent({
                       });
 
                       return (
-                        <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
+                        <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden px-4">
                           <div className="flex flex-col min-w-0">
                             <span className="text-gray-400 text-xs truncate">{marketPair}</span>
                             <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
