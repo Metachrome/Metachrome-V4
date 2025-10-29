@@ -3136,7 +3136,7 @@ function OptionsPageContent({
           </div>
 
           {/* Chart Area - Dynamic chart based on selected view */}
-          <div className="h-[500px] relative bg-[#10121E] p-1">
+          <div className="h-[500px] relative bg-[#000000] p-1">
             <TradeOverlay
               trades={activeTrades}
               currentPrice={priceData?.price || currentPrice}

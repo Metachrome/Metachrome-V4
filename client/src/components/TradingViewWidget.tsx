@@ -85,7 +85,7 @@ function TradingViewWidget({
         colorTheme: "dark",
         style: "1",
         locale: locale,
-        toolbar_bg: "#10121E",
+        toolbar_bg: "#000000",
         enable_publishing: false,
         allow_symbol_change: false,
         container_id: container_id,
@@ -116,15 +116,15 @@ function TradingViewWidget({
           "remove_library_container_border",
           "disable_resolution_rebuild"
         ],
-        loading_screen: { backgroundColor: "#10121E" },
+        loading_screen: { backgroundColor: "#000000" },
         overrides: {
-          "paneProperties.background": "#10121E",
+          "paneProperties.background": "#000000",
           "paneProperties.backgroundType": "solid",
-          "paneProperties.vertGridProperties.color": "#1F2937",
-          "paneProperties.horzGridProperties.color": "#1F2937",
+          "paneProperties.vertGridProperties.color": "#1a1a1a",
+          "paneProperties.horzGridProperties.color": "#1a1a1a",
           "symbolWatermarkProperties.transparency": 90,
-          "scalesProperties.textColor": "#D1D5DB",
-          "scalesProperties.backgroundColor": "#10121E",
+          "scalesProperties.textColor": "#666666",
+          "scalesProperties.backgroundColor": "#000000",
           "mainSeriesProperties.candleStyle.upColor": "#10B981",
           "mainSeriesProperties.candleStyle.downColor": "#EF4444",
           "mainSeriesProperties.candleStyle.borderUpColor": "#10B981",
@@ -164,13 +164,13 @@ function TradingViewWidget({
 
   return (
     <div
-      className={`tradingview-widget-container ${type === 'ticker' ? 'w-full overflow-hidden bg-transparent' : 'bg-[#10121E]'}`}
+      className={`tradingview-widget-container ${type === 'ticker' ? 'w-full overflow-hidden bg-transparent' : 'bg-[#000000]'}`}
       ref={containerRef}
       style={{
         height: type === 'ticker' ? '50px' : (typeof height === 'number' ? `${height}px` : height),
         width: "100%",
         position: "relative",
-        backgroundColor: type === 'ticker' ? 'transparent' : '#10121E'
+        backgroundColor: type === 'ticker' ? 'transparent' : '#000000'
       }}
     >
       {type === 'ticker' ? (
