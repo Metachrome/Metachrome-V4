@@ -2610,10 +2610,10 @@ function OptionsPageContent({
               payout: completedTrade.payout || (completedTrade.status === 'won' ?
                 completedTrade.amount + (completedTrade.amount * (completedTrade.profitPercentage || 10) / 100) :
                 0),
-              profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15),
+              profitPercentage: completedTrade.profitPercentage || 10,
               profit: completedTrade.profit, // CRITICAL: Pass profit field for accurate P&L display
-              symbol: selectedSymbol.replace('USDT', '/USDT'), // Convert BTCUSDT to BTC/USDT format
-              duration: parseInt(selectedDuration.replace('s', '')) // Convert "30s" to 30
+              symbol: completedTrade.symbol || 'BTC/USDT', // Use symbol from completed trade, not current selection
+              duration: completedTrade.duration || 30 // Use duration from completed trade, not current selection
             } : null}
             onClose={() => {
               console.log('🔔 NOTIFICATION: onClose called (mobile)');
@@ -3826,10 +3826,10 @@ function OptionsPageContent({
           payout: completedTrade.payout || (completedTrade.status === 'won' ?
             completedTrade.amount + (completedTrade.amount * (completedTrade.profitPercentage || 10) / 100) :
             0),
-          profitPercentage: completedTrade.profitPercentage || (selectedDuration === '30' ? 10 : 15),
+          profitPercentage: completedTrade.profitPercentage || 10,
           profit: completedTrade.profit, // CRITICAL: Pass profit field for accurate P&L display
-          symbol: selectedSymbol.replace('USDT', '/USDT'), // Convert BTCUSDT to BTC/USDT format
-          duration: parseInt(selectedDuration.replace('s', '')) // Convert "30s" to 30
+          symbol: completedTrade.symbol || 'BTC/USDT', // Use symbol from completed trade, not current selection
+          duration: completedTrade.duration || 30 // Use duration from completed trade, not current selection
         } : null}
         onClose={() => {
           console.log('🔔 NOTIFICATION: onClose called');

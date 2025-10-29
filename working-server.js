@@ -7521,10 +7521,12 @@ app.post('/api/trades/complete', async (req, res) => {
             const dur = tradeData?.duration || 30;
             if (dur === 30) return 10;
             else if (dur === 60) return 15;
-            else if (dur === 120) return 20;
+            else if (dur === 90) return 20;
+            else if (dur === 120) return 25;
             else if (dur === 180) return 30;
-            else if (dur === 240) return 75;
-            else if (dur === 300) return 100;
+            else if (dur === 240) return 50;
+            else if (dur === 300) return 75;
+            else if (dur === 600) return 100;
             return 10; // Default
           })(),
           timestamp: new Date().toISOString()
