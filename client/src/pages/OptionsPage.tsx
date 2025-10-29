@@ -1269,8 +1269,14 @@ function OptionsPageContent({
 
       if (!completedActiveTrade) {
         console.log('⚠️ WEBSOCKET: CRITICAL - Active trade not found! Using fallback code');
-        console.log('⚠️ WEBSOCKET: WebSocket tradeId:', tradeId);
-        console.log('⚠️ WEBSOCKET: Active trade IDs:', activeTrades.map(t => t.id));
+        console.log('⚠️ WEBSOCKET: WebSocket tradeId:', tradeId, 'Type:', typeof tradeId);
+        console.log('⚠️ WEBSOCKET: Active trade IDs:', activeTrades.map(t => ({ id: t.id, idType: typeof t.id })));
+
+        // Check if there's a partial match
+        const partialMatch = activeTrades.find(t => t.id.includes(tradeId) || tradeId.includes(t.id));
+        if (partialMatch) {
+          console.log('⚠️ WEBSOCKET: Found partial match:', partialMatch.id);
+        }
       }
 
       if (completedActiveTrade) {
