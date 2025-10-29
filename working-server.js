@@ -5824,20 +5824,21 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
     let profitAmount = 0;
     if (finalWon) {
-      // Win: Add only the profit (not the full amount)
-      // At trade start, only loss percentage was deducted, so we just add the profit
-      profitAmount = amount * profitRate; // Profit amount
-      balanceChange = profitAmount; // Add ONLY profit (not amount + profit)
+      // Win: Add back the full amount PLUS the profit
+      // At trade start, the full amount was deducted, so we add back amount + profit
+      const profitPercentageAmount = amount * profitRate; // Profit amount (e.g., 25% of 10,000 = 2,500)
+      profitAmount = profitPercentageAmount; // For notification display
+      balanceChange = amount + profitPercentageAmount; // Add back FULL amount + profit
       users[userIndex].balance = (oldBalance + balanceChange).toString();
-      console.log(`✅ WIN: Adding profit (${profitAmount}) USDT. Balance: ${oldBalance} + ${profitAmount} = ${users[userIndex].balance}`);
+      console.log(`✅ WIN: Adding back full amount (${amount}) + profit (${profitPercentageAmount}) = ${balanceChange} USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}`);
     } else {
-      // Lose: Already deducted at trade start (loss percentage)
-      // CRITICAL FIX: Loss should be percentage-based, not full amount
-      profitAmount = -(amount * profitRate); // Loss amount (negative) based on percentage
+      // Lose: Full amount already deducted at trade start
+      // CRITICAL FIX: Loss is the full amount that was deducted
+      profitAmount = -amount; // Loss amount (negative) - the full amount
       balanceChange = 0; // Balance already deducted at trade start
       // DON'T CHANGE BALANCE - it was already deducted when trade started
       // users[userIndex].balance remains as oldBalance (which already has the deduction)
-      console.log(`❌ LOSE: Loss calculated as ${(profitRate * 100).toFixed(0)}% of ${amount} = ${Math.abs(profitAmount)} USDT (already deducted at trade start)`);
+      console.log(`❌ LOSE: Full amount (${amount}) USDT lost (already deducted at trade start)`);
       console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitAmount=${profitAmount}, duration=${duration}`);
       console.log(`🔍 CRITICAL: LOSS CALCULATION - amount=${amount}, profitRate=${profitRate}, result=${profitAmount}`);
     }
@@ -6545,20 +6546,11 @@ app.post('/api/trades', async (req, res) => {
       });
     }
 
-    // CRITICAL FIX: Only deduct the loss percentage, not the full amount
-    // This way: WIN trades return full amount + profit, LOSE trades lose only the percentage
-    let lossPercentage = 0.10; // Default 10%
-    if (duration === 30) lossPercentage = 0.10;
-    else if (duration === 60) lossPercentage = 0.15;
-    else if (duration === 90) lossPercentage = 0.20;
-    else if (duration === 120) lossPercentage = 0.25;
-    else if (duration === 180) lossPercentage = 0.30;
-    else if (duration === 240) lossPercentage = 0.50;
-    else if (duration === 300) lossPercentage = 0.75;
-    else if (duration === 600) lossPercentage = 1.00;
-    const deductionAmount = tradeAmount * lossPercentage; // Only deduct the loss percentage
+    // CRITICAL FIX: Deduct the FULL trade amount at trade start
+    // This way: WIN trades return full amount + profit, LOSE trades lose the full amount
+    const deductionAmount = tradeAmount; // Deduct the FULL trade amount
 
-    console.log(`🔥 DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (${(lossPercentage * 100).toFixed(0)}% of ${tradeAmount}) = ${userBalance - deductionAmount}`);
+    console.log(`🔥 DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (FULL trade amount) = ${userBalance - deductionAmount}`);
     user.balance = (userBalance - deductionAmount).toString();
     console.log('💰 NEW BALANCE SET TO:', user.balance);
 
@@ -7239,8 +7231,8 @@ app.post('/api/trades/complete', async (req, res) => {
     let profitAmount = 0;
 
     if (finalOutcome) {
-      // Win: Add only the profit (not the full amount)
-      // At trade start, only loss percentage was deducted, so we just add the profit
+      // Win: Add back the full amount PLUS the profit
+      // At trade start, the full amount was deducted, so we add back amount + profit
       const duration = existingTrade?.duration || 30; // Default to 30s
 
       // CRITICAL FIX: Calculate profitRate based on duration (same logic as profitPercentage)
@@ -7254,28 +7246,16 @@ app.post('/api/trades/complete', async (req, res) => {
       else if (duration === 300) profitRate = 0.75;
       else if (duration === 600) profitRate = 1.00;
 
-      profitAmount = tradeAmount * profitRate; // Profit amount
-      balanceChange = profitAmount; // Add ONLY profit (not amount + profit)
-      console.log(`✅ WIN: Adding profit (${profitAmount}) USDT. Balance: ${oldBalance} + ${profitAmount} = ${oldBalance + balanceChange}`);
+      const profitPercentageAmount = tradeAmount * profitRate; // Profit amount (e.g., 25% of 10,000 = 2,500)
+      profitAmount = profitPercentageAmount; // For notification display
+      balanceChange = tradeAmount + profitPercentageAmount; // Add back FULL amount + profit
+      console.log(`✅ WIN: Adding back full amount (${tradeAmount}) + profit (${profitPercentageAmount}) = ${balanceChange} USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}`);
     } else {
-      // Lose: Already deducted at trade start (loss percentage)
-      // CRITICAL FIX: Loss should be percentage-based, not full amount
-      const duration = existingTrade?.duration || 30; // Default to 30s
-
-      // CRITICAL FIX: Calculate profitRate based on duration (same logic as profitPercentage)
-      let profitRate = 0.10; // Default 10%
-      if (duration === 30) profitRate = 0.10;
-      else if (duration === 60) profitRate = 0.15;
-      else if (duration === 90) profitRate = 0.20;
-      else if (duration === 120) profitRate = 0.25;
-      else if (duration === 180) profitRate = 0.30;
-      else if (duration === 240) profitRate = 0.50;
-      else if (duration === 300) profitRate = 0.75;
-      else if (duration === 600) profitRate = 1.00;
-
-      profitAmount = -(tradeAmount * profitRate); // Loss amount (negative) based on percentage
+      // Lose: Full amount already deducted at trade start
+      // CRITICAL FIX: Loss is the full amount that was deducted
+      profitAmount = -tradeAmount; // Loss amount (negative) - the full amount
       balanceChange = 0; // CRITICAL FIX: Balance was already deducted at trade start, don't deduct again!
-      console.log(`❌ LOSE: Loss calculated as ${(profitRate * 100).toFixed(0)}% of ${tradeAmount} = ${Math.abs(profitAmount)} USDT (already deducted at trade start)`);
+      console.log(`❌ LOSE: Full amount (${tradeAmount}) USDT lost (already deducted at trade start)`);
     }
 
     // Update user balance and trade count
