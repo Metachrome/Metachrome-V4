@@ -6919,6 +6919,11 @@ app.post('/api/trades/options', async (req, res) => {
     // ROBUST COMPLETION: Use both setTimeout AND direct completion call
     const actualTradeId = trade.id || tradeId;
 
+    // CRITICAL: Ensure all parameters are correct types before passing to completeTradeDirectly
+    const finalDuration = parseInt(duration);
+    const finalAmount = parseFloat(amount);
+    const finalEntryPrice = parseFloat(entryPrice);
+
     setTimeout(async () => {
       console.log(`🚨 SETTIMEOUT TRIGGERED! Starting auto-completion for trade ${actualTradeId}...`);
 
@@ -6965,12 +6970,15 @@ app.post('/api/trades/options', async (req, res) => {
 
         console.log(`🎯 CALLING COMPLETION ENDPOINT for trade ${actualTradeId}`);
         console.log(`🎯 User ID: ${finalUserId}, Outcome: ${isWin ? 'WIN' : 'LOSE'}, Amount: ${actualAmount}, Payout: ${payout}`);
-        console.log(`🎯 TRADE DETAILS: Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}, EntryPrice: ${entryPrice}`);
+        console.log(`🎯 TRADE DETAILS: Direction: ${direction}, Symbol: ${symbol}, Duration: ${finalDuration}, EntryPrice: ${finalEntryPrice}`);
         console.log(`🎯 TRADE OBJECT AT COMPLETION: ${JSON.stringify(trade, null, 2)}`);
         console.log(`🎯 ACTUAL AMOUNT BEING PASSED: ${actualAmount} (type: ${typeof actualAmount})`);
+        console.log(`🎯 FINAL DURATION BEING PASSED: ${finalDuration} (type: ${typeof finalDuration})`);
+        console.log(`🎯 FINAL ENTRY PRICE BEING PASSED: ${finalEntryPrice} (type: ${typeof finalEntryPrice})`);
 
         // DIRECT COMPLETION CALL - More reliable than fetch
-        await completeTradeDirectly(actualTradeId, finalUserId, isWin, actualAmount, payout, direction, symbol, duration, entryPrice);
+        // CRITICAL: Use finalAmount, finalDuration, finalEntryPrice to ensure correct types
+        await completeTradeDirectly(actualTradeId, finalUserId, isWin, finalAmount, payout, direction, symbol, finalDuration, finalEntryPrice);
 
       } catch (error) {
         console.error(`❌ SETTIMEOUT COMPLETION FAILED for trade ${actualTradeId}:`, error);
