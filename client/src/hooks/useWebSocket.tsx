@@ -31,6 +31,9 @@ export function useWebSocket() {
       const isVercel = window.location.hostname.includes('vercel.app');
       const isRailway = window.location.hostname.includes('railway.app');
 
+      // Check if we're on metachrome.io (should use same behavior as Railway)
+      const isMetachromeIO = window.location.hostname.includes('metachrome.io');
+
       // Use correct WebSocket URL
       let wsUrl;
 
@@ -45,14 +48,14 @@ export function useWebSocket() {
         console.log('🔌 CUSTOM BACKEND: Using provided backend URL:', wsUrl);
       } else if (isLocal) {
         wsUrl = 'ws://127.0.0.1:3005/ws';
-      } else if (isVercel || isRailway) {
-        // Both Vercel and Railway have issues with WebSocket through reverse proxies
+      } else if (isVercel || isRailway || isMetachromeIO) {
+        // Vercel, Railway, and metachrome.io have issues with WebSocket through reverse proxies
         // Use polling instead
         console.log('🔌 Cloud deployment detected - WebSocket not available, using polling');
         setUsePollingFallback(true);
         return;
       } else {
-        // For any other deployment (including custom domains like www.metachrome.io)
+        // For any other deployment
         wsUrl = `${protocol}//${window.location.host}/ws`;
         console.log('🔌 CUSTOM DOMAIN DEPLOYMENT: Attempting WebSocket at:', wsUrl);
       }

@@ -13,16 +13,20 @@ const getApiBaseUrl = () => {
   // Check if we're on Railway (railway.app domain)
   const isRailway = window.location.hostname.includes('railway.app');
 
+  // Check if we're on metachrome.io (should use Railway backend)
+  const isMetachromeIO = window.location.hostname.includes('metachrome.io');
+
   console.log('🔧 API Base URL Detection:', {
     hostname: window.location.hostname,
     isLocal,
     isVercel,
     isRailway,
+    isMetachromeIO,
     isProd: import.meta.env.PROD
   });
 
   // Production deployment on Vercel or Railway - use relative URLs
-  if ((isVercel || isRailway) || (import.meta.env.PROD && !isLocal)) {
+  if ((isVercel || isRailway || isMetachromeIO) || (import.meta.env.PROD && !isLocal)) {
     console.log('🌐 Using production API endpoints (relative URLs)');
     return '';
   }
