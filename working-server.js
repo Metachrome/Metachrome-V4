@@ -5979,6 +5979,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       console.log('📡 Broadcasting trade completion via WebSocket:', tradeCompletionMessage);
       console.log('📡 CRITICAL FIELDS IN MESSAGE:', {
         amount: tradeCompletionMessage.data.amount,
+        amountType: typeof tradeCompletionMessage.data.amount,
         symbol: tradeCompletionMessage.data.symbol,
         direction: tradeCompletionMessage.data.direction,
         entryPrice: tradeCompletionMessage.data.entryPrice,
@@ -5986,6 +5987,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         profitAmount: tradeCompletionMessage.data.profitAmount, // CRITICAL: Log profitAmount
         result: tradeCompletionMessage.data.result
       });
+      console.log(`🚨 AMOUNT PARAMETER RECEIVED IN completeTradeDirectly: ${amount} (type: ${typeof amount})`);
       const sentProfitAmount = tradeCompletionMessage.data.profitAmount;
       const expectedProfitAmount = finalWon ? amount * (profitPercentageForMessage/100) : -(amount * (profitPercentageForMessage/100));
       console.log(`🚨 FINAL PROFIT AMOUNT BEING SENT: ${sentProfitAmount}`);
@@ -6964,6 +6966,8 @@ app.post('/api/trades/options', async (req, res) => {
         console.log(`🎯 CALLING COMPLETION ENDPOINT for trade ${actualTradeId}`);
         console.log(`🎯 User ID: ${finalUserId}, Outcome: ${isWin ? 'WIN' : 'LOSE'}, Amount: ${actualAmount}, Payout: ${payout}`);
         console.log(`🎯 TRADE DETAILS: Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}, EntryPrice: ${entryPrice}`);
+        console.log(`🎯 TRADE OBJECT AT COMPLETION: ${JSON.stringify(trade, null, 2)}`);
+        console.log(`🎯 ACTUAL AMOUNT BEING PASSED: ${actualAmount} (type: ${typeof actualAmount})`);
 
         // DIRECT COMPLETION CALL - More reliable than fetch
         await completeTradeDirectly(actualTradeId, finalUserId, isWin, actualAmount, payout, direction, symbol, duration, entryPrice);
