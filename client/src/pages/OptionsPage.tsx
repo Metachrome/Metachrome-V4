@@ -1241,6 +1241,7 @@ function OptionsPageContent({
       // Mark message as processed FIRST to prevent duplicate processing
       processedMessagesRef.current.add(messageId);
 
+      console.log('🎯 WEBSOCKET: ⚠️ CRITICAL - Trade completion notification received!');
       console.log('🎯 WEBSOCKET: Trade completion notification received:', lastMessage.data);
       console.log('🎯 WEBSOCKET: Amount from message:', lastMessage.data?.amount, 'Type:', typeof lastMessage.data?.amount);
 
@@ -1359,8 +1360,9 @@ function OptionsPageContent({
         triggerNotification(completedTrade);
       } else {
         // FALLBACK: Use data from WebSocket message if available, otherwise use defaults
-        console.log('⚠️ WEBSOCKET: Active trade not found, using WebSocket data for notification');
+        console.log('⚠️ WEBSOCKET: ⚠️ CRITICAL - FALLBACK CODE TRIGGERED! Active trade not found, using WebSocket data for notification');
         console.log('⚠️ WEBSOCKET: Fallback amount from message:', amount, 'profitAmount:', profitAmount);
+        console.log('⚠️ WEBSOCKET: FALLBACK - This is where the wrong data might be coming from!');
 
         const won = result === 'win';
         // Get correct profit percentage based on duration
