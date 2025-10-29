@@ -4320,13 +4320,35 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     console.log('💸 Action:', action);
     console.log('💸 Reason:', reason);
 
-    // Find withdrawal in pending list
-    const withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
-    if (withdrawalIndex === -1) {
-      return res.status(404).json({ error: 'Withdrawal request not found' });
+    // Find withdrawal in pending list first
+    let withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
+    let withdrawal = null;
+
+    if (withdrawalIndex !== -1) {
+      withdrawal = pendingWithdrawals[withdrawalIndex];
+      console.log('✅ Found withdrawal in memory:', withdrawal);
+    } else if (supabase) {
+      // If not in memory, try to fetch from Supabase database
+      console.log('🔍 Withdrawal not in memory, checking Supabase database...');
+      const { data: dbWithdrawals, error } = await supabase
+        .from('withdrawals')
+        .select('*')
+        .eq('id', withdrawalId);
+
+      if (!error && dbWithdrawals && dbWithdrawals.length > 0) {
+        withdrawal = dbWithdrawals[0];
+        console.log('✅ Found withdrawal in database:', withdrawal);
+        // Add to memory for processing
+        pendingWithdrawals.push(withdrawal);
+        withdrawalIndex = pendingWithdrawals.length - 1;
+      } else {
+        console.log('❌ Withdrawal not found in database:', error);
+      }
     }
 
-    const withdrawal = pendingWithdrawals[withdrawalIndex];
+    if (!withdrawal) {
+      return res.status(404).json({ error: 'Withdrawal request not found' });
+    }
 
     if (withdrawal.status !== 'pending') {
       return res.status(400).json({ error: 'Withdrawal already processed' });
@@ -5279,12 +5301,34 @@ app.post('/api/admin/withdrawals/:withdrawalId', async (req, res) => {
     console.log(`💸 Admin ${action} withdrawal:`, withdrawalId);
 
     // Find withdrawal request using the same storage as other endpoints
-    const withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
-    if (withdrawalIndex === -1) {
-      return res.status(404).json({ error: 'Withdrawal request not found' });
+    let withdrawalIndex = pendingWithdrawals.findIndex(w => w.id === withdrawalId);
+    let withdrawal = null;
+
+    if (withdrawalIndex !== -1) {
+      withdrawal = pendingWithdrawals[withdrawalIndex];
+      console.log('✅ Found withdrawal in memory:', withdrawal);
+    } else if (supabase) {
+      // If not in memory, try to fetch from Supabase database
+      console.log('🔍 Withdrawal not in memory, checking Supabase database...');
+      const { data: dbWithdrawals, error } = await supabase
+        .from('withdrawals')
+        .select('*')
+        .eq('id', withdrawalId);
+
+      if (!error && dbWithdrawals && dbWithdrawals.length > 0) {
+        withdrawal = dbWithdrawals[0];
+        console.log('✅ Found withdrawal in database:', withdrawal);
+        // Add to memory for processing
+        pendingWithdrawals.push(withdrawal);
+        withdrawalIndex = pendingWithdrawals.length - 1;
+      } else {
+        console.log('❌ Withdrawal not found in database:', error);
+      }
     }
 
-    const withdrawal = pendingWithdrawals[withdrawalIndex];
+    if (!withdrawal) {
+      return res.status(404).json({ error: 'Withdrawal request not found' });
+    }
 
     if (withdrawal.status !== 'pending') {
       return res.status(400).json({ error: 'Withdrawal already processed' });
