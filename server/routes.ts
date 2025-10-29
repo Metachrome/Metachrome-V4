@@ -982,12 +982,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updates = req.body;
-      
+
       const trade = await storage.updateTrade(id, updates);
       res.json(trade);
     } catch (error) {
       console.error("Error updating trade:", error);
       res.status(500).json({ message: "Failed to update trade" });
+    }
+  });
+
+  // Get a single trade by ID (for real-time notification data)
+  app.get("/api/trades/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const trade = await storage.getTrade(id);
+
+      if (!trade) {
+        return res.status(404).json({ message: "Trade not found" });
+      }
+
+      res.json(trade);
+    } catch (error) {
+      console.error("Error fetching trade:", error);
+      res.status(500).json({ message: "Failed to fetch trade" });
     }
   });
 

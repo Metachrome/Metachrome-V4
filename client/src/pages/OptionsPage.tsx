@@ -1372,7 +1372,8 @@ function OptionsPageContent({
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-            const response = await fetch(`/api/users/${user?.id}/trades`, {
+            // Fetch the SPECIFIC trade by ID (not all trades)
+            const response = await fetch(`/api/trades/${tradeId}`, {
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
               },
@@ -1380,38 +1381,46 @@ function OptionsPageContent({
             });
             clearTimeout(timeoutId);
 
-            const serverTrades = await response.json();
-            console.log('🔔 WEBSOCKET: Fetched', serverTrades.length, 'trades from database');
-            const serverTrade = serverTrades.find((st: any) => st.id === tradeId);
-
-            if (serverTrade) {
-              console.log('🔔 WEBSOCKET: Found trade in database:', serverTrade);
-              // Use database data as the source of truth
-              const dbAmount = parseFloat(serverTrade.amount);
-              const dbDuration = serverTrade.duration || 30;
-              const dbResult = serverTrade.result;
-
-              console.log('🔔 WEBSOCKET: Database trade data:', {
-                amount: dbAmount,
-                duration: dbDuration,
-                result: dbResult
-              });
-
-              // Update completedTrade with database values
-              completedTrade.amount = dbAmount;
-              completedTrade.duration = dbDuration;
-              completedTrade.status = (dbResult === 'win' || dbResult === 'won') ? 'won' : 'lost';
-
-              console.log('🔔 WEBSOCKET: Updated completedTrade with database values:', {
-                amount: completedTrade.amount,
-                duration: completedTrade.duration,
-                status: completedTrade.status
-              });
-            } else {
-              console.log('⚠️ WEBSOCKET: Trade NOT found in database! Using WebSocket data');
-              console.log('⚠️ WEBSOCKET: Looking for tradeId:', tradeId);
-              console.log('⚠️ WEBSOCKET: Available trade IDs:', serverTrades.map((st: any) => st.id));
+            if (!response.ok) {
+              throw new Error(`Failed to fetch trade: ${response.status}`);
             }
+
+            const serverTrade = await response.json();
+            console.log('🔔 WEBSOCKET: Found trade in database:', serverTrade);
+
+            // Use database data as the source of truth
+            const dbAmount = parseFloat(serverTrade.amount);
+            const dbDuration = serverTrade.duration || 30;
+            const dbResult = serverTrade.result;
+            const dbProfit = parseFloat(serverTrade.profit || serverTrade.profitAmount || profitAmount || 0);
+            const dbEntryPrice = parseFloat(serverTrade.entry_price || serverTrade.entryPrice || entryPrice || 0);
+            const dbExitPrice = parseFloat(serverTrade.exit_price || serverTrade.exitPrice || exitPrice || 0);
+
+            console.log('🔔 WEBSOCKET: Database trade data:', {
+              amount: dbAmount,
+              duration: dbDuration,
+              result: dbResult,
+              profit: dbProfit,
+              entryPrice: dbEntryPrice,
+              exitPrice: dbExitPrice
+            });
+
+            // Update completedTrade with database values
+            completedTrade.amount = dbAmount;
+            completedTrade.duration = dbDuration;
+            completedTrade.status = (dbResult === 'win' || dbResult === 'won') ? 'won' : 'lost';
+            completedTrade.profit = dbProfit;
+            completedTrade.entryPrice = dbEntryPrice;
+            completedTrade.currentPrice = dbExitPrice;
+
+            console.log('🔔 WEBSOCKET: Updated completedTrade with database values:', {
+              amount: completedTrade.amount,
+              duration: completedTrade.duration,
+              status: completedTrade.status,
+              profit: completedTrade.profit,
+              entryPrice: completedTrade.entryPrice,
+              currentPrice: completedTrade.currentPrice
+            });
 
             // ROBUST NOTIFICATION TRIGGER
             console.log('🔔 WEBSOCKET: About to trigger notification');
