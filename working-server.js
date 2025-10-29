@@ -6896,20 +6896,11 @@ app.post('/api/trades/options', async (req, res) => {
       });
     }
 
-    // CRITICAL FIX: Only deduct the loss percentage, not the full amount
-    // This way: WIN trades return full amount + profit, LOSE trades lose only the percentage
-    let lossPercentage = 0.10; // Default 10%
-    if (duration === 30) lossPercentage = 0.10;
-    else if (duration === 60) lossPercentage = 0.15;
-    else if (duration === 90) lossPercentage = 0.20;
-    else if (duration === 120) lossPercentage = 0.25;
-    else if (duration === 180) lossPercentage = 0.30;
-    else if (duration === 240) lossPercentage = 0.50;
-    else if (duration === 300) lossPercentage = 0.75;
-    else if (duration === 600) lossPercentage = 1.00;
-    const deductionAmount = tradeAmount * lossPercentage; // Only deduct the loss percentage
+    // CRITICAL FIX: Deduct the FULL trade amount at trade start
+    // This way: WIN trades return full amount + profit, LOSE trades lose the full amount
+    const deductionAmount = tradeAmount; // Deduct the FULL trade amount
 
-    console.log(`🔥 OPTIONS: DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (${(lossPercentage * 100).toFixed(0)}% of ${tradeAmount}) = ${userBalance - deductionAmount}`);
+    console.log(`🔥 OPTIONS: DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (FULL trade amount) = ${userBalance - deductionAmount}`);
     user.balance = (userBalance - deductionAmount).toString();
     console.log('💰 OPTIONS: NEW BALANCE SET TO:', user.balance);
 
