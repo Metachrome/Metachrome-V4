@@ -1353,12 +1353,20 @@ function OptionsPageContent({
         console.log('🔔 WEBSOCKET: Fetching trade data from database to verify notification data...');
         (async () => {
           try {
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
             const response = await fetch(`/api/users/${user?.id}/trades`, {
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-              }
+              },
+              signal: controller.signal
             });
+            clearTimeout(timeoutId);
+
             const serverTrades = await response.json();
+            console.log('🔔 WEBSOCKET: Fetched', serverTrades.length, 'trades from database');
             const serverTrade = serverTrades.find((st: any) => st.id === tradeId);
 
             if (serverTrade) {
@@ -1384,6 +1392,10 @@ function OptionsPageContent({
                 duration: completedTrade.duration,
                 status: completedTrade.status
               });
+            } else {
+              console.log('⚠️ WEBSOCKET: Trade NOT found in database! Using WebSocket data');
+              console.log('⚠️ WEBSOCKET: Looking for tradeId:', tradeId);
+              console.log('⚠️ WEBSOCKET: Available trade IDs:', serverTrades.map((st: any) => st.id));
             }
 
             // ROBUST NOTIFICATION TRIGGER
@@ -1399,6 +1411,11 @@ function OptionsPageContent({
           } catch (err) {
             console.error('🔔 WEBSOCKET: Error fetching trade data, using WebSocket data:', err);
             // Fallback to WebSocket data if database fetch fails
+            console.log('🔔 WEBSOCKET: Falling back to WebSocket data:', {
+              amount: completedTrade.amount,
+              duration: completedTrade.duration,
+              status: completedTrade.status
+            });
             triggerNotification(completedTrade);
           }
         })();
@@ -1451,12 +1468,20 @@ function OptionsPageContent({
         console.log('🔔 WEBSOCKET FALLBACK: Fetching trade data from database to verify notification data...');
         (async () => {
           try {
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
             const response = await fetch(`/api/users/${user?.id}/trades`, {
               headers: {
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-              }
+              },
+              signal: controller.signal
             });
+            clearTimeout(timeoutId);
+
             const serverTrades = await response.json();
+            console.log('🔔 WEBSOCKET FALLBACK: Fetched', serverTrades.length, 'trades from database');
             const serverTrade = serverTrades.find((st: any) => st.id === tradeId);
 
             if (serverTrade) {
@@ -1471,6 +1496,10 @@ function OptionsPageContent({
                 duration: fallbackTrade.duration,
                 status: fallbackTrade.status
               });
+            } else {
+              console.log('⚠️ WEBSOCKET FALLBACK: Trade NOT found in database! Using WebSocket data');
+              console.log('⚠️ WEBSOCKET FALLBACK: Looking for tradeId:', tradeId);
+              console.log('⚠️ WEBSOCKET FALLBACK: Available trade IDs:', serverTrades.map((st: any) => st.id));
             }
 
             console.log('🔔 WEBSOCKET: Triggering fallback notification with database data:', fallbackTrade);
@@ -1484,6 +1513,11 @@ function OptionsPageContent({
           } catch (err) {
             console.error('🔔 WEBSOCKET FALLBACK: Error fetching trade data, using WebSocket data:', err);
             // Fallback to WebSocket data if database fetch fails
+            console.log('🔔 WEBSOCKET FALLBACK: Falling back to WebSocket data:', {
+              amount: fallbackTrade.amount,
+              duration: fallbackTrade.duration,
+              status: fallbackTrade.status
+            });
             triggerNotification(fallbackTrade);
           }
         })();
