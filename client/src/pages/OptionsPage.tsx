@@ -1219,36 +1219,125 @@ function OptionsPageContent({
         return;
       }
 
-      // Create trade object from notification data
-      const notificationTrade: ActiveTrade = {
-        id: tradeId,
-        symbol: symbol || 'BTC/USDT',
-        direction: (direction as 'up' | 'down') || 'up',
-        amount: amount, // CRITICAL: Use actual amount, not default 100
-        entryPrice: entryPrice || 50000,
-        currentPrice: currentPrice || entryPrice || 50000,
-        status: (status as 'won' | 'lost') || 'won',
-        duration: duration || 30,
-        profitPercentage: profitPercentage || (() => {
-          const dur = duration || 30;
-          if (dur === 30) return 10;
-          else if (dur === 60) return 15;
-          else if (dur === 90) return 20;
-          else if (dur === 120) return 25;
-          else if (dur === 180) return 30;
-          else if (dur === 240) return 50;
-          else if (dur === 300) return 75;
-          else if (dur === 600) return 100;
-          return 10;
-        })(),
-        payout: payout || 0,
-        profit: profitAmount, // CRITICAL: Use profitAmount from WebSocket
-        startTime: Date.now() - ((duration || 30) * 1000),
-        endTime: Date.now()
-      };
+      // CRITICAL FIX: Fetch database data FIRST before triggering notification
+      // This ensures we always show real database data, not WebSocket defaults
+      console.log('🔔 WEBSOCKET: Fetching trade data from database for trigger_mobile_notification...');
+      (async () => {
+        try {
+          // Add timeout to prevent hanging
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      console.log('🔔 WEBSOCKET: Triggering notification from trigger_mobile_notification:', notificationTrade);
-      triggerNotification(notificationTrade);
+          // Fetch the SPECIFIC trade by ID
+          const response = await fetch(`/api/trades/${tradeId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch trade: ${response.status}`);
+          }
+
+          const serverTrade = await response.json();
+          console.log('🔔 WEBSOCKET: ✅ Found trade in database for trigger_mobile_notification:', serverTrade);
+
+          // Use database data as the ONLY source of truth
+          const dbAmount = parseFloat(serverTrade.amount);
+          const dbDuration = serverTrade.duration || 30;
+          const dbResult = serverTrade.result;
+          const dbProfit = parseFloat(serverTrade.profit || serverTrade.profitAmount || 0);
+          const dbEntryPrice = parseFloat(serverTrade.entry_price || serverTrade.entryPrice || 0);
+          const dbExitPrice = parseFloat(serverTrade.exit_price || serverTrade.exitPrice || 0);
+
+          console.log('🔔 WEBSOCKET: Database trade data extracted for trigger_mobile_notification:', {
+            amount: dbAmount,
+            duration: dbDuration,
+            result: dbResult,
+            profit: dbProfit,
+            entryPrice: dbEntryPrice,
+            exitPrice: dbExitPrice
+          });
+
+          // Calculate profit percentage based on duration
+          const getProfitPercentageByDuration = (dur: number) => {
+            if (dur === 30) return 10;
+            else if (dur === 60) return 15;
+            else if (dur === 90) return 20;
+            else if (dur === 120) return 25;
+            else if (dur === 180) return 30;
+            else if (dur === 240) return 50;
+            else if (dur === 300) return 75;
+            else if (dur === 600) return 100;
+            return 10; // Default
+          };
+          const dbProfitPercentage = getProfitPercentageByDuration(dbDuration);
+
+          // Create notificationTrade with ONLY database values
+          const notificationTrade: ActiveTrade = {
+            id: tradeId,
+            symbol: symbol || 'BTC/USDT',
+            direction: (direction as 'up' | 'down') || 'up',
+            amount: dbAmount,  // Use database amount
+            entryPrice: dbEntryPrice,  // Use database entry price
+            currentPrice: dbExitPrice,  // Use database exit price
+            status: (dbResult === 'win' || dbResult === 'won') ? 'won' : 'lost',
+            duration: dbDuration,  // Use database duration
+            profitPercentage: dbProfitPercentage,
+            payout: (dbResult === 'win' || dbResult === 'won') ? dbAmount * (1 + dbProfitPercentage / 100) : 0,
+            profit: dbProfit,  // Use database profit
+            startTime: Date.now() - (dbDuration * 1000),
+            endTime: Date.now()
+          };
+
+          console.log('🔔 WEBSOCKET: ✅ Created notificationTrade with DATABASE values:', {
+            amount: notificationTrade.amount,
+            duration: notificationTrade.duration,
+            status: notificationTrade.status,
+            profit: notificationTrade.profit,
+            profitPercentage: notificationTrade.profitPercentage
+          });
+
+          // NOW trigger notification with real database data
+          console.log('🔔 WEBSOCKET: ✅ Triggering notification from trigger_mobile_notification with database data');
+          triggerNotification(notificationTrade);
+        } catch (err) {
+          console.error('🔔 WEBSOCKET: ❌ Error fetching trade data for trigger_mobile_notification:', err);
+          // Fallback: Create notification with WebSocket data if database fetch fails
+          console.log('🔔 WEBSOCKET: ⚠️ Falling back to WebSocket data for trigger_mobile_notification');
+
+          const notificationTrade: ActiveTrade = {
+            id: tradeId,
+            symbol: symbol || 'BTC/USDT',
+            direction: (direction as 'up' | 'down') || 'up',
+            amount: amount, // Use WebSocket amount as fallback
+            entryPrice: entryPrice || 50000,
+            currentPrice: currentPrice || entryPrice || 50000,
+            status: (status as 'won' | 'lost') || 'won',
+            duration: duration || 30,
+            profitPercentage: profitPercentage || (() => {
+              const dur = duration || 30;
+              if (dur === 30) return 10;
+              else if (dur === 60) return 15;
+              else if (dur === 90) return 20;
+              else if (dur === 120) return 25;
+              else if (dur === 180) return 30;
+              else if (dur === 240) return 50;
+              else if (dur === 300) return 75;
+              else if (dur === 600) return 100;
+              return 10;
+            })(),
+            payout: payout || 0,
+            profit: profitAmount,
+            startTime: Date.now() - ((duration || 30) * 1000),
+            endTime: Date.now()
+          };
+
+          triggerNotification(notificationTrade);
+        }
+      })();
     }
 
     // MAIN HANDLER: Process trade_completed messages
