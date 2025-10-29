@@ -5890,7 +5890,8 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
             result: finalWon ? 'win' : 'lose',
             status: 'completed',
             exit_price: calculatedExitPrice, // Use actual current price
-            profit_loss: profitAmount,
+            profit: profitAmount, // Store profit amount for notification display
+            profit_loss: profitAmount, // Keep for backward compatibility
             updated_at: new Date().toISOString()
           })
           .eq('id', tradeId);
