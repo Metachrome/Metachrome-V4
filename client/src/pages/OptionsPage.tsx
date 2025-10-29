@@ -1262,6 +1262,15 @@ function OptionsPageContent({
         direction
       });
 
+      // CRITICAL DEBUG: Log the exact values we're about to use
+      console.log('🎯 WEBSOCKET: CRITICAL VALUES FOR NOTIFICATION:', {
+        amount: amount,
+        duration: duration,
+        result: result,
+        profitAmount: profitAmount,
+        profitPercentage: profitPercentage
+      });
+
       // Find the active trade that just completed
       const completedActiveTrade = activeTrades.find(trade => trade.id === tradeId);
       console.log('🔍 WEBSOCKET: Looking for active trade:', tradeId, 'Found:', !!completedActiveTrade);
@@ -1341,6 +1350,12 @@ function OptionsPageContent({
         // ROBUST NOTIFICATION TRIGGER
         console.log('🔔 WEBSOCKET: About to trigger notification');
         console.log('🔔 WEBSOCKET: Trade object being sent to notification:', JSON.stringify(completedTrade, null, 2));
+        console.log('🔔 WEBSOCKET: CRITICAL - Notification will show:', {
+          amount: completedTrade.amount,
+          duration: completedTrade.duration,
+          status: completedTrade.status,
+          profit: completedTrade.profit
+        });
         triggerNotification(completedTrade);
       } else {
         // FALLBACK: Use data from WebSocket message if available, otherwise use defaults
@@ -1387,6 +1402,12 @@ function OptionsPageContent({
         };
 
         console.log('🔔 WEBSOCKET: Triggering fallback notification with WebSocket data:', fallbackTrade);
+        console.log('🔔 WEBSOCKET: CRITICAL - FALLBACK Notification will show:', {
+          amount: fallbackTrade.amount,
+          duration: fallbackTrade.duration,
+          status: fallbackTrade.status,
+          profit: fallbackTrade.profit
+        });
         triggerNotification(fallbackTrade);
 
         // Remove from active trades
