@@ -2649,7 +2649,12 @@ function OptionsPageContent({
             id: completedTrade.id,
             amount: completedTrade.amount,
             duration: completedTrade.duration,
-            status: completedTrade.status
+            status: completedTrade.status,
+            entryPrice: completedTrade.entryPrice,
+            currentPrice: completedTrade.currentPrice,
+            profit: completedTrade.profit,
+            profitPercentage: completedTrade.profitPercentage,
+            fullObject: JSON.stringify(completedTrade)
           })}
           <TradeNotification
             key={notificationKey} // Force re-render with unique key
@@ -3871,7 +3876,12 @@ function OptionsPageContent({
         id: completedTrade.id,
         amount: completedTrade.amount,
         duration: completedTrade.duration,
-        status: completedTrade.status
+        status: completedTrade.status,
+        entryPrice: completedTrade.entryPrice,
+        currentPrice: completedTrade.currentPrice,
+        profit: completedTrade.profit,
+        profitPercentage: completedTrade.profitPercentage,
+        fullObject: JSON.stringify(completedTrade)
       })}
       <TradeNotification
         key={notificationKey} // Force re-render with unique key
