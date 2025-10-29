@@ -107,6 +107,9 @@ function OptionsPageContent({
   // Track recent notifications to prevent duplicates
   const recentNotificationsRef = useRef<Map<string, number>>(new Map());
 
+  // Track which trades have been notified via WebSocket to prevent polling from overwriting
+  const websocketNotifiedTradesRef = useRef<Set<string>>(new Set());
+
   // ROBUST NOTIFICATION TRIGGER FUNCTION
   const triggerNotification = (trade: ActiveTrade) => {
     console.log('🔔 TRIGGER: Starting notification trigger for trade:', trade.id, 'Amount:', trade.amount);
@@ -169,6 +172,9 @@ function OptionsPageContent({
       status: trade.status
     });
 
+    // Mark this trade as notified via WebSocket to prevent polling from overwriting
+    websocketNotifiedTradesRef.current.add(trade.id);
+
     setCompletedTrade(trade);
     localStorage.setItem('completedTrade', JSON.stringify(trade));
 
@@ -187,6 +193,8 @@ function OptionsPageContent({
     setTimeout(() => {
       setCompletedTrade(null);
       localStorage.removeItem('completedTrade');
+      // Clear from websocket notified set
+      websocketNotifiedTradesRef.current.delete(trade.id);
     }, 25000);
   };
 
@@ -1413,6 +1421,12 @@ function OptionsPageContent({
               console.log('🔄 POLLING: Found completed trade:', serverTrade);
               console.log('🔄 POLLING: Server trade amount:', serverTrade.amount, 'Type:', typeof serverTrade.amount);
               console.log('🔄 POLLING: Active trade amount:', activeTrade.amount, 'Type:', typeof activeTrade.amount);
+
+              // CRITICAL: Skip if already notified via WebSocket
+              if (websocketNotifiedTradesRef.current.has(serverTrade.id)) {
+                console.log('🔄 POLLING: Skipping - already notified via WebSocket');
+                return;
+              }
 
               const won = serverTrade.result === 'win';
               const getProfitPercentageByDuration = (dur: number) => {
