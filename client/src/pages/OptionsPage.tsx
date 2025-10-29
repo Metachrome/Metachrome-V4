@@ -1348,16 +1348,60 @@ function OptionsPageContent({
           websocketProfitPercentage: profitPercentage
         });
 
-        // ROBUST NOTIFICATION TRIGGER
-        console.log('🔔 WEBSOCKET: About to trigger notification');
-        console.log('🔔 WEBSOCKET: Trade object being sent to notification:', JSON.stringify(completedTrade, null, 2));
-        console.log('🔔 WEBSOCKET: CRITICAL - Notification will show:', {
-          amount: completedTrade.amount,
-          duration: completedTrade.duration,
-          status: completedTrade.status,
-          profit: completedTrade.profit
-        });
-        triggerNotification(completedTrade);
+        // CRITICAL FIX: Fetch trade data from database to ensure we have the correct data
+        // This prevents showing stale or incorrect data from WebSocket or local state
+        console.log('🔔 WEBSOCKET: Fetching trade data from database to verify notification data...');
+        (async () => {
+          try {
+            const response = await fetch(`/api/users/${user?.id}/trades`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+              }
+            });
+            const serverTrades = await response.json();
+            const serverTrade = serverTrades.find((st: any) => st.id === tradeId);
+
+            if (serverTrade) {
+              console.log('🔔 WEBSOCKET: Found trade in database:', serverTrade);
+              // Use database data as the source of truth
+              const dbAmount = parseFloat(serverTrade.amount);
+              const dbDuration = serverTrade.duration || 30;
+              const dbResult = serverTrade.result;
+
+              console.log('🔔 WEBSOCKET: Database trade data:', {
+                amount: dbAmount,
+                duration: dbDuration,
+                result: dbResult
+              });
+
+              // Update completedTrade with database values
+              completedTrade.amount = dbAmount;
+              completedTrade.duration = dbDuration;
+              completedTrade.status = (dbResult === 'win' || dbResult === 'won') ? 'won' : 'lost';
+
+              console.log('🔔 WEBSOCKET: Updated completedTrade with database values:', {
+                amount: completedTrade.amount,
+                duration: completedTrade.duration,
+                status: completedTrade.status
+              });
+            }
+
+            // ROBUST NOTIFICATION TRIGGER
+            console.log('🔔 WEBSOCKET: About to trigger notification');
+            console.log('🔔 WEBSOCKET: Trade object being sent to notification:', JSON.stringify(completedTrade, null, 2));
+            console.log('🔔 WEBSOCKET: CRITICAL - Notification will show:', {
+              amount: completedTrade.amount,
+              duration: completedTrade.duration,
+              status: completedTrade.status,
+              profit: completedTrade.profit
+            });
+            triggerNotification(completedTrade);
+          } catch (err) {
+            console.error('🔔 WEBSOCKET: Error fetching trade data, using WebSocket data:', err);
+            // Fallback to WebSocket data if database fetch fails
+            triggerNotification(completedTrade);
+          }
+        })();
       } else {
         // FALLBACK: Use data from WebSocket message if available, otherwise use defaults
         console.log('⚠️ WEBSOCKET: ⚠️ CRITICAL - FALLBACK CODE TRIGGERED! Active trade not found, using WebSocket data for notification');
@@ -1403,14 +1447,46 @@ function OptionsPageContent({
           endTime: Date.now()
         };
 
-        console.log('🔔 WEBSOCKET: Triggering fallback notification with WebSocket data:', fallbackTrade);
-        console.log('🔔 WEBSOCKET: CRITICAL - FALLBACK Notification will show:', {
-          amount: fallbackTrade.amount,
-          duration: fallbackTrade.duration,
-          status: fallbackTrade.status,
-          profit: fallbackTrade.profit
-        });
-        triggerNotification(fallbackTrade);
+        // CRITICAL FIX: Fetch trade data from database to ensure we have the correct data
+        console.log('🔔 WEBSOCKET FALLBACK: Fetching trade data from database to verify notification data...');
+        (async () => {
+          try {
+            const response = await fetch(`/api/users/${user?.id}/trades`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+              }
+            });
+            const serverTrades = await response.json();
+            const serverTrade = serverTrades.find((st: any) => st.id === tradeId);
+
+            if (serverTrade) {
+              console.log('🔔 WEBSOCKET FALLBACK: Found trade in database:', serverTrade);
+              // Use database data as the source of truth
+              fallbackTrade.amount = parseFloat(serverTrade.amount);
+              fallbackTrade.duration = serverTrade.duration || 30;
+              fallbackTrade.status = (serverTrade.result === 'win' || serverTrade.result === 'won') ? 'won' : 'lost';
+
+              console.log('🔔 WEBSOCKET FALLBACK: Updated fallbackTrade with database values:', {
+                amount: fallbackTrade.amount,
+                duration: fallbackTrade.duration,
+                status: fallbackTrade.status
+              });
+            }
+
+            console.log('🔔 WEBSOCKET: Triggering fallback notification with database data:', fallbackTrade);
+            console.log('🔔 WEBSOCKET: CRITICAL - FALLBACK Notification will show:', {
+              amount: fallbackTrade.amount,
+              duration: fallbackTrade.duration,
+              status: fallbackTrade.status,
+              profit: fallbackTrade.profit
+            });
+            triggerNotification(fallbackTrade);
+          } catch (err) {
+            console.error('🔔 WEBSOCKET FALLBACK: Error fetching trade data, using WebSocket data:', err);
+            // Fallback to WebSocket data if database fetch fails
+            triggerNotification(fallbackTrade);
+          }
+        })();
 
         // Remove from active trades
         setActiveTrades(prev => prev.filter(trade => trade.id !== tradeId));
