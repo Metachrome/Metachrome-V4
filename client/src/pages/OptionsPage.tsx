@@ -162,6 +162,13 @@ function OptionsPageContent({
     setNotificationKey(stableKey);
 
     // Set notification directly without clearing first (prevents flickering)
+    console.log('🔔 TRIGGER: About to call setCompletedTrade with:', {
+      id: trade.id,
+      amount: trade.amount,
+      duration: trade.duration,
+      status: trade.status
+    });
+
     setCompletedTrade(trade);
     localStorage.setItem('completedTrade', JSON.stringify(trade));
 
@@ -2598,6 +2605,12 @@ function OptionsPageContent({
           <MobileBottomNav />
 
           {/* Trade Notification - Mobile */}
+          {completedTrade && console.log('🔔 RENDER: Mobile notification with completedTrade:', {
+            id: completedTrade.id,
+            amount: completedTrade.amount,
+            duration: completedTrade.duration,
+            status: completedTrade.status
+          })}
           <TradeNotification
             key={notificationKey} // Force re-render with unique key
             trade={completedTrade ? {
@@ -3814,6 +3827,12 @@ function OptionsPageContent({
       )}
 
       {/* Trade Notification */}
+      {completedTrade && console.log('🔔 RENDER: Desktop notification with completedTrade:', {
+        id: completedTrade.id,
+        amount: completedTrade.amount,
+        duration: completedTrade.duration,
+        status: completedTrade.status
+      })}
       <TradeNotification
         key={notificationKey} // Force re-render with unique key
         trade={completedTrade ? {
