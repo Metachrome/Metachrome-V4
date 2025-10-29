@@ -5824,12 +5824,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
     let profitAmount = 0;
     if (finalWon) {
-      // Win: Return full amount + profit
-      // At trade start, only loss percentage was deducted, so we need to return full amount + profit
+      // Win: Add only the profit (not the full amount)
+      // At trade start, only loss percentage was deducted, so we just add the profit
       profitAmount = amount * profitRate; // Profit amount
-      balanceChange = amount + profitAmount; // Return original amount + profit
+      balanceChange = profitAmount; // Add ONLY profit (not amount + profit)
       users[userIndex].balance = (oldBalance + balanceChange).toString();
-      console.log(`✅ WIN: Returning full amount (${amount}) + profit (${profitAmount}) = ${balanceChange} USDT`);
+      console.log(`✅ WIN: Adding profit (${profitAmount}) USDT. Balance: ${oldBalance} + ${profitAmount} = ${users[userIndex].balance}`);
     } else {
       // Lose: Already deducted at trade start (loss percentage)
       // CRITICAL FIX: Loss should be percentage-based, not full amount
