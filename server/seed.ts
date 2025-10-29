@@ -18,15 +18,39 @@ async function seedOptionsSettings() {
       isActive: true,
     },
     {
-      duration: 120,
+      duration: 90,
       minAmount: '5000',
       profitPercentage: '20',
       isActive: true,
     },
     {
-      duration: 300,
+      duration: 120,
       minAmount: '10000',
       profitPercentage: '25',
+      isActive: true,
+    },
+    {
+      duration: 180,
+      minAmount: '30000',
+      profitPercentage: '30',
+      isActive: true,
+    },
+    {
+      duration: 240,
+      minAmount: '50000',
+      profitPercentage: '50',
+      isActive: true,
+    },
+    {
+      duration: 300,
+      minAmount: '100000',
+      profitPercentage: '75',
+      isActive: true,
+    },
+    {
+      duration: 600,
+      minAmount: '200000',
+      profitPercentage: '100',
       isActive: true,
     },
   ];

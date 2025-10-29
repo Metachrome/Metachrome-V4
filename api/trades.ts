@@ -490,9 +490,10 @@ async function completeOptionsTrade(tradeId: string, userId: string, username?: 
     let profitPercentage = 0.10; // Default 10%
     if (trade.duration === 30) profitPercentage = 0.10;
     else if (trade.duration === 60) profitPercentage = 0.15;
-    else if (trade.duration === 120) profitPercentage = 0.20;
-    else if (trade.duration === 180) profitPercentage = 0.25;
-    else if (trade.duration === 240) profitPercentage = 0.30;
+    else if (trade.duration === 90) profitPercentage = 0.20;
+    else if (trade.duration === 120) profitPercentage = 0.25;
+    else if (trade.duration === 180) profitPercentage = 0.30;
+    else if (trade.duration === 240) profitPercentage = 0.50;
     else if (trade.duration === 300) profitPercentage = 0.75;
     else if (trade.duration === 600) profitPercentage = 1.00;
 

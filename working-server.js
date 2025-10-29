@@ -5931,10 +5931,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       let profitPercentageForMessage = 10; // Default
       if (duration === 30) profitPercentageForMessage = 10;
       else if (duration === 60) profitPercentageForMessage = 15;
-      else if (duration === 120) profitPercentageForMessage = 20;
+      else if (duration === 90) profitPercentageForMessage = 20;
+      else if (duration === 120) profitPercentageForMessage = 25;
       else if (duration === 180) profitPercentageForMessage = 30;
-      else if (duration === 240) profitPercentageForMessage = 75;
-      else if (duration === 300) profitPercentageForMessage = 100;
+      else if (duration === 240) profitPercentageForMessage = 50;
+      else if (duration === 300) profitPercentageForMessage = 75;
+      else if (duration === 600) profitPercentageForMessage = 100;
 
       // CRITICAL FIX: Ensure profitAmount is always set correctly
       const profitPercentageDecimal2 = profitPercentageForMessage / 100;
@@ -6015,10 +6017,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       let profitPercentageForNotification = 10; // Default
       if (duration === 30) profitPercentageForNotification = 10;
       else if (duration === 60) profitPercentageForNotification = 15;
-      else if (duration === 120) profitPercentageForNotification = 20;
+      else if (duration === 90) profitPercentageForNotification = 20;
+      else if (duration === 120) profitPercentageForNotification = 25;
       else if (duration === 180) profitPercentageForNotification = 30;
-      else if (duration === 240) profitPercentageForNotification = 75;
-      else if (duration === 300) profitPercentageForNotification = 100;
+      else if (duration === 240) profitPercentageForNotification = 50;
+      else if (duration === 300) profitPercentageForNotification = 75;
+      else if (duration === 600) profitPercentageForNotification = 100;
 
       const directNotificationMessage = {
         type: 'trigger_mobile_notification',
@@ -6028,7 +6032,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           direction: direction || 'up', // Use actual direction from trade
           amount: amount, // Use actual amount
           entryPrice: entryPrice || 50000, // Use actual entry price
-          currentPrice: exitPrice,
+          currentPrice: wsExitPrice,
           status: finalWon ? 'won' : 'lost',
           payout: finalWon ? finalPayout : 0,
           // CRITICAL FIX: Use calculated profitPercentage, not hardcoded value
@@ -6632,10 +6636,12 @@ app.post('/api/trades', async (req, res) => {
         let profitPercentage = 0.10; // Default 10% for 30s
         if (duration === 30) profitPercentage = 0.10;
         else if (duration === 60) profitPercentage = 0.15;
-        else if (duration === 120) profitPercentage = 0.20;
+        else if (duration === 90) profitPercentage = 0.20;
+        else if (duration === 120) profitPercentage = 0.25;
         else if (duration === 180) profitPercentage = 0.30;
-        else if (duration === 240) profitPercentage = 0.75;
-        else if (duration === 300) profitPercentage = 1.00;
+        else if (duration === 240) profitPercentage = 0.50;
+        else if (duration === 300) profitPercentage = 0.75;
+        else if (duration === 600) profitPercentage = 1.00;
 
         const payout = finalOutcome ? (tradeAmount * (1 + profitPercentage)).toString() : '0';
         console.log(`📤 Profit Percentage: ${(profitPercentage * 100).toFixed(0)}%`);
@@ -6758,7 +6764,15 @@ app.post('/api/trades/options', async (req, res) => {
 
     // CRITICAL FIX: Only deduct the loss percentage, not the full amount
     // This way: WIN trades return full amount + profit, LOSE trades lose only the percentage
-    const lossPercentage = duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for others
+    let lossPercentage = 0.10; // Default 10%
+    if (duration === 30) lossPercentage = 0.10;
+    else if (duration === 60) lossPercentage = 0.15;
+    else if (duration === 90) lossPercentage = 0.20;
+    else if (duration === 120) lossPercentage = 0.25;
+    else if (duration === 180) lossPercentage = 0.30;
+    else if (duration === 240) lossPercentage = 0.50;
+    else if (duration === 300) lossPercentage = 0.75;
+    else if (duration === 600) lossPercentage = 1.00;
     const deductionAmount = tradeAmount * lossPercentage; // Only deduct the loss percentage
 
     console.log(`🔥 OPTIONS: DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (${(lossPercentage * 100).toFixed(0)}% of ${tradeAmount}) = ${userBalance - deductionAmount}`);
@@ -7117,10 +7131,12 @@ app.post('/api/trades/complete', async (req, res) => {
       let profitRate = 0.10; // Default 10%
       if (duration === 30) profitRate = 0.10;
       else if (duration === 60) profitRate = 0.15;
-      else if (duration === 120) profitRate = 0.20;
+      else if (duration === 90) profitRate = 0.20;
+      else if (duration === 120) profitRate = 0.25;
       else if (duration === 180) profitRate = 0.30;
-      else if (duration === 240) profitRate = 0.75;
-      else if (duration === 300) profitRate = 1.00;
+      else if (duration === 240) profitRate = 0.50;
+      else if (duration === 300) profitRate = 0.75;
+      else if (duration === 600) profitRate = 1.00;
 
       profitAmount = tradeAmount * profitRate; // Profit amount
       balanceChange = tradeAmount + profitAmount; // Return original amount + profit
@@ -7134,10 +7150,12 @@ app.post('/api/trades/complete', async (req, res) => {
       let profitRate = 0.10; // Default 10%
       if (duration === 30) profitRate = 0.10;
       else if (duration === 60) profitRate = 0.15;
-      else if (duration === 120) profitRate = 0.20;
+      else if (duration === 90) profitRate = 0.20;
+      else if (duration === 120) profitRate = 0.25;
       else if (duration === 180) profitRate = 0.30;
-      else if (duration === 240) profitRate = 0.75;
-      else if (duration === 300) profitRate = 1.00;
+      else if (duration === 240) profitRate = 0.50;
+      else if (duration === 300) profitRate = 0.75;
+      else if (duration === 600) profitRate = 1.00;
 
       profitAmount = -(tradeAmount * profitRate); // Loss amount (negative) based on percentage
       balanceChange = 0; // CRITICAL FIX: Balance was already deducted at trade start, don't deduct again!

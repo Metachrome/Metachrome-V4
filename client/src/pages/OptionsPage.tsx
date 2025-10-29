@@ -674,7 +674,18 @@ function OptionsPageContent({
                 endTime: trade.updated_at || trade.created_at,
                 startTime: trade.created_at,
                 profit: parseFloat(trade.profit_loss || '0'),
-                profitPercentage: trade.duration === 30 ? 10 : 15
+                profitPercentage: (() => {
+                  const dur = trade.duration || 30;
+                  if (dur === 30) return 10;
+                  else if (dur === 60) return 15;
+                  else if (dur === 90) return 20;
+                  else if (dur === 120) return 25;
+                  else if (dur === 180) return 30;
+                  else if (dur === 240) return 50;
+                  else if (dur === 300) return 75;
+                  else if (dur === 600) return 100;
+                  return 10;
+                })()
               };
               console.log(`📈 Formatted trade ${trade.id}:`, formattedTrade);
               return formattedTrade;
@@ -1188,7 +1199,18 @@ function OptionsPageContent({
         currentPrice: currentPrice || entryPrice || 50000,
         status: (status as 'won' | 'lost') || 'won',
         duration: duration || 30,
-        profitPercentage: profitPercentage || (duration === 30 ? 10 : 15),
+        profitPercentage: profitPercentage || (() => {
+          const dur = duration || 30;
+          if (dur === 30) return 10;
+          else if (dur === 60) return 15;
+          else if (dur === 90) return 20;
+          else if (dur === 120) return 25;
+          else if (dur === 180) return 30;
+          else if (dur === 240) return 50;
+          else if (dur === 300) return 75;
+          else if (dur === 600) return 100;
+          return 10;
+        })(),
         payout: payout || 0,
         profit: profitAmount, // CRITICAL: Use profitAmount from WebSocket
         startTime: Date.now() - ((duration || 30) * 1000),
@@ -1221,7 +1243,18 @@ function OptionsPageContent({
       if (completedActiveTrade) {
         const won = result === 'win';
         // CRITICAL FIX: Use profitPercentage from WebSocket message, not from old trade data
-        const profitPercentageValue = profitPercentage || (duration === 30 ? 10 : 15);
+        const getProfitPercentageByDuration = (dur: number) => {
+          if (dur === 30) return 10;
+          else if (dur === 60) return 15;
+          else if (dur === 90) return 20;
+          else if (dur === 120) return 25;
+          else if (dur === 180) return 30;
+          else if (dur === 240) return 50;
+          else if (dur === 300) return 75;
+          else if (dur === 600) return 100;
+          return 10; // Default
+        };
+        const profitPercentageValue = profitPercentage || getProfitPercentageByDuration(duration || 30);
 
         // CRITICAL FIX: Always prefer WebSocket amount over local trade data
         // The WebSocket message has the authoritative amount from the server
@@ -1276,7 +1309,19 @@ function OptionsPageContent({
         console.log('⚠️ WEBSOCKET: Fallback amount from message:', amount, 'profitAmount:', profitAmount);
 
         const won = result === 'win';
-        const profitPercentageValue = profitPercentage || (duration === 30 ? 10 : 15);
+        // Get correct profit percentage based on duration
+        const getProfitPercentageByDuration = (dur: number) => {
+          if (dur === 30) return 10;
+          else if (dur === 60) return 15;
+          else if (dur === 90) return 20;
+          else if (dur === 120) return 25;
+          else if (dur === 180) return 30;
+          else if (dur === 240) return 50;
+          else if (dur === 300) return 75;
+          else if (dur === 600) return 100;
+          return 10; // Default
+        };
+        const profitPercentageValue = profitPercentage || getProfitPercentageByDuration(duration || 30);
 
         // Ensure we have a valid amount - prefer WebSocket amount
         let finalFallbackAmount = amount;
@@ -1361,7 +1406,18 @@ function OptionsPageContent({
               console.log('🔄 POLLING: Found completed trade:', serverTrade);
 
               const won = serverTrade.result === 'win';
-              const profitPercentage = activeTrade.profitPercentage || (activeTrade.duration === 30 ? 10 : 15);
+              const getProfitPercentageByDuration = (dur: number) => {
+                if (dur === 30) return 10;
+                else if (dur === 60) return 15;
+                else if (dur === 90) return 20;
+                else if (dur === 120) return 25;
+                else if (dur === 180) return 30;
+                else if (dur === 240) return 50;
+                else if (dur === 300) return 75;
+                else if (dur === 600) return 100;
+                return 10; // Default
+              };
+              const profitPercentage = activeTrade.profitPercentage || getProfitPercentageByDuration(activeTrade.duration || 30);
 
               // CRITICAL FIX: Use server values instead of local trade values
               const tradeAmount = parseFloat(serverTrade.amount) || activeTrade.amount;
@@ -1453,7 +1509,18 @@ function OptionsPageContent({
   // Helper function to complete a trade and update balance
   const completeTrade = async (trade: ActiveTrade, won: boolean, finalPrice: number) => {
     // Calculate profit correctly: positive for wins, negative for losses
-    const profitPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
+    const getProfitPercentageByDuration = (dur: number) => {
+      if (dur === 30) return 10;
+      else if (dur === 60) return 15;
+      else if (dur === 90) return 20;
+      else if (dur === 120) return 25;
+      else if (dur === 180) return 30;
+      else if (dur === 240) return 50;
+      else if (dur === 300) return 75;
+      else if (dur === 600) return 100;
+      return 10; // Default
+    };
+    const profitPercentage = trade.profitPercentage || getProfitPercentageByDuration(trade.duration || 30);
     const profit = won ? (trade.amount * profitPercentage / 100) : -(trade.amount * profitPercentage / 100);
 
     const updatedTrade: ActiveTrade = {
@@ -1522,7 +1589,18 @@ function OptionsPageContent({
             console.log('🔄 FALLBACK: Found completed trade with server result:', serverTrade);
 
             const actualWon = serverTrade.result === 'win';
-            const profitPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
+            const getProfitPercentageByDuration = (dur: number) => {
+              if (dur === 30) return 10;
+              else if (dur === 60) return 15;
+              else if (dur === 90) return 20;
+              else if (dur === 120) return 25;
+              else if (dur === 180) return 30;
+              else if (dur === 240) return 50;
+              else if (dur === 300) return 75;
+              else if (dur === 600) return 100;
+              return 10; // Default
+            };
+            const profitPercentage = trade.profitPercentage || getProfitPercentageByDuration(trade.duration || 30);
 
             // CRITICAL FIX: Use server values instead of local trade values
             const serverAmount = parseFloat(serverTrade.amount) || trade.amount;
@@ -2470,7 +2548,19 @@ function OptionsPageContent({
                   ) : (
                     <div className="space-y-2">
                       {tradeHistory.map(trade => {
-                        const profitPercentage = trade.duration === 30 ? 10 : 15;
+                        // Get correct profit percentage based on duration
+                        const getProfitPercentageByDuration = (duration: number) => {
+                          if (duration === 30) return 10;
+                          else if (duration === 60) return 15;
+                          else if (duration === 90) return 20;
+                          else if (duration === 120) return 25;
+                          else if (duration === 180) return 30;
+                          else if (duration === 240) return 50;
+                          else if (duration === 300) return 75;
+                          else if (duration === 600) return 100;
+                          return 10; // Default
+                        };
+                        const profitPercentage = getProfitPercentageByDuration(trade.duration || 30);
                         const pnl = trade.profit !== undefined ? trade.profit :
                                    (trade.status === 'won' ?
                                      (trade.amount * profitPercentage / 100) :
@@ -3553,7 +3643,18 @@ function OptionsPageContent({
                   const isWinning = (trade.direction === 'up' && priceChange > 0) ||
                                    (trade.direction === 'down' && priceChange < 0);
                   // CRITICAL FIX: For losses, show the loss percentage (10% or 15%), not the full amount
-                  const lossPercentage = trade.profitPercentage || (trade.duration === 30 ? 10 : 15);
+                  const getProfitPercentageByDuration = (dur: number) => {
+                    if (dur === 30) return 10;
+                    else if (dur === 60) return 15;
+                    else if (dur === 90) return 20;
+                    else if (dur === 120) return 25;
+                    else if (dur === 180) return 30;
+                    else if (dur === 240) return 50;
+                    else if (dur === 300) return 75;
+                    else if (dur === 600) return 100;
+                    return 10; // Default
+                  };
+                  const lossPercentage = trade.profitPercentage || getProfitPercentageByDuration(trade.duration || 30);
                   const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -(trade.amount * lossPercentage / 100);
 
                   return (
@@ -3606,7 +3707,19 @@ function OptionsPageContent({
                   <div className="mb-6">
                     {tradeHistory.map(trade => {
                       // Calculate P&L correctly: For wins show profit amount, for losses show negative amount
-                      const profitPercentage = trade.duration === 30 ? 10 : 15; // Default profit percentages
+                      // Get correct profit percentage based on duration
+                      const getProfitPercentageByDuration = (duration: number) => {
+                        if (duration === 30) return 10;
+                        else if (duration === 60) return 15;
+                        else if (duration === 90) return 20;
+                        else if (duration === 120) return 25;
+                        else if (duration === 180) return 30;
+                        else if (duration === 240) return 50;
+                        else if (duration === 300) return 75;
+                        else if (duration === 600) return 100;
+                        return 10; // Default
+                      };
+                      const profitPercentage = getProfitPercentageByDuration(trade.duration || 30);
                       const pnl = trade.profit !== undefined ? trade.profit :
                                  (trade.status === 'won' ?
                                    (trade.amount * profitPercentage / 100) : // Show profit amount for wins
