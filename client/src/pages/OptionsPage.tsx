@@ -1198,18 +1198,33 @@ function OptionsPageContent({
         return;
       }
 
+      // CRITICAL FIX: Skip if already notified via trade_completed message
+      // The trade_completed message has the correct data, so we should not overwrite it with trigger_mobile_notification
+      if (websocketNotifiedTradesRef.current.has(lastMessage.data?.tradeId)) {
+        console.log('⏭️ WEBSOCKET: Skipping trigger_mobile_notification - already notified via trade_completed');
+        processedMessagesRef.current.add(messageId);
+        return;
+      }
+
       processedMessagesRef.current.add(messageId);
 
       console.log('🔔 WEBSOCKET: trigger_mobile_notification received:', lastMessage.data);
 
       const { tradeId, direction, amount, entryPrice, currentPrice, status, payout, profitPercentage, symbol, duration, profitAmount } = lastMessage.data;
 
+      // CRITICAL: Validate that we have essential data before using defaults
+      // If amount is missing or 0, this is likely a malformed message - skip it
+      if (!amount || amount <= 0) {
+        console.log('⚠️ WEBSOCKET: Skipping trigger_mobile_notification - invalid amount:', amount);
+        return;
+      }
+
       // Create trade object from notification data
       const notificationTrade: ActiveTrade = {
         id: tradeId,
         symbol: symbol || 'BTC/USDT',
         direction: (direction as 'up' | 'down') || 'up',
-        amount: amount || 100,
+        amount: amount, // CRITICAL: Use actual amount, not default 100
         entryPrice: entryPrice || 50000,
         currentPrice: currentPrice || entryPrice || 50000,
         status: (status as 'won' | 'lost') || 'won',
