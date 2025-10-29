@@ -7208,8 +7208,8 @@ app.post('/api/trades/complete', async (req, res) => {
     let profitAmount = 0;
 
     if (finalOutcome) {
-      // Win: Return full amount + profit
-      // At trade start, only loss percentage was deducted, so we need to return full amount + profit
+      // Win: Add only the profit (not the full amount)
+      // At trade start, only loss percentage was deducted, so we just add the profit
       const duration = existingTrade?.duration || 30; // Default to 30s
 
       // CRITICAL FIX: Calculate profitRate based on duration (same logic as profitPercentage)
@@ -7224,8 +7224,8 @@ app.post('/api/trades/complete', async (req, res) => {
       else if (duration === 600) profitRate = 1.00;
 
       profitAmount = tradeAmount * profitRate; // Profit amount
-      balanceChange = tradeAmount + profitAmount; // Return original amount + profit
-      console.log(`✅ WIN: Returning full amount (${tradeAmount}) + profit (${profitAmount}) = ${balanceChange} USDT`);
+      balanceChange = profitAmount; // Add ONLY profit (not amount + profit)
+      console.log(`✅ WIN: Adding profit (${profitAmount}) USDT. Balance: ${oldBalance} + ${profitAmount} = ${oldBalance + balanceChange}`);
     } else {
       // Lose: Already deducted at trade start (loss percentage)
       // CRITICAL FIX: Loss should be percentage-based, not full amount
