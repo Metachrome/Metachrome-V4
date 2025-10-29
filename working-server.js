@@ -5889,8 +5889,30 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
     console.log(`💰 Balance update: ${users[userIndex].username} ${oldBalance} → ${users[userIndex].balance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
 
-    // Save users
+    // Save users to local storage
     await saveUsers(users);
+
+    // CRITICAL: Also update balance in Supabase database
+    if (supabase) {
+      try {
+        console.log(`🔄 Updating balance in Supabase for user ${userId}: ${oldBalance} → ${users[userIndex].balance}`);
+        const { error: balanceUpdateError } = await supabase
+          .from('users')
+          .update({
+            balance: parseFloat(users[userIndex].balance),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+
+        if (balanceUpdateError) {
+          console.error('❌ Failed to update balance in Supabase:', balanceUpdateError);
+        } else {
+          console.log(`✅ Balance updated in Supabase: ${users[userIndex].balance}`);
+        }
+      } catch (dbError) {
+        console.error('❌ Error updating balance in Supabase:', dbError);
+      }
+    }
 
     // Update trade record in database
     if (supabase) {
