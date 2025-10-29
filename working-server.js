@@ -7373,6 +7373,7 @@ app.post('/api/trades/complete', async (req, res) => {
           console.log('⚠️ Fallback tradeId:', foundTrade.id);
           console.log('⚠️ Fallback trade details:', { symbol: foundTrade.symbol, amount: foundTrade.amount, direction: foundTrade.direction });
           tradeId = foundTrade.id; // Update tradeId to the found one
+          existingTrade = foundTrade; // CRITICAL: Update existingTrade to the found trade!
         } else {
           console.log('✅ Trade found in database:', existingTrade.id);
           console.log('✅ Trade details:', { symbol: existingTrade.symbol, amount: existingTrade.amount, direction: existingTrade.direction });
@@ -7501,21 +7502,39 @@ app.post('/api/trades/complete', async (req, res) => {
       console.log('📡 tradeAmount (from endpoint):', tradeAmount, 'type:', typeof tradeAmount);
       console.log('📡 profitAmount:', profitAmount);
 
+      // CRITICAL: Ensure we have valid trade data for notification
+      const finalAmount = tradeData?.amount !== undefined ? parseFloat(tradeData.amount) : (tradeAmount || parseFloat(amount) || 0);
+      const finalEntryPrice = tradeData?.entry_price !== undefined ? parseFloat(tradeData.entry_price) : currentPrice || 0;
+      const finalExitPrice = tradeData?.exit_price || currentPrice || 0;
+      const finalSymbol = tradeData?.symbol || 'BTC/USDT';
+      const finalDirection = tradeData?.direction || 'up';
+      const finalDuration = tradeData?.duration || 30;
+
+      console.log('📡 FINAL NOTIFICATION DATA RESOLVED:', {
+        finalAmount,
+        finalEntryPrice,
+        finalExitPrice,
+        finalSymbol,
+        finalDirection,
+        finalDuration,
+        profitAmount
+      });
+
       const tradeCompletionMessage = {
         type: 'trade_completed',
         data: {
           tradeId: tradeId,
           userId: userId,
           result: finalOutcome ? 'win' : 'lose',
-          exitPrice: tradeData?.exit_price || currentPrice || 0,
+          exitPrice: finalExitPrice,
           profitAmount: profitAmount,
           newBalance: users[userIndex].balance,
-          // Include complete trade data for notification - use updated trade data from database
-          symbol: tradeData?.symbol || 'BTC/USDT',
-          direction: tradeData?.direction || 'up',
-          amount: tradeData?.amount !== undefined ? parseFloat(tradeData.amount) : tradeAmount,  // Use database value
-          entryPrice: tradeData?.entry_price !== undefined ? parseFloat(tradeData.entry_price) : currentPrice || 0,
-          duration: tradeData?.duration || 30,
+          // Include complete trade data for notification - use resolved values
+          symbol: finalSymbol,
+          direction: finalDirection,
+          amount: finalAmount,  // Use resolved amount
+          entryPrice: finalEntryPrice,
+          duration: finalDuration,
           // CRITICAL FIX: Calculate profitPercentage based on duration (MUST MATCH profitRate calculation)
           profitPercentage: (() => {
             const dur = tradeData?.duration || 30;
