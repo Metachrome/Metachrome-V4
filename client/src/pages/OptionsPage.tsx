@@ -1411,6 +1411,8 @@ function OptionsPageContent({
 
             if (serverTrade && serverTrade.status === 'completed' && serverTrade.result !== 'pending') {
               console.log('🔄 POLLING: Found completed trade:', serverTrade);
+              console.log('🔄 POLLING: Server trade amount:', serverTrade.amount, 'Type:', typeof serverTrade.amount);
+              console.log('🔄 POLLING: Active trade amount:', activeTrade.amount, 'Type:', typeof activeTrade.amount);
 
               const won = serverTrade.result === 'win';
               const getProfitPercentageByDuration = (dur: number) => {
