@@ -6043,6 +6043,38 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
       console.log(`📡 Trade completion broadcasted to ${broadcastCount} clients`);
 
+      // CRITICAL: Also broadcast balance update for real-time sync
+      const balanceUpdateMessage = {
+        type: 'balance_update',
+        data: {
+          userId: userId,
+          username: users[userIndex].username,
+          oldBalance: oldBalance,
+          newBalance: users[userIndex].balance,
+          change: balanceChange,
+          changeType: finalWon ? 'trade_win' : 'trade_loss',
+          tradeId: tradeId,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📡 Broadcasting balance update via WebSocket:', balanceUpdateMessage);
+
+      let balanceBroadcastCount = 0;
+      global.wss.clients.forEach(client => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(balanceUpdateMessage));
+            balanceBroadcastCount++;
+          } catch (error) {
+            console.error('❌ Failed to broadcast balance update to client:', error);
+          }
+        }
+      });
+
+      console.log(`📡 Balance update broadcasted to ${balanceBroadcastCount} clients`);
+    }
+
     // BULLETPROOF: Also trigger client-side notification directly
     console.log('🔔 BULLETPROOF: Triggering client-side notification via global function');
     if (global.wss) {
@@ -6108,7 +6140,6 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       });
 
       console.log('🔔 BULLETPROOF: Direct notification trigger sent');
-    }
     }
 
     console.log(`🏁 ✅ DIRECT COMPLETION SUCCESS: Trade ${tradeId} completed as ${finalWon ? 'WIN' : 'LOSE'}`);
