@@ -6049,10 +6049,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       let profitPercentage = 10; // Default 10% for 30s
       if (duration === 30) profitPercentage = 10;
       else if (duration === 60) profitPercentage = 15;
-      else if (duration === 120) profitPercentage = 20;
+      else if (duration === 90) profitPercentage = 20;
+      else if (duration === 120) profitPercentage = 25;
       else if (duration === 180) profitPercentage = 30;
-      else if (duration === 240) profitPercentage = 75;
-      else if (duration === 300) profitPercentage = 100;
+      else if (duration === 240) profitPercentage = 50;
+      else if (duration === 300) profitPercentage = 75;
+      else if (duration === 600) profitPercentage = 100;
 
       // CRITICAL FIX: Ensure profitAmount is always set correctly
       // Use profitPercentage that was calculated above (lines 5977-5985)
