@@ -126,12 +126,14 @@ function OptionsPageContent({
       return;
     }
 
-    // CRITICAL: Check if trade is too old (more than 60 seconds old)
+    // CRITICAL: Check if trade is too old (more than trade duration + 30 seconds buffer)
     // This prevents showing stale notifications from previous trades
+    // But allows notifications for longer duration trades (90s, 120s, etc.)
     if (trade.startTime && typeof trade.startTime === 'number') {
       const tradeAge = Date.now() - trade.startTime;
-      if (tradeAge > 60000) { // More than 60 seconds old
-        console.log('⚠️ TRIGGER: Skipping notification - trade is too old:', tradeAge, 'ms');
+      const maxAge = (trade.duration || 30) * 1000 + 30000; // Trade duration + 30 second buffer
+      if (tradeAge > maxAge) {
+        console.log('⚠️ TRIGGER: Skipping notification - trade is too old:', tradeAge, 'ms (max allowed:', maxAge, 'ms)');
         return;
       }
     }
