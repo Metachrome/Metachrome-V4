@@ -1253,7 +1253,13 @@ function OptionsPageContent({
       // Find the active trade that just completed
       const completedActiveTrade = activeTrades.find(trade => trade.id === tradeId);
       console.log('🔍 WEBSOCKET: Looking for active trade:', tradeId, 'Found:', !!completedActiveTrade);
-      console.log('🔍 WEBSOCKET: Current active trades:', activeTrades.map(t => t.id));
+      console.log('🔍 WEBSOCKET: Current active trades:', activeTrades.map(t => ({ id: t.id, amount: t.amount, duration: t.duration })));
+
+      if (!completedActiveTrade) {
+        console.log('⚠️ WEBSOCKET: CRITICAL - Active trade not found! Using fallback code');
+        console.log('⚠️ WEBSOCKET: WebSocket tradeId:', tradeId);
+        console.log('⚠️ WEBSOCKET: Active trade IDs:', activeTrades.map(t => t.id));
+      }
 
       if (completedActiveTrade) {
         const won = result === 'win';
