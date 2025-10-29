@@ -5955,6 +5955,16 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       console.log(`🔍 WEBSOCKET: profitAmount=${profitAmount}, finalProfitAmount2=${finalProfitAmount2}, finalWon=${finalWon}, amount=${amount}, profitPercentageForMessage=${profitPercentageForMessage}`);
 
       // CRITICAL FIX: Include ALL necessary fields for the notification
+      console.log(`🚨 CREATING WEBSOCKET MESSAGE FOR TRADE: ${tradeId}`);
+      console.log(`🚨 PARAMETERS RECEIVED IN completeTradeDirectly:`);
+      console.log(`   - tradeId: ${tradeId}`);
+      console.log(`   - userId: ${userId}`);
+      console.log(`   - amount: ${amount} (type: ${typeof amount})`);
+      console.log(`   - duration: ${duration} (type: ${typeof duration})`);
+      console.log(`   - entryPrice: ${entryPrice} (type: ${typeof entryPrice})`);
+      console.log(`   - symbol: ${symbol}`);
+      console.log(`   - direction: ${direction}`);
+
       const tradeCompletionMessage = {
         type: 'trade_completed',
         data: {
