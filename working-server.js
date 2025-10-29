@@ -6758,6 +6758,15 @@ app.post('/api/trades/options', async (req, res) => {
     // Validate minimum amount based on duration
     const tradeAmount = parseFloat(amount);
     console.log(`🎯 TRADE AMOUNT RECEIVED: Raw amount = "${amount}", Parsed = ${tradeAmount}, Type = ${typeof amount}`);
+
+    // CRITICAL: Validate that amount is a valid positive number
+    if (isNaN(tradeAmount) || tradeAmount <= 0) {
+      console.error(`❌ INVALID AMOUNT: ${amount} parsed to ${tradeAmount}`);
+      return res.status(400).json({
+        success: false,
+        message: `Invalid amount: ${amount}`
+      });
+    }
     let minAmount = 100; // Default minimum
     if (duration === 30) minAmount = 100;
     else if (duration === 60) minAmount = 1000;
