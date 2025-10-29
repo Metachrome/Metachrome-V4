@@ -5965,6 +5965,11 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       console.log(`   - symbol: ${symbol}`);
       console.log(`   - direction: ${direction}`);
 
+      // CRITICAL: Validate that amount is correct
+      if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+        console.error(`🚨 CRITICAL ERROR: Invalid amount in completeTradeDirectly: ${amount} (type: ${typeof amount})`);
+      }
+
       const tradeCompletionMessage = {
         type: 'trade_completed',
         data: {
