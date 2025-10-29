@@ -5790,7 +5790,15 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     let finalPayout = payout;
     if (finalWon && !won) {
       // Outcome was overridden from LOSE to WIN - recalculate payout
-      const profitRate = duration === 30 ? 0.10 : 0.15;
+      let profitRate = 0.10; // Default 10%
+      if (duration === 30) profitRate = 0.10;
+      else if (duration === 60) profitRate = 0.15;
+      else if (duration === 90) profitRate = 0.20;
+      else if (duration === 120) profitRate = 0.25;
+      else if (duration === 180) profitRate = 0.30;
+      else if (duration === 240) profitRate = 0.50;
+      else if (duration === 300) profitRate = 0.75;
+      else if (duration === 600) profitRate = 1.00;
       finalPayout = amount * (1 + profitRate);
       console.log(`🔧 PAYOUT RECALCULATED: ${payout} → ${finalPayout} (outcome overridden from LOSE to WIN)`);
     } else if (!finalWon && won) {
@@ -5807,10 +5815,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     let profitRate = 0.10; // Default 10%
     if (duration === 30) profitRate = 0.10;
     else if (duration === 60) profitRate = 0.15;
-    else if (duration === 120) profitRate = 0.20;
+    else if (duration === 90) profitRate = 0.20;
+    else if (duration === 120) profitRate = 0.25;
     else if (duration === 180) profitRate = 0.30;
-    else if (duration === 240) profitRate = 0.75;
-    else if (duration === 300) profitRate = 1.00;
+    else if (duration === 240) profitRate = 0.50;
+    else if (duration === 300) profitRate = 0.75;
+    else if (duration === 600) profitRate = 1.00;
 
     let profitAmount = 0;
     if (finalWon) {
@@ -6466,7 +6476,15 @@ app.post('/api/trades', async (req, res) => {
 
     // CRITICAL FIX: Only deduct the loss percentage, not the full amount
     // This way: WIN trades return full amount + profit, LOSE trades lose only the percentage
-    const lossPercentage = duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for others
+    let lossPercentage = 0.10; // Default 10%
+    if (duration === 30) lossPercentage = 0.10;
+    else if (duration === 60) lossPercentage = 0.15;
+    else if (duration === 90) lossPercentage = 0.20;
+    else if (duration === 120) lossPercentage = 0.25;
+    else if (duration === 180) lossPercentage = 0.30;
+    else if (duration === 240) lossPercentage = 0.50;
+    else if (duration === 300) lossPercentage = 0.75;
+    else if (duration === 600) lossPercentage = 1.00;
     const deductionAmount = tradeAmount * lossPercentage; // Only deduct the loss percentage
 
     console.log(`🔥 DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (${(lossPercentage * 100).toFixed(0)}% of ${tradeAmount}) = ${userBalance - deductionAmount}`);
@@ -6931,7 +6949,15 @@ app.post('/api/trades/options', async (req, res) => {
         const actualAmount = trade.amount;
         let payout = 0;
         if (isWin) {
-          const profitRate = duration === 30 ? 0.10 : 0.15; // 10% for 30s, 15% for others
+          let profitRate = 0.10; // Default 10%
+          if (duration === 30) profitRate = 0.10;
+          else if (duration === 60) profitRate = 0.15;
+          else if (duration === 90) profitRate = 0.20;
+          else if (duration === 120) profitRate = 0.25;
+          else if (duration === 180) profitRate = 0.30;
+          else if (duration === 240) profitRate = 0.50;
+          else if (duration === 300) profitRate = 0.75;
+          else if (duration === 600) profitRate = 1.00;
           payout = actualAmount * (1 + profitRate);
         }
 
