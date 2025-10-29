@@ -6003,6 +6003,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         result: tradeCompletionMessage.data.result
       });
       console.log(`🚨 AMOUNT PARAMETER RECEIVED IN completeTradeDirectly: ${amount} (type: ${typeof amount})`);
+
+      // CRITICAL: Verify that amount in WebSocket message matches the parameter
+      if (tradeCompletionMessage.data.amount !== amount) {
+        console.error(`🚨 CRITICAL ERROR: Amount mismatch! Message has ${tradeCompletionMessage.data.amount}, parameter has ${amount}`);
+      }
+
       const sentProfitAmount = tradeCompletionMessage.data.profitAmount;
       const expectedProfitAmount = finalWon ? amount * (profitPercentageForMessage/100) : -(amount * (profitPercentageForMessage/100));
       console.log(`🚨 FINAL PROFIT AMOUNT BEING SENT: ${sentProfitAmount}`);
