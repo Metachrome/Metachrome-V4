@@ -1305,67 +1305,9 @@ function OptionsPageContent({
       }
 
       if (completedActiveTrade) {
-        const won = result === 'win';
-        // CRITICAL FIX: Use profitPercentage from WebSocket message, not from old trade data
-        const getProfitPercentageByDuration = (dur: number) => {
-          if (dur === 30) return 10;
-          else if (dur === 60) return 15;
-          else if (dur === 90) return 20;
-          else if (dur === 120) return 25;
-          else if (dur === 180) return 30;
-          else if (dur === 240) return 50;
-          else if (dur === 300) return 75;
-          else if (dur === 600) return 100;
-          return 10; // Default
-        };
-        const profitPercentageValue = profitPercentage || getProfitPercentageByDuration(duration || 30);
-
-        // CRITICAL FIX: Always prefer WebSocket amount over local trade data
-        // The WebSocket message has the authoritative amount from the server
-        const finalAmount = (amount !== undefined && amount > 0) ? amount : completedActiveTrade.amount;
-        const finalEntryPrice = (entryPrice !== undefined && entryPrice > 0) ? entryPrice : completedActiveTrade.entryPrice;
-
-        console.log('🎯 WEBSOCKET: Amount resolution:', {
-          websocketAmount: amount,
-          localAmount: completedActiveTrade.amount,
-          finalAmount: finalAmount,
-          websocketEntryPrice: entryPrice,
-          localEntryPrice: completedActiveTrade.entryPrice,
-          finalEntryPrice: finalEntryPrice
-        });
-
-        const completedTrade: ActiveTrade = {
-          // CRITICAL: Do NOT spread old trade object - explicitly set all properties to prevent stale data
-          id: completedActiveTrade.id,
-          symbol: symbol || completedActiveTrade.symbol,
-          direction: (direction as 'up' | 'down') || completedActiveTrade.direction,
-          startTime: completedActiveTrade.startTime,
-          endTime: completedActiveTrade.endTime,
-          duration: duration || completedActiveTrade.duration,
-          // CRITICAL FIX: Use fresh data from WebSocket message, not local trade values
-          amount: finalAmount,  // Use resolved amount (prefer WebSocket)
-          entryPrice: finalEntryPrice,  // Use resolved entry price (prefer WebSocket)
-          currentPrice: exitPrice || completedActiveTrade.currentPrice,
-          status: won ? 'won' : 'lost',
-          payout: won ? finalAmount * (1 + profitPercentageValue / 100) : 0,
-          profit: profitAmount,
-          profitPercentage: profitPercentageValue
-        };
-
-        console.log('🎯 WEBSOCKET: Setting completed trade notification with fresh data:', {
-          amount: completedTrade.amount,
-          entryPrice: completedTrade.entryPrice,
-          exitPrice: completedTrade.currentPrice,
-          profitAmount: completedTrade.profit,
-          profitPercentage: completedTrade.profitPercentage,
-          // CRITICAL DEBUG: Log what we received from WebSocket
-          websocketProfitAmount: profitAmount,
-          websocketProfitPercentage: profitPercentage
-        });
-
-        // CRITICAL FIX: Fetch trade data from database to ensure we have the correct data
-        // This prevents showing stale or incorrect data from WebSocket or local state
-        console.log('🔔 WEBSOCKET: Fetching trade data from database to verify notification data...');
+        // CRITICAL FIX: Fetch trade data from database FIRST before creating notification
+        // This ensures we always show real database data, not WebSocket defaults
+        console.log('🔔 WEBSOCKET: Fetching trade data from database BEFORE creating notification...');
         (async () => {
           try {
             // Add timeout to prevent hanging
@@ -1386,17 +1328,17 @@ function OptionsPageContent({
             }
 
             const serverTrade = await response.json();
-            console.log('🔔 WEBSOCKET: Found trade in database:', serverTrade);
+            console.log('🔔 WEBSOCKET: ✅ Found trade in database:', serverTrade);
 
-            // Use database data as the source of truth
+            // Use database data as the ONLY source of truth
             const dbAmount = parseFloat(serverTrade.amount);
             const dbDuration = serverTrade.duration || 30;
             const dbResult = serverTrade.result;
-            const dbProfit = parseFloat(serverTrade.profit || serverTrade.profitAmount || profitAmount || 0);
-            const dbEntryPrice = parseFloat(serverTrade.entry_price || serverTrade.entryPrice || entryPrice || 0);
-            const dbExitPrice = parseFloat(serverTrade.exit_price || serverTrade.exitPrice || exitPrice || 0);
+            const dbProfit = parseFloat(serverTrade.profit || serverTrade.profitAmount || 0);
+            const dbEntryPrice = parseFloat(serverTrade.entry_price || serverTrade.entryPrice || 0);
+            const dbExitPrice = parseFloat(serverTrade.exit_price || serverTrade.exitPrice || 0);
 
-            console.log('🔔 WEBSOCKET: Database trade data:', {
+            console.log('🔔 WEBSOCKET: Database trade data extracted:', {
               amount: dbAmount,
               duration: dbDuration,
               result: dbResult,
@@ -1405,41 +1347,87 @@ function OptionsPageContent({
               exitPrice: dbExitPrice
             });
 
-            // Update completedTrade with database values
-            completedTrade.amount = dbAmount;
-            completedTrade.duration = dbDuration;
-            completedTrade.status = (dbResult === 'win' || dbResult === 'won') ? 'won' : 'lost';
-            completedTrade.profit = dbProfit;
-            completedTrade.entryPrice = dbEntryPrice;
-            completedTrade.currentPrice = dbExitPrice;
+            // Calculate profit percentage based on duration
+            const getProfitPercentageByDuration = (dur: number) => {
+              if (dur === 30) return 10;
+              else if (dur === 60) return 15;
+              else if (dur === 90) return 20;
+              else if (dur === 120) return 25;
+              else if (dur === 180) return 30;
+              else if (dur === 240) return 50;
+              else if (dur === 300) return 75;
+              else if (dur === 600) return 100;
+              return 10; // Default
+            };
+            const dbProfitPercentage = getProfitPercentageByDuration(dbDuration);
 
-            console.log('🔔 WEBSOCKET: Updated completedTrade with database values:', {
+            // Create completedTrade with ONLY database values
+            const completedTrade: ActiveTrade = {
+              id: tradeId,
+              symbol: symbol || completedActiveTrade.symbol,
+              direction: (direction as 'up' | 'down') || completedActiveTrade.direction,
+              startTime: completedActiveTrade.startTime,
+              endTime: completedActiveTrade.endTime,
+              duration: dbDuration,  // Use database duration
+              amount: dbAmount,  // Use database amount
+              entryPrice: dbEntryPrice,  // Use database entry price
+              currentPrice: dbExitPrice,  // Use database exit price
+              status: (dbResult === 'win' || dbResult === 'won') ? 'won' : 'lost',
+              payout: (dbResult === 'win' || dbResult === 'won') ? dbAmount * (1 + dbProfitPercentage / 100) : 0,
+              profit: dbProfit,  // Use database profit
+              profitPercentage: dbProfitPercentage
+            };
+
+            console.log('🔔 WEBSOCKET: ✅ Created completedTrade with DATABASE values:', {
               amount: completedTrade.amount,
               duration: completedTrade.duration,
               status: completedTrade.status,
               profit: completedTrade.profit,
+              profitPercentage: completedTrade.profitPercentage,
               entryPrice: completedTrade.entryPrice,
               currentPrice: completedTrade.currentPrice
             });
 
-            // ROBUST NOTIFICATION TRIGGER
-            console.log('🔔 WEBSOCKET: About to trigger notification');
-            console.log('🔔 WEBSOCKET: Trade object being sent to notification:', JSON.stringify(completedTrade, null, 2));
-            console.log('🔔 WEBSOCKET: CRITICAL - Notification will show:', {
-              amount: completedTrade.amount,
-              duration: completedTrade.duration,
-              status: completedTrade.status,
-              profit: completedTrade.profit
-            });
+            // NOW trigger notification with real database data
+            console.log('🔔 WEBSOCKET: ✅ Triggering notification with database data');
             triggerNotification(completedTrade);
           } catch (err) {
-            console.error('🔔 WEBSOCKET: Error fetching trade data, using WebSocket data:', err);
-            // Fallback to WebSocket data if database fetch fails
-            console.log('🔔 WEBSOCKET: Falling back to WebSocket data:', {
-              amount: completedTrade.amount,
-              duration: completedTrade.duration,
-              status: completedTrade.status
-            });
+            console.error('🔔 WEBSOCKET: ❌ Error fetching trade data:', err);
+            // Fallback: Create notification with WebSocket data if database fetch fails
+            console.log('🔔 WEBSOCKET: ⚠️ Falling back to WebSocket data');
+
+            const won = result === 'win';
+            const getProfitPercentageByDuration = (dur: number) => {
+              if (dur === 30) return 10;
+              else if (dur === 60) return 15;
+              else if (dur === 90) return 20;
+              else if (dur === 120) return 25;
+              else if (dur === 180) return 30;
+              else if (dur === 240) return 50;
+              else if (dur === 300) return 75;
+              else if (dur === 600) return 100;
+              return 10; // Default
+            };
+            const profitPercentageValue = profitPercentage || getProfitPercentageByDuration(duration || 30);
+            const finalAmount = (amount !== undefined && amount > 0) ? amount : completedActiveTrade.amount;
+            const finalEntryPrice = (entryPrice !== undefined && entryPrice > 0) ? entryPrice : completedActiveTrade.entryPrice;
+
+            const completedTrade: ActiveTrade = {
+              id: completedActiveTrade.id,
+              symbol: symbol || completedActiveTrade.symbol,
+              direction: (direction as 'up' | 'down') || completedActiveTrade.direction,
+              startTime: completedActiveTrade.startTime,
+              endTime: completedActiveTrade.endTime,
+              duration: duration || completedActiveTrade.duration,
+              amount: finalAmount,
+              entryPrice: finalEntryPrice,
+              currentPrice: exitPrice || completedActiveTrade.currentPrice,
+              status: won ? 'won' : 'lost',
+              payout: won ? finalAmount * (1 + profitPercentageValue / 100) : 0,
+              profit: profitAmount,
+              profitPercentage: profitPercentageValue
+            };
+
             triggerNotification(completedTrade);
           }
         })();
