@@ -4033,7 +4033,7 @@ function OptionsPageContent({
                       });
 
                       return (
-                        <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden">
+                        <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden items-center">
                           <div className="flex flex-col min-w-0">
                             <span className="text-gray-400 text-xs truncate">{marketPair}</span>
                             <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
@@ -4047,10 +4047,14 @@ function OptionsPageContent({
                           <span className={`font-bold text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)}
                           </span>
-                          <span className="text-gray-400 text-xs text-center">{new Date(trade.endTime).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-                          <span className={`font-bold text-center ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
-                            {trade.status === 'won' ? 'WIN' : 'LOSE'}
-                          </span>
+                          <div className="flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">{new Date(trade.endTime).toLocaleString('en-US', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                              {trade.status === 'won' ? 'WIN' : 'LOSE'}
+                            </span>
+                          </div>
                         </div>
                       );
                     })}
