@@ -6015,10 +6015,24 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       console.log(`🚨 EXPECTED PROFIT AMOUNT: ${expectedProfitAmount}`);
 
       let broadcastCount = 0;
+
+      // CRITICAL: Verify JSON serialization
+      const jsonMessage = JSON.stringify(tradeCompletionMessage);
+      console.log(`📡 JSON MESSAGE BEING SENT: ${jsonMessage}`);
+
+      // Parse it back to verify
+      const parsedMessage = JSON.parse(jsonMessage);
+      console.log(`📡 PARSED MESSAGE VERIFICATION:`, {
+        amount: parsedMessage.data.amount,
+        amountType: typeof parsedMessage.data.amount,
+        duration: parsedMessage.data.duration,
+        durationType: typeof parsedMessage.data.duration
+      });
+
       global.wss.clients.forEach(client => {
         if (client.readyState === 1) { // WebSocket.OPEN
           try {
-            client.send(JSON.stringify(tradeCompletionMessage));
+            client.send(jsonMessage);
             broadcastCount++;
           } catch (error) {
             console.error('❌ Failed to broadcast trade completion to client:', error);
