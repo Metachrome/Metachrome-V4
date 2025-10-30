@@ -16,7 +16,14 @@ interface TradingViewWidgetProps {
   onSymbolChange?: (symbol: string) => void;
 }
 
-// Symbols not supported by TradingView
+// Symbol substitutions for TradingView compatibility
+// Maps unsupported symbols to their TradingView equivalents
+const SYMBOL_SUBSTITUTIONS: { [key: string]: string } = {
+  'HYPEUSDT': 'HYPEHUSD', // Hyperliquid: use HYPEHUSD instead of HYPEUSDT
+  'MATICUSDT': 'POLUSDT', // Polygon: use POL instead of MATIC
+};
+
+// Symbols not supported by TradingView (will use fallback chart)
 const UNSUPPORTED_SYMBOLS = ['HYPEUSDT'];
 
 function TradingViewWidget({
@@ -38,6 +45,9 @@ function TradingViewWidget({
 
   // Extract symbol without BINANCE: prefix
   const cleanSymbol = symbol.replace('BINANCE:', '');
+
+  // Check if symbol needs substitution
+  const substitutedSymbol = SYMBOL_SUBSTITUTIONS[cleanSymbol] || cleanSymbol;
   const isUnsupported = UNSUPPORTED_SYMBOLS.includes(cleanSymbol);
 
   useEffect(() => {
@@ -76,14 +86,20 @@ function TradingViewWidget({
       script.type = "text/javascript";
       script.async = true;
 
+      // Use substituted symbol if available
+      let symbolToUse = substitutedSymbol;
+
       let tradingViewSymbol = symbol;
       if (!symbol.includes(':')) {
-        tradingViewSymbol = symbol.includes('USDT')
-          ? `BINANCE:${symbol}`
-          : symbol.includes('USD')
-          ? `COINBASE:${symbol}`
-          : `BINANCE:${symbol}`;
+        // Use substituted symbol for TradingView
+        tradingViewSymbol = symbolToUse.includes('USDT')
+          ? `BINANCE:${symbolToUse}`
+          : symbolToUse.includes('USD')
+          ? `COINBASE:${symbolToUse}`
+          : `BINANCE:${symbolToUse}`;
       }
+
+      console.log(`📊 TradingViewWidget: ${cleanSymbol} -> ${symbolToUse} -> ${tradingViewSymbol}`);
 
       const config = {
         autosize: true,
