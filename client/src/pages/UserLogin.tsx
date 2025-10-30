@@ -255,6 +255,18 @@ export default function UserLogin() {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* Desktop Header */}
+      <header className="hidden lg:flex items-center justify-between h-16 px-8 bg-black border-b border-gray-800">
+        <Link href="/">
+          <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+            <img
+              src={require('../assets/new-metachrome-logo.png')}
+              alt="METACHROME"
+              className="h-10 w-auto"
+            />
+          </div>
+        </Link>
+      </header>
 
       {/* Main Content */}
       <div className="flex min-h-screen flex-col lg:flex-row">
