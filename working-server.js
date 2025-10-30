@@ -5870,17 +5870,21 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     const profitPercentageAmount = amount * profitRate; // Profit/Loss percentage amount (e.g., 25% of 10,000 = 2,500)
 
     if (finalWon) {
-      // Win: Initial balance + profit percentage
+      // Win: Add back the full amount PLUS the profit
+      // At trade start, only the loss percentage was deducted, so we add back full amount + profit
       profitAmount = profitPercentageAmount; // For notification display: +1,000
-      balanceChange = profitPercentageAmount; // Add only the profit percentage
+      balanceChange = amount + profitPercentageAmount; // Add back FULL amount + profit
       users[userIndex].balance = (oldBalance + balanceChange).toString();
-      console.log(`✅ WIN: Initial balance (${oldBalance}) + profit (${profitPercentageAmount}) = ${users[userIndex].balance} USDT`);
+      console.log(`✅ WIN: Adding back full amount (${amount}) + profit (${profitPercentageAmount}) = ${balanceChange} USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}`);
     } else {
-      // Lose: Initial balance - loss percentage
+      // Lose: Loss percentage already deducted at trade start
+      // CRITICAL FIX: Loss P&L is the loss percentage that was already deducted
       profitAmount = -profitPercentageAmount; // Loss amount (negative) - the percentage (e.g., -1,000)
-      balanceChange = -profitPercentageAmount; // Deduct the loss percentage
-      users[userIndex].balance = (oldBalance - profitPercentageAmount).toString();
-      console.log(`❌ LOSE: Initial balance (${oldBalance}) - loss (${profitPercentageAmount}) = ${users[userIndex].balance} USDT. P&L: ${profitAmount}`);
+      balanceChange = 0; // Balance already deducted at trade start
+      // DON'T CHANGE BALANCE - it was already deducted when trade started
+      // users[userIndex].balance remains as oldBalance (which already has the deduction)
+      console.log(`❌ LOSE: Loss percentage (${profitPercentageAmount}) USDT lost (already deducted at trade start). P&L: ${profitAmount}`);
+      console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitPercentageAmount=${profitPercentageAmount}, profitAmount=${profitAmount}, duration=${duration}`);
     }
 
     console.log(`💰 Balance update: ${users[userIndex].username} ${oldBalance} → ${users[userIndex].balance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
@@ -6914,11 +6918,23 @@ app.post('/api/trades/options', async (req, res) => {
       });
     }
 
-    // Don't deduct anything at trade start - balance will be updated at trade completion
-    // This way: WIN trades add profit to initial balance, LOSE trades deduct loss from initial balance
-    console.log(`🔥 OPTIONS: TRADE PLACED - Balance reserved: ${userBalance} USDT (no deduction yet)`);
-    // Balance remains unchanged until trade completes
-    console.log('💰 OPTIONS: BALANCE UNCHANGED AT TRADE START:', user.balance);
+    // CRITICAL FIX: Deduct ONLY the loss percentage at trade start
+    // This way: WIN trades return full amount + profit, LOSE trades lose only the percentage
+    let lossPercentage = 0.10; // Default 10%
+    if (duration === 30) lossPercentage = 0.10;
+    else if (duration === 60) lossPercentage = 0.15;
+    else if (duration === 90) lossPercentage = 0.20;
+    else if (duration === 120) lossPercentage = 0.25;
+    else if (duration === 180) lossPercentage = 0.30;
+    else if (duration === 240) lossPercentage = 0.50;
+    else if (duration === 300) lossPercentage = 0.75;
+    else if (duration === 600) lossPercentage = 1.00;
+
+    const deductionAmount = tradeAmount * lossPercentage; // Deduct ONLY the loss percentage
+
+    console.log(`🔥 OPTIONS: DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (${(lossPercentage * 100).toFixed(0)}% of ${tradeAmount}) = ${userBalance - deductionAmount}`);
+    user.balance = (userBalance - deductionAmount).toString();
+    console.log('💰 OPTIONS: NEW BALANCE SET TO:', user.balance);
 
     // CRITICAL FIX: Save balance to Supabase (ALWAYS - removed production check)
     if (supabase) {
