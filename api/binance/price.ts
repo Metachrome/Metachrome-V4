@@ -31,12 +31,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parse query parameters
     const symbol = (req.query.symbol as string) || 'BTCUSDT';
 
+    // Special handling for HYPEHUSD (not available on Binance)
+    if (symbol === 'HYPEHUSD') {
+      console.log('💰 [Binance Price] HYPEHUSD detected - fetching from CoinGecko');
+      try {
+        const coingeckoResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=hyperliquid&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_market_cap_change_24h=true');
+
+        if (coingeckoResponse.ok) {
+          const data: any = await coingeckoResponse.json();
+          const hypeData = data.hyperliquid;
+
+          if (hypeData && hypeData.usd) {
+            const priceData = {
+              symbol: 'HYPEHUSD',
+              price: hypeData.usd,
+              priceChange24h: (hypeData.usd_24h_change / 100) * hypeData.usd || 0,
+              priceChangePercent24h: hypeData.usd_24h_change || 0,
+              high24h: hypeData.usd * (1 + Math.abs(hypeData.usd_24h_change) / 100) || hypeData.usd,
+              low24h: hypeData.usd * (1 - Math.abs(hypeData.usd_24h_change) / 100) || hypeData.usd,
+              volume24h: hypeData.usd_market_cap || 0,
+              quoteVolume24h: hypeData.usd_market_cap || 0,
+              openPrice: hypeData.usd - ((hypeData.usd_24h_change / 100) * hypeData.usd) || hypeData.usd,
+              timestamp: Date.now()
+            };
+
+            console.log('✅ [Binance Price] HYPEHUSD price:', priceData.price);
+            return res.json({ success: true, data: priceData });
+          }
+        }
+      } catch (coingeckoError) {
+        console.error('❌ [Binance Price] CoinGecko error:', coingeckoError);
+      }
+    }
+
     // Fetch from Binance 24hr Ticker API
     const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`;
     console.log('💰 [Binance Price] Fetching from:', binanceUrl);
 
     const response = await fetch(binanceUrl);
-    
+
     if (!response.ok) {
       console.error('❌ [Binance Price] Binance API error:', response.status, response.statusText);
       return res.status(response.status).json({ error: 'Binance API error' });

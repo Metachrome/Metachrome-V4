@@ -9553,6 +9553,44 @@ app.get('/api/binance/price', async (req, res) => {
       return res.status(400).json({ error: 'Invalid symbol format' });
     }
 
+    // Special handling for HYPEHUSD (not available on Binance)
+    if (symbol === 'HYPEHUSD') {
+      console.log('💰 [Binance Price] HYPEHUSD detected - fetching from CoinGecko');
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=hyperliquid&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_market_cap_change_24h=true',
+          { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          const hypeData = data.hyperliquid;
+
+          if (hypeData && hypeData.usd) {
+            const priceData = {
+              symbol: 'HYPEHUSD',
+              price: hypeData.usd,
+              priceChange24h: (hypeData.usd_24h_change / 100) * hypeData.usd || 0,
+              priceChangePercent24h: hypeData.usd_24h_change || 0,
+              high24h: hypeData.usd * (1 + Math.abs(hypeData.usd_24h_change) / 100) || hypeData.usd,
+              low24h: hypeData.usd * (1 - Math.abs(hypeData.usd_24h_change) / 100) || hypeData.usd,
+              volume24h: hypeData.usd_market_cap || 0,
+              quoteVolume24h: hypeData.usd_market_cap || 0,
+              openPrice: hypeData.usd - ((hypeData.usd_24h_change / 100) * hypeData.usd) || hypeData.usd,
+              timestamp: Date.now()
+            };
+
+            console.log('✅ [Binance Price] HYPEHUSD price:', priceData.price);
+            return res.json({ success: true, data: priceData });
+          }
+        }
+      } catch (coingeckoError) {
+        console.error('❌ [Binance Price] CoinGecko error:', coingeckoError.message);
+      }
+    }
+
     // Fetch from Binance 24hr Ticker API with timeout
     const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`;
 
