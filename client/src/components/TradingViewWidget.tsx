@@ -17,7 +17,7 @@ interface TradingViewWidgetProps {
 }
 
 // Symbols not supported by TradingView
-const UNSUPPORTED_SYMBOLS = ['HYPEUSDT'];
+const UNSUPPORTED_SYMBOLS: string[] = [];
 
 function TradingViewWidget({
   type = "chart",
