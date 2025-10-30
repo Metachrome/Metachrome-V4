@@ -12,6 +12,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
 import { SiEthereum } from 'react-icons/si';
 import { useQueryClient } from '@tanstack/react-query';
+import metachromeLogo from '../assets/new-metachrome-logo.png';
 
 import { apiRequest } from '../lib/queryClient';
 
@@ -260,7 +261,7 @@ export default function UserLogin() {
         <Link href="/">
           <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
             <img
-              src={require('../assets/new-metachrome-logo.png')}
+              src={metachromeLogo}
               alt="METACHROME"
               className="h-10 w-auto"
             />

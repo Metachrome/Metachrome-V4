@@ -11,6 +11,7 @@ import { useLocation, Link } from 'wouter';
 import { Eye, EyeOff } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
 import { SiEthereum } from 'react-icons/si';
+import metachromeLogo from '../assets/new-metachrome-logo.png';
 
 
 // Declare MetaMask types
@@ -313,7 +314,7 @@ export default function SignupPage() {
         <Link href="/">
           <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
             <img
-              src={require('../assets/new-metachrome-logo.png')}
+              src={metachromeLogo}
               alt="METACHROME"
               className="h-10 w-auto"
             />
