@@ -18,37 +18,7 @@ export default function SimpleFallbackChart({
   const [error, setError] = useState<string | null>(null);
   const [canvasRef, setCanvasRef] = React.useState<HTMLCanvasElement | null>(null);
 
-  // Generate mock candlestick data for unsupported symbols
-  const generateMockKlines = (basePrice: number, count: number = 100) => {
-    const klines = [];
-    let currentPrice = basePrice;
-    const now = Date.now();
 
-    for (let i = 0; i < count; i++) {
-      // Random price movement (-2% to +2%)
-      const changePercent = (Math.random() - 0.5) * 4;
-      const change = currentPrice * (changePercent / 100);
-
-      const open = currentPrice;
-      const close = currentPrice + change;
-      const high = Math.max(open, close) * (1 + Math.random() * 0.01);
-      const low = Math.min(open, close) * (1 - Math.random() * 0.01);
-      const volume = Math.random() * 1000000;
-
-      klines.push({
-        time: Math.floor((now - (count - i) * 60000) / 1000),
-        open,
-        high,
-        low,
-        close,
-        volume
-      });
-
-      currentPrice = close;
-    }
-
-    return klines;
-  };
 
   useEffect(() => {
     if (!canvasRef) return;
@@ -114,22 +84,40 @@ export default function SimpleFallbackChart({
           }
         }
 
-        // If still no data, generate mock data for unsupported symbols
+        // If still no data, try alternative Binance endpoints
         if (!klines || klines.length === 0) {
-          console.log('📊 [SimpleFallbackChart] Generating mock data for', symbol);
+          try {
+            console.log('📊 [SimpleFallbackChart] Trying alternative Binance endpoint for', symbol);
 
-          // Get base price from symbol (mock prices for unsupported symbols)
-          const mockPrices: { [key: string]: number } = {
-            'HYPEUSDT': 48.29,
-            'UNIUSDT': 12.50,
-            'ATOMUSDT': 8.75,
-            'FILUSDT': 15.20,
-            'ETCUSDT': 32.10
-          };
+            // Try with different interval or endpoint
+            const altUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=5m&limit=100`;
+            const controller2 = new AbortController();
+            const timeoutId2 = setTimeout(() => controller2.abort(), 5000);
 
-          const basePrice = mockPrices[symbol] || 100;
-          klines = generateMockKlines(basePrice, 100);
-          console.log('✅ [SimpleFallbackChart] Generated mock data:', klines.length, 'candles');
+            const altResponse = await fetch(altUrl, { signal: controller2.signal });
+            clearTimeout(timeoutId2);
+
+            if (altResponse.ok) {
+              const altData = await altResponse.json();
+              console.log('✅ [SimpleFallbackChart] Got data from alternative endpoint:', altData.length, 'candles');
+
+              klines = altData.map((candle: any) => ({
+                time: Math.floor(candle[0] / 1000),
+                open: parseFloat(candle[1]),
+                high: parseFloat(candle[2]),
+                low: parseFloat(candle[3]),
+                close: parseFloat(candle[4]),
+                volume: parseFloat(candle[5])
+              }));
+            }
+          } catch (altErr) {
+            console.warn('⚠️ [SimpleFallbackChart] Alternative endpoint failed:', altErr);
+          }
+        }
+
+        // If still no data, show error instead of mock
+        if (!klines || klines.length === 0) {
+          throw new Error(`Unable to load chart data for ${symbol}. Please try again later.`);
         }
 
         if (!klines || klines.length === 0) {
