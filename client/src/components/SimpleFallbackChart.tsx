@@ -28,19 +28,47 @@ export default function SimpleFallbackChart({
 
         console.log('📊 [SimpleFallbackChart] Fetching klines for', symbol);
 
-        const response = await fetch(`/api/binance/klines?symbol=${symbol}&interval=1m&limit=100`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: Failed to fetch chart data`);
+        // Try to fetch from our API first, then fallback to direct Binance API
+        let klines = null;
+
+        try {
+          const response = await fetch(`/api/binance/klines?symbol=${symbol}&interval=1m&limit=100`);
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              klines = result.data;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('⚠️ [SimpleFallbackChart] API endpoint failed, trying direct Binance API');
         }
 
-        const result = await response.json();
+        // If API failed, fetch directly from Binance
+        if (!klines) {
+          const binanceUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=100`;
+          const response = await fetch(binanceUrl);
 
-        if (!result.success || !result.data) {
-          throw new Error('Invalid response format');
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: Failed to fetch chart data from Binance`);
+          }
+
+          const data = await response.json();
+
+          // Transform Binance format to our format
+          klines = data.map((candle: any) => ({
+            time: Math.floor(candle[0] / 1000),
+            open: parseFloat(candle[1]),
+            high: parseFloat(candle[2]),
+            low: parseFloat(candle[3]),
+            close: parseFloat(candle[4]),
+            volume: parseFloat(candle[5])
+          }));
         }
 
-        const klines = result.data;
+        if (!klines || klines.length === 0) {
+          throw new Error('No chart data available');
+        }
+
         console.log('✅ [SimpleFallbackChart] Received', klines.length, 'candles');
 
         // Draw candlestick chart on canvas
