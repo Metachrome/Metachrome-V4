@@ -5870,12 +5870,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     const profitPercentageAmount = amount * profitRate; // Profit/Loss percentage amount (e.g., 25% of 10,000 = 2,500)
 
     if (finalWon) {
-      // Win: Add back the full amount PLUS the profit
-      // At trade start, only the loss percentage was deducted, so we add back full amount + profit
+      // Win: Add ONLY the profit percentage
+      // At trade start, only the loss percentage was deducted, so on win we add back only the profit
       profitAmount = profitPercentageAmount; // For notification display: +1,000
-      balanceChange = amount + profitPercentageAmount; // Add back FULL amount + profit
+      balanceChange = profitPercentageAmount; // Add ONLY the profit percentage
       users[userIndex].balance = (oldBalance + balanceChange).toString();
-      console.log(`✅ WIN: Adding back full amount (${amount}) + profit (${profitPercentageAmount}) = ${balanceChange} USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}`);
+      console.log(`✅ WIN: Adding profit (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}`);
     } else {
       // Lose: Loss percentage already deducted at trade start
       // CRITICAL FIX: Loss P&L is the loss percentage that was already deducted
