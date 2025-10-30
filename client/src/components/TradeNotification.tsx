@@ -19,13 +19,31 @@ interface TradeNotificationProps {
 
 // Helper function to format symbol with slash (e.g., XLMUSDT -> XLM/USDT)
 function formatSymbol(symbol?: string): string {
-  if (!symbol) return 'BTC/USDT';
+  console.log('📊 formatSymbol called with:', {
+    symbol,
+    symbolType: typeof symbol,
+    symbolLength: symbol?.length,
+    symbolIsUndefined: symbol === undefined,
+    symbolIsNull: symbol === null,
+    symbolIsEmpty: symbol === ''
+  });
+
+  if (!symbol) {
+    console.log('📊 formatSymbol: No symbol provided, returning BTC/USDT');
+    return 'BTC/USDT';
+  }
   // If symbol already has a slash, return as-is
-  if (symbol.includes('/')) return symbol;
+  if (symbol.includes('/')) {
+    console.log('📊 formatSymbol: Symbol already has slash, returning as-is:', symbol);
+    return symbol;
+  }
   // If symbol ends with USDT, insert slash before USDT
   if (symbol.endsWith('USDT')) {
-    return symbol.slice(0, -4) + '/USDT';
+    const formatted = symbol.slice(0, -4) + '/USDT';
+    console.log('📊 formatSymbol: Formatted symbol:', symbol, '->', formatted);
+    return formatted;
   }
+  console.log('📊 formatSymbol: Symbol does not end with USDT, returning as-is:', symbol);
   return symbol;
 }
 
@@ -226,6 +244,14 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
 // MAIN COMPONENT - Now uses Universal Notification for all devices
 export default function TradeNotification({ trade, onClose }: TradeNotificationProps) {
   console.log('🔔 UNIVERSAL NOTIFICATION: Rendering for trade:', trade?.id, 'Status:', trade?.status);
+  console.log('🔔 UNIVERSAL NOTIFICATION: Trade symbol:', {
+    symbol: trade?.symbol,
+    symbolType: typeof trade?.symbol,
+    symbolLength: trade?.symbol?.length,
+    symbolIsUndefined: trade?.symbol === undefined,
+    symbolIsNull: trade?.symbol === null,
+    symbolIsEmpty: trade?.symbol === ''
+  });
 
   // Simply return the universal component - no complex mobile detection needed
   return <UniversalTradeNotification trade={trade} onClose={onClose} />;

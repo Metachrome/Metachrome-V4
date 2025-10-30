@@ -138,6 +138,16 @@ function OptionsPageContent({
       }
     }
 
+    // CRITICAL DEBUG: Log symbol information
+    console.log('🔔 TRIGGER: Symbol information:', {
+      symbol: trade.symbol,
+      symbolType: typeof trade.symbol,
+      symbolLength: trade.symbol?.length,
+      symbolIsUndefined: trade.symbol === undefined,
+      symbolIsNull: trade.symbol === null,
+      symbolIsEmpty: trade.symbol === ''
+    });
+
     // Check for duplicate notifications within 5 seconds (but allow test messages)
     const now = Date.now();
     const isTestTrade = trade.id.includes('test-');
@@ -1366,6 +1376,8 @@ function OptionsPageContent({
         profitAmount,
         profitPercentage,
         symbol,
+        symbolType: typeof symbol,
+        symbolLength: symbol?.length,
         direction
       });
 
