@@ -2150,6 +2150,7 @@ function OptionsPageContent({
 
         const newTrade: ActiveTrade = {
           id: result.trade?.id || `trade_${now}_${Math.random().toString(36).substring(2, 11)}`,
+          symbol: selectedSymbol,  // CRITICAL: Include symbol in active trade
           direction,
           entryPrice: safeCurrentPrice,
           amount: selectedAmount,
