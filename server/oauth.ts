@@ -8,14 +8,23 @@ import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import { storage } from './storage';
 
+// Helper function to get callback URL based on environment
+function getCallbackURL(provider: string): string {
+  if (process.env.NODE_ENV === 'production') {
+    // Support multiple production domains
+    const domain = process.env.RAILWAY_DOMAIN || process.env.VERCEL_URL || 'www.metachrome.io';
+    const protocol = domain.includes('localhost') ? 'http' : 'https';
+    return `${protocol}://${domain}/api/auth/${provider}/callback`;
+  }
+  return `http://localhost:5000/api/auth/${provider}/callback`;
+}
+
 // Configure Google OAuth
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.NODE_ENV === 'production'
-      ? `https://www.metachrome.io/api/auth/google/callback`
-      : `http://localhost:5000/api/auth/google/callback`
+    callbackURL: getCallbackURL('google')
   },
   async (accessToken: string, refreshToken: string, profile: any, done: any) => {
     try {
@@ -51,9 +60,7 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
     tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: process.env.NODE_ENV === 'production'
-      ? `https://www.metachrome.io/api/auth/linkedin/callback`
-      : `http://localhost:5000/api/auth/linkedin/callback`,
+    callbackURL: getCallbackURL('linkedin'),
     scope: ['openid', 'profile', 'email']
   },
   async (accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -107,9 +114,7 @@ if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
     tokenURL: 'https://api.twitter.com/2/oauth2/token',
     clientID: process.env.TWITTER_CLIENT_ID,
     clientSecret: process.env.TWITTER_CLIENT_SECRET,
-    callbackURL: process.env.NODE_ENV === 'production'
-      ? `https://www.metachrome.io/api/auth/twitter/callback`
-      : `http://localhost:5000/api/auth/twitter/callback`,
+    callbackURL: getCallbackURL('twitter'),
     scope: ['tweet.read', 'users.read']
   },
   async (accessToken: string, refreshToken: string, profile: any, done: any) => {

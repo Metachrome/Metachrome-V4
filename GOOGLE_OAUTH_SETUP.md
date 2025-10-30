@@ -38,9 +38,13 @@ This guide explains how to set up Google OAuth for login and signup on www.metac
    - Name: `METACHROME Web Client`
    - Authorized JavaScript origins:
      - `https://www.metachrome.io`
+     - `https://metachrome.io`
+     - `https://metachrome-v2-production.up.railway.app` (Railway domain)
      - `http://localhost:5000` (for local development)
    - Authorized redirect URIs:
      - `https://www.metachrome.io/api/auth/google/callback`
+     - `https://metachrome.io/api/auth/google/callback`
+     - `https://metachrome-v2-production.up.railway.app/api/auth/google/callback` (Railway domain)
      - `http://localhost:5000/api/auth/google/callback`
    - Click "CREATE"
 
@@ -70,9 +74,12 @@ This guide explains how to set up Google OAuth for login and signup on www.metac
 ## Troubleshooting
 
 ### "Redirect URI mismatch" error
-- Make sure the redirect URI in Google Cloud Console exactly matches:
-  - `https://www.metachrome.io/api/auth/google/callback`
+- Make sure the redirect URI in Google Cloud Console exactly matches the domain you're using:
+  - For www.metachrome.io: `https://www.metachrome.io/api/auth/google/callback`
+  - For Railway: `https://metachrome-v2-production.up.railway.app/api/auth/google/callback`
+  - For localhost: `http://localhost:5000/api/auth/google/callback`
 - Check that you've added both the origin and the callback URI
+- **IMPORTANT**: After updating Google Cloud Console, you must redeploy your Railway service for changes to take effect
 
 ### "Client ID not found" error
 - Verify that `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in Railway
