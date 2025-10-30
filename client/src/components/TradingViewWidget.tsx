@@ -78,11 +78,15 @@ function TradingViewWidget({
 
       let tradingViewSymbol = symbol;
       if (!symbol.includes(':')) {
-        tradingViewSymbol = cleanSymbol.includes('USDT')
-          ? `BINANCE:${cleanSymbol}`
-          : cleanSymbol.includes('USD')
-          ? `COINBASE:${cleanSymbol}`
-          : `BINANCE:${cleanSymbol}`;
+        if (cleanSymbol === 'HYPEHUSD') {
+          tradingViewSymbol = `CRYPTO:${cleanSymbol}`;
+        } else {
+          tradingViewSymbol = cleanSymbol.includes('USDT')
+            ? `BINANCE:${cleanSymbol}`
+            : cleanSymbol.includes('USD')
+            ? `COINBASE:${cleanSymbol}`
+            : `BINANCE:${cleanSymbol}`;
+        }
       }
 
       console.log(`📊 TradingViewWidget: ${cleanSymbol} -> ${tradingViewSymbol}`);
