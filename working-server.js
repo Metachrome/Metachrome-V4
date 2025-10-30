@@ -82,6 +82,9 @@ console.log('⏭️ AUTO-BUILD: Disabled for testing');
 const app = express();
 const PORT = process.env.PORT || 3005;
 
+// Trust proxy for Railway/Vercel deployments (needed for HTTPS detection)
+app.set('trust proxy', 1);
+
 // Fast startup - minimal logging
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -2402,8 +2405,9 @@ app.get('/api/auth/google', (req, res) => {
     return res.status(500).json({ error: 'Google OAuth not configured' });
   }
 
-  // Construct Google OAuth URL
-  const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+  // Construct Google OAuth URL - use HTTPS for production, HTTP for localhost
+  const protocol = req.get('host')?.includes('localhost') ? 'http' : 'https';
+  const redirectUri = `${protocol}://${req.get('host')}/api/auth/google/callback`;
   const scope = 'openid email profile';
   const state = Math.random().toString(36).substring(2, 15);
 
