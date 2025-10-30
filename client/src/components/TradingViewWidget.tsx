@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, useState } from 'react';
+import LightweightChart from './LightweightChart';
 
 interface TradingViewWidgetProps {
   type?: 'chart' | 'ticker';
@@ -15,6 +16,9 @@ interface TradingViewWidgetProps {
   onSymbolChange?: (symbol: string) => void;
 }
 
+// Symbols not supported by TradingView
+const UNSUPPORTED_SYMBOLS = ['HYPEUSDT', 'MATICUSDT'];
+
 function TradingViewWidget({
   type = "chart",
   symbol = "BINANCE:BTCUSDT",
@@ -30,6 +34,11 @@ function TradingViewWidget({
   onSymbolChange
 }: TradingViewWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showFallback, setShowFallback] = useState(false);
+
+  // Extract symbol without BINANCE: prefix
+  const cleanSymbol = symbol.replace('BINANCE:', '');
+  const isUnsupported = UNSUPPORTED_SYMBOLS.includes(cleanSymbol);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -161,6 +170,27 @@ function TradingViewWidget({
       }
     };
   }, [type, symbol, height, interval, theme, style, locale, timezone, allow_symbol_change, container_id]);
+
+  // Use fallback chart for unsupported symbols
+  if (isUnsupported || showFallback) {
+    return (
+      <div
+        style={{
+          height: type === 'ticker' ? '50px' : (typeof height === 'number' ? `${height}px` : height),
+          width: "100%",
+          position: "relative",
+          backgroundColor: '#10121E'
+        }}
+      >
+        <LightweightChart
+          symbol={cleanSymbol}
+          interval={interval}
+          height={typeof height === 'number' ? height : 400}
+          containerId={container_id}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
