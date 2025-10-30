@@ -1440,6 +1440,7 @@ function OptionsPageContent({
             const dbProfit = parseFloat(serverTrade.profit || serverTrade.profitAmount || 0);
             const dbEntryPrice = parseFloat(serverTrade.entry_price || serverTrade.entryPrice || 0);
             const dbExitPrice = parseFloat(serverTrade.exit_price || serverTrade.exitPrice || 0);
+            const dbSymbol = serverTrade.symbol; // CRITICAL: Extract symbol from database
 
             console.log('🔔 WEBSOCKET: Database trade data extracted:', {
               amount: dbAmount,
@@ -1447,7 +1448,8 @@ function OptionsPageContent({
               result: dbResult,
               profit: dbProfit,
               entryPrice: dbEntryPrice,
-              exitPrice: dbExitPrice
+              exitPrice: dbExitPrice,
+              symbol: dbSymbol
             });
 
             // Calculate profit percentage based on duration
@@ -1467,7 +1469,7 @@ function OptionsPageContent({
             // Create completedTrade with ONLY database values
             const completedTrade: ActiveTrade = {
               id: tradeId,
-              symbol: symbol || completedActiveTrade.symbol,
+              symbol: dbSymbol || symbol || completedActiveTrade.symbol,  // CRITICAL: Use database symbol first
               direction: (direction as 'up' | 'down') || completedActiveTrade.direction,
               startTime: completedActiveTrade.startTime,
               endTime: completedActiveTrade.endTime,
@@ -1605,11 +1607,13 @@ function OptionsPageContent({
               fallbackTrade.amount = parseFloat(serverTrade.amount);
               fallbackTrade.duration = serverTrade.duration || 30;
               fallbackTrade.status = (serverTrade.result === 'win' || serverTrade.result === 'won') ? 'won' : 'lost';
+              fallbackTrade.symbol = serverTrade.symbol || fallbackTrade.symbol;  // CRITICAL: Update symbol from database
 
               console.log('🔔 WEBSOCKET FALLBACK: Updated fallbackTrade with database values:', {
                 amount: fallbackTrade.amount,
                 duration: fallbackTrade.duration,
-                status: fallbackTrade.status
+                status: fallbackTrade.status,
+                symbol: fallbackTrade.symbol
               });
             } else {
               console.log('⚠️ WEBSOCKET FALLBACK: Trade NOT found in database! Using WebSocket data');
@@ -1726,7 +1730,7 @@ function OptionsPageContent({
                 startTime: activeTrade.startTime,
                 endTime: activeTrade.endTime,
                 profitPercentage: profitPercentage,
-                symbol: activeTrade.symbol,
+                symbol: serverTrade.symbol || activeTrade.symbol,  // CRITICAL: Use server symbol first
                 // CRITICAL: Use server values, not local trade values
                 amount: tradeAmount,
                 entryPrice: entryPrice,
