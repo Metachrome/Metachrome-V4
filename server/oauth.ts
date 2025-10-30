@@ -14,7 +14,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.NODE_ENV === 'production'
-      ? `https://${process.env.VERCEL_URL || 'metachrome-v2.vercel.app'}/api/auth/google/callback`
+      ? `https://www.metachrome.io/api/auth/google/callback`
       : `http://localhost:5000/api/auth/google/callback`
   },
   async (accessToken: string, refreshToken: string, profile: any, done: any) => {
@@ -52,7 +52,7 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
     clientID: process.env.LINKEDIN_CLIENT_ID,
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
     callbackURL: process.env.NODE_ENV === 'production'
-      ? `https://${process.env.VERCEL_URL || 'metachrome-v2.vercel.app'}/api/auth/linkedin/callback`
+      ? `https://www.metachrome.io/api/auth/linkedin/callback`
       : `http://localhost:5000/api/auth/linkedin/callback`,
     scope: ['openid', 'profile', 'email']
   },
@@ -108,7 +108,7 @@ if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
     clientID: process.env.TWITTER_CLIENT_ID,
     clientSecret: process.env.TWITTER_CLIENT_SECRET,
     callbackURL: process.env.NODE_ENV === 'production'
-      ? `https://${process.env.VERCEL_URL || 'metachrome-v2.vercel.app'}/api/auth/twitter/callback`
+      ? `https://www.metachrome.io/api/auth/twitter/callback`
       : `http://localhost:5000/api/auth/twitter/callback`,
     scope: ['tweet.read', 'users.read']
   },
