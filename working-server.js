@@ -9555,13 +9555,15 @@ app.get('/api/binance/price', async (req, res) => {
 
     // Special handling for HYPEHUSD (not available on Binance)
     if (symbol === 'HYPEHUSD') {
-      console.log('💰 [Binance Price] HYPEHUSD detected - fetching from CoinGecko');
+      console.log('💰 [Binance Price] HYPEHUSD detected - fetching from CoinGecko API');
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=hyperliquid&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_market_cap_change_24h=true',
-          { signal: controller.signal });
+        const coingeckoUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=hyperliquid&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_market_cap_change_24h=true';
+        console.log('💰 [Binance Price] Fetching HYPEHUSD from:', coingeckoUrl);
+
+        const response = await fetch(coingeckoUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
 
         if (response.ok) {
@@ -9582,9 +9584,11 @@ app.get('/api/binance/price', async (req, res) => {
               timestamp: Date.now()
             };
 
-            console.log('✅ [Binance Price] HYPEHUSD price:', priceData.price);
+            console.log('✅ [Binance Price] HYPEHUSD price fetched:', priceData.price, 'Change:', priceData.priceChangePercent24h + '%');
             return res.json({ success: true, data: priceData });
           }
+        } else {
+          console.error('❌ [Binance Price] CoinGecko response not ok:', response.status);
         }
       } catch (coingeckoError) {
         console.error('❌ [Binance Price] CoinGecko error:', coingeckoError.message);
