@@ -176,9 +176,13 @@ export default function LightweightChart({
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (chartRef.current) {
-        chartRef.current.remove();
-        chartRef.current = null;
+      try {
+        if (chartRef.current) {
+          chartRef.current.remove();
+          chartRef.current = null;
+        }
+      } catch (error) {
+        console.error('Error cleaning up chart:', error);
       }
     };
   }, [symbol, interval, height]);

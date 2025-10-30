@@ -171,6 +171,24 @@ function TradingViewWidget({
     };
   }, [type, symbol, height, interval, theme, style, locale, timezone, allow_symbol_change, container_id]);
 
+  // Convert TradingView interval format to Binance format
+  const convertInterval = (tvInterval: string): string => {
+    // TradingView uses "1" for 1 minute, "5" for 5 minutes, etc.
+    // Binance uses "1m", "5m", "15m", "1h", "4h", "1d", etc.
+    const intervalMap: Record<string, string> = {
+      '1': '1m',
+      '5': '5m',
+      '15': '15m',
+      '30': '30m',
+      '60': '1h',
+      '240': '4h',
+      '1D': '1d',
+      '1W': '1w',
+      '1M': '1M'
+    };
+    return intervalMap[tvInterval] || '1m'; // Default to 1m if not found
+  };
+
   // Use fallback chart for unsupported symbols
   if (isUnsupported || showFallback) {
     return (
@@ -184,7 +202,7 @@ function TradingViewWidget({
       >
         <LightweightChart
           symbol={cleanSymbol}
-          interval={interval}
+          interval={convertInterval(interval)}
           height={typeof height === 'number' ? height : 400}
           containerId={container_id}
         />
