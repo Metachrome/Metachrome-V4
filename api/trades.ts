@@ -509,9 +509,9 @@ async function completeOptionsTrade(tradeId: string, userId: string, username?: 
     // Update user balance if won
     if (isWin) {
       const currentBalance = parseFloat(user.balance);
-      user.balance = (currentBalance + tradeAmount + profit).toString(); // Return original amount + profit
+      user.balance = (currentBalance + profit).toString(); // Add only the profit (amount was already deducted at trade start)
       await saveUsers(users);
-      console.log(`💰 TRADE WON: ${user.username} balance: ${currentBalance} → ${user.balance} (+${tradeAmount + profit})`);
+      console.log(`💰 TRADE WON: ${user.username} balance: ${currentBalance} → ${user.balance} (+${profit})`);
     } else {
       console.log(`💸 TRADE LOST: ${user.username} - amount already deducted: -${tradeAmount}`);
     }
