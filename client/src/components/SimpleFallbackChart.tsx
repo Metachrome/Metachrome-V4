@@ -1,0 +1,171 @@
+import React, { useEffect, useState } from 'react';
+
+interface SimpleFallbackChartProps {
+  symbol: string;
+  height?: number;
+}
+
+/**
+ * Simple Fallback Chart Component
+ * Displays a basic candlestick chart for unsupported symbols
+ * Uses canvas for rendering to avoid DOM cleanup issues
+ */
+export default function SimpleFallbackChart({
+  symbol = 'BTCUSDT',
+  height = 400
+}: SimpleFallbackChartProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [canvasRef, setCanvasRef] = React.useState<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef) return;
+
+    const fetchAndDraw = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        console.log('📊 [SimpleFallbackChart] Fetching klines for', symbol);
+
+        const response = await fetch(`/api/binance/klines?symbol=${symbol}&interval=1m&limit=100`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: Failed to fetch chart data`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+          throw new Error('Invalid response format');
+        }
+
+        const klines = result.data;
+        console.log('✅ [SimpleFallbackChart] Received', klines.length, 'candles');
+
+        // Draw candlestick chart on canvas
+        drawChart(canvasRef, klines);
+        setIsLoading(false);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error('❌ [SimpleFallbackChart] Error:', errorMessage);
+        setError(errorMessage);
+        setIsLoading(false);
+      }
+    };
+
+    fetchAndDraw();
+  }, [symbol, canvasRef]);
+
+  const drawChart = (canvas: HTMLCanvasElement, klines: any[]) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const chartHeight = canvas.height - 40; // Leave space for labels
+    const padding = 40;
+
+    // Clear canvas
+    ctx.fillStyle = '#10121E';
+    ctx.fillRect(0, 0, width, canvas.height);
+
+    if (klines.length === 0) return;
+
+    // Calculate price range
+    const prices = klines.flatMap(k => [k.high, k.low]);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const priceRange = maxPrice - minPrice || 1;
+
+    // Draw grid
+    ctx.strokeStyle = '#1F2937';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = padding + (chartHeight / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+    }
+
+    // Draw candlesticks
+    const candleWidth = (width - padding * 2) / klines.length;
+    const candleBodyWidth = Math.max(1, candleWidth * 0.6);
+
+    klines.forEach((candle, index) => {
+      const x = padding + index * candleWidth + candleWidth / 2;
+      
+      // Calculate Y positions
+      const openY = padding + ((maxPrice - candle.open) / priceRange) * chartHeight;
+      const closeY = padding + ((maxPrice - candle.close) / priceRange) * chartHeight;
+      const highY = padding + ((maxPrice - candle.high) / priceRange) * chartHeight;
+      const lowY = padding + ((maxPrice - candle.low) / priceRange) * chartHeight;
+
+      const isGreen = candle.close >= candle.open;
+      const color = isGreen ? '#10B981' : '#EF4444';
+
+      // Draw wick
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, highY);
+      ctx.lineTo(x, lowY);
+      ctx.stroke();
+
+      // Draw body
+      ctx.fillStyle = color;
+      const bodyTop = Math.min(openY, closeY);
+      const bodyHeight = Math.abs(closeY - openY) || 1;
+      ctx.fillRect(x - candleBodyWidth / 2, bodyTop, candleBodyWidth, bodyHeight);
+    });
+
+    // Draw price labels
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++) {
+      const price = maxPrice - (priceRange / 5) * i;
+      const y = padding + (chartHeight / 5) * i + 4;
+      ctx.fillText(price.toFixed(2), width - 5, y);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        height: `${height}px`,
+        width: "100%",
+        position: "relative",
+        backgroundColor: '#10121E',
+        borderRadius: '8px',
+        overflow: 'hidden'
+      }}
+    >
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#10121E]/80 z-10">
+          <div className="text-gray-400 text-sm">Loading chart...</div>
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#10121E]/80 z-10">
+          <div className="text-red-400 text-sm text-center px-4">
+            Error: {error}
+          </div>
+        </div>
+      )}
+
+      <canvas
+        ref={setCanvasRef}
+        width={800}
+        height={height}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block'
+        }}
+      />
+    </div>
+  );
+}
+
