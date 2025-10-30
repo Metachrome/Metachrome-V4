@@ -767,7 +767,7 @@ function OptionsPageContent({
   const tradingPairs = [
     'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
     'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
-    'HYPEUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
+    'HYPEHUSD', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
     'BCHUSDT', 'DOTUSDT', 'POLUSDT', 'XLMUSDT'
   ].map(rawSymbol => {
     // Get real-time price data for this symbol
@@ -2258,7 +2258,7 @@ function OptionsPageContent({
                 <option value="DOGEUSDT">DOGE/USDT</option>
                 <option value="ADAUSDT">ADA/USDT</option>
                 <option value="TRXUSDT">TRX/USDT</option>
-                <option value="HYPEUSDT">HYPE/USDT</option>
+                <option value="HYPEHUSD">HYPE/USD</option>
                 <option value="LINKUSDT">LINK/USDT</option>
                 <option value="AVAXUSDT">AVAX/USDT</option>
                 <option value="SUIUSDT">SUI/USDT</option>
@@ -3176,7 +3176,7 @@ function OptionsPageContent({
                     <option value="DOGEUSDT" className="bg-gray-800 text-white">DOGE/USDT</option>
                     <option value="ADAUSDT" className="bg-gray-800 text-white">ADA/USDT</option>
                     <option value="TRXUSDT" className="bg-gray-800 text-white">TRX/USDT</option>
-                    <option value="HYPEUSDT" className="bg-gray-800 text-white">HYPE/USDT</option>
+                    <option value="HYPEHUSD" className="bg-gray-800 text-white">HYPE/USD</option>
                     <option value="LINKUSDT" className="bg-gray-800 text-white">LINK/USDT</option>
                     <option value="AVAXUSDT" className="bg-gray-800 text-white">AVAX/USDT</option>
                     <option value="SUIUSDT" className="bg-gray-800 text-white">SUI/USDT</option>
