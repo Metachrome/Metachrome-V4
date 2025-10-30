@@ -69,20 +69,31 @@ export default function SimpleFallbackChart({
             const result = await response.json();
             if (result.success && result.data) {
               klines = result.data;
+              console.log('✅ [SimpleFallbackChart] Got klines from API:', klines.length);
             }
+          } else {
+            console.warn('⚠️ [SimpleFallbackChart] API returned status:', response.status);
           }
         } catch (apiErr) {
-          console.warn('⚠️ [SimpleFallbackChart] API endpoint failed, trying direct Binance API');
+          console.warn('⚠️ [SimpleFallbackChart] API endpoint failed:', apiErr);
         }
 
-        // If API failed, fetch directly from Binance
+        // If API failed, fetch directly from Binance (with timeout)
         if (!klines) {
           try {
+            console.log('📊 [SimpleFallbackChart] Trying direct Binance API for', symbol);
             const binanceUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=100`;
-            const response = await fetch(binanceUrl);
+
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+            const response = await fetch(binanceUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
 
             if (response.ok) {
               const data = await response.json();
+              console.log('✅ [SimpleFallbackChart] Got data from Binance:', data.length, 'candles');
 
               // Transform Binance format to our format
               klines = data.map((candle: any) => ({
@@ -93,9 +104,13 @@ export default function SimpleFallbackChart({
                 close: parseFloat(candle[4]),
                 volume: parseFloat(candle[5])
               }));
+            } else {
+              console.warn('⚠️ [SimpleFallbackChart] Binance API returned status:', response.status);
+              const errorText = await response.text();
+              console.warn('⚠️ [SimpleFallbackChart] Binance error:', errorText);
             }
           } catch (binanceErr) {
-            console.warn('⚠️ [SimpleFallbackChart] Binance API failed, generating mock data');
+            console.warn('⚠️ [SimpleFallbackChart] Binance API failed:', binanceErr);
           }
         }
 
@@ -105,7 +120,7 @@ export default function SimpleFallbackChart({
 
           // Get base price from symbol (mock prices for unsupported symbols)
           const mockPrices: { [key: string]: number } = {
-            'HYPEUSDT': 28.45,
+            'HYPEUSDT': 48.29,
             'UNIUSDT': 12.50,
             'ATOMUSDT': 8.75,
             'FILUSDT': 15.20,
@@ -114,13 +129,14 @@ export default function SimpleFallbackChart({
 
           const basePrice = mockPrices[symbol] || 100;
           klines = generateMockKlines(basePrice, 100);
+          console.log('✅ [SimpleFallbackChart] Generated mock data:', klines.length, 'candles');
         }
 
         if (!klines || klines.length === 0) {
           throw new Error('No chart data available');
         }
 
-        console.log('✅ [SimpleFallbackChart] Received', klines.length, 'candles');
+        console.log('✅ [SimpleFallbackChart] Received', klines.length, 'candles, drawing chart');
 
         // Draw candlestick chart on canvas
         drawChart(canvasRef, klines);
