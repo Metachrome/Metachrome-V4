@@ -61,8 +61,19 @@ export default function SimpleFallbackChart({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = canvas.width;
-    const chartHeight = canvas.height - 40; // Leave space for labels
+    // Get the actual display size
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    // Set canvas resolution
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    // Scale context to match device pixel ratio
+    ctx.scale(dpr, dpr);
+
+    const width = rect.width;
+    const chartHeight = rect.height - 40; // Leave space for labels
     const padding = 40;
 
     // Clear canvas
@@ -157,8 +168,6 @@ export default function SimpleFallbackChart({
 
       <canvas
         ref={setCanvasRef}
-        width={800}
-        height={height}
         style={{
           width: '100%',
           height: '100%',
