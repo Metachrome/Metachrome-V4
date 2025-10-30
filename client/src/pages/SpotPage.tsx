@@ -217,7 +217,7 @@ function SpotPageContent() {
     { symbol: 'LINK/USDT', coin: 'LINK', rawSymbol: 'LINKUSDT', ...getRealPriceData('LINKUSDT'), icon: '🔗', iconBg: 'bg-blue-700' },
     { symbol: 'AVAX/USDT', coin: 'AVAX', rawSymbol: 'AVAXUSDT', ...getRealPriceData('AVAXUSDT'), icon: 'A', iconBg: 'bg-red-500' },
     { symbol: 'DOT/USDT', coin: 'DOT', rawSymbol: 'DOTUSDT', ...getRealPriceData('DOTUSDT'), icon: '●', iconBg: 'bg-pink-500' },
-    { symbol: 'MATIC/USDT', coin: 'MATIC', rawSymbol: 'MATICUSDT', ...getRealPriceData('MATICUSDT'), icon: 'M', iconBg: 'bg-purple-700' },
+    { symbol: 'POL/USDT', coin: 'POL', rawSymbol: 'POLUSDT', ...getRealPriceData('POLUSDT'), icon: 'P', iconBg: 'bg-purple-700' },
     { symbol: 'UNI/USDT', coin: 'UNI', rawSymbol: 'UNIUSDT', ...getRealPriceData('UNIUSDT'), icon: '🦄', iconBg: 'bg-pink-600' },
     { symbol: 'ATOM/USDT', coin: 'ATOM', rawSymbol: 'ATOMUSDT', ...getRealPriceData('ATOMUSDT'), icon: '⚛', iconBg: 'bg-blue-600' },
     { symbol: 'FIL/USDT', coin: 'FIL', rawSymbol: 'FILUSDT', ...getRealPriceData('FILUSDT'), icon: 'F', iconBg: 'bg-gray-600' },

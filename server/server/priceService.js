@@ -20,7 +20,7 @@ class PriceService {
             'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
             'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
             'HYPEUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
-            'BCHUSDT', 'DOTUSDT', 'MATICUSDT', 'XLMUSDT'
+            'BCHUSDT', 'DOTUSDT', 'POLUSDT', 'XLMUSDT'
         ];
         // Skip external connections in development mode for faster startup
         if (process.env.NODE_ENV === 'development') {

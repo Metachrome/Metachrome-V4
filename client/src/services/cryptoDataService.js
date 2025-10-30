@@ -215,7 +215,7 @@ export const useCryptoData = () => {
         },
         {
           id: 'polygon',
-          symbol: "MATIC/USDT",
+          symbol: "POL/USDT",
           name: "Polygon",
           price: "$0.8945",
           change: "+3.21%",
@@ -224,7 +224,7 @@ export const useCryptoData = () => {
           isPositive: true,
           marketCap: 8500000000,
           volume: 650000000,
-          image: "https://cryptoicons.org/api/icon/matic/200",
+          image: "https://cryptoicons.org/api/icon/pol/200",
           coinGeckoId: 'polygon',
           rawPrice: 0.8945,
           rawChange: 3.21

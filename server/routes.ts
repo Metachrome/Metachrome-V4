@@ -2874,7 +2874,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { symbol: 'SHIBUSDT', price: '0.00002345', change24h: '2.34', priceChangePercent24h: '2.34', volume24h: '567890123', high24h: '0.000024', low24h: '0.000023', timestamp: new Date() },
           { symbol: 'BCHUSDT', price: '512.34', change24h: '1.56', priceChangePercent24h: '1.56', volume24h: '678901234', high24h: '520.00', low24h: '505.00', timestamp: new Date() },
           { symbol: 'DOTUSDT', price: '8.456', change24h: '0.78', priceChangePercent24h: '0.78', volume24h: '789012345', high24h: '8.60', low24h: '8.30', timestamp: new Date() },
-          { symbol: 'MATICUSDT', price: '0.4567', change24h: '1.23', priceChangePercent24h: '1.23', volume24h: '890123456', high24h: '0.470', low24h: '0.445', timestamp: new Date() },
+          { symbol: 'POLUSDT', price: '0.4567', change24h: '1.23', priceChangePercent24h: '1.23', volume24h: '890123456', high24h: '0.470', low24h: '0.445', timestamp: new Date() },
           { symbol: 'XLMUSDT', price: '0.1234', change24h: '2.45', priceChangePercent24h: '2.45', volume24h: '901234567', high24h: '0.127', low24h: '0.120', timestamp: new Date() }
         ];
 

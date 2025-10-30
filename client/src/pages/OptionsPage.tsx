@@ -768,7 +768,7 @@ function OptionsPageContent({
     'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
     'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
     'HYPEUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
-    'BCHUSDT', 'DOTUSDT', 'MATICUSDT', 'XLMUSDT'
+    'BCHUSDT', 'DOTUSDT', 'POLUSDT', 'XLMUSDT'
   ].map(rawSymbol => {
     // Get real-time price data for this symbol
     const symbolPriceData = getPriceForSymbol(rawSymbol);
@@ -2265,7 +2265,7 @@ function OptionsPageContent({
                 <option value="SHIBUSDT">SHIB/USDT</option>
                 <option value="BCHUSDT">BCH/USDT</option>
                 <option value="DOTUSDT">DOT/USDT</option>
-                <option value="MATICUSDT">MATIC/USDT</option>
+                <option value="POLUSDT">POL/USDT</option>
                 <option value="XLMUSDT">XLM/USDT</option>
               </select>
             </div>
@@ -3183,7 +3183,7 @@ function OptionsPageContent({
                     <option value="SHIBUSDT" className="bg-gray-800 text-white">SHIB/USDT</option>
                     <option value="BCHUSDT" className="bg-gray-800 text-white">BCH/USDT</option>
                     <option value="DOTUSDT" className="bg-gray-800 text-white">DOT/USDT</option>
-                    <option value="MATICUSDT" className="bg-gray-800 text-white">MATIC/USDT</option>
+                    <option value="POLUSDT" className="bg-gray-800 text-white">POL/USDT</option>
                     <option value="XLMUSDT" className="bg-gray-800 text-white">XLM/USDT</option>
                   </select>
                 </div>
@@ -3664,7 +3664,7 @@ function OptionsPageContent({
                   'XRP': { icon: '✕', bg: 'bg-gray-600' },
                   'ADA': { icon: 'A', bg: 'bg-blue-500' },
                   'DOGE': { icon: 'D', bg: 'bg-yellow-500' },
-                  'MATIC': { icon: 'M', bg: 'bg-purple-700' },
+                  'POL': { icon: 'P', bg: 'bg-purple-700' },
                   'DOT': { icon: '●', bg: 'bg-pink-500' },
                   'AVAX': { icon: 'A', bg: 'bg-red-500' },
                 };

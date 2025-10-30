@@ -35,7 +35,7 @@ class PriceService {
     'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
     'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
     'HYPEUSDT', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
-    'BCHUSDT', 'DOTUSDT', 'MATICUSDT', 'XLMUSDT'
+    'BCHUSDT', 'DOTUSDT', 'POLUSDT', 'XLMUSDT'
   ];
 
   constructor() {
@@ -257,7 +257,7 @@ class PriceService {
         volume24h: '847896.30',
       },
       {
-        symbol: 'MATICUSDT',
+        symbol: 'POLUSDT',
         price: '0.8945',
         priceChange24h: '0.028',
         priceChangePercent24h: '3.21',

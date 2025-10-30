@@ -140,8 +140,8 @@ export function MobileCurrencyList() {
       color: "bg-pink-500"
     },
     {
-      symbol: "MATIC/USDT",
-      name: "MATIC",
+      symbol: "POL/USDT",
+      name: "POL",
       price: "$0.4567",
       change: "+1.23%",
       color: "bg-purple-600"
