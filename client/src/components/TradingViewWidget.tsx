@@ -36,8 +36,8 @@ function TradingViewWidget({
   const containerRef = useRef<HTMLDivElement>(null);
   const [showFallback, setShowFallback] = useState(false);
 
-  // Extract symbol without BINANCE: prefix
-  const cleanSymbol = symbol.replace('BINANCE:', '');
+  // Extract symbol without any exchange prefix
+  const cleanSymbol = symbol.replace(/^(BINANCE:|COINBASE:|CRYPTO:)/, '');
   const isUnsupported = UNSUPPORTED_SYMBOLS.includes(cleanSymbol);
 
   useEffect(() => {
@@ -77,16 +77,15 @@ function TradingViewWidget({
       script.async = true;
 
       let tradingViewSymbol = symbol;
-      if (!symbol.includes(':')) {
-        if (cleanSymbol === 'HYPEHUSD') {
-          tradingViewSymbol = `CRYPTO:${cleanSymbol}`;
-        } else {
-          tradingViewSymbol = cleanSymbol.includes('USDT')
-            ? `BINANCE:${cleanSymbol}`
-            : cleanSymbol.includes('USD')
-            ? `COINBASE:${cleanSymbol}`
-            : `BINANCE:${cleanSymbol}`;
-        }
+      // Always use cleanSymbol to determine the correct prefix
+      if (cleanSymbol === 'HYPEHUSD') {
+        tradingViewSymbol = `CRYPTO:${cleanSymbol}`;
+      } else if (!symbol.includes(':')) {
+        tradingViewSymbol = cleanSymbol.includes('USDT')
+          ? `BINANCE:${cleanSymbol}`
+          : cleanSymbol.includes('USD')
+          ? `COINBASE:${cleanSymbol}`
+          : `BINANCE:${cleanSymbol}`;
       }
 
       console.log(`📊 TradingViewWidget: ${cleanSymbol} -> ${tradingViewSymbol}`);
