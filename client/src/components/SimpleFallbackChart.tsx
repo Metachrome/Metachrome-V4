@@ -105,6 +105,7 @@ export default function SimpleFallbackChart({
 
           // Get base price from symbol (mock prices for unsupported symbols)
           const mockPrices: { [key: string]: number } = {
+            'HYPEUSDT': 28.45,
             'UNIUSDT': 12.50,
             'ATOMUSDT': 8.75,
             'FILUSDT': 15.20,
