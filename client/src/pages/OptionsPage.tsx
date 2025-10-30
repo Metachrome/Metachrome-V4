@@ -763,12 +763,12 @@ function OptionsPageContent({
   // This ensures ALL numbers across the page are SYNCHRONIZED
   const displayPrice = priceData?.price || currentPrice || 166373.87;
 
-  // Trading pairs data - Dynamic with real-time prices (All 19 supported currencies)
+  // Trading pairs data - Dynamic with real-time prices (All 17 supported currencies)
   const tradingPairs = [
     'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'LTCUSDT', 'BNBUSDT',
     'SOLUSDT', 'TONUSDT', 'DOGEUSDT', 'ADAUSDT', 'TRXUSDT',
-    'HYPEHUSD', 'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
-    'BCHUSDT', 'DOTUSDT', 'POLUSDT', 'XLMUSDT'
+    'LINKUSDT', 'AVAXUSDT', 'SUIUSDT', 'SHIBUSDT',
+    'BCHUSDT', 'DOTUSDT', 'XLMUSDT'
   ].map(rawSymbol => {
     // Get real-time price data for this symbol
     const symbolPriceData = getPriceForSymbol(rawSymbol);
@@ -2258,14 +2258,12 @@ function OptionsPageContent({
                 <option value="DOGEUSDT">DOGE/USDT</option>
                 <option value="ADAUSDT">ADA/USDT</option>
                 <option value="TRXUSDT">TRX/USDT</option>
-                <option value="HYPEHUSD">HYPE/USD</option>
                 <option value="LINKUSDT">LINK/USDT</option>
                 <option value="AVAXUSDT">AVAX/USDT</option>
                 <option value="SUIUSDT">SUI/USDT</option>
                 <option value="SHIBUSDT">SHIB/USDT</option>
                 <option value="BCHUSDT">BCH/USDT</option>
                 <option value="DOTUSDT">DOT/USDT</option>
-                <option value="POLUSDT">POL/USDT</option>
                 <option value="XLMUSDT">XLM/USDT</option>
               </select>
             </div>
@@ -3176,14 +3174,12 @@ function OptionsPageContent({
                     <option value="DOGEUSDT" className="bg-gray-800 text-white">DOGE/USDT</option>
                     <option value="ADAUSDT" className="bg-gray-800 text-white">ADA/USDT</option>
                     <option value="TRXUSDT" className="bg-gray-800 text-white">TRX/USDT</option>
-                    <option value="HYPEHUSD" className="bg-gray-800 text-white">HYPE/USD</option>
                     <option value="LINKUSDT" className="bg-gray-800 text-white">LINK/USDT</option>
                     <option value="AVAXUSDT" className="bg-gray-800 text-white">AVAX/USDT</option>
                     <option value="SUIUSDT" className="bg-gray-800 text-white">SUI/USDT</option>
                     <option value="SHIBUSDT" className="bg-gray-800 text-white">SHIB/USDT</option>
                     <option value="BCHUSDT" className="bg-gray-800 text-white">BCH/USDT</option>
                     <option value="DOTUSDT" className="bg-gray-800 text-white">DOT/USDT</option>
-                    <option value="POLUSDT" className="bg-gray-800 text-white">POL/USDT</option>
                     <option value="XLMUSDT" className="bg-gray-800 text-white">XLM/USDT</option>
                   </select>
                 </div>
