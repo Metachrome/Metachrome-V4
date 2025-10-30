@@ -3952,7 +3952,7 @@ function OptionsPageContent({
                   const potentialPayout = isWinning ? (trade.amount * (1 + trade.profitPercentage / 100)) - trade.amount : -(trade.amount * lossPercentage / 100);
 
                   return (
-                    <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden px-4">
+                    <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden px-4 trade-row">
                       <div className="flex flex-col min-w-0">
                         <span className="text-gray-400 text-xs truncate">{selectedSymbol.replace('USDT', '/USDT')}</span>
                         <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
@@ -4033,7 +4033,7 @@ function OptionsPageContent({
                       });
 
                       return (
-                        <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs py-3 border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden px-4">
+                        <div key={trade.id} className="grid grid-cols-8 gap-2 text-xs border-b border-gray-800 hover:bg-gray-800/30 max-w-full overflow-hidden px-4 trade-row">
                           <div className="flex flex-col min-w-0">
                             <span className="text-gray-400 text-xs truncate">{marketPair}</span>
                             <span className={`font-bold truncate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
@@ -4242,11 +4242,20 @@ function OptionsPageWithProvider() {
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
 
   return (
-    <PriceProvider symbol={selectedSymbol} updateInterval={2000}>
-      <OptionsPageContent
-        selectedSymbol={selectedSymbol}
-        setSelectedSymbol={setSelectedSymbol}
-      />
-    </PriceProvider>
+    <>
+      <style>{`
+        .trade-row {
+          padding-top: 0.75rem;
+          padding-bottom: 0.75rem;
+          padding-right: 10px;
+        }
+      `}</style>
+      <PriceProvider symbol={selectedSymbol} updateInterval={2000}>
+        <OptionsPageContent
+          selectedSymbol={selectedSymbol}
+          setSelectedSymbol={setSelectedSymbol}
+        />
+      </PriceProvider>
+    </>
   );
 }
