@@ -17,6 +17,18 @@ interface TradeNotificationProps {
   onClose: () => void;
 }
 
+// Helper function to format symbol with slash (e.g., XLMUSDT -> XLM/USDT)
+function formatSymbol(symbol?: string): string {
+  if (!symbol) return 'BTC/USDT';
+  // If symbol already has a slash, return as-is
+  if (symbol.includes('/')) return symbol;
+  // If symbol ends with USDT, insert slash before USDT
+  if (symbol.endsWith('USDT')) {
+    return symbol.slice(0, -4) + '/USDT';
+  }
+  return symbol;
+}
+
 // Note: Mobile notification logic is now handled in the main component's useEffect
 
 // UNIVERSAL NOTIFICATION COMPONENT (Works for both Desktop and Mobile)
@@ -145,7 +157,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
             }}
           >
             <span className="text-gray-200">Market:</span>
-            <span className="font-bold">{trade.symbol || 'BTC/USDT'}</span>
+            <span className="font-bold">{formatSymbol(trade.symbol)}</span>
           </div>
           <div
             className="flex justify-between items-center bg-gray-800/40 rounded-lg"

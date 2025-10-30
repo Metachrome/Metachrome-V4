@@ -16,6 +16,18 @@ interface Trade {
   duration?: number;
 }
 
+// Helper function to format symbol with slash (e.g., XLMUSDT -> XLM/USDT)
+function formatSymbolForNotification(symbol?: string): string {
+  if (!symbol) return 'BTC/USDT';
+  // If symbol already has a slash, return as-is
+  if (symbol.includes('/')) return symbol;
+  // If symbol ends with USDT, insert slash before USDT
+  if (symbol.endsWith('USDT')) {
+    return symbol.slice(0, -4) + '/USDT';
+  }
+  return symbol;
+}
+
 export function showMobileTradeNotification(trade: Trade): HTMLElement {
   console.log('🚀 BULLETPROOF: ===== FUNCTION CALLED =====');
   console.log('🚀 BULLETPROOF: Creating mobile notification for trade:', trade);
@@ -94,16 +106,17 @@ export function showMobileTradeNotification(trade: Trade): HTMLElement {
   });
   
   // Create the content
+  const formattedSymbol = formatSymbolForNotification(trade.symbol);
   card.innerHTML = `
     <div style="text-align: center !important; margin-bottom: 16px !important;">
       <div style="font-size: 20px !important; font-weight: bold !important; color: ${isWin ? '#10b981' : '#ef4444'} !important; margin-bottom: 8px !important;">
         ${isWin ? '🎉 Trade Won!' : '💔 Trade Lost'}
       </div>
       <div style="font-size: 12px !important; color: #9ca3af !important;">
-        Market: ${trade.symbol || 'BTC/USDT'}
+        Market: ${formattedSymbol}
       </div>
     </div>
-    
+
     <div style="
       background-color: #2a2d47 !important;
       border-radius: 8px !important;
@@ -114,7 +127,7 @@ export function showMobileTradeNotification(trade: Trade): HTMLElement {
     ">
       <div style="display: flex !important; justify-content: space-between !important; margin-bottom: 8px !important;">
         <span style="color: #9ca3af !important;">Market :</span>
-        <span style="color: white !important; font-weight: bold !important;">${trade.symbol || 'BTC/USDT'}</span>
+        <span style="color: white !important; font-weight: bold !important;">${formattedSymbol}</span>
       </div>
       <div style="display: flex !important; justify-content: space-between !important; margin-bottom: 8px !important;">
         <span style="color: #9ca3af !important;">Trade :</span>
