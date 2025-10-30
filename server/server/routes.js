@@ -1171,9 +1171,26 @@ async function registerRoutes(app) {
                     isWin = parseFloat(currentPrice.price) < parseFloat(trade.entryPrice);
                 }
             }
-            // Calculate profit/loss
+            // Calculate profit/loss based on duration
             const tradeAmount = parseFloat(trade.amount);
-            const profit = isWin ? tradeAmount * 0.1 : -tradeAmount; // 10% profit on win, lose all on loss
+            const optionsSettings = await storage_1.storage.getOptionsSettings();
+            const setting = optionsSettings.find(s => s.duration === trade.duration);
+            const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
+            const profitAmount = tradeAmount * (profitPercentage / 100);
+            // For WIN: balance change = return profit + earn profit (profit was deducted at trade start)
+            // For LOSE: balance change = 0 (profit was already deducted)
+            const balanceChange = isWin ? profitAmount * 2 : 0;
+            const profit = isWin ? profitAmount : -profitAmount; // For display/transaction purposes
+            console.log(`📊 Calculated profit: ${profit} (isWin: ${isWin})`);
+            console.log(`📊 Profit details:`, {
+                tradeAmount,
+                profitPercentage,
+                profitAmount,
+                isWin,
+                balanceChange,
+                profitCalculation: isWin ? `${tradeAmount} + (${tradeAmount} * ${profitPercentage}%) = ${balanceChange}` : `0 (already deducted)`,
+                profitAsString: profit.toString()
+            });
             // Update trade
             const updatedTrade = await storage_1.storage.updateTrade(tradeId, {
                 status: 'completed',
@@ -1184,7 +1201,7 @@ async function registerRoutes(app) {
             // Update user balance
             const currentBalance = await storage_1.storage.getBalance(trade.userId, 'USDT');
             if (currentBalance) {
-                const newBalance = parseFloat(currentBalance.available || '0') + profit;
+                const newBalance = parseFloat(currentBalance.available || '0') + balanceChange;
                 await storage_1.storage.updateBalance(trade.userId, 'USDT', newBalance.toString(), currentBalance.locked || '0');
             }
             res.json({ trade: updatedTrade, isWin, profit });

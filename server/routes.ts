@@ -1439,12 +1439,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`❌ ERROR: Trade amount is 0! This will result in $0 transaction. Trade:`, trade);
       }
 
-      const profit = isWin ? tradeAmount * 0.1 : -tradeAmount; // 10% profit on win, lose all on loss
+      // Calculate profit/loss based on duration
+      const optionsSettings = await storage.getOptionsSettings();
+      const setting = optionsSettings.find(s => s.duration === trade.duration);
+      const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
+      const profitAmount = tradeAmount * (profitPercentage / 100);
+
+      // For WIN: balance change = return profit + earn profit (profit was deducted at trade start)
+      // For LOSE: balance change = 0 (profit was already deducted)
+      const balanceChange = isWin ? profitAmount * 2 : 0;
+      const profit = isWin ? profitAmount : -profitAmount; // For display/transaction purposes
+
       console.log(`📊 Calculated profit: ${profit} (isWin: ${isWin})`);
       console.log(`📊 Profit details:`, {
         tradeAmount,
+        profitPercentage,
+        profitAmount,
         isWin,
-        profitCalculation: isWin ? `${tradeAmount} * 0.1 = ${profit}` : `-${tradeAmount} = ${profit}`,
+        balanceChange,
+        profitCalculation: isWin ? `${tradeAmount} + (${tradeAmount} * ${profitPercentage}%) = ${balanceChange}` : `0 (already deducted)`,
         profitAsString: profit.toString()
       });
 
@@ -1459,7 +1472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user balance
       const currentBalance = await storage.getBalance(trade.userId, 'USDT');
       if (currentBalance) {
-        const newBalance = parseFloat(currentBalance.available || '0') + profit;
+        const newBalance = parseFloat(currentBalance.available || '0') + balanceChange;
         await storage.updateBalance(trade.userId, 'USDT', newBalance.toString(), currentBalance.locked || '0');
       }
 
