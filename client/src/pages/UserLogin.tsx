@@ -256,23 +256,21 @@ export default function UserLogin() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Desktop Header */}
-      <header className="hidden lg:flex items-center justify-between h-16 px-8 bg-[#34344E] border-b border-gray-700/30">
-        <Link href="/">
-          <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-            <img
-              src={metachromeLogo}
-              alt="METACHROME"
-              className="h-10 w-auto"
-            />
-          </div>
-        </Link>
-      </header>
-
       {/* Main Content */}
       <div className="flex min-h-screen flex-col lg:flex-row">
         {/* Left Side - Full width on mobile, 50% on desktop */}
         <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative overflow-hidden min-h-[40vh] lg:min-h-auto" style={{backgroundColor: '#24083B'}}>
+          {/* Logo Button - Top Left */}
+          <Link href="/">
+            <div className="absolute top-6 left-6 lg:top-8 lg:left-8 cursor-pointer hover:opacity-80 transition-opacity z-20">
+              <img
+                src={metachromeLogo}
+                alt="METACHROME"
+                className="h-8 lg:h-10 w-auto"
+              />
+            </div>
+          </Link>
+
           {/* Content */}
           <div className="text-center z-10 max-w-md relative py-[30px]">
             <p className="text-white/90 text-sm lg:text-lg mb-2 lg:mb-4">Get Started with METACHROME</p>
