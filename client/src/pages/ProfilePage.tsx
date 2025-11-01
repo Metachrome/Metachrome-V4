@@ -1303,36 +1303,55 @@ export default function ProfilePage() {
                       <p className="text-gray-400 text-sm">Loading available codes...</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                        {availableCodes.map((codeInfo) => (
-                        <div
-                          key={codeInfo.code}
-                          className="bg-gray-800 p-3 rounded border border-gray-600 hover:border-purple-500 cursor-pointer transition-colors"
-                          onClick={() => {
-                            setRedeemCode(codeInfo.code);
-                          }}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <div className="font-mono text-purple-400 font-bold">{codeInfo.code}</div>
-                              <div className="text-green-400 font-semibold">{codeInfo.amount}</div>
-                              <div className="text-gray-400 text-xs">{codeInfo.description}</div>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRedeemCode(codeInfo.code);
-                                setTimeout(() => handleRedeemCode(), 100);
+                        {availableCodes.map((codeInfo) => {
+                          const isClaimed = codeInfo.isClaimed || false;
+                          return (
+                            <div
+                              key={codeInfo.code}
+                              className={`p-3 rounded border transition-colors ${
+                                isClaimed
+                                  ? 'bg-gray-900 border-gray-700 opacity-60 cursor-not-allowed'
+                                  : 'bg-gray-800 border-gray-600 hover:border-purple-500 cursor-pointer'
+                              }`}
+                              onClick={() => {
+                                if (!isClaimed) {
+                                  setRedeemCode(codeInfo.code);
+                                }
                               }}
-                              disabled={isRedeeming}
                             >
-                              Use
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <div className={`font-mono font-bold ${isClaimed ? 'text-gray-500' : 'text-purple-400'}`}>
+                                    {codeInfo.code}
+                                  </div>
+                                  <div className={`font-semibold ${isClaimed ? 'text-gray-500' : 'text-green-400'}`}>
+                                    {codeInfo.amount}
+                                  </div>
+                                  <div className="text-gray-400 text-xs">{codeInfo.description}</div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className={
+                                    isClaimed
+                                      ? 'border-gray-600 text-gray-500 cursor-not-allowed'
+                                      : 'border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white'
+                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isClaimed) {
+                                      setRedeemCode(codeInfo.code);
+                                      setTimeout(() => handleRedeemCode(), 100);
+                                    }
+                                  }}
+                                  disabled={isRedeeming || isClaimed}
+                                >
+                                  {isClaimed ? 'Claimed' : 'Use'}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

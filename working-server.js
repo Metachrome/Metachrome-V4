@@ -12270,6 +12270,21 @@ app.get('/api/user/redeem-history', async (req, res) => {
 app.get('/api/user/available-codes', async (req, res) => {
   try {
     console.log('🎁 Getting available redeem codes for user');
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+    // Get user if authenticated (optional for this endpoint)
+    let userId = null;
+    if (authToken) {
+      try {
+        const user = await getUserFromToken(authToken);
+        if (user) {
+          userId = user.id;
+          console.log('🎁 User authenticated:', user.username, 'ID:', userId);
+        }
+      } catch (e) {
+        console.log('⚠️ Could not get user from token:', e.message);
+      }
+    }
 
     if (isSupabaseConfigured && supabase) {
       // Get all active codes from Supabase
@@ -12285,6 +12300,24 @@ app.get('/api/user/available-codes', async (req, res) => {
         return res.json([]);
       }
 
+      // Get user's redeem history if authenticated
+      let userRedeemedCodes = [];
+      if (userId && supabase) {
+        try {
+          const { data: history, error: historyError } = await supabase
+            .from('user_redeem_history')
+            .select('code')
+            .eq('user_id', userId);
+
+          if (!historyError && history) {
+            userRedeemedCodes = history.map(h => h.code);
+            console.log('🎁 User redeemed codes:', userRedeemedCodes);
+          }
+        } catch (e) {
+          console.log('⚠️ Could not fetch user redeem history:', e.message);
+        }
+      }
+
       // Format codes for user display
       const availableCodes = (codes || []).map(code => ({
         code: code.code,
@@ -12293,18 +12326,20 @@ app.get('/api/user/available-codes', async (req, res) => {
         // Don't show max_uses to users, just show if it's limited
         isLimited: code.max_uses !== null && code.max_uses > 0,
         // Check if code is still available (if max_uses is set)
-        isAvailable: code.max_uses === null || code.current_uses < code.max_uses
-      })).filter(code => code.isAvailable); // Only show codes that are still available
+        isAvailable: code.max_uses === null || code.current_uses < code.max_uses,
+        // Check if user already claimed this code
+        isClaimed: userRedeemedCodes.includes(code.code)
+      }));
 
       console.log('✅ Returning available codes:', availableCodes.length);
       res.json(availableCodes);
     } else {
       // Development mode - return mock codes
       const mockCodes = [
-        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'First time user bonus', isLimited: false, isAvailable: true },
-        { code: 'LETSGO1000', amount: '1000 USDT', description: 'High value bonus code', isLimited: false, isAvailable: true },
-        { code: 'WELCOME50', amount: '50 USDT', description: 'Welcome bonus for new users', isLimited: true, isAvailable: true },
-        { code: 'BONUS500', amount: '500 USDT', description: 'Limited time bonus', isLimited: true, isAvailable: true }
+        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'First time user bonus', isLimited: false, isAvailable: true, isClaimed: false },
+        { code: 'LETSGO1000', amount: '1000 USDT', description: 'High value bonus code', isLimited: false, isAvailable: true, isClaimed: false },
+        { code: 'WELCOME50', amount: '50 USDT', description: 'Welcome bonus for new users', isLimited: true, isAvailable: true, isClaimed: false },
+        { code: 'BONUS500', amount: '500 USDT', description: 'Limited time bonus', isLimited: true, isAvailable: true, isClaimed: false }
       ];
       res.json(mockCodes);
     }
