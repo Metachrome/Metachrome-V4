@@ -2855,24 +2855,35 @@ function OptionsPageContent({
                                    (trade.status === 'won' ?
                                      (trade.amount * profitPercentage / 100) :
                                      -trade.amount);
-                        const endTime = new Date(trade.endTime).toLocaleTimeString();
+
+                        // Format market pair and date/time
+                        const marketPair = trade.symbol ? trade.symbol.replace('USDT', '/USDT') : 'BTC/USDT';
+                        const tradeDate = new Date(trade.endTime);
+                        const formattedDate = tradeDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                        const formattedTime = tradeDate.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                         return (
                           <div key={trade.id} className="bg-gray-800 rounded p-3">
                             <div className="flex justify-between items-center mb-2">
-                              <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                                {trade.direction === 'up' ? 'BUY' : 'SELL'} • {trade.amount} USDT
-                              </span>
+                              <span className="text-gray-400 text-xs font-medium">{marketPair}</span>
                               <span className={`font-bold text-sm ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                                 {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
                               </span>
                             </div>
-                            <div className="flex justify-between text-xs text-gray-300">
-                              <span>Entry: {trade.entryPrice.toFixed(2)}</span>
-                              <span>Time: {endTime}</span>
-                              <span className={`font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                                {trade.direction === 'up' ? 'BUY' : 'SELL'} • {trade.amount} USDT
+                              </span>
+                              <span className={`font-bold text-xs ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                                 {trade.status === 'won' ? '+' : ''}{pnl.toFixed(2)} USDT
                               </span>
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-400">
+                              <span>Entry: {trade.entryPrice.toFixed(2)}</span>
+                              <div className="text-right">
+                                <div>{formattedDate}</div>
+                                <div>{formattedTime}</div>
+                              </div>
                             </div>
                           </div>
                         );
