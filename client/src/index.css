@@ -15,6 +15,10 @@
     left: 6rem;
 }
 
+.pt-20 {
+    padding-top: 2.5rem;
+}
+
 /* Mobile Bottom Navigation Responsive Styles */
 @media (max-width: 360px) {
   .mobile-bottom-nav {
