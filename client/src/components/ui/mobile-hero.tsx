@@ -43,16 +43,16 @@ export function MobileHero() {
     );
   }
 
-  // Desktop hero (existing)
+  // Desktop hero - Full width with better proportions
   return (
-    <section className="relative overflow-hidden bg-black py-8">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="relative">
+    <section className="relative overflow-hidden bg-black py-6">
+      <div className="w-full px-4">
+        <div className="relative max-w-6xl mx-auto">
           <img
             src={heroDesktopImage}
             alt="METACHROME Hero Banner - We believe in the future"
-            className="w-full h-auto object-contain rounded-lg"
-            style={{ maxHeight: '440px' }}
+            className="w-full h-auto object-cover rounded-lg"
+            style={{ maxHeight: '400px', objectFit: 'cover' }}
           />
 
           {/* Start Trading Button Overlay - Left positioned under text */}

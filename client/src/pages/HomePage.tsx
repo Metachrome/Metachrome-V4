@@ -431,15 +431,15 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0D0B1F] text-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-black py-8">
-        {/* Hero Image Banner with Container */}
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="relative">
+      <section className="relative overflow-hidden bg-black py-6">
+        {/* Hero Image Banner - Full width with minimal padding for better proportions */}
+        <div className="w-full px-4">
+          <div className="relative max-w-6xl mx-auto">
             <img
               src={heroDesktopImage}
               alt="METACHROME Hero Banner - We believe in the future"
-              className="w-full h-auto object-contain rounded-lg"
-              style={{ maxHeight: '440px' }}
+              className="w-full h-auto object-cover rounded-lg"
+              style={{ maxHeight: '400px', objectFit: 'cover' }}
             />
 
             {/* Start Trading Button Overlay - Positioned right below the text */}
