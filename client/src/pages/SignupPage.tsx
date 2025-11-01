@@ -325,7 +325,7 @@ export default function SignupPage() {
           </Link>
 
           {/* Content */}
-          <div className="text-center z-10 max-w-md relative py-[30px]">
+          <div className="text-center z-10 max-w-md relative py-[30px]" style={{ marginTop: '-590px' }}>
             <p className="text-white/90 text-sm lg:text-lg mb-2 lg:mb-4">Get Started with METACHROME</p>
             <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight">
               The Future is for Everyone
