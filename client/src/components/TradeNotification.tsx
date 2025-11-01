@@ -117,127 +117,146 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
   });
 
   return (
-    <div
-      className="trade-notification fixed transition-all duration-300"
-      style={{
-        zIndex: 2147483647, // Maximum z-index
-        top: isMobile ? '50%' : '20px',
-        left: isMobile ? '50%' : 'auto',
-        right: isMobile ? 'auto' : '20px',
-        transform: isMobile ? 'translate(-50%, -50%)' : 'none',
-        width: isMobile ? '85vw' : 'auto',
-        maxWidth: isMobile ? '400px' : '320px',
-        minWidth: isMobile ? '300px' : '280px',
-        opacity: isVisible ? 1 : 0,
-        scale: isVisible ? 1 : 0.95,
-        pointerEvents: 'auto'
-      }}>
-      <div className={`rounded-xl shadow-2xl border-2 ${
-        isWin
-          ? 'bg-gradient-to-br from-emerald-900/95 via-green-800/95 to-teal-900/95 border-emerald-400 text-emerald-50'
-          : 'bg-gradient-to-br from-red-900/95 via-rose-800/95 to-pink-900/95 border-red-400 text-red-50'
-      }`}
-      style={{
-        padding: isMobile ? '24px' : '20px'
-      }}>
-        <div className="flex items-center justify-between mb-4">
-          <span
-            className="font-bold"
-            style={{
-              fontSize: isMobile ? '22px' : '18px'
-            }}
-          >
-            {isWin ? 'TRADE WON!' : 'TRADE LOST'}
-          </span>
-          <button
-            onClick={handleClose}
-            className="text-gray-300 hover:text-white flex items-center justify-center font-bold rounded-full bg-black/20 hover:bg-black/40 transition-colors"
-            style={{
-              width: isMobile ? '32px' : '28px',
-              height: isMobile ? '32px' : '28px',
-              fontSize: isMobile ? '16px' : '14px'
-            }}
-          >
-            ×
-          </button>
-        </div>
-
+    <>
+      {/* Backdrop blur overlay for mobile */}
+      {isMobile && (
         <div
-          className="space-y-3"
+          className="fixed inset-0 transition-opacity duration-300"
           style={{
-            fontSize: isMobile ? '16px' : '14px'
+            zIndex: 2147483646,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            opacity: isVisible ? 1 : 0,
+            pointerEvents: isVisible ? 'auto' : 'none'
           }}
-        >
-          <div
-            className="flex justify-between items-center bg-gray-800/40 rounded-lg"
-            style={{
-              padding: isMobile ? '12px 16px' : '10px 12px'
-            }}
-          >
-            <span className="text-gray-200">Market:</span>
-            <span className="font-bold">{formatSymbol(trade.symbol)}</span>
-          </div>
-          <div
-            className="flex justify-between items-center bg-gray-800/40 rounded-lg"
-            style={{
-              padding: isMobile ? '12px 16px' : '10px 12px'
-            }}
-          >
-            <span className="text-gray-200">Trade:</span>
-            <span className="font-bold">
-              {trade.direction === 'up' ? 'BUY/UP' : 'SELL/DOWN'}
+          onClick={handleClose}
+        />
+      )}
+
+      {/* Notification card */}
+      <div
+        className="trade-notification fixed transition-all duration-300"
+        style={{
+          zIndex: 2147483647, // Maximum z-index
+          top: isMobile ? '50%' : '20px',
+          left: isMobile ? '50%' : 'auto',
+          right: isMobile ? 'auto' : '20px',
+          transform: isMobile ? 'translate(-50%, -50%)' : 'none',
+          width: isMobile ? '80vw' : 'auto',
+          maxWidth: isMobile ? '340px' : '320px',
+          minWidth: isMobile ? '280px' : '280px',
+          opacity: isVisible ? 1 : 0,
+          scale: isVisible ? 1 : 0.95,
+          pointerEvents: 'auto'
+        }}>
+        <div className={`rounded-xl shadow-2xl border-2 ${
+          isWin
+            ? 'bg-gradient-to-br from-emerald-900/95 via-green-800/95 to-teal-900/95 border-emerald-400 text-emerald-50'
+            : 'bg-gradient-to-br from-red-900/95 via-rose-800/95 to-pink-900/95 border-red-400 text-red-50'
+        }`}
+        style={{
+          padding: isMobile ? '18px' : '20px'
+        }}>
+          <div className="flex items-center justify-between mb-3">
+            <span
+              className="font-bold"
+              style={{
+                fontSize: isMobile ? '18px' : '18px'
+              }}
+            >
+              {isWin ? 'TRADE WON!' : 'TRADE LOST'}
             </span>
+            <button
+              onClick={handleClose}
+              className="text-gray-300 hover:text-white flex items-center justify-center font-bold rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+              style={{
+                width: isMobile ? '28px' : '28px',
+                height: isMobile ? '28px' : '28px',
+                fontSize: isMobile ? '14px' : '14px'
+              }}
+            >
+              ×
+            </button>
           </div>
+
           <div
-            className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+            className="space-y-2"
             style={{
-              padding: isMobile ? '12px 16px' : '10px 12px'
+              fontSize: isMobile ? '14px' : '14px'
             }}
           >
-            <span className="text-gray-200">Amount:</span>
-            <span className="font-bold">{trade.amount.toLocaleString()} USDT</span>
-          </div>
-          <div
-            className="flex justify-between items-center bg-gray-800/40 rounded-lg"
-            style={{
-              padding: isMobile ? '12px 16px' : '10px 12px'
-            }}
-          >
-            <span className="text-gray-200">Entry Price:</span>
-            <span className="font-mono">{trade.entryPrice.toFixed(2)}</span>
-          </div>
-          <div
-            className="flex justify-between items-center bg-gray-800/40 rounded-lg"
-            style={{
-              padding: isMobile ? '12px 16px' : '10px 12px'
-            }}
-          >
-            <span className="text-gray-200">Close Price:</span>
-            <span className="font-mono">{trade.finalPrice.toFixed(2)}</span>
-          </div>
-          <div
-            className="flex justify-between items-center bg-gray-800/40 rounded-lg"
-            style={{
-              padding: isMobile ? '12px 16px' : '10px 12px'
-            }}
-          >
-            <span className="text-gray-200">Duration:</span>
-            <span className="font-bold">{trade.duration || 30} seconds</span>
-          </div>
-          <div
-            className="flex justify-between items-center bg-gray-800/40 rounded-lg"
-            style={{
-              padding: isMobile ? '12px 16px' : '10px 12px'
-            }}
-          >
-            <span className="text-gray-200">Profit:</span>
-            <span className={`font-bold ${isWin ? 'text-emerald-300' : 'text-red-300'}`}>
-              {isWin ? '+' + pnl.toFixed(0) : pnl.toFixed(0)} USDT
-            </span>
+            <div
+              className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+              style={{
+                padding: isMobile ? '10px 12px' : '10px 12px'
+              }}
+            >
+              <span className="text-gray-200">Market:</span>
+              <span className="font-bold">{formatSymbol(trade.symbol)}</span>
+            </div>
+            <div
+              className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+              style={{
+                padding: isMobile ? '10px 12px' : '10px 12px'
+              }}
+            >
+              <span className="text-gray-200">Trade:</span>
+              <span className="font-bold">
+                {trade.direction === 'up' ? 'BUY/UP' : 'SELL/DOWN'}
+              </span>
+            </div>
+            <div
+              className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+              style={{
+                padding: isMobile ? '10px 12px' : '10px 12px'
+              }}
+            >
+              <span className="text-gray-200">Amount:</span>
+              <span className="font-bold">{trade.amount.toLocaleString()} USDT</span>
+            </div>
+            <div
+              className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+              style={{
+                padding: isMobile ? '10px 12px' : '10px 12px'
+              }}
+            >
+              <span className="text-gray-200">Entry Price:</span>
+              <span className="font-mono">{trade.entryPrice.toFixed(2)}</span>
+            </div>
+            <div
+              className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+              style={{
+                padding: isMobile ? '10px 12px' : '10px 12px'
+              }}
+            >
+              <span className="text-gray-200">Close Price:</span>
+              <span className="font-mono">{trade.finalPrice.toFixed(2)}</span>
+            </div>
+            <div
+              className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+              style={{
+                padding: isMobile ? '10px 12px' : '10px 12px'
+              }}
+            >
+              <span className="text-gray-200">Duration:</span>
+              <span className="font-bold">{trade.duration || 30} seconds</span>
+            </div>
+            <div
+              className="flex justify-between items-center bg-gray-800/40 rounded-lg"
+              style={{
+                padding: isMobile ? '10px 12px' : '10px 12px'
+              }}
+            >
+              <span className="text-gray-200">Profit:</span>
+              <span className={`font-bold ${isWin ? 'text-emerald-300' : 'text-red-300'}`}>
+                {isWin ? '+' + pnl.toFixed(0) : pnl.toFixed(0)} USDT
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
