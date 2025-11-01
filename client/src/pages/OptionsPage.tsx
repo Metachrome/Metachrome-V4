@@ -2606,7 +2606,7 @@ function OptionsPageContent({
                 Amount (USDT) - Min: {getMinimumAmount(selectedDuration).toLocaleString()}
               </label>
               <div className="grid grid-cols-3 gap-1 mb-1.5">
-                {[100, 500, 1000, 2000].map((amount) => (
+                {[100, 500, 1000, 2000, 5000, 10000].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setSelectedAmount(amount)}
@@ -2708,22 +2708,14 @@ function OptionsPageContent({
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium text-base transition-colors relative"
                 >
-                  <div>Buy/Up</div>
-                  <div className="text-xs mt-0.5">
-                    Profit: {getProfitPercentage(selectedDuration)}% •
-                    Payout: +{(selectedAmount * getProfitPercentage(selectedDuration) / 100).toFixed(0)} USDT
-                  </div>
+                  Buy/Up
                 </button>
                 <button
                   onClick={() => handleTrade('down')}
                   disabled={activeTrades.length >= 3 || selectedAmount < 100 || balance < selectedAmount}
                   className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium text-base transition-colors relative"
                 >
-                  <div>Sell/Down</div>
-                  <div className="text-xs mt-0.5">
-                    Profit: {getProfitPercentage(selectedDuration)}% •
-                    Payout: +{(selectedAmount * getProfitPercentage(selectedDuration) / 100).toFixed(0)} USDT
-                  </div>
+                  Sell/Down
                 </button>
               </div>
             )}
@@ -3742,17 +3734,35 @@ function OptionsPageContent({
                     <div className="text-gray-500 text-xs mt-1">Complete some trades to see transactions here</div>
                   </div>
                 ) : (
-                  tradeHistory.slice(0, 8).map((trade, index) => (
-                    <div key={index} className="flex justify-between text-xs py-1 hover:bg-gray-800/50 rounded px-2 -mx-2 max-w-full overflow-hidden">
-                      <span className="text-gray-400 font-mono truncate flex-shrink-0 w-16">
-                        {new Date(trade.endTime).toLocaleTimeString('en-US', { hour12: false }).slice(0, 8)}
-                      </span>
-                      <span className={`font-mono truncate flex-shrink-0 w-16 text-center ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                        {trade.entryPrice.toFixed(2)}
-                      </span>
-                      <span className="text-gray-300 font-mono truncate flex-shrink-0 w-12 text-right">{trade.amount.toFixed(0)}</span>
-                    </div>
-                  ))
+                  tradeHistory.slice(0, 8).map((trade, index) => {
+                    const marketPair = trade.symbol ? trade.symbol.replace('USDT', '/USDT') : 'BTC/USDT';
+                    const tradeDate = new Date(trade.endTime);
+                    const formattedDate = tradeDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
+                    const formattedTime = tradeDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+                    return (
+                      <div key={index} className="bg-gray-800/30 rounded px-2 py-2 mb-1.5 hover:bg-gray-800/50">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-gray-400 text-xs font-medium">{marketPair}</span>
+                          <span className={`text-xs font-bold ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
+                            {trade.status === 'won' ? '✓ WON' : '✗ LOST'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <div className="flex items-center space-x-2">
+                            <span className={`font-medium ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                              {trade.direction === 'up' ? 'BUY' : 'SELL'}
+                            </span>
+                            <span className="text-gray-300">{trade.amount.toFixed(0)} USDT</span>
+                          </div>
+                          <div className="text-gray-400 font-mono text-right">
+                            <div>{formattedDate}</div>
+                            <div>{formattedTime}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>
