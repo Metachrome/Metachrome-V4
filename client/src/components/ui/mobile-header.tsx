@@ -38,6 +38,8 @@ export function MobileHeader() {
   }
 
   const handleNavigation = (path: string) => {
+    // Scroll to top when navigating to a new page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setLocation(path);
     setIsMenuOpen(false);
   };
@@ -233,7 +235,10 @@ export function MobileHeader() {
                   <Link href="/trade/spot">
                     <div
                       className="relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
-                      onClick={() => setIsMenuOpen(false)}
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setIsMenuOpen(false);
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -258,7 +263,10 @@ export function MobileHeader() {
                   <Link href="/trade/options">
                     <div
                       className="relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-lg cursor-pointer transform transition-transform hover:scale-105"
-                      onClick={() => setIsMenuOpen(false)}
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setIsMenuOpen(false);
+                      }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">

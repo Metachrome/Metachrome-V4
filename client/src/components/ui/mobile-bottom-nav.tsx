@@ -112,12 +112,16 @@ export function MobileBottomNav() {
       setShowTradeMenu(!showTradeMenu);
     } else {
       setShowTradeMenu(false);
+      // Scroll to top when navigating to a new page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       setLocation(path);
     }
   };
 
   const handleTradeOptionClick = (tradePath: string) => {
     setShowTradeMenu(false);
+    // Scroll to top when navigating to a new page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setLocation(tradePath);
   };
 
