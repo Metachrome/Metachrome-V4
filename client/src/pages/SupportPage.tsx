@@ -69,8 +69,8 @@ export default function SupportPage() {
       <section className="bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
 
-          {/* Support Options - 2 Cards Centered */}
-          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1 mb-8' : 'grid-cols-1 md:grid-cols-2 gap-8 mb-20 max-w-4xl mx-auto'}`}>
+          {/* Support Options - 2 Cards Full Width */}
+          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1 mb-8' : 'grid-cols-1 md:grid-cols-2 gap-8 mb-20'}`}>
           {supportOptions.map((option, index) => (
             <Card key={index} className="bg-[#1A1D29] border-gray-800 overflow-hidden hover:bg-[#1E2329] transition-colors rounded-xl">
               <CardContent className={`${isMobile ? 'p-6' : 'p-8'} text-center h-full flex flex-col`}>
