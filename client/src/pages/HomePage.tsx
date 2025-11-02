@@ -181,21 +181,20 @@ export default function HomePage() {
                       <tr key={crypto.symbol} className="border-b border-purple-800/20 hover:bg-purple-900/20 transition-colors">
                         <td className="p-3">
                           <div className="flex items-center space-x-2">
-                            <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
-                              {crypto.image ? (
-                                <img
-                                  src={crypto.image}
-                                  alt={crypto.name}
-                                  className="w-5 h-5 object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.nextElementSibling.style.display = 'flex';
-                                  }}
-                                />
-                              ) : null}
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center border border-purple-500/30">
+                              <img
+                                src={crypto.image || `https://cryptoicons.org/api/icon/${crypto.symbol.split('/')[0].toLowerCase()}/200`}
+                                alt={crypto.name}
+                                className="w-6 h-6 object-contain"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
                               <span
-                                className="text-white font-bold text-xs"
-                                style={{ display: crypto.image ? 'none' : 'flex' }}
+                                className="text-white font-bold text-xs hidden"
                               >
                                 {crypto.symbol.split('/')[0].charAt(0)}
                               </span>
@@ -518,21 +517,20 @@ export default function HomePage() {
                     <tr key={crypto.symbol} className="border-b border-purple-800/20 hover:bg-purple-900/20 transition-colors">
                       <td className="p-6">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
-                            {crypto.image ? (
-                              <img
-                                src={crypto.image}
-                                alt={crypto.name}
-                                className="w-8 h-8 object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                  e.currentTarget.nextElementSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : null}
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center border border-purple-500/30">
+                            <img
+                              src={crypto.image || `https://cryptoicons.org/api/icon/${crypto.symbol.split('/')[0].toLowerCase()}/200`}
+                              alt={crypto.name}
+                              className="w-9 h-9 object-contain"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
                             <span
-                              className="text-white font-bold text-sm"
-                              style={{ display: crypto.image ? 'none' : 'flex' }}
+                              className="text-white font-bold text-sm hidden"
                             >
                               {crypto.symbol.split('/')[0].charAt(0)}
                             </span>
