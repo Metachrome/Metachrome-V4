@@ -9905,6 +9905,8 @@ async function fetchCoinMarketCapData() {
         cmcId: coin.id,
         cmcRank: coin.cmc_rank,
         lastUpdated: quote.last_updated,
+        // Logo from CoinMarketCap
+        image: `https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.id}.png`,
         // Additional CoinMarketCap-like data
         circulatingSupply: coin.circulating_supply,
         totalSupply: coin.total_supply,
@@ -9943,7 +9945,8 @@ function getFallbackMarketData() {
       volume: 45000000000,
       rawPrice: 110777.29,
       rawChange: -2.22,
-      cmcRank: 1
+      cmcRank: 1,
+      image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png'
     },
     {
       symbol: 'ETH/USDT',
@@ -9957,7 +9960,8 @@ function getFallbackMarketData() {
       volume: 25000000000,
       rawPrice: 3994.71,
       rawChange: -4.77,
-      cmcRank: 2
+      cmcRank: 2,
+      image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png'
     },
     {
       symbol: 'USDT/USDT',
@@ -9971,7 +9975,8 @@ function getFallbackMarketData() {
       volume: 85000000000,
       rawPrice: 1.00,
       rawChange: -0.04,
-      cmcRank: 3
+      cmcRank: 3,
+      image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png'
     },
     {
       symbol: 'BNB/USDT',
@@ -9985,7 +9990,8 @@ function getFallbackMarketData() {
       volume: 2800000000,
       rawPrice: 1186.36,
       rawChange: -2.00,
-      cmcRank: 4
+      cmcRank: 4,
+      image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png'
     },
     {
       symbol: 'XRP/USDT',
@@ -9999,7 +10005,8 @@ function getFallbackMarketData() {
       volume: 8500000000,
       rawPrice: 2.40,
       rawChange: -5.45,
-      cmcRank: 5
+      cmcRank: 5,
+      image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/52.png'
     }
   ];
 }
