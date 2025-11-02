@@ -403,12 +403,13 @@ export default function UserDashboard() {
         {process.env.NODE_ENV === 'development' && (
           <div className="mb-4 p-3 bg-gray-900/50 border border-gray-600 rounded text-xs text-gray-400">
             <strong>Debug Info:</strong> verificationStatus: {String(user?.verificationStatus)},
+            hasUploadedDocuments: {String(user?.hasUploadedDocuments)},
             shouldShowBanner: {String(!user?.verificationStatus || user?.verificationStatus === 'unverified')}
           </div>
         )}
 
-        {/* Verification Status Notification - ENABLED */}
-        {(!user?.verificationStatus || user?.verificationStatus === 'unverified') && (
+        {/* Verification Status Notification - Show only if NOT verified and has NOT uploaded documents */}
+        {(!user?.verificationStatus || user?.verificationStatus === 'unverified') && !user?.hasUploadedDocuments && (
           <div className="mb-8">
             <Card className="bg-gradient-to-r from-yellow-900/50 to-orange-900/50 border-yellow-600/50">
               <CardContent className="p-6">
@@ -444,8 +445,8 @@ export default function UserDashboard() {
           </div>
         )}
 
-        {/* Verification Pending Notification - ENABLED */}
-        {(user?.verificationStatus === 'pending') && (
+        {/* Verification Pending Notification - Show if documents uploaded and status is pending */}
+        {(user?.verificationStatus === 'pending' || (user?.hasUploadedDocuments && user?.verificationStatus !== 'verified')) && (
           <div className="mb-8">
             <Card className="bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border-blue-600/50">
               <CardContent className="p-6">
@@ -457,14 +458,21 @@ export default function UserDashboard() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-blue-100 mb-2">
-                      ⏳ Verification Under Review
+                      ⏳ Document Uploaded - Verification in Progress
                     </h3>
                     <p className="text-blue-200 mb-2">
                       Your verification documents have been submitted and are currently being reviewed by our team.
-                      Trading will be enabled once verification is approved.
+                      You can check your verification status in your profile.
                     </p>
-                    <div className="text-sm text-blue-300">
-                      ⏱️ Review typically takes 24-48 hours
+                    <div className="flex flex-col sm:flex-row gap-3 items-start">
+                      <div className="text-sm text-blue-300">
+                        ⏱️ Review typically takes 24-48 hours
+                      </div>
+                      <Link href="/profile?tab=verification">
+                        <Button variant="outline" size="sm" className="border-blue-400 text-blue-300 hover:bg-blue-800/30">
+                          Check Status
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </div>
