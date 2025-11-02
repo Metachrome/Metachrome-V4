@@ -3,7 +3,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
-import { TrendingUp, TrendingDown, ChevronDown, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, ChevronDown } from "lucide-react";
 import { useLocation } from "wouter";
 import { useIsMobile } from "../hooks/use-mobile";
 import { MobileHero } from "../components/ui/mobile-hero";
@@ -17,7 +17,7 @@ import featureImage02 from "../assets/featureimage02_1754552987908.png";
 import featureImage03 from "../assets/featureimage03_1754552987909.png";
 import emailsbImage from "../assets/emailsb_1754552987905.png";
 import TradingViewWidget from "../components/TradingViewWidget";
-import { useCryptoData, getTradingRoute } from "../services/cryptoDataService";
+import { useCryptoData } from "../services/cryptoDataService";
 
 export default function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -27,12 +27,6 @@ export default function HomePage() {
 
   // Use real-time cryptocurrency data
   const { cryptoData, loading, error, retry, forceRefresh } = useCryptoData();
-
-  // Handle trade button click
-  const handleTradeClick = (crypto: any, tradingType: 'spot' | 'options' = 'spot') => {
-    const route = getTradingRoute(crypto.symbol, tradingType);
-    setLocation(route);
-  };
 
   // Fetch top gainers from our CoinMarketCap endpoint
   const [topGainers, setTopGainers] = useState([
@@ -162,7 +156,6 @@ export default function HomePage() {
                       <th className="text-left p-3 font-medium text-gray-400 text-xs">Name</th>
                       <th className="text-left p-3 font-medium text-gray-400 text-xs">Price</th>
                       <th className="text-left p-3 font-medium text-gray-400 text-xs">24h</th>
-                      <th className="text-left p-3 font-medium text-gray-400 text-xs">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -181,12 +174,6 @@ export default function HomePage() {
                           </td>
                           <td className="p-3"><div className="h-3 bg-gray-700 rounded animate-pulse w-16"></div></td>
                           <td className="p-3"><div className="h-3 bg-gray-700 rounded animate-pulse w-10"></div></td>
-                          <td className="p-3">
-                            <div className="flex space-x-1">
-                              <div className="h-6 bg-gray-700 rounded animate-pulse w-10"></div>
-                              <div className="h-6 bg-gray-700 rounded animate-pulse w-12"></div>
-                            </div>
-                          </td>
                         </tr>
                       ))
                     ) : (
@@ -224,26 +211,6 @@ export default function HomePage() {
                           <div className={`flex items-center space-x-1 ${crypto.isPositive ? 'text-green-400' : 'text-red-400'}`}>
                             {crypto.isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                             <span className="font-medium text-xs">{crypto.change}</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex space-x-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white text-xs px-2 py-1 h-6"
-                              onClick={() => handleTradeClick(crypto, 'spot')}
-                            >
-                              Spot
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white text-xs px-2 py-1 h-6"
-                              onClick={() => handleTradeClick(crypto, 'options')}
-                            >
-                              Options
-                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -524,7 +491,6 @@ export default function HomePage() {
                     <th className="text-left p-6 font-medium text-gray-400 text-sm">24h Change</th>
                     <th className="text-left p-6 font-medium text-gray-400 text-sm">24h High</th>
                     <th className="text-left p-6 font-medium text-gray-400 text-sm">24h Low</th>
-                    <th className="text-left p-6 font-medium text-gray-400 text-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -545,12 +511,6 @@ export default function HomePage() {
                         <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-16"></div></td>
                         <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>
                         <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>
-                        <td className="p-6">
-                          <div className="flex space-x-2">
-                            <div className="h-8 bg-gray-700 rounded animate-pulse w-16"></div>
-                            <div className="h-8 bg-gray-700 rounded animate-pulse w-20"></div>
-                          </div>
-                        </td>
                       </tr>
                     ))
                   ) : (
@@ -592,28 +552,6 @@ export default function HomePage() {
                       </td>
                       <td className="p-6 text-gray-300">{crypto.high}</td>
                       <td className="p-6 text-gray-300">{crypto.low}</td>
-                      <td className="p-6">
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-blue-600 text-blue-400 hover:bg-blue-600 hover:text-white"
-                            onClick={() => handleTradeClick(crypto, 'spot')}
-                          >
-                            <ExternalLink className="w-3 h-3 mr-1" />
-                            Spot
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
-                            onClick={() => handleTradeClick(crypto, 'options')}
-                          >
-                            <ExternalLink className="w-3 h-3 mr-1" />
-                            Options
-                          </Button>
-                        </div>
-                      </td>
                     </tr>
                     ))
                   )}
