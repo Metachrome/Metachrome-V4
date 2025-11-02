@@ -95,6 +95,8 @@ interface User {
     changed_at: string;
     changed_by: string;
   }>;
+  phone?: string;
+  address?: string;
   created_at: string;
   last_login?: string;
 }
@@ -2904,9 +2906,10 @@ export default function WorkingAdminDashboard() {
 
       {/* User Details Modal */}
       {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-md w-full border border-gray-700 flex flex-col max-h-[90vh]">
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-700">
               <h3 className="text-xl font-bold text-white">👤 User Details</h3>
               <Button
                 variant="ghost"
@@ -2917,7 +2920,10 @@ export default function WorkingAdminDashboard() {
                 ✕
               </Button>
             </div>
-            <div className="space-y-3">
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Username:</span>
                 <span className="text-white font-medium">{selectedUser.username}</span>
@@ -3025,7 +3031,51 @@ export default function WorkingAdminDashboard() {
                   </div>
                 </div>
               </div>
-              <div className="flex justify-between">
+
+              {/* Phone Number Section */}
+              <div className="border-t border-gray-700 pt-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-400">Phone Number:</span>
+                  <div className="flex-1 ml-3 text-right">
+                    {selectedUser.phone ? (
+                      <span className="text-white font-mono text-sm">{selectedUser.phone}</span>
+                    ) : (
+                      <span className="text-gray-500 italic text-sm">Not set</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Withdrawal Address Section */}
+              <div className="border-t border-gray-700 pt-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-400">Withdrawal Address:</span>
+                  <div className="flex-1 ml-3">
+                    {selectedUser.address ? (
+                      <div className="space-y-2">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-white text-sm bg-gray-700 px-2 py-1 rounded break-all flex-1">
+                            {selectedUser.address}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigator.clipboard.writeText(selectedUser.address || '')}
+                            className="text-gray-400 hover:text-white p-1 flex-shrink-0"
+                            title="Copy withdrawal address"
+                          >
+                            📋
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 italic text-sm">Not set</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between border-t border-gray-700 pt-3">
                 <span className="text-gray-400">Created:</span>
                 <span className="text-white">{new Date(selectedUser.created_at).toLocaleDateString()}</span>
               </div>
@@ -3035,14 +3085,19 @@ export default function WorkingAdminDashboard() {
                   {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString() : 'Never'}
                 </span>
               </div>
+              </div>
             </div>
-            <div className="mt-6 flex justify-end">
-              <Button
-                onClick={() => setShowUserModal(false)}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                Close
-              </Button>
+
+            {/* Fixed Footer */}
+            <div className="p-6 pt-4 border-t border-gray-700">
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setShowUserModal(false)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
