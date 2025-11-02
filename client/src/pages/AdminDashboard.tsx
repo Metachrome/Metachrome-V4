@@ -209,6 +209,9 @@ export default function WorkingAdminDashboard() {
   // Receipt viewer state
   const [selectedReceipt, setSelectedReceipt] = useState<{url: string, filename: string} | null>(null);
 
+  // Search and filter states
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+
   // Get current user role - with fallback for admin access
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const authToken = localStorage.getItem('authToken') || '';
@@ -1761,6 +1764,16 @@ export default function WorkingAdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Search Input */}
+                <div className="mb-4">
+                  <Input
+                    placeholder="Search users by username, email, or ID..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                  />
+                </div>
+
                 <div className="border border-gray-700 rounded-lg overflow-x-auto admin-table-container" style={{ maxWidth: '100%' }}>
                   <Table className="w-full" style={{ minWidth: '1200px' }}>
                     <TableHeader>
@@ -1778,7 +1791,17 @@ export default function WorkingAdminDashboard() {
                       {Array.isArray(users) ? (
                         <>
                           {console.log('📊 Rendering users table with', users.length, 'users')}
-                          {users.map((user) => (
+                          {users
+                            .filter((user) => {
+                              if (!userSearchTerm) return true;
+                              const searchLower = userSearchTerm.toLowerCase();
+                              return (
+                                user.username?.toLowerCase().includes(searchLower) ||
+                                user.email?.toLowerCase().includes(searchLower) ||
+                                user.id?.toLowerCase().includes(searchLower)
+                              );
+                            })
+                            .map((user) => (
                         <TableRow key={user.id} className="border-gray-700 hover:bg-gray-700/50">
                           <TableCell>
                             <div className="flex items-center space-x-3">

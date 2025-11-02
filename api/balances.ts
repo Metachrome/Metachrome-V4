@@ -80,12 +80,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         if (supabaseAdmin && userId) {
           console.log('💰 [/api/balances] Querying Supabase for user:', userId);
-          
-          const { data: user, error } = await supabaseAdmin
-            .from('users')
-            .select('id, username, balance')
-            .eq('id', userId)
-            .single();
+
+          // For admin users with pattern IDs (superadmin-001, admin-001), query by username instead
+          let user, error;
+          if (userId === 'superadmin-001' || userId === 'admin-001') {
+            const username = userId.replace('-001', '');
+            console.log('💰 [/api/balances] Admin user detected, querying by username:', username);
+            const result = await supabaseAdmin
+              .from('users')
+              .select('id, username, balance')
+              .eq('username', username)
+              .single();
+            user = result.data;
+            error = result.error;
+          } else {
+            const result = await supabaseAdmin
+              .from('users')
+              .select('id, username, balance')
+              .eq('id', userId)
+              .single();
+            user = result.data;
+            error = result.error;
+          }
 
           console.log('💰 [/api/balances] Supabase response:', { user, error });
 
@@ -98,13 +114,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // SIMPLIFIED BALANCE SYSTEM: Only USDT balance (auto-conversion enabled)
             // Get all user balances from database
             try {
+              // Use the actual user ID from database, not the pattern ID
+              const actualUserId = user.id;
               const { data: userBalances, error: balancesError } = await supabaseAdmin
                 .from('balances')
                 .select('symbol, available, locked')
-                .eq('user_id', userId);
+                .eq('user_id', actualUserId);
 
               console.log('🔍 [/api/balances] Database query result:', {
                 userId,
+                actualUserId,
                 userBalances,
                 balancesError: balancesError?.message,
                 balanceCount: userBalances?.length || 0
