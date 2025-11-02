@@ -175,7 +175,9 @@ export default function WalletPage() {
       });
       setDepositAmount('');
       setUploadedFile(null);
+      // Invalidate both balances and deposit history queries for real-time sync
       queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/users/${user?.id}/deposits`] });
     },
     onError: (error: Error) => {
       toast({

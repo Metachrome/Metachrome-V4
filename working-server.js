@@ -3732,22 +3732,24 @@ app.post('/api/deposits', (req, res, next) => {
     // Generate unique deposit ID
     const depositId = `dep_${Date.now()}_${user.id}`;
 
-    // Create deposit request
+    // Create deposit request (using snake_case for consistency with database)
     const newDeposit = {
       id: depositId,
-      userId: user.id,
+      user_id: user.id,
       username: user.username,
       amount: parseFloat(amount),
       currency: currency,
       status: 'verifying',
-      createdAt: new Date().toISOString(),
-      proofSubmittedAt: new Date().toISOString(),
-      receiptUploaded: !!req.file
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      proof_submitted_at: new Date().toISOString(),
+      receipt_uploaded: !!req.file,
+      receipt_filename: req.file ? req.file.filename : null
     };
 
     // Store file information if uploaded
     if (req.file) {
-      newDeposit.receiptFile = {
+      newDeposit.receipt_file = {
         filename: req.file.filename,
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
@@ -4212,47 +4214,57 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       console.log('📝 Approved deposit transaction recorded');
       console.log('📝 Transaction details:', transaction);
 
-      // Remove from pending deposits - HANDLE BOTH SOURCES
+      // Update deposit status to 'approved' instead of deleting - KEEP HISTORY
       if (isFromSupabase) {
-        // Remove from Supabase database
+        // Update in Supabase database
         if (supabase) {
           try {
             const { error } = await supabase
               .from('deposits')
-              .delete()
+              .update({
+                status: 'approved',
+                updated_at: new Date().toISOString(),
+                approved_at: new Date().toISOString()
+              })
               .eq('id', depositId);
 
             if (error) {
-              console.error('⚠️ Failed to remove approved deposit from Supabase:', error);
+              console.error('⚠️ Failed to update approved deposit in Supabase:', error);
             } else {
-              console.log('✅ Approved deposit removed from Supabase database');
+              console.log('✅ Approved deposit status updated in Supabase database');
             }
           } catch (dbError) {
-            console.error('⚠️ Supabase deposit removal sync error:', dbError);
+            console.error('⚠️ Supabase deposit update sync error:', dbError);
           }
         }
       } else {
-        // Remove from local array
+        // Update in local array
         if (depositIndex !== -1) {
-          pendingDeposits.splice(depositIndex, 1);
+          pendingDeposits[depositIndex].status = 'approved';
+          pendingDeposits[depositIndex].updated_at = new Date().toISOString();
+          pendingDeposits[depositIndex].approved_at = new Date().toISOString();
           pendingData.deposits = pendingDeposits;
           savePendingData();
-          console.log('🗑️ Deposit removed from local pending list');
+          console.log('✅ Deposit status updated to approved in local list');
         }
 
-        // Also try to remove from Supabase (in case it exists there too)
+        // Also try to update in Supabase (in case it exists there too)
         if (supabase) {
           try {
             const { error } = await supabase
               .from('deposits')
-              .delete()
+              .update({
+                status: 'approved',
+                updated_at: new Date().toISOString(),
+                approved_at: new Date().toISOString()
+              })
               .eq('id', depositId);
 
             if (!error) {
-              console.log('✅ Deposit also removed from Supabase database');
+              console.log('✅ Deposit also updated in Supabase database');
             }
           } catch (dbError) {
-            console.log('⚠️ Supabase cleanup attempt failed:', dbError.message);
+            console.log('⚠️ Supabase update attempt failed:', dbError.message);
           }
         }
       }
@@ -4282,47 +4294,60 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
     console.log('📝 Rejected deposit transaction recorded');
     console.log('📝 Transaction details:', transaction);
 
-    // Remove from pending deposits - HANDLE BOTH SOURCES
+    // Update deposit status to 'rejected' instead of deleting - KEEP HISTORY
     if (isFromSupabase) {
-      // Remove from Supabase database
+      // Update in Supabase database
       if (supabase) {
         try {
           const { error } = await supabase
             .from('deposits')
-            .delete()
+            .update({
+              status: 'rejected',
+              updated_at: new Date().toISOString(),
+              rejected_at: new Date().toISOString(),
+              rejection_reason: reason || 'No reason provided'
+            })
             .eq('id', depositId);
 
           if (error) {
-            console.error('⚠️ Failed to remove rejected deposit from Supabase:', error);
+            console.error('⚠️ Failed to update rejected deposit in Supabase:', error);
           } else {
-            console.log('✅ Rejected deposit removed from Supabase database');
+            console.log('✅ Rejected deposit status updated in Supabase database');
           }
         } catch (dbError) {
-          console.error('⚠️ Supabase deposit removal sync error:', dbError);
+          console.error('⚠️ Supabase deposit update sync error:', dbError);
         }
       }
     } else {
-      // Remove from local array
+      // Update in local array
       if (depositIndex !== -1) {
-        pendingDeposits.splice(depositIndex, 1);
+        pendingDeposits[depositIndex].status = 'rejected';
+        pendingDeposits[depositIndex].updated_at = new Date().toISOString();
+        pendingDeposits[depositIndex].rejected_at = new Date().toISOString();
+        pendingDeposits[depositIndex].rejection_reason = reason || 'No reason provided';
         pendingData.deposits = pendingDeposits;
         savePendingData();
-        console.log('🗑️ Deposit removed from local pending list');
+        console.log('✅ Deposit status updated to rejected in local list');
       }
 
-      // Also try to remove from Supabase (in case it exists there too)
+      // Also try to update in Supabase (in case it exists there too)
       if (supabase) {
         try {
           const { error } = await supabase
             .from('deposits')
-            .delete()
+            .update({
+              status: 'rejected',
+              updated_at: new Date().toISOString(),
+              rejected_at: new Date().toISOString(),
+              rejection_reason: reason || 'No reason provided'
+            })
             .eq('id', depositId);
 
           if (!error) {
-            console.log('✅ Deposit also removed from Supabase database');
+            console.log('✅ Deposit also updated in Supabase database');
           }
         } catch (dbError) {
-          console.log('⚠️ Supabase cleanup attempt failed:', dbError.message);
+          console.log('⚠️ Supabase update attempt failed:', dbError.message);
         }
       }
     }
@@ -5824,7 +5849,7 @@ app.get('/api/users/:userId/deposits', async (req, res) => {
 
     let userDeposits = [];
 
-    // Try to get from database first
+    // ALWAYS try to get from database first (includes all statuses: pending, verifying, approved, rejected)
     if (supabase) {
       try {
         const { data: deposits, error } = await supabase
@@ -5836,34 +5861,42 @@ app.get('/api/users/:userId/deposits', async (req, res) => {
         if (!error && deposits) {
           userDeposits = deposits;
           console.log('💰 Found deposits in database:', userDeposits.length);
+          console.log('💰 Deposit statuses:', deposits.map(d => ({ id: d.id, status: d.status, amount: d.amount })));
         }
       } catch (dbError) {
         console.error('❌ Database query failed:', dbError);
       }
     }
 
-    // If no database deposits, check local storage
-    if (userDeposits.length === 0) {
-      try {
-        const data = fs.readFileSync(dataFile, 'utf8');
-        const pendingData = JSON.parse(data);
+    // Also check local storage and merge (for backward compatibility)
+    try {
+      const data = fs.readFileSync(dataFile, 'utf8');
+      const pendingData = JSON.parse(data);
 
-        // Get all deposits for this user (pending and processed)
-        const allDeposits = [
-          ...(pendingData.deposits || []).filter(d => d.user_id === userId),
-          ...(pendingData.processedDeposits || []).filter(d => d.user_id === userId)
-        ];
+      // Get all deposits for this user from local storage
+      const localDeposits = [
+        ...(pendingData.deposits || []).filter(d => d.user_id === userId),
+        ...(pendingData.processedDeposits || []).filter(d => d.user_id === userId)
+      ];
 
-        userDeposits = allDeposits.sort((a, b) =>
-          new Date(b.created_at || b.timestamp).getTime() - new Date(a.created_at || a.timestamp).getTime()
-        );
+      // Merge with database deposits (avoid duplicates by ID)
+      const existingIds = new Set(userDeposits.map(d => d.id));
+      const newLocalDeposits = localDeposits.filter(d => !existingIds.has(d.id));
 
-        console.log('💰 Found deposits in local storage:', userDeposits.length);
-      } catch (fileError) {
-        console.error('❌ File read error:', fileError);
+      if (newLocalDeposits.length > 0) {
+        userDeposits = [...userDeposits, ...newLocalDeposits];
+        console.log('💰 Added deposits from local storage:', newLocalDeposits.length);
       }
+    } catch (fileError) {
+      console.log('⚠️ Local storage read skipped:', fileError.message);
     }
 
+    // Sort by created_at descending
+    userDeposits = userDeposits.sort((a, b) =>
+      new Date(b.created_at || b.timestamp).getTime() - new Date(a.created_at || a.timestamp).getTime()
+    );
+
+    console.log('💰 Total deposits returned:', userDeposits.length);
     res.json(userDeposits);
   } catch (error) {
     console.error('❌ Error getting user deposits:', error);
