@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Search, Star, RefreshCw } from "lucide-react";
+import { Search, Star, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
 import { useIsMobile } from "../hooks/use-mobile";
 import { useCryptoData } from "../services/cryptoDataService";
 import type { MarketData } from "@shared/schema";
+import { Card, CardContent } from "../components/ui/card";
 
 export default function MarketsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,25 +16,10 @@ export default function MarketsPage() {
   // Use real-time CoinMarketCap data
   const { cryptoData, loading, error, forceRefresh, retry } = useCryptoData();
 
-  // Transform CoinMarketCap data to match the Markets page format
-  const transformedMarketData = cryptoData.map(crypto => {
-    const symbol = crypto.symbol.replace('/USDT', '');
-    return {
-      symbol: symbol,
-      pair: "USDT",
-      price: crypto.price,
-      change: crypto.change,
-      isPositive: crypto.isPositive,
-      leverage: "10X",
-      rawPrice: crypto.rawPrice,
-      rawChange: crypto.rawChange
-    };
-  });
-
   // Filter data based on search query
-  const filteredMarketData = transformedMarketData.filter(item =>
-    item.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${item.symbol}${item.pair}`.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMarketData = cryptoData.filter(crypto =>
+    crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    crypto.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const tabs = ["Favorites", "Options", "Spot"];
@@ -115,66 +101,91 @@ export default function MarketsPage() {
         </div>
 
         {/* Market Data Table */}
-        <div className="bg-transparent">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-600">
-                  <th className="text-left py-8 px-6 font-medium text-gray-400 text-sm">Name</th>
-                  <th className="text-center py-8 px-6 font-medium text-gray-400 text-sm">Price</th>
-                  <th className="text-right py-8 px-6 font-medium text-gray-400 text-sm">24h Change</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading && filteredMarketData.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="py-12 text-center">
-                      <div className="flex items-center justify-center space-x-2">
-                        <RefreshCw className="w-5 h-5 animate-spin text-blue-400" />
-                        <span className="text-gray-400">Loading market data...</span>
-                      </div>
-                    </td>
+        <Card className="bg-[#1a1340]/80 border-purple-800/30 backdrop-blur-sm">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-purple-800/30">
+                    <th className="text-left p-6 font-medium text-gray-400 text-sm">Name</th>
+                    <th className="text-left p-6 font-medium text-gray-400 text-sm">Last Price</th>
+                    <th className="text-left p-6 font-medium text-gray-400 text-sm">24h Change</th>
+                    <th className="text-left p-6 font-medium text-gray-400 text-sm">24h High</th>
+                    <th className="text-left p-6 font-medium text-gray-400 text-sm">24h Low</th>
                   </tr>
-                ) : filteredMarketData.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="py-12 text-center">
-                      <span className="text-gray-400">No cryptocurrencies found matching "{searchQuery}"</span>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMarketData.map((data, index) => (
-                    <tr key={`${data.symbol}-${index}`} className="border-b border-gray-600/20 hover:bg-gray-700/10 transition cursor-pointer">
-                      <td className="py-8 px-6">
-                        <div className="flex items-center space-x-4">
-                          <Star className="w-4 h-4 text-gray-500 hover:text-yellow-400 cursor-pointer" />
+                </thead>
+                <tbody>
+                  {loading ? (
+                    // Loading skeleton rows
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <tr key={index} className="border-b border-purple-800/20">
+                        <td className="p-6">
                           <div className="flex items-center space-x-3">
-                            <span className="font-medium text-white text-sm">{data.symbol}</span>
-                            <span className="text-gray-400 text-sm">/ {data.pair}</span>
-                            <span className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded font-medium">
-                              {data.leverage}
-                            </span>
+                            <div className="w-10 h-10 bg-gray-700 rounded-full animate-pulse"></div>
+                            <div>
+                              <div className="h-4 bg-gray-700 rounded animate-pulse mb-1 w-20"></div>
+                              <div className="h-3 bg-gray-700 rounded animate-pulse w-16"></div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-8 px-6 text-center">
-                        <div className="font-mono text-white text-sm">
-                          {data.price}
-                        </div>
-                      </td>
-                      <td className="py-8 px-6 text-right">
-                        <div className={`font-medium text-sm ${
-                          data.isPositive ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {data.change}
-                        </div>
+                        </td>
+                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-24"></div></td>
+                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-16"></div></td>
+                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>
+                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>
+                      </tr>
+                    ))
+                  ) : filteredMarketData.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-12 text-center">
+                        <span className="text-gray-400">No cryptocurrencies found matching "{searchQuery}"</span>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  ) : (
+                    filteredMarketData.map((crypto) => (
+                      <tr key={crypto.symbol} className="border-b border-purple-800/20 hover:bg-purple-900/20 transition-colors">
+                        <td className="p-6">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center border border-purple-500/30">
+                              <img
+                                src={crypto.image || `https://cryptoicons.org/api/icon/${crypto.symbol.split('/')[0].toLowerCase()}/200`}
+                                alt={crypto.name}
+                                className="w-9 h-9 object-contain"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const fallback = target.nextElementSibling;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                              <span
+                                className="text-white font-bold text-sm hidden"
+                              >
+                                {crypto.symbol.split('/')[0].charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{crypto.symbol}</div>
+                              <div className="text-sm text-gray-400">{crypto.name}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-6 text-white font-medium">{crypto.price}</td>
+                        <td className="p-6">
+                          <div className={`flex items-center space-x-1 ${crypto.isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                            {crypto.isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                            <span className="font-medium">{crypto.change}</span>
+                          </div>
+                        </td>
+                        <td className="p-6 text-gray-300">{crypto.high}</td>
+                        <td className="p-6 text-gray-300">{crypto.low}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Pagination */}
         <div className="flex justify-center mt-8">
