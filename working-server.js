@@ -4155,19 +4155,43 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       console.log('✅ User found:', user.username, 'Current balance:', user.balance);
 
       const currentBalance = parseFloat(user.balance || '0');
-      const depositAmount = parseFloat(deposit.amount || '0');
+      const depositAmountOriginal = parseFloat(deposit.amount || '0');
+      const depositCurrency = deposit.currency || 'USDT';
 
-      if (isNaN(currentBalance) || isNaN(depositAmount)) {
-        console.log('❌ Invalid balance or amount:', { currentBalance, depositAmount });
+      if (isNaN(currentBalance) || isNaN(depositAmountOriginal)) {
+        console.log('❌ Invalid balance or amount:', { currentBalance, depositAmountOriginal });
         return res.status(400).json({
           success: false,
           message: 'Invalid balance or deposit amount'
         });
       }
 
-      const newBalance = currentBalance + depositAmount;
+      // CRITICAL: Convert crypto to USDT before adding to balance
+      let depositAmountInUSDT = depositAmountOriginal;
+      let conversionRate = 1;
+
+      try {
+        if (depositCurrency !== 'USDT' && !depositCurrency.includes('USDT')) {
+          // Convert crypto (BTC, ETH, SOL, etc.) to USDT
+          console.log(`💱 Converting ${depositAmountOriginal} ${depositCurrency} to USDT...`);
+          depositAmountInUSDT = await convertCryptoToUSDT(depositAmountOriginal, depositCurrency);
+          conversionRate = depositAmountInUSDT / depositAmountOriginal;
+          console.log(`💱 Conversion complete: ${depositAmountOriginal} ${depositCurrency} = ${depositAmountInUSDT.toFixed(2)} USDT (rate: $${conversionRate.toFixed(2)})`);
+        } else {
+          console.log(`💵 Deposit is already in USDT, no conversion needed`);
+        }
+      } catch (conversionError) {
+        console.error('❌ Crypto conversion failed:', conversionError.message);
+        return res.status(500).json({
+          success: false,
+          message: `Failed to convert ${depositCurrency} to USDT: ${conversionError.message}`
+        });
+      }
+
+      const newBalance = currentBalance + depositAmountInUSDT;
       user.balance = newBalance.toString();
       console.log('✅ Deposit approved, user balance updated:', currentBalance, '→', newBalance);
+      console.log(`💰 Added ${depositAmountInUSDT.toFixed(2)} USDT (from ${depositAmountOriginal} ${depositCurrency})`);
 
       // Update balance in database (production) or file (development)
       if (isSupabaseConfigured && supabase) {
@@ -4200,14 +4224,18 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
         console.log('💾 User balance changes saved to file');
       }
 
-      // Add approved transaction record
+      // Add approved transaction record with conversion details
+      const transactionDescription = depositCurrency !== 'USDT' && !depositCurrency.includes('USDT')
+        ? `Deposit approved - ${depositAmountOriginal} ${depositCurrency} converted to ${depositAmountInUSDT.toFixed(2)} USDT (rate: $${conversionRate.toFixed(2)})`
+        : `Deposit approved - ${depositAmountInUSDT.toFixed(2)} USDT`;
+
       const transaction = {
         id: `txn-${Date.now()}`,
         user_id: user.id,
         type: 'deposit',
-        amount: deposit.amount,
+        amount: depositAmountInUSDT, // Store USDT amount in transaction
         status: 'completed',
-        description: `Deposit approved by admin - ${deposit.currency} via ${deposit.network}`,
+        description: transactionDescription,
         created_at: new Date().toISOString()
       };
       await createTransaction(transaction);
@@ -4215,6 +4243,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       console.log('📝 Transaction details:', transaction);
 
       // Update deposit status to 'approved' instead of deleting - KEEP HISTORY
+      // Also store conversion details
       if (isFromSupabase) {
         // Update in Supabase database
         if (supabase) {
@@ -4224,14 +4253,18 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
               .update({
                 status: 'approved',
                 updated_at: new Date().toISOString(),
-                approved_at: new Date().toISOString()
+                approved_at: new Date().toISOString(),
+                converted_amount_usdt: depositAmountInUSDT,
+                conversion_rate: conversionRate,
+                original_amount: depositAmountOriginal,
+                original_currency: depositCurrency
               })
               .eq('id', depositId);
 
             if (error) {
               console.error('⚠️ Failed to update approved deposit in Supabase:', error);
             } else {
-              console.log('✅ Approved deposit status updated in Supabase database');
+              console.log('✅ Approved deposit status updated in Supabase database with conversion details');
             }
           } catch (dbError) {
             console.error('⚠️ Supabase deposit update sync error:', dbError);
@@ -4243,9 +4276,13 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
           pendingDeposits[depositIndex].status = 'approved';
           pendingDeposits[depositIndex].updated_at = new Date().toISOString();
           pendingDeposits[depositIndex].approved_at = new Date().toISOString();
+          pendingDeposits[depositIndex].converted_amount_usdt = depositAmountInUSDT;
+          pendingDeposits[depositIndex].conversion_rate = conversionRate;
+          pendingDeposits[depositIndex].original_amount = depositAmountOriginal;
+          pendingDeposits[depositIndex].original_currency = depositCurrency;
           pendingData.deposits = pendingDeposits;
           savePendingData();
-          console.log('✅ Deposit status updated to approved in local list');
+          console.log('✅ Deposit status updated to approved in local list with conversion details');
         }
 
         // Also try to update in Supabase (in case it exists there too)
@@ -4256,12 +4293,16 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
               .update({
                 status: 'approved',
                 updated_at: new Date().toISOString(),
-                approved_at: new Date().toISOString()
+                approved_at: new Date().toISOString(),
+                converted_amount_usdt: depositAmountInUSDT,
+                conversion_rate: conversionRate,
+                original_amount: depositAmountOriginal,
+                original_currency: depositCurrency
               })
               .eq('id', depositId);
 
             if (!error) {
-              console.log('✅ Deposit also updated in Supabase database');
+              console.log('✅ Deposit also updated in Supabase database with conversion details');
             }
           } catch (dbError) {
             console.log('⚠️ Supabase update attempt failed:', dbError.message);
@@ -9869,6 +9910,85 @@ const COINMARKETCAP_BASE_URL = 'https://pro-api.coinmarketcap.com/v1';
 let cmcDataCache = null;
 let cmcCacheTimestamp = 0;
 const CMC_CACHE_DURATION = 300000; // 5 minutes cache to avoid rate limiting (CoinMarketCap free tier: 333 requests/day)
+
+// Helper function to get crypto price in USDT from CoinMarketCap
+async function getCryptoPriceInUSDT(cryptoSymbol) {
+  try {
+    // Normalize crypto symbol (remove network suffixes)
+    let normalizedSymbol = cryptoSymbol.toUpperCase();
+    if (normalizedSymbol.includes('USDT')) {
+      normalizedSymbol = normalizedSymbol.split('-')[0]; // USDT-ERC20 -> USDT
+    }
+
+    // USDT is always 1:1
+    if (normalizedSymbol === 'USDT') {
+      return 1.0;
+    }
+
+    // Check cache first
+    const now = Date.now();
+    if (cmcDataCache && (now - cmcCacheTimestamp) < CMC_CACHE_DURATION) {
+      const coin = cmcDataCache.find(c => c.symbol.includes(normalizedSymbol));
+      if (coin && coin.rawPrice) {
+        console.log(`💱 Using cached price for ${normalizedSymbol}: $${coin.rawPrice}`);
+        return coin.rawPrice;
+      }
+    }
+
+    // Fetch fresh data if not in cache
+    const response = await fetch(`${COINMARKETCAP_BASE_URL}/cryptocurrency/listings/latest?start=1&limit=20&convert=USD`, {
+      headers: {
+        'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`CoinMarketCap API failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const coin = data.data.find(c => c.symbol === normalizedSymbol);
+
+    if (coin && coin.quote && coin.quote.USD) {
+      const price = coin.quote.USD.price;
+      console.log(`💱 Fetched live price for ${normalizedSymbol}: $${price}`);
+      return price;
+    }
+
+    // Fallback prices if API fails
+    const fallbackPrices = {
+      'BTC': 43000,
+      'ETH': 2300,
+      'SOL': 100,
+      'BNB': 310,
+      'XRP': 0.52
+    };
+
+    if (fallbackPrices[normalizedSymbol]) {
+      console.log(`⚠️ Using fallback price for ${normalizedSymbol}: $${fallbackPrices[normalizedSymbol]}`);
+      return fallbackPrices[normalizedSymbol];
+    }
+
+    throw new Error(`Price not found for ${cryptoSymbol}`);
+  } catch (error) {
+    console.error(`❌ Error getting price for ${cryptoSymbol}:`, error.message);
+    throw error;
+  }
+}
+
+// Convert crypto amount to USDT
+async function convertCryptoToUSDT(amount, cryptoCurrency) {
+  try {
+    const price = await getCryptoPriceInUSDT(cryptoCurrency);
+    const usdtAmount = parseFloat(amount) * price;
+    console.log(`💱 Conversion: ${amount} ${cryptoCurrency} = ${usdtAmount.toFixed(2)} USDT (rate: $${price})`);
+    return usdtAmount;
+  } catch (error) {
+    console.error(`❌ Conversion failed for ${amount} ${cryptoCurrency}:`, error.message);
+    throw new Error(`Failed to convert ${cryptoCurrency} to USDT: ${error.message}`);
+  }
+}
 
 // Fetch data from CoinMarketCap API
 async function fetchCoinMarketCapData() {
