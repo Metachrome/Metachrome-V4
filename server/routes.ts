@@ -520,8 +520,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password are required" });
       }
 
-      // Check database for user credentials
-      const user = await storage.getUserByUsername(username);
+      // Try to find user by username, email, or wallet address
+      let user = null;
+
+      // First, try username
+      user = await storage.getUserByUsername(username);
+
+      // If not found and input looks like an email, try email
+      if (!user && username.includes('@')) {
+        user = await storage.getUserByEmail(username);
+      }
+
+      // If not found and input looks like a wallet address, try wallet
+      if (!user && username.startsWith('0x')) {
+        user = await storage.getUserByWallet(username);
+      }
 
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });

@@ -48,15 +48,9 @@ export default function UserLogin() {
     try {
       console.log('🔄 Starting login process...', { email: data.email });
 
-      // Determine if input is email, username, or wallet address
-      let username = data.email;
-
-      // If it's an email, extract username part
-      if (data.email.includes('@')) {
-        username = data.email.split('@')[0];
-      }
-      // If it starts with 0x, it's likely a wallet address - use as is
-      // Otherwise, treat as username
+      // Use the input as-is (can be email, username, or wallet address)
+      // Backend will handle the logic to determine which field to search
+      const username = data.email;
 
       console.log('🔄 Calling userLogin with:', { username, password: '***' });
 
