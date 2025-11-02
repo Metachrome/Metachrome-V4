@@ -1801,6 +1801,12 @@ export default function WorkingAdminDashboard() {
                                 user.id?.toLowerCase().includes(searchLower)
                               );
                             })
+                            .sort((a, b) => {
+                              // Sort by created_at in descending order (newest first)
+                              const dateA = new Date(a.created_at || 0).getTime();
+                              const dateB = new Date(b.created_at || 0).getTime();
+                              return dateB - dateA;
+                            })
                             .map((user) => (
                         <TableRow key={user.id} className="border-gray-700 hover:bg-gray-700/50">
                           <TableCell>
