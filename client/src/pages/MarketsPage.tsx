@@ -10,7 +10,6 @@ import { Card, CardContent } from "../components/ui/card";
 
 export default function MarketsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("Spot");
   const isMobile = useIsMobile();
 
   // Use real-time CoinMarketCap data
@@ -21,8 +20,6 @@ export default function MarketsPage() {
     crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
     crypto.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const tabs = ["Favorites", "Options", "Spot"];
 
   return (
     <div className="min-h-screen bg-[#10121E]">
@@ -35,48 +32,27 @@ export default function MarketsPage() {
 
       {/* Content Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs and Search - Mobile: Stack vertically, Desktop: One row */}
-        <div className={`mb-8 ${isMobile ? 'space-y-3' : 'flex items-center justify-between'}`}>
-          {/* Tabs */}
-          <div className="flex items-center space-x-1">
-            {tabs.map((tab) => (
-              <Button
-                key={tab}
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveTab(tab)}
-                className={activeTab === tab
-                  ? "bg-purple-600 text-white hover:bg-purple-700 px-6 py-2 rounded-md"
-                  : "bg-transparent text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-md"
-                }
-              >
-                {tab}
-              </Button>
-            ))}
+        {/* Search and Refresh */}
+        <div className={`mb-8 ${isMobile ? 'flex gap-2' : 'flex items-center justify-end space-x-4'}`}>
+          <div className={`relative ${isMobile ? 'flex-1' : ''}`}>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder={isMobile ? "Search..." : "Search cryptocurrencies..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`pl-10 ${isMobile ? 'w-full' : 'w-64'} bg-[#3A3A4E] border-gray-600 text-white placeholder-gray-400 rounded-md`}
+            />
           </div>
-
-          {/* Search and Refresh */}
-          <div className={`flex items-center ${isMobile ? 'w-full gap-2' : 'space-x-4'}`}>
-            <div className={`relative ${isMobile ? 'flex-1' : ''}`}>
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder={isMobile ? "Search..." : "Search cryptocurrencies..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-10 ${isMobile ? 'w-full' : 'w-64'} bg-[#3A3A4E] border-gray-600 text-white placeholder-gray-400 rounded-md`}
-              />
-            </div>
-            <Button
-              onClick={forceRefresh}
-              disabled={loading}
-              className={`bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-md flex items-center gap-2 ${isMobile ? 'px-3 py-2 text-sm flex-shrink-0' : 'px-4 py-2'}`}
-              title={loading ? 'Updating...' : 'Refresh'}
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              {!isMobile && (loading ? 'Updating...' : 'Refresh')}
-            </Button>
-          </div>
+          <Button
+            onClick={forceRefresh}
+            disabled={loading}
+            className={`bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-md flex items-center gap-2 ${isMobile ? 'px-3 py-2 text-sm flex-shrink-0' : 'px-4 py-2'}`}
+            title={loading ? 'Updating...' : 'Refresh'}
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {!isMobile && (loading ? 'Updating...' : 'Refresh')}
+          </Button>
         </div>
 
         {/* Status Indicator */}
