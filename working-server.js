@@ -5810,6 +5810,67 @@ app.get('/api/users/:userId/withdrawals', async (req, res) => {
   }
 });
 
+// User-specific deposits endpoint
+app.get('/api/users/:userId/deposits', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('💰 Getting deposits for user:', userId);
+
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    let userDeposits = [];
+
+    // Try to get from database first
+    if (supabase) {
+      try {
+        const { data: deposits, error } = await supabase
+          .from('deposits')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (!error && deposits) {
+          userDeposits = deposits;
+          console.log('💰 Found deposits in database:', userDeposits.length);
+        }
+      } catch (dbError) {
+        console.error('❌ Database query failed:', dbError);
+      }
+    }
+
+    // If no database deposits, check local storage
+    if (userDeposits.length === 0) {
+      try {
+        const data = fs.readFileSync(dataFile, 'utf8');
+        const pendingData = JSON.parse(data);
+
+        // Get all deposits for this user (pending and processed)
+        const allDeposits = [
+          ...(pendingData.deposits || []).filter(d => d.user_id === userId),
+          ...(pendingData.processedDeposits || []).filter(d => d.user_id === userId)
+        ];
+
+        userDeposits = allDeposits.sort((a, b) =>
+          new Date(b.created_at || b.timestamp).getTime() - new Date(a.created_at || a.timestamp).getTime()
+        );
+
+        console.log('💰 Found deposits in local storage:', userDeposits.length);
+      } catch (fileError) {
+        console.error('❌ File read error:', fileError);
+      }
+    }
+
+    res.json(userDeposits);
+  } catch (error) {
+    console.error('❌ Error getting user deposits:', error);
+    res.status(500).json({ error: 'Failed to get user deposits' });
+  }
+});
+
 // User-specific trades endpoint
 app.get('/api/users/:userId/trades', async (req, res) => {
   try {

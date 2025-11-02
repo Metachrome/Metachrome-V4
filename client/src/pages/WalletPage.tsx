@@ -64,6 +64,33 @@ export default function WalletPage() {
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Fetch deposit history - REAL DATA
+  const { data: depositHistory = [] } = useQuery({
+    queryKey: [`/api/users/${user?.id}/deposits`],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/users/${user.id}/deposits`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+        if (!response.ok) {
+          console.log('Deposit history API failed, using empty array');
+          return [];
+        }
+        const data = await response.json();
+        console.log('📊 Deposit history fetched:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Failed to fetch deposit history:', error);
+        return [];
+      }
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
   const queryClient = useQueryClient();
 
   // Real platform deposit addresses (where users send crypto to deposit)
@@ -675,16 +702,19 @@ export default function WalletPage() {
             <div>
               <h1 className="text-4xl font-bold text-white mb-8">Deposit</h1>
 
-              {/* Add Funds Section */}
-              <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white">Add Funds</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Top up your account balance with cryptocurrency
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+              {/* Grid Layout: Form + History */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Add Funds Section - Left Side (2 columns) */}
+                <div className="lg:col-span-2">
+                  <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white">Add Funds</CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Top up your account balance with cryptocurrency
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
 
                     {/* Deposit Network Selection */}
                     <div>
@@ -873,9 +903,61 @@ export default function WalletPage() {
                     >
                       {depositMutation.isPending ? 'Processing...' : 'Confirm recharge'}
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Deposit History - Right Side (1 column) */}
+                <div className="lg:col-span-1">
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardContent className="p-6">
+                      <h3 className="text-white text-lg font-semibold mb-4">Recent Deposits</h3>
+                      <div className="space-y-4">
+                        {/* Real deposit history */}
+                        {depositHistory.length > 0 ? (
+                          depositHistory.slice(0, 3).map((deposit, index) => (
+                            <div key={deposit.id || index} className="border-b border-gray-700 pb-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="text-white text-sm font-medium">
+                                    {deposit.amount} {deposit.currency}
+                                  </div>
+                                  <div className="text-gray-400 text-xs">
+                                    {deposit.currency} Network
+                                  </div>
+                                  <div className="text-gray-400 text-xs">
+                                    {new Date(deposit.created_at || deposit.timestamp).toLocaleDateString()} {new Date(deposit.created_at || deposit.timestamp).toLocaleTimeString()}
+                                  </div>
+                                </div>
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                  deposit.status === 'pending'
+                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                    : deposit.status === 'approved' || deposit.status === 'completed'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {deposit.status === 'approved' ? 'Completed' : deposit.status.charAt(0).toUpperCase() + deposit.status.slice(1)}
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <div className="text-gray-400 text-sm">No deposit history</div>
+                          </div>
+                        )}
+
+                        <div className="text-center">
+                          <button className="text-purple-400 hover:text-purple-300 text-sm transition-colors">
+                            View All History
+                          </button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         )}
