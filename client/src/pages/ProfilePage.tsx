@@ -30,6 +30,42 @@ import {
   AlertTriangle,
   Loader2
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+
+// Popular country codes
+const COUNTRY_CODES = [
+  { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
+  { code: '+62', country: 'Indonesia', flag: '🇮🇩' },
+  { code: '+44', country: 'UK', flag: '🇬🇧' },
+  { code: '+86', country: 'China', flag: '🇨🇳' },
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+81', country: 'Japan', flag: '🇯🇵' },
+  { code: '+82', country: 'South Korea', flag: '🇰🇷' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+  { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
+  { code: '+66', country: 'Thailand', flag: '🇹🇭' },
+  { code: '+84', country: 'Vietnam', flag: '🇻🇳' },
+  { code: '+63', country: 'Philippines', flag: '🇵🇭' },
+  { code: '+61', country: 'Australia', flag: '🇦🇺' },
+  { code: '+64', country: 'New Zealand', flag: '🇳🇿' },
+  { code: '+49', country: 'Germany', flag: '🇩🇪' },
+  { code: '+33', country: 'France', flag: '🇫🇷' },
+  { code: '+39', country: 'Italy', flag: '🇮🇹' },
+  { code: '+34', country: 'Spain', flag: '🇪🇸' },
+  { code: '+7', country: 'Russia', flag: '🇷🇺' },
+  { code: '+55', country: 'Brazil', flag: '🇧🇷' },
+  { code: '+52', country: 'Mexico', flag: '🇲🇽' },
+  { code: '+27', country: 'South Africa', flag: '🇿🇦' },
+  { code: '+971', country: 'UAE', flag: '🇦🇪' },
+  { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: '+90', country: 'Turkey', flag: '🇹🇷' },
+];
 
 export default function ProfilePage() {
   const { user, refreshAuth } = useAuth();
@@ -74,6 +110,7 @@ export default function ProfilePage() {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     phone: user?.phone || '',
+    phoneCountryCode: '+1', // Default to US
     address: user?.address || '',
     currentPassword: '',
     newPassword: '',
@@ -83,13 +120,28 @@ export default function ProfilePage() {
   // Update form data when user data changes
   useEffect(() => {
     if (user) {
+      // Parse phone number to extract country code
+      let phoneNumber = user.phone || '';
+      let countryCode = '+1'; // Default
+
+      // Check if phone starts with + (international format)
+      if (phoneNumber.startsWith('+')) {
+        // Extract country code (1-4 digits after +)
+        const match = phoneNumber.match(/^(\+\d{1,4})/);
+        if (match) {
+          countryCode = match[1];
+          phoneNumber = phoneNumber.substring(countryCode.length).trim();
+        }
+      }
+
       setFormData(prev => ({
         ...prev,
         username: user.username || '',
         email: user.email || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        phone: user.phone || '',
+        phone: phoneNumber,
+        phoneCountryCode: countryCode,
         address: user.address || '',
       }));
     }
@@ -408,8 +460,15 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = () => {
-    const { currentPassword, newPassword, confirmPassword, ...profileData } = formData;
-    updateProfileMutation.mutate(profileData);
+    const { currentPassword, newPassword, confirmPassword, phoneCountryCode, phone, ...profileData } = formData;
+
+    // Combine country code with phone number
+    const fullPhoneNumber = phone ? `${phoneCountryCode} ${phone}` : '';
+
+    updateProfileMutation.mutate({
+      ...profileData,
+      phone: fullPhoneNumber
+    });
   };
 
   const handleChangePassword = () => {
@@ -694,25 +753,51 @@ export default function ProfilePage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-gray-300">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      disabled={!isEditing}
-                      className="bg-gray-700 border-gray-600 text-white disabled:opacity-50"
-                      placeholder="Enter phone number"
-                    />
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.phoneCountryCode}
+                        onValueChange={(value) => handleInputChange('phoneCountryCode', value)}
+                        disabled={!isEditing}
+                      >
+                        <SelectTrigger className="w-[140px] bg-gray-700 border-gray-600 text-white disabled:opacity-50">
+                          <SelectValue placeholder="Code" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-700 max-h-[300px]">
+                          {COUNTRY_CODES.map((country) => (
+                            <SelectItem
+                              key={country.code}
+                              value={country.code}
+                              className="text-white hover:bg-gray-700 focus:bg-gray-700"
+                            >
+                              <span className="flex items-center gap-2">
+                                <span>{country.flag}</span>
+                                <span>{country.code}</span>
+                                <span className="text-gray-400 text-xs">{country.country}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        disabled={!isEditing}
+                        className="flex-1 bg-gray-700 border-gray-600 text-white disabled:opacity-50"
+                        placeholder="Enter phone number"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="address" className="text-gray-300">Address</Label>
+                    <Label htmlFor="address" className="text-gray-300">Withdrawal Address</Label>
                     <Input
                       id="address"
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
                       disabled={!isEditing}
                       className="bg-gray-700 border-gray-600 text-white disabled:opacity-50"
-                      placeholder="Enter address"
+                      placeholder="Enter withdrawal address"
                     />
                   </div>
                 </div>
