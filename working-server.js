@@ -5221,6 +5221,38 @@ app.post('/api/withdrawals', async (req, res) => {
     console.log('💸 Processing withdrawal for authenticated user:', user.username, '(ID:', user.id, ')');
     console.log('💰 User balance:', user.balance);
 
+    // Check minimum trade requirement (3 completed trades)
+    try {
+      const { data: userTrades, error: tradesError } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('status', ['completed'])
+        .or('result.eq.win,result.eq.lose');
+
+      if (tradesError) {
+        console.error('❌ Error fetching user trades for withdrawal validation:', tradesError);
+      }
+
+      const completedTradesCount = userTrades ? userTrades.length : 0;
+      console.log(`📊 User ${user.username} has ${completedTradesCount} completed trades`);
+
+      if (completedTradesCount < 3) {
+        console.log(`❌ Withdrawal blocked: User needs ${3 - completedTradesCount} more completed trades`);
+        return res.status(400).json({
+          error: 'Minimum trade requirement not met',
+          message: `You need to complete at least 3 trades before withdrawing. Current: ${completedTradesCount}/3 trades completed.`,
+          completedTrades: completedTradesCount,
+          requiredTrades: 3
+        });
+      }
+
+      console.log('✅ Minimum trade requirement met:', completedTradesCount, 'trades completed');
+    } catch (error) {
+      console.error('❌ Error checking trade requirement:', error);
+      // Continue with withdrawal if trade check fails (fallback for safety)
+    }
+
     // Verify user's login password - check both possible column names
     const bcrypt = require('bcryptjs');
     let isValidPassword = false;

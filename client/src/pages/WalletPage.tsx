@@ -39,6 +39,36 @@ export default function WalletPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Fetch user trade history to check minimum trades requirement
+  const { data: tradeHistory = [] } = useQuery({
+    queryKey: [`/api/users/${user?.id}/trades`],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/users/${user.id}/trades`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+        if (!response.ok) {
+          console.log('Trade history API failed, using empty array');
+          return [];
+        }
+        const data = await response.json();
+        console.log('📊 Trade history fetched for withdrawal validation:', data);
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error('Failed to fetch trade history:', error);
+        return [];
+      }
+    },
+  });
+
+  // Calculate completed trades count
+  const completedTradesCount = tradeHistory.filter((trade: any) =>
+    trade.status === 'completed' || trade.result === 'win' || trade.result === 'lose'
+  ).length;
+
   // Fetch withdrawal history - REAL DATA
   const { data: withdrawalHistory = [] } = useQuery({
     queryKey: [`/api/users/${user?.id}/withdrawals`],
@@ -1085,9 +1115,42 @@ export default function WalletPage() {
                           </div>
                         </div>
 
+                        {/* Minimum Trade Requirement Warning */}
+                        {completedTradesCount < 3 && (
+                          <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-4 mb-4">
+                            <div className="flex items-start space-x-3">
+                              <div className="flex-shrink-0">
+                                <svg className="w-5 h-5 text-yellow-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="text-yellow-500 font-semibold text-sm mb-1">Minimum Trade Requirement</h4>
+                                <p className="text-yellow-200/80 text-sm">
+                                  You need to complete at least <strong>3 trades</strong> before you can withdraw.
+                                  Current completed trades: <strong>{completedTradesCount}/3</strong>
+                                </p>
+                                <p className="text-yellow-200/60 text-xs mt-2">
+                                  Please complete {3 - completedTradesCount} more trade{3 - completedTradesCount > 1 ? 's' : ''} to unlock withdrawal.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Withdrawal Button */}
                         <Button
                           onClick={() => {
+                            // Check minimum trade requirement first
+                            if (completedTradesCount < 3) {
+                              toast({
+                                title: 'Withdrawal Not Available',
+                                description: `You need to complete at least 3 trades before withdrawing. Current: ${completedTradesCount}/3 trades completed.`,
+                                variant: 'destructive',
+                              });
+                              return;
+                            }
+
                             if (!withdrawAddress || !withdrawAmount || !fundPassword || parseFloat(withdrawAmount) <= 0) {
                               toast({
                                 title: 'Invalid Input',
@@ -1103,10 +1166,12 @@ export default function WalletPage() {
                               password: fundPassword
                             });
                           }}
-                          disabled={!withdrawAddress || !withdrawAmount || !fundPassword || withdrawMutation.isPending}
-                          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 py-3"
+                          disabled={completedTradesCount < 3 || !withdrawAddress || !withdrawAmount || !fundPassword || withdrawMutation.isPending}
+                          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {withdrawMutation.isPending ? 'Processing Withdrawal...' : `Confirm Withdrawal`}
+                          {withdrawMutation.isPending ? 'Processing Withdrawal...' :
+                           completedTradesCount < 3 ? `Complete ${3 - completedTradesCount} More Trade${3 - completedTradesCount > 1 ? 's' : ''} to Withdraw` :
+                           `Confirm Withdrawal`}
                         </Button>
                       </div>
                     </CardContent>
