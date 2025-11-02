@@ -260,9 +260,9 @@ export default function UserLogin() {
       <div className="flex min-h-screen flex-col lg:flex-row">
         {/* Left Side - Full width on mobile, 50% on desktop */}
         <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative overflow-hidden min-h-[40vh] lg:min-h-auto" style={{backgroundColor: '#24083B'}}>
-          {/* Logo Button - Top Left */}
+          {/* Logo Button - Top Left - Hidden on mobile, visible on desktop */}
           <Link href="/">
-            <div className="absolute top-6 left-6 lg:top-8 lg:left-8 cursor-pointer hover:opacity-80 transition-opacity z-20">
+            <div className="hidden lg:block absolute top-6 left-6 lg:top-8 lg:left-8 cursor-pointer hover:opacity-80 transition-opacity z-20">
               <img
                 src={metachromeLogo}
                 alt="METACHROME"
@@ -271,8 +271,8 @@ export default function UserLogin() {
             </div>
           </Link>
 
-          {/* Content */}
-          <div className="text-center z-10 max-w-md relative py-[30px]" style={{ marginTop: '0px' }}>
+          {/* Content - Hidden on mobile, visible on desktop */}
+          <div className="hidden lg:block text-center z-10 max-w-md relative py-[30px]" style={{ marginTop: '0px' }}>
             <p className="text-white/90 text-sm lg:text-lg mb-2 lg:mb-4">Get Started with METACHROME</p>
             <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight">
               The Future is for Everyone
@@ -310,10 +310,10 @@ export default function UserLogin() {
               <p className="text-gray-400 text-sm mb-6">Securely connect to your account</p>
 
               {/* Social Login Buttons */}
-              <div className="flex justify-center mb-6">
+              <div className="mb-6">
                 <Button
                   variant="outline"
-                  className="bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg flex items-center space-x-2"
+                  className="w-full bg-transparent border-gray-600 hover:bg-gray-800 p-3 rounded-lg flex items-center justify-center space-x-2"
                   onClick={handleGoogleLogin}
                   type="button"
                 >
