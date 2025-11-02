@@ -1,4 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client directly
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : null;
 
 // Import shared user balances
 let userBalances: Map<string, { balance: number; currency: string }>;
@@ -144,6 +158,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Store trade
       trades.set(trade.id, trade);
 
+      // Save trade to database
+      try {
+        if (supabaseAdmin) {
+          await supabaseAdmin
+            .from('trades')
+            .insert({
+              id: trade.id,
+              user_id: finalUserId,
+              symbol: trade.symbol,
+              type: 'options',
+              direction: trade.direction,
+              amount: trade.amount,
+              price: trade.entry_price,
+              entry_price: trade.entry_price,
+              status: 'active',
+              duration: trade.duration,
+              created_at: trade.created_at,
+              expires_at: trade.expires_at
+            });
+          console.log('✅ Trade saved to database');
+        }
+      } catch (dbError) {
+        console.error('⚠️ Failed to save trade to database:', dbError);
+      }
+
       console.log('✅ Options trade created:', {
         tradeId: trade.id,
         userId: finalUserId,
@@ -237,14 +276,81 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
     trade.profit_loss = isWin ? `+${profitAmount.toFixed(2)}` : `-${trade.amount}`;
     trade.completed_at = new Date().toISOString();
 
+    // Update trade in database
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin
+          .from('trades')
+          .update({
+            status: 'completed',
+            exit_price: currentPrice,
+            result: isWin ? 'win' : 'lose',
+            profit: isWin ? profitAmount : -trade.amount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', tradeId);
+        console.log('✅ Trade updated in database');
+      }
+    } catch (dbError) {
+      console.error('⚠️ Failed to update trade in database:', dbError);
+    }
+
     // Update user balance if won
     if (isWin) {
       const userBalance = userBalances.get(userId) || { balance: 0, currency: 'USDT' };
       userBalance.balance += totalPayout;
       userBalances.set(userId, userBalance);
       console.log(`💰 Trade WON: +${totalPayout} USDT, New balance: ${userBalance.balance} USDT`);
+
+      // Update balance in database
+      try {
+        if (supabaseAdmin) {
+          await supabaseAdmin
+            .from('balances')
+            .update({
+              available: userBalance.balance.toString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .eq('symbol', 'USDT');
+          console.log('✅ Balance updated in database');
+        }
+      } catch (dbError) {
+        console.error('⚠️ Failed to update balance in database:', dbError);
+      }
     } else {
       console.log(`💸 Trade LOST: -${trade.amount} USDT (already deducted)`);
+    }
+
+    // Create transaction record in database
+    try {
+      if (supabaseAdmin) {
+        const transactionType = isWin ? 'trade_win' : 'trade_loss';
+        const transactionAmount = isWin ? profitAmount : trade.amount;
+
+        const { data: transaction, error: txError } = await supabaseAdmin
+          .from('transactions')
+          .insert({
+            user_id: userId,
+            type: transactionType,
+            amount: transactionAmount,
+            status: 'completed',
+            description: `${isWin ? 'Win' : 'Loss'} on ${trade.symbol} trade`,
+            reference_id: tradeId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (txError) {
+          console.error('❌ Failed to create transaction record:', txError);
+        } else {
+          console.log('✅ Transaction record created:', transaction);
+        }
+      }
+    } catch (txError) {
+      console.error('❌ Error creating transaction:', txError);
     }
 
     console.log('🏁 Trade completed:', {

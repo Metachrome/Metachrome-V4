@@ -61,7 +61,7 @@ export interface Transaction {
   id: string;
   user_id: string;
   type: 'deposit' | 'withdrawal' | 'trade_win' | 'trade_loss' | 'bonus';
-  amount: number;
+  amount: number | string; // Can be number or string from database decimal type
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
   description: string;
   created_at: string;

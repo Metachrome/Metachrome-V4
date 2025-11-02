@@ -119,7 +119,7 @@ interface Transaction {
   id: string;
   user_id: string;
   type: string;
-  amount: number;
+  amount: number | string; // Can be number or string from database
   symbol?: string;
   currency?: string;
   description?: string;
@@ -155,7 +155,9 @@ const extractCurrencyFromDescription = (transaction: Transaction): string => {
 // Helper function to format transaction amount with currency
 const formatTransactionAmount = (transaction: Transaction): string => {
   const currency = extractCurrencyFromDescription(transaction);
-  return `${transaction.amount.toLocaleString()} ${currency}`;
+  // Convert to number if it's a string, then format
+  const amount = typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : transaction.amount;
+  return `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ${currency}`;
 };
 
 export default function WorkingAdminDashboard() {
