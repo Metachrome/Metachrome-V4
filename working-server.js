@@ -2289,12 +2289,30 @@ app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const user = await getUserByUsername(username);
+    // Try to find user by username, email, or wallet address
+    let user = null;
+
+    // First, try username
+    user = await getUserByUsername(username);
+
+    // If not found and input looks like an email, try email
+    if (!user && username.includes('@')) {
+      console.log('🔍 Trying to find user by email:', username);
+      user = await getUserByEmail(username);
+    }
+
+    // If not found and input looks like a wallet address, try wallet
+    if (!user && username.startsWith('0x')) {
+      console.log('🔍 Trying to find user by wallet address:', username);
+      user = await getUserByUsername(username); // getUserByUsername already handles wallet addresses
+    }
 
     if (!user) {
       console.log('❌ User not found:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    console.log('✅ User found:', { id: user.id, username: user.username, email: user.email });
 
     // Verify password - check both possible column names
     let isValidPassword = false;
@@ -2342,12 +2360,30 @@ app.post('/api/auth/user/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const user = await getUserByUsername(username);
+    // Try to find user by username, email, or wallet address
+    let user = null;
+
+    // First, try username
+    user = await getUserByUsername(username);
+
+    // If not found and input looks like an email, try email
+    if (!user && username.includes('@')) {
+      console.log('🔍 Trying to find user by email:', username);
+      user = await getUserByEmail(username);
+    }
+
+    // If not found and input looks like a wallet address, try wallet
+    if (!user && username.startsWith('0x')) {
+      console.log('🔍 Trying to find user by wallet address:', username);
+      user = await getUserByUsername(username); // getUserByUsername already handles wallet addresses
+    }
 
     if (!user) {
       console.log('❌ User not found:', username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    console.log('✅ User found:', { id: user.id, username: user.username, email: user.email });
 
     // Verify password - check both possible column names
     let isValidPassword = false;
