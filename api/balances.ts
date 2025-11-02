@@ -68,12 +68,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Check if it's a known demo user
         if (authToken.includes('superadmin')) {
           userId = 'superadmin-001';
+          console.log('💰 [/api/balances] Detected superadmin token, setting userId to superadmin-001');
         } else if (authToken.includes('admin')) {
           userId = 'admin-001';
+          console.log('💰 [/api/balances] Detected admin token, setting userId to admin-001');
         }
       }
 
       console.log('💰 [/api/balances] Target userId:', userId);
+      console.log('💰 [/api/balances] Will query by username:', userId === 'superadmin-001' || userId === 'admin-001');
 
       // Try to get from database first
       let balanceData = null;
