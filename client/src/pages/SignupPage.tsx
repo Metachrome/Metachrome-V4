@@ -325,23 +325,33 @@ export default function SignupPage() {
           </Link>
 
           {/* Content - Visible on both mobile and desktop */}
-          <div className="text-center z-10 max-w-md relative py-[30px]" style={{ marginTop: '0px' }}>
-            <p className="text-white/90 text-sm lg:text-lg mb-2 lg:mb-4">Get Started with METACHROME</p>
-            <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight">
+          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '-500px' }}>
+            <p className="text-white text-sm lg:text-lg mb-2 lg:mb-4 font-medium" style={{ opacity: 1, visibility: 'visible' }}>
+              Get Started with METACHROME
+            </p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight" style={{ opacity: 1, visibility: 'visible' }}>
               The Future is for Everyone
             </h1>
 
-            {/* Smaller Orb Video Below Text */}
-            <div className="relative w-48 h-48 lg:w-80 lg:h-80 mx-auto">
+            {/* Smaller Orb Video Below Text - iOS/Safari Compatible */}
+            <div className="relative w-48 h-48 lg:w-80 lg:h-80 mx-auto" style={{ opacity: 1, visibility: 'visible' }}>
               <video
                 autoPlay
                 loop
                 muted
                 playsInline
+                preload="auto"
                 className="w-full h-full object-cover rounded-full"
+                style={{
+                  opacity: 1,
+                  visibility: 'visible',
+                  WebkitTransform: 'translateZ(0)',
+                  transform: 'translateZ(0)'
+                }}
               >
                 <source src="/orb_1755576133990.webm" type="video/webm" />
                 <source src="/orb.webm" type="video/webm" />
+                <source src="/orb.mp4" type="video/mp4" />
               </video>
             </div>
           </div>
