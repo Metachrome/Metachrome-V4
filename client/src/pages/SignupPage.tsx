@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -325,7 +325,7 @@ export default function SignupPage() {
           </Link>
 
           {/* Content - Visible on both mobile and desktop */}
-          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '-590px', opacity: 1, visibility: 'visible', display: 'block' }}>
+          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: isDesktop ? '-590px' : '0px', opacity: 1, visibility: 'visible', display: 'block' }}>
             <p className="text-white text-sm lg:text-lg mb-2 lg:mb-4 font-medium" style={{ opacity: 1, visibility: 'visible', color: '#FFFFFF', display: 'block' }}>
               Get Started with METACHROME
             </p>
