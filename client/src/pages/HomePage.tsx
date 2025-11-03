@@ -117,17 +117,20 @@ export default function HomePage() {
               </div>
 
               {/* Scrolling Text */}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden relative">
                 <div
-                  className="whitespace-nowrap"
+                  className="flex whitespace-nowrap"
                   style={{
-                    animation: 'scroll-mobile 5s linear infinite',
+                    animation: 'marquee-mobile 15s linear infinite',
                     willChange: 'transform',
-                    WebkitAnimation: 'scroll-mobile 5s linear infinite'
+                    WebkitAnimation: 'marquee-mobile 15s linear infinite'
                   }}
                 >
-                  <span className="text-white text-sm font-medium">
-                    Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome  •  Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome  •  Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome
+                  <span className="text-white text-sm font-medium inline-block">
+                    Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome  •&nbsp;
+                  </span>
+                  <span className="text-white text-sm font-medium inline-block">
+                    Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome  •&nbsp;
                   </span>
                 </div>
               </div>

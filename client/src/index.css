@@ -177,6 +177,15 @@
   }
 }
 
+@keyframes marquee-mobile {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 .animate-spin-slow {
   animation: spin-slow 20s linear infinite;
 }
@@ -191,6 +200,10 @@
 
 .animate-scroll-mobile {
   animation: scroll-mobile 6s linear infinite !important;
+}
+
+.animate-marquee-mobile {
+  animation: marquee-mobile 15s linear infinite !important;
 }
 
 .animate-float {
