@@ -190,7 +190,7 @@
 }
 
 .animate-scroll-mobile {
-  animation: scroll-mobile 8s linear infinite;
+  animation: scroll-mobile 6s linear infinite !important;
 }
 
 .animate-float {
