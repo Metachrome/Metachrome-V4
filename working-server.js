@@ -6922,19 +6922,10 @@ app.post('/api/trades', async (req, res) => {
     // Create trade record
     const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // FETCH REAL PRICE FROM BINANCE API
-    let currentPrice = 65000; // Fallback default
-    try {
-      const priceData = await getCurrentPrice(symbol);
-      if (priceData && priceData.price) {
-        currentPrice = parseFloat(priceData.price);
-        console.log(`✅ Real price fetched for ${symbol}: ${currentPrice}`);
-      } else {
-        console.log(`⚠️ Could not fetch real price for ${symbol}, using fallback: ${currentPrice}`);
-      }
-    } catch (priceError) {
-      console.log(`⚠️ Error fetching price for ${symbol}:`, priceError.message);
-    }
+    // CRITICAL FIX: Use entryPrice from frontend (already fetched from real-time Binance API via PriceContext)
+    // Frontend has real-time price updates, so we trust the entry price sent from frontend
+    const finalEntryPrice = parseFloat(entryPrice);
+    console.log(`✅ Using entry price from frontend for ${symbol}: ${finalEntryPrice}`);
 
     const trade = {
       id: tradeId,
@@ -6942,7 +6933,7 @@ app.post('/api/trades', async (req, res) => {
       symbol,
       direction,
       amount: parseFloat(amount),
-      entry_price: parseFloat(currentPrice),
+      entry_price: finalEntryPrice,
       duration: parseInt(duration),
       expires_at: new Date(Date.now() + duration * 1000).toISOString(),
       result: 'pending',
