@@ -6140,8 +6140,18 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           const movementRange = maxMovement - minMovement;
           const movementPercent = (seededRandom * movementRange + minMovement);
 
-          // Determine direction based on trade outcome (assume UP for default)
-          let priceDirection = finalWon ? 1 : -1; // UP wins if price goes up, DOWN wins if price goes down
+          // CRITICAL FIX: Determine direction based on BOTH trade direction AND outcome
+          let priceDirection = 1; // Default up
+          if (direction === 'up') {
+            // For UP trades: WIN means price goes up, LOSE means price goes down
+            priceDirection = finalWon ? 1 : -1;
+          } else if (direction === 'down') {
+            // For DOWN trades: WIN means price goes down, LOSE means price goes up
+            priceDirection = finalWon ? -1 : 1;
+          } else {
+            // Fallback for unknown direction
+            priceDirection = finalWon ? 1 : -1;
+          }
 
           // Calculate realistic exit price
           calculatedExitPrice = entryPrice * (1 + (movementPercent * priceDirection));
@@ -6152,7 +6162,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
             calculatedExitPrice = entryPrice + (priceDirection * minDifference);
           }
 
-          console.log(`📊 Generated realistic exit price for trade ${tradeId}: Entry=${entryPrice}, Exit=${calculatedExitPrice}, Movement=${((calculatedExitPrice - entryPrice) / entryPrice * 100).toFixed(4)}%`);
+          console.log(`📊 Generated realistic exit price for trade ${tradeId}: Direction=${direction}, Entry=${entryPrice}, Exit=${calculatedExitPrice}, Movement=${((calculatedExitPrice - entryPrice) / entryPrice * 100).toFixed(4)}%, Outcome=${finalWon ? 'WIN' : 'LOSE'}`);
         } else {
           // Fallback to current market price if no entry price
           const currentMarketPrice = await getCurrentPrice('BTCUSDT');
@@ -6197,8 +6207,18 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         const movementRange = maxMovement - minMovement;
         const movementPercent = (seededRandom * movementRange + minMovement);
 
-        // Determine direction based on trade outcome
-        let priceDirection = finalWon ? 1 : -1;
+        // CRITICAL FIX: Determine direction based on BOTH trade direction AND outcome
+        let priceDirection = 1; // Default up
+        if (direction === 'up') {
+          // For UP trades: WIN means price goes up, LOSE means price goes down
+          priceDirection = finalWon ? 1 : -1;
+        } else if (direction === 'down') {
+          // For DOWN trades: WIN means price goes down, LOSE means price goes up
+          priceDirection = finalWon ? -1 : 1;
+        } else {
+          // Fallback for unknown direction
+          priceDirection = finalWon ? 1 : -1;
+        }
 
         // Calculate realistic exit price
         wsExitPrice = entryPrice * (1 + (movementPercent * priceDirection));
