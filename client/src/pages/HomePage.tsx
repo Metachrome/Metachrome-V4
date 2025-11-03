@@ -135,8 +135,8 @@ export default function HomePage() {
                   }
                   .mobile-ticker-wrapper {
                     display: inline-flex;
-                    animation: mobile-scroll-fast 10s linear infinite;
-                    -webkit-animation: mobile-scroll-fast 10s linear infinite;
+                    animation: mobile-scroll-fast 15s linear infinite;
+                    -webkit-animation: mobile-scroll-fast 15s linear infinite;
                     will-change: transform;
                     backface-visibility: hidden;
                     -webkit-backface-visibility: hidden;
