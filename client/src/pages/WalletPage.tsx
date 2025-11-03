@@ -802,7 +802,7 @@ export default function WalletPage() {
                             <div className="flex justify-between items-center">
                               <span className="text-gray-300 text-xs">Current price:</span>
                               <span className="text-blue-300 text-sm font-medium">
-                                ${getMarketPrice(selectedCrypto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                                {getMarketPrice(selectedCrypto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
                               </span>
                             </div>
                             <div className="border-t border-purple-500/20 my-2"></div>
