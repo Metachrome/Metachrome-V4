@@ -325,7 +325,7 @@ export default function SignupPage() {
           </Link>
 
           {/* Content - Visible on both mobile and desktop */}
-          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '-500px' }}>
+          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '-590px' }}>
             <p className="text-white text-sm lg:text-lg mb-2 lg:mb-4 font-medium" style={{ opacity: 1, visibility: 'visible' }}>
               Get Started with METACHROME
             </p>
