@@ -120,16 +120,31 @@ export default function HomePage() {
               <div className="flex-1 overflow-hidden relative">
                 <style>{`
                   @keyframes mobile-scroll-fast {
-                    0% { transform: translate3d(0, 0, 0); }
-                    100% { transform: translate3d(-100%, 0, 0); }
+                    0% {
+                      transform: translate3d(0, 0, 0);
+                      -webkit-transform: translate3d(0, 0, 0);
+                    }
+                    100% {
+                      transform: translate3d(-100%, 0, 0);
+                      -webkit-transform: translate3d(-100%, 0, 0);
+                    }
+                  }
+                  @-webkit-keyframes mobile-scroll-fast {
+                    0% { -webkit-transform: translate3d(0, 0, 0); }
+                    100% { -webkit-transform: translate3d(-100%, 0, 0); }
                   }
                   .mobile-ticker-wrapper {
                     display: flex;
-                    animation: mobile-scroll-fast 20s linear infinite;
+                    animation: mobile-scroll-fast 10s linear infinite;
+                    -webkit-animation: mobile-scroll-fast 10s linear infinite;
+                    will-change: transform;
+                    backface-visibility: hidden;
+                    -webkit-backface-visibility: hidden;
                   }
                   .mobile-ticker-item {
                     flex-shrink: 0;
                     padding-right: 2rem;
+                    white-space: nowrap;
                   }
                 `}</style>
                 <div className="mobile-ticker-wrapper">
