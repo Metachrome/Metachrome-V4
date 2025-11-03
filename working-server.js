@@ -7285,14 +7285,22 @@ app.post('/api/trades/options', async (req, res) => {
       console.log(`🚨 SETTIMEOUT TRIGGERED! Starting auto-completion for trade ${actualTradeId}...`);
 
       try {
-        // CRITICAL FIX: Use real market data instead of random prices
+        // CRITICAL FIX: Use REAL market price from Binance API
         const entryPrice = parseFloat(trade.entry_price);
 
-        // First, determine a random outcome (will be overridden by trading controls)
-        let randomWin = Math.random() > 0.5;
-
-        // Generate realistic exit price based on random outcome
-        const exitPrice = generateRealisticExitPrice(trade, randomWin, actualTradeId);
+        // Fetch REAL current price from Binance
+        let exitPrice = entryPrice; // Fallback to entry price
+        try {
+          const priceData = await getCurrentPrice(symbol);
+          if (priceData && priceData.price) {
+            exitPrice = parseFloat(priceData.price);
+            console.log(`✅ REAL EXIT PRICE fetched for ${symbol}: ${exitPrice}`);
+          } else {
+            console.log(`⚠️ Could not fetch real exit price for ${symbol}, using entry price as fallback`);
+          }
+        } catch (priceError) {
+          console.log(`⚠️ Error fetching exit price for ${symbol}:`, priceError.message);
+        }
 
         // Binary options logic: UP wins if exit > entry, DOWN wins if exit < entry
         let isWin = false;
