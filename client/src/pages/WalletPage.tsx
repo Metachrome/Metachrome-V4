@@ -315,9 +315,18 @@ export default function WalletPage() {
   });
 
   // Fetch real market data for price calculations
-  const { data: marketData } = useQuery({
+  const { data: marketData, isLoading: marketDataLoading, error: marketDataError } = useQuery({
     queryKey: ['/api/market-data'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 2000, // Refresh every 2 seconds for real-time updates
+    staleTime: 1000, // Consider data stale after 1 second
+  });
+
+  // Debug market data
+  console.log('📊 WalletPage - Market Data:', {
+    marketData,
+    marketDataLoading,
+    marketDataError,
+    dataLength: marketData?.length
   });
 
   const tabs = [
