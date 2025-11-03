@@ -330,8 +330,20 @@ export default function WalletPage() {
   // Helper function to get market price
   const getMarketPrice = (symbol: string): number => {
     if (symbol === 'USDT') return 1;
+
+    // Fallback prices if market data not available
+    const fallbackPrices: { [key: string]: number } = {
+      BTC: 69000,
+      ETH: 3700,
+      SOL: 200
+    };
+
     const marketItem = marketData?.find(item => item.symbol === `${symbol}USDT`);
-    return marketItem ? parseFloat(marketItem.price) : 0;
+    const price = marketItem ? parseFloat(marketItem.price) : (fallbackPrices[symbol] || 0);
+
+    console.log('💰 getMarketPrice:', { symbol, marketData, marketItem, price });
+
+    return price;
   };
 
   // Get USDT balance
