@@ -9930,7 +9930,7 @@ let cmcDataCache = null;
 let cmcCacheTimestamp = 0;
 const CMC_CACHE_DURATION = 300000; // 5 minutes cache to avoid rate limiting (CoinMarketCap free tier: 333 requests/day)
 
-// Helper function to get crypto price in USDT from CoinMarketCap
+// Helper function to get crypto price in USDT from CoinGecko (same as frontend)
 async function getCryptoPriceInUSDT(cryptoSymbol) {
   try {
     // Normalize crypto symbol (remove network suffixes)
@@ -9944,44 +9944,59 @@ async function getCryptoPriceInUSDT(cryptoSymbol) {
       return 1.0;
     }
 
-    // Check cache first
-    const now = Date.now();
-    if (cmcDataCache && (now - cmcCacheTimestamp) < CMC_CACHE_DURATION) {
-      const coin = cmcDataCache.find(c => c.symbol.includes(normalizedSymbol));
-      if (coin && coin.rawPrice) {
-        console.log(`💱 Using cached price for ${normalizedSymbol}: $${coin.rawPrice}`);
-        return coin.rawPrice;
+    // Map crypto symbols to CoinGecko IDs (same as frontend cryptoDataService.js)
+    const coinGeckoIds = {
+      'BTC': 'bitcoin',
+      'ETH': 'ethereum',
+      'SOL': 'solana',
+      'BNB': 'binancecoin',
+      'XRP': 'ripple',
+      'ADA': 'cardano',
+      'DOGE': 'dogecoin',
+      'TRX': 'tron',
+      'LINK': 'chainlink',
+      'AVAX': 'avalanche-2',
+      'DOT': 'polkadot',
+      'LTC': 'litecoin'
+    };
+
+    const coinGeckoId = coinGeckoIds[normalizedSymbol];
+
+    if (coinGeckoId) {
+      // Try to fetch from CoinGecko API (same as frontend)
+      try {
+        const response = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${coinGeckoId}&vs_currencies=usd`,
+          { timeout: 5000 }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data[coinGeckoId] && data[coinGeckoId].usd) {
+            const price = data[coinGeckoId].usd;
+            console.log(`💱 Fetched live price from CoinGecko for ${normalizedSymbol}: $${price}`);
+            return price;
+          }
+        }
+      } catch (apiError) {
+        console.warn(`⚠️ CoinGecko API failed for ${normalizedSymbol}, using fallback`);
       }
     }
 
-    // Fetch fresh data if not in cache
-    const response = await fetch(`${COINMARKETCAP_BASE_URL}/cryptocurrency/listings/latest?start=1&limit=20&convert=USD`, {
-      headers: {
-        'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`CoinMarketCap API failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const coin = data.data.find(c => c.symbol === normalizedSymbol);
-
-    if (coin && coin.quote && coin.quote.USD) {
-      const price = coin.quote.USD.price;
-      console.log(`💱 Fetched live price for ${normalizedSymbol}: $${price}`);
-      return price;
-    }
-
-    // Fallback prices if API fails
+    // Fallback prices if API fails (UPDATED to match current market prices)
     const fallbackPrices = {
-      'BTC': 43000,
-      'ETH': 2300,
-      'SOL': 100,
-      'BNB': 310,
-      'XRP': 0.52
+      'BTC': 107000,
+      'ETH': 3700,
+      'SOL': 200,
+      'BNB': 600,
+      'XRP': 2.4,
+      'ADA': 0.82,
+      'DOGE': 0.24,
+      'TRX': 0.25,
+      'LINK': 20,
+      'AVAX': 35,
+      'DOT': 7,
+      'LTC': 100
     };
 
     if (fallbackPrices[normalizedSymbol]) {
