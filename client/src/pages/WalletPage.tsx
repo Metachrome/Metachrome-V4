@@ -336,45 +336,60 @@ export default function WalletPage() {
     { id: "Transfer", label: "Transfer" }
   ];
 
-  // Helper function to get market price
+  // Helper function to get market price from real-time data
   const getMarketPrice = (symbol: string): number => {
-    if (symbol === 'USDT') return 1;
+    if (symbol === 'USDT' || symbol === 'USDC' || symbol === 'BUSD') return 1;
 
-    // Fallback prices if market data not available
+    // Try to get price from market data first
+    const marketItem = marketData?.find(item => item.symbol === `${symbol}USDT`);
+
+    if (marketItem && marketItem.price) {
+      const price = parseFloat(marketItem.price);
+      console.log('💰 getMarketPrice (from API):', { symbol, price, marketItem });
+      return price;
+    }
+
+    // Fallback prices only if market data not available (should rarely happen)
     const fallbackPrices: { [key: string]: number } = {
-      BTC: 69000,
+      BTC: 107000,
       ETH: 3700,
-      SOL: 200
+      SOL: 200,
+      BNB: 600,
+      XRP: 2.4,
+      ADA: 0.82,
+      DOGE: 0.24,
+      TRX: 0.25,
+      LINK: 20,
+      AVAX: 35,
+      DOT: 7,
+      LTC: 100
     };
 
-    const marketItem = marketData?.find(item => item.symbol === `${symbol}USDT`);
-    const price = marketItem ? parseFloat(marketItem.price) : (fallbackPrices[symbol] || 0);
+    const fallbackPrice = fallbackPrices[symbol] || 0;
+    console.log('⚠️ getMarketPrice (fallback):', { symbol, fallbackPrice, reason: 'Market data not available' });
 
-    console.log('💰 getMarketPrice:', { symbol, marketData, marketItem, price });
-
-    return price;
+    return fallbackPrice;
   };
 
   // Get USDT balance
   const usdtBalance = parseFloat(userBalances?.find(balance => balance.symbol === 'USDT')?.available || '0');
 
-  // Calculate total balance including all cryptocurrency assets
+  // Calculate total balance including all cryptocurrency assets using real-time prices
   const totalBalanceUSDT = userBalances?.reduce((total, balance) => {
     const available = parseFloat(balance.available || '0');
 
-    // Crypto prices for USDT conversion
-    const cryptoPrices: { [key: string]: number } = {
-      BTC: 65000,
-      ETH: 3500,
-      SOL: 150,
-      USDT: 1,
-      BNB: 600,
-      USDC: 1,
-      BUSD: 1
-    };
+    // Use real-time market price from getMarketPrice()
+    const price = getMarketPrice(balance.symbol);
+    const usdtValue = available * price;
 
-    const price = cryptoPrices[balance.symbol] || 1;
-    return total + (available * price);
+    console.log('💵 Balance calculation:', {
+      symbol: balance.symbol,
+      available,
+      price,
+      usdtValue
+    });
+
+    return total + usdtValue;
   }, 0) || usdtBalance;
 
   // Debug balance data
@@ -611,18 +626,8 @@ export default function WalletPage() {
                           const available = parseFloat(balance.available);
                           const locked = parseFloat(balance.locked || '0');
 
-                          // Crypto prices for USDT conversion
-                          const cryptoPrices: { [key: string]: number } = {
-                            BTC: 65000,
-                            ETH: 3500,
-                            SOL: 150,
-                            USDT: 1,
-                            BNB: 600,
-                            USDC: 1,
-                            BUSD: 1
-                          };
-
-                          const price = cryptoPrices[balance.symbol] || 1;
+                          // Use real-time market price
+                          const price = getMarketPrice(balance.symbol);
                           const usdtValue = available * price;
 
                           // Crypto icons mapping
