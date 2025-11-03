@@ -121,13 +121,13 @@ export default function HomePage() {
                 <div
                   className="whitespace-nowrap"
                   style={{
-                    animation: 'scroll-mobile 4s linear infinite',
+                    animation: 'scroll-mobile 5s linear infinite',
                     willChange: 'transform',
-                    WebkitAnimation: 'scroll-mobile 4s linear infinite'
+                    WebkitAnimation: 'scroll-mobile 5s linear infinite'
                   }}
                 >
                   <span className="text-white text-sm font-medium">
-                    Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome  •  Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome
+                    Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome  •  Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome  •  Metachrome introduces seamless trading built for speed and precision  •  Crypto market cap expands almost 5% in 24 hours  •  Bitcoin surges past key resistance traders eye the next breakout  •  Ethereum momentum builds smart money is already in  •  Market opportunities don't wait execute faster with Metachrome
                   </span>
                 </div>
               </div>
