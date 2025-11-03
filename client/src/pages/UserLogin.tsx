@@ -253,7 +253,7 @@ export default function UserLogin() {
       {/* Main Content */}
       <div className="flex min-h-screen flex-col lg:flex-row">
         {/* Left Side - Full width on mobile, 50% on desktop */}
-        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative overflow-hidden min-h-[40vh] lg:min-h-auto" style={{backgroundColor: '#24083B'}}>
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center relative min-h-[40vh] lg:min-h-auto" style={{backgroundColor: '#24083B', overflow: 'visible'}}>
           {/* Logo Button - Top Left - Hidden on mobile, visible on desktop */}
           <Link href="/">
             <div className="hidden lg:block absolute top-6 left-6 lg:top-8 lg:left-8 cursor-pointer hover:opacity-80 transition-opacity z-20">
@@ -266,16 +266,16 @@ export default function UserLogin() {
           </Link>
 
           {/* Content - Visible on both mobile and desktop */}
-          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '0px' }}>
-            <p className="text-white text-sm lg:text-lg mb-2 lg:mb-4 font-medium" style={{ opacity: 1, visibility: 'visible' }}>
+          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '0px', opacity: 1, visibility: 'visible', display: 'block' }}>
+            <p className="text-white text-sm lg:text-lg mb-2 lg:mb-4 font-medium" style={{ opacity: 1, visibility: 'visible', color: '#FFFFFF', display: 'block' }}>
               Get Started with METACHROME
             </p>
-            <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight" style={{ opacity: 1, visibility: 'visible' }}>
+            <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight" style={{ opacity: 1, visibility: 'visible', color: '#FFFFFF', display: 'block' }}>
               The Future is for Everyone
             </h1>
 
             {/* Smaller Orb Video Below Text - iOS/Safari Compatible */}
-            <div className="relative w-48 h-48 lg:w-80 lg:h-80 mx-auto" style={{ opacity: 1, visibility: 'visible' }}>
+            <div className="relative w-48 h-48 lg:w-80 lg:h-80 mx-auto" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
               <video
                 autoPlay
                 loop
@@ -286,6 +286,7 @@ export default function UserLogin() {
                 style={{
                   opacity: 1,
                   visibility: 'visible',
+                  display: 'block',
                   WebkitTransform: 'translateZ(0)',
                   transform: 'translateZ(0)'
                 }}

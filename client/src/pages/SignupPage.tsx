@@ -325,16 +325,16 @@ export default function SignupPage() {
           </Link>
 
           {/* Content - Visible on both mobile and desktop */}
-          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '-590px' }}>
-            <p className="text-white text-sm lg:text-lg mb-2 lg:mb-4 font-medium" style={{ opacity: 1, visibility: 'visible' }}>
+          <div className="text-center z-10 max-w-md relative py-8 px-4" style={{ marginTop: '-590px', opacity: 1, visibility: 'visible', display: 'block' }}>
+            <p className="text-white text-sm lg:text-lg mb-2 lg:mb-4 font-medium" style={{ opacity: 1, visibility: 'visible', color: '#FFFFFF', display: 'block' }}>
               Get Started with METACHROME
             </p>
-            <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight" style={{ opacity: 1, visibility: 'visible' }}>
+            <h1 className="text-2xl lg:text-4xl font-bold text-white mb-6 lg:mb-12 leading-tight" style={{ opacity: 1, visibility: 'visible', color: '#FFFFFF', display: 'block' }}>
               The Future is for Everyone
             </h1>
 
             {/* Smaller Orb Video Below Text - iOS/Safari Compatible */}
-            <div className="relative w-48 h-48 lg:w-80 lg:h-80 mx-auto" style={{ opacity: 1, visibility: 'visible' }}>
+            <div className="relative w-48 h-48 lg:w-80 lg:h-80 mx-auto" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
               <video
                 autoPlay
                 loop
@@ -345,6 +345,7 @@ export default function SignupPage() {
                 style={{
                   opacity: 1,
                   visibility: 'visible',
+                  display: 'block',
                   WebkitTransform: 'translateZ(0)',
                   transform: 'translateZ(0)'
                 }}
