@@ -121,8 +121,9 @@ export default function HomePage() {
                 <div
                   className="whitespace-nowrap"
                   style={{
-                    animation: 'scroll-mobile 6s linear infinite',
-                    willChange: 'transform'
+                    animation: 'scroll-mobile 4s linear infinite',
+                    willChange: 'transform',
+                    WebkitAnimation: 'scroll-mobile 4s linear infinite'
                   }}
                 >
                   <span className="text-white text-sm font-medium">
