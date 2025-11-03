@@ -10,6 +10,7 @@ import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../hooks/useAuth";
 import { useIsMobile } from "../hooks/use-mobile";
 import QRCodeGenerator from "../components/QRCodeGenerator";
+import { useCryptoData } from "../services/cryptoDataService";
 
 import StripePayment from "../components/StripePayment";
 import { CreditCard, ArrowUpRight, ArrowDownLeft, Send, Download, Users, Wallet, Plus, Copy, CheckCircle } from "lucide-react";
@@ -314,12 +315,8 @@ export default function WalletPage() {
     },
   });
 
-  // Fetch real market data for price calculations
-  const { data: marketData, isLoading: marketDataLoading, error: marketDataError } = useQuery({
-    queryKey: ['/api/market-data'],
-    refetchInterval: 2000, // Refresh every 2 seconds for real-time updates
-    staleTime: 1000, // Consider data stale after 1 second
-  });
+  // Fetch real market data for price calculations using the same hook as HomePage
+  const { cryptoData: marketData, loading: marketDataLoading, error: marketDataError } = useCryptoData();
 
   // Debug market data
   console.log('📊 WalletPage - Market Data:', {
@@ -341,10 +338,11 @@ export default function WalletPage() {
     if (symbol === 'USDT' || symbol === 'USDC' || symbol === 'BUSD') return 1;
 
     // Try to get price from market data first
-    const marketItem = marketData?.find(item => item.symbol === `${symbol}USDT`);
+    // useCryptoData returns data with symbol format "BTC/USDT" and rawPrice field
+    const marketItem = marketData?.find(item => item.symbol === `${symbol}/USDT`);
 
-    if (marketItem && marketItem.price) {
-      const price = parseFloat(marketItem.price);
+    if (marketItem && marketItem.rawPrice) {
+      const price = marketItem.rawPrice;
       console.log('💰 getMarketPrice (from API):', { symbol, price, marketItem });
       return price;
     }
