@@ -182,7 +182,7 @@
     transform: translateX(0%);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-33.333%);
   }
 }
 
@@ -203,7 +203,7 @@
 }
 
 .animate-marquee-mobile {
-  animation: marquee-mobile 15s linear infinite !important;
+  animation: marquee-mobile 8s linear infinite !important;
 }
 
 .animate-float {
