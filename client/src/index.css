@@ -246,32 +246,32 @@
 }
 
 :root {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 6%, 10%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(265, 89%, 67%);
-  --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(215, 93%, 61%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --magenta: hsl(300, 100%, 50%);
-  --accent: hsl(240, 3.7%, 15.9%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 6% 10%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 265 89% 67%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 215 93% 61%;
+  --secondary-foreground: 0 0% 98%;
+  --magenta: 300 100% 50%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
   --radius: 0.75rem;
-  
+
   /* Custom variables for dark theme */
-  --dark-100: hsl(240, 6%, 16%);
-  --dark-200: hsl(240, 10%, 11%);
-  --dark-300: hsl(240, 13%, 6%);
+  --dark-100: 240 6% 16%;
+  --dark-200: 240 10% 11%;
+  --dark-300: 240 13% 6%;
 }
 
 html {
