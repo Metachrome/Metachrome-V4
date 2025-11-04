@@ -811,6 +811,37 @@ export default function WalletPage() {
                       <p className="text-xs text-gray-500 mt-1">
                         Minimum: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount} {selectedCrypto}
                       </p>
+
+                      {/* Auto-Convert Info with Real-Time Price - Only for non-USDT currencies */}
+                      {depositAmount && parseFloat(depositAmount) > 0 && !selectedCrypto.startsWith('USDT') && (
+                        <div className="mt-3 p-3 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg">
+                          <div className="flex items-center mb-2">
+                            <span className="text-purple-400 text-sm font-medium">💱 Auto-convert:</span>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-300 text-xs">You deposit:</span>
+                              <span className="text-white text-sm font-bold">{depositAmount} {selectedCrypto}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-300 text-xs">Current price:</span>
+                              <span className="text-blue-300 text-sm font-medium">
+                                {getMarketPrice(selectedCrypto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </span>
+                            </div>
+                            <div className="border-t border-purple-500/20 my-2"></div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-purple-300 text-xs font-medium">You will receive:</span>
+                              <span className="text-green-400 text-base font-bold">
+                                ≈ {(parseFloat(depositAmount) * getMarketPrice(selectedCrypto)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-2 italic">
+                            * Your {selectedCrypto} will be automatically converted to USDT at the current market rate
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Platform Deposit Address */}
