@@ -1455,7 +1455,7 @@ export default function WorkingAdminDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               {/* Real-time Notification Bell */}
-              {user?.role === 'superadmin' && <NotificationBell />}
+              {user?.role === 'super_admin' && <NotificationBell />}
 
               <Button
                 onClick={fetchData}
