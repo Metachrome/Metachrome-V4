@@ -125,7 +125,6 @@ export default function WalletPage() {
   const queryClient = useQueryClient();
 
   // Real platform deposit addresses (where users send crypto to deposit)
-  // Only BTC, ETH, SOL - all will be auto-converted to USDT
   const cryptoNetworks = {
     'BTC': {
       name: 'BTC',
@@ -150,6 +149,30 @@ export default function WalletPage() {
       minAmount: 0.1,
       description: 'Send Solana to this address',
       chainId: null
+    },
+    'USDT-ERC20': {
+      name: 'USDT ERC20',
+      address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
+      network: 'USDT ERC20',
+      minAmount: 10,
+      description: 'Send USDT on Ethereum network to this address',
+      chainId: 1
+    },
+    'USDT-TRC20': {
+      name: 'USDT TRC20',
+      address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
+      network: 'USDT TRC20',
+      minAmount: 10,
+      description: 'Send USDT on TRON network to this address',
+      chainId: null
+    },
+    'USDT-BEP20': {
+      name: 'USDT BEP20',
+      address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
+      network: 'USDT BEP20',
+      minAmount: 10,
+      description: 'Send USDT on Binance Smart Chain to this address',
+      chainId: 56
     }
   };
 
@@ -758,9 +781,12 @@ export default function WalletPage() {
                         onChange={(e) => setSelectedCrypto(e.target.value)}
                         className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       >
-                        <option value="BTC">BTC/USDT</option>
-                        <option value="ETH">ETH/USDT</option>
-                        <option value="SOL">SOL/USDT</option>
+                        <option value="BTC">BTC</option>
+                        <option value="ETH">ETH</option>
+                        <option value="SOL">SOL</option>
+                        <option value="USDT-ERC20">USDT-ERC20</option>
+                        <option value="USDT-TRC20">USDT-TRC20</option>
+                        <option value="USDT-BEP20">USDT-BEP20</option>
                       </select>
                     </div>
 
@@ -785,37 +811,6 @@ export default function WalletPage() {
                       <p className="text-xs text-gray-500 mt-1">
                         Minimum: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount} {selectedCrypto}
                       </p>
-
-                      {/* Auto-Convert Info with Real-Time Price */}
-                      {depositAmount && parseFloat(depositAmount) > 0 && (
-                        <div className="mt-3 p-3 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg">
-                          <div className="flex items-center mb-2">
-                            <span className="text-purple-400 text-sm font-medium">💱 Auto-convert:</span>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300 text-xs">You deposit:</span>
-                              <span className="text-white text-sm font-bold">{depositAmount} {selectedCrypto}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300 text-xs">Current price:</span>
-                              <span className="text-blue-300 text-sm font-medium">
-                                {getMarketPrice(selectedCrypto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                              </span>
-                            </div>
-                            <div className="border-t border-purple-500/20 my-2"></div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-purple-300 text-xs font-medium">You will receive:</span>
-                              <span className="text-green-400 text-base font-bold">
-                                ≈ {(parseFloat(depositAmount) * getMarketPrice(selectedCrypto)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-400 mt-2 italic">
-                            * Your {selectedCrypto} will be automatically converted to USDT at the current market rate
-                          </p>
-                        </div>
-                      )}
                     </div>
 
                     {/* Platform Deposit Address */}
