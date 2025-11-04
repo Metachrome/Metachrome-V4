@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { toast } from '../hooks/use-toast';
 import { useAuth } from '../hooks/useAuth';
+import { NotificationBell } from '../components/admin/NotificationBell';
 import {
   Users,
   TrendingUp,
@@ -1453,6 +1454,9 @@ export default function WorkingAdminDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              {/* Real-time Notification Bell */}
+              {user?.role === 'superadmin' && <NotificationBell />}
+
               <Button
                 onClick={fetchData}
                 variant="outline"

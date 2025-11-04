@@ -27,6 +27,44 @@ import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdm
 import { sql } from "drizzle-orm";
 import { transactions } from "@shared/schema";
 
+// Notification system for real-time admin alerts
+interface AdminNotification {
+  id: string;
+  type: 'deposit' | 'withdrawal';
+  userId: string;
+  username: string;
+  amount: string;
+  currency: string;
+  timestamp: Date;
+  read: boolean;
+}
+
+const adminNotifications: AdminNotification[] = [];
+const sseClients: Set<any> = new Set();
+
+// Helper function to broadcast notification to all connected admin clients
+function broadcastNotification(notification: AdminNotification) {
+  adminNotifications.unshift(notification); // Add to beginning of array
+
+  // Keep only last 50 notifications
+  if (adminNotifications.length > 50) {
+    adminNotifications.splice(50);
+  }
+
+  // Broadcast to all connected SSE clients
+  const data = JSON.stringify(notification);
+  sseClients.forEach(client => {
+    try {
+      client.write(`data: ${data}\n\n`);
+    } catch (error) {
+      console.error('Error broadcasting to SSE client:', error);
+      sseClients.delete(client);
+    }
+  });
+
+  console.log(`📢 Broadcasted ${notification.type} notification to ${sseClients.size} admin clients`);
+}
+
 // Helper functions for deposit addresses and network info
 function getDepositAddress(currency: string): string {
   const depositAddresses: { [key: string]: string } = {
@@ -2208,6 +2246,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
+  // ============================================
+
+  // SSE endpoint for real-time notifications (Superadmin only)
+  app.get("/api/admin/notifications/stream", requireSessionSuperAdmin, (req, res) => {
+    console.log('🔔 Superadmin connected to notification stream');
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
+
+    // Add client to set
+    sseClients.add(res);
+
+    // Send initial connection message
+    res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Notification stream connected' })}\n\n`);
+
+    // Send existing unread notifications
+    const unreadNotifications = adminNotifications.filter(n => !n.read);
+    if (unreadNotifications.length > 0) {
+      unreadNotifications.forEach(notification => {
+        res.write(`data: ${JSON.stringify(notification)}\n\n`);
+      });
+    }
+
+    // Keep connection alive with heartbeat
+    const heartbeat = setInterval(() => {
+      res.write(`: heartbeat\n\n`);
+    }, 30000); // Every 30 seconds
+
+    // Clean up on client disconnect
+    req.on('close', () => {
+      console.log('🔔 Superadmin disconnected from notification stream');
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    });
+  });
+
+  // Get all notifications (Superadmin only)
+  app.get("/api/admin/notifications", requireSessionSuperAdmin, (req, res) => {
+    try {
+      res.json({ notifications: adminNotifications });
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  // Mark notification as read (Superadmin only)
+  app.post("/api/admin/notifications/:id/read", requireSessionSuperAdmin, (req, res) => {
+    try {
+      const { id } = req.params;
+      const notification = adminNotifications.find(n => n.id === id);
+
+      if (notification) {
+        notification.read = true;
+        res.json({ message: "Notification marked as read" });
+      } else {
+        res.status(404).json({ message: "Notification not found" });
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read (Superadmin only)
+  app.post("/api/admin/notifications/read-all", requireSessionSuperAdmin, (req, res) => {
+    try {
+      adminNotifications.forEach(n => n.read = true);
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
   // Get user's own chat messages
   app.get("/api/messages/:userId", requireAuth, async (req, res) => {
     try {
@@ -2507,6 +2625,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date(),
       });
 
+      // 🔔 SEND REAL-TIME NOTIFICATION TO SUPERADMIN
+      const notification: AdminNotification = {
+        id: `deposit_${transaction.id}_${Date.now()}`,
+        type: 'deposit',
+        userId: user.id,
+        username: user.username || user.email,
+        amount: amount,
+        currency: currency,
+        timestamp: new Date(),
+        read: false
+      };
+      broadcastNotification(notification);
+      console.log(`🔔 Sent deposit request notification for ${user.username}: ${amount} ${currency}`);
+
       res.json({
         success: true,
         depositId,
@@ -2678,6 +2810,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date(),
       });
 
+      // 🔔 SEND REAL-TIME NOTIFICATION TO SUPERADMIN
+      if (transactionStatus === 'pending') {
+        const notification: AdminNotification = {
+          id: `deposit_${transaction.id}_${Date.now()}`,
+          type: 'deposit',
+          userId: user.id,
+          username: user.username || user.email,
+          amount: amount,
+          currency: currency,
+          timestamp: new Date(),
+          read: false
+        };
+        broadcastNotification(notification);
+        console.log(`🔔 Sent deposit notification for ${user.username}: ${amount} ${currency}`);
+      }
+
       // For crypto deposits with receipts, keep as pending for manual review
       // For card payments, process immediately after verification
       if (method === 'card' && paymentData?.paymentIntentId) {
@@ -2842,6 +2990,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user balance (subtract the withdrawal amount)
       const newAvailable = (parseFloat(currentBalance.available) - parseFloat(amount)).toString();
       await storage.updateBalance(user.id, currency, newAvailable, currentBalance.locked);
+
+      // 🔔 SEND REAL-TIME NOTIFICATION TO SUPERADMIN
+      const notification: AdminNotification = {
+        id: `withdrawal_${transaction.id}_${Date.now()}`,
+        type: 'withdrawal',
+        userId: user.id,
+        username: user.username || user.email,
+        amount: amount,
+        currency: currency,
+        timestamp: new Date(),
+        read: false
+      };
+      broadcastNotification(notification);
+      console.log(`🔔 Sent withdrawal notification for ${user.username}: ${amount} ${currency}`);
 
       res.json({
         transaction,
