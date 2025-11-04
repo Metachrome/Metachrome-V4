@@ -27,82 +27,106 @@ export function NotificationBell() {
 
   // Connect to SSE stream
   useEffect(() => {
-    console.log('🔔 Connecting to notification stream...');
-    console.log('🔔 SSE URL:', '/api/admin/notifications/stream');
-    console.log('🔔 Current user from session:', document.cookie);
+    let retryCount = 0;
+    const maxRetries = 3;
+    let retryTimeout: NodeJS.Timeout;
 
-    const eventSource = new EventSource('/api/admin/notifications/stream', {
-      withCredentials: true
-    });
+    const connectToStream = () => {
+      console.log('🔔 Connecting to notification stream... (attempt', retryCount + 1, ')');
+      console.log('🔔 SSE URL:', '/api/admin/notifications/stream');
 
-    console.log('🔔 EventSource created, readyState:', eventSource.readyState);
-
-    eventSource.onopen = () => {
-      console.log('✅ Notification stream connected successfully!');
-      console.log('✅ EventSource readyState:', eventSource.readyState);
-    };
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'connected') {
-          console.log('🔔 Notification stream ready');
-          return;
-        }
-        
-        // Add new notification
-        if (data.type === 'deposit' || data.type === 'withdrawal' || data.type === 'registration') {
-          console.log('🔔 New notification received:', data);
-          setNotifications(prev => [data, ...prev]);
-
-          // Play notification sound (optional)
-          playNotificationSound();
-
-          // Show browser notification if permitted
-          if (Notification.permission === 'granted') {
-            let notificationBody = '';
-            if (data.type === 'registration') {
-              notificationBody = `${data.username} (${data.email}) registered`;
-            } else {
-              notificationBody = `${data.username} requested ${data.amount} ${data.currency}`;
-            }
-
-            new Notification(`New ${data.type} ${data.type === 'registration' ? '' : 'request'}`, {
-              body: notificationBody,
-              icon: '/new-metachrome-logo.png'
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing notification:', error);
-      }
-    };
-    
-    eventSource.onerror = (error) => {
-      console.error('❌ Notification stream error:', error);
-      console.error('❌ Error details:', {
-        readyState: eventSource.readyState,
-        url: eventSource.url
+      const eventSource = new EventSource('/api/admin/notifications/stream', {
+        withCredentials: true
       });
-      eventSource.close();
 
-      // DO NOT auto-reload - just log the error
-      console.log('⚠️ Notification stream disconnected. Please refresh manually if needed.');
+      console.log('🔔 EventSource created, readyState:', eventSource.readyState);
+
+      eventSource.onopen = () => {
+        console.log('✅ Notification stream connected successfully!');
+        console.log('✅ EventSource readyState:', eventSource.readyState);
+        retryCount = 0; // Reset retry count on successful connection
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          console.log('📨 SSE message received:', event.data);
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'connected') {
+            console.log('🔔 Notification stream ready');
+            return;
+          }
+
+          // Add new notification
+          if (data.type === 'deposit' || data.type === 'withdrawal' || data.type === 'registration') {
+            console.log('🔔 New notification received:', data);
+            setNotifications(prev => [data, ...prev]);
+
+            // Play notification sound
+            playNotificationSound();
+
+            // Show browser notification if permitted
+            if (Notification.permission === 'granted') {
+              let notificationBody = '';
+              if (data.type === 'registration') {
+                notificationBody = `${data.username} (${data.email || 'N/A'}) registered`;
+              } else {
+                notificationBody = `${data.username} requested ${data.amount} ${data.currency}`;
+              }
+
+              new Notification(`New ${data.type} ${data.type === 'registration' ? '' : 'request'}`, {
+                body: notificationBody,
+                icon: '/new-metachrome-logo.png'
+              });
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error parsing notification:', error, 'Raw data:', event.data);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('❌ Notification stream error:', error);
+        console.error('❌ Error details:', {
+          readyState: eventSource.readyState,
+          url: eventSource.url
+        });
+
+        eventSource.close();
+
+        // Retry connection if under max retries
+        if (retryCount < maxRetries) {
+          retryCount++;
+          const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff
+          console.log(`⚠️ Retrying connection in ${retryDelay}ms... (${retryCount}/${maxRetries})`);
+          retryTimeout = setTimeout(connectToStream, retryDelay);
+        } else {
+          console.error('❌ Max retries reached. Notification stream disabled.');
+          console.log('💡 Please check if you are logged in as super_admin and refresh the page.');
+        }
+      };
+
+      eventSourceRef.current = eventSource;
+
+      return eventSource;
     };
-    
-    eventSourceRef.current = eventSource;
-    
+
+    // Initial connection
+    const eventSource = connectToStream();
+
     // Request browser notification permission
     if (Notification.permission === 'default') {
-      Notification.requestPermission();
+      Notification.requestPermission().then(permission => {
+        console.log('🔔 Notification permission:', permission);
+      });
     }
-    
+
     // Fetch existing notifications
     fetchNotifications();
-    
+
     return () => {
-      eventSource.close();
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (eventSource) eventSource.close();
     };
   }, []);
 
@@ -226,10 +250,12 @@ export function NotificationBell() {
       >
         <Bell className="w-6 h-6" />
 
-        {/* Unread Badge - Always show for testing */}
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-          {unreadCount > 9 ? '9+' : unreadCount}
-        </span>
+        {/* Unread Badge - Only show when there are unread notifications */}
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </button>
 
       {/* Notification Dropdown */}

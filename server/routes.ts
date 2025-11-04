@@ -45,6 +45,7 @@ const sseClients: Set<any> = new Set();
 
 // Helper function to broadcast notification to all connected admin clients
 function broadcastNotification(notification: AdminNotification) {
+  console.log('📢 Broadcasting notification:', notification.type, 'to', sseClients.size, 'clients');
   adminNotifications.unshift(notification); // Add to beginning of array
 
   // Keep only last 50 notifications
@@ -54,14 +55,23 @@ function broadcastNotification(notification: AdminNotification) {
 
   // Broadcast to all connected SSE clients
   const data = JSON.stringify(notification);
+  console.log('📤 Sending SSE data:', data);
+
+  let successCount = 0;
+  let errorCount = 0;
+
   sseClients.forEach(client => {
     try {
       client.write(`data: ${data}\n\n`);
+      successCount++;
     } catch (error) {
-      console.error('Error broadcasting to SSE client:', error);
+      console.error('❌ Error broadcasting to SSE client:', error);
       sseClients.delete(client);
+      errorCount++;
     }
   });
+
+  console.log(`✅ Broadcast complete: ${successCount} success, ${errorCount} errors`);
 
   console.log(`📢 Broadcasted ${notification.type} notification to ${sseClients.size} admin clients`);
 }
@@ -2296,7 +2306,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // SSE endpoint for real-time notifications (Superadmin only)
   app.get("/api/admin/notifications/stream", requireSessionSuperAdmin, (req, res) => {
+    const user = req.session?.user || req.user;
     console.log('🔔 Superadmin connected to notification stream');
+    console.log('🔔 User:', user?.email, 'Role:', user?.role);
+    console.log('🔔 Total SSE clients before:', sseClients.size);
 
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -2306,12 +2319,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Add client to set
     sseClients.add(res);
+    console.log('🔔 Total SSE clients after:', sseClients.size);
 
     // Send initial connection message
-    res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Notification stream connected' })}\n\n`);
+    const connectedMsg = JSON.stringify({ type: 'connected', message: 'Notification stream connected' });
+    console.log('📤 Sending connection message:', connectedMsg);
+    res.write(`data: ${connectedMsg}\n\n`);
 
     // Send existing unread notifications
     const unreadNotifications = adminNotifications.filter(n => !n.read);
+    console.log('📬 Sending', unreadNotifications.length, 'unread notifications');
     if (unreadNotifications.length > 0) {
       unreadNotifications.forEach(notification => {
         res.write(`data: ${JSON.stringify(notification)}\n\n`);
@@ -2320,12 +2337,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Keep connection alive with heartbeat
     const heartbeat = setInterval(() => {
-      res.write(`: heartbeat\n\n`);
+      try {
+        res.write(`: heartbeat\n\n`);
+      } catch (error) {
+        console.error('❌ Heartbeat error:', error);
+        clearInterval(heartbeat);
+        sseClients.delete(res);
+      }
     }, 30000); // Every 30 seconds
 
     // Clean up on client disconnect
     req.on('close', () => {
       console.log('🔔 Superadmin disconnected from notification stream');
+      console.log('🔔 Total SSE clients after disconnect:', sseClients.size - 1);
       clearInterval(heartbeat);
       sseClients.delete(res);
     });
