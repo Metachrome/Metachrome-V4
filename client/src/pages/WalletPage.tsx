@@ -24,7 +24,7 @@ export default function WalletPage() {
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedCrypto, setSelectedCrypto] = useState('USDT-TRC20');
-  const [selectedNetwork, setSelectedNetwork] = useState('TRC20');
+  const [selectedNetwork, setSelectedNetwork] = useState('ERC20');
   const [fundPassword, setFundPassword] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1054,45 +1054,25 @@ export default function WalletPage() {
                   <Card className="bg-gray-800 border-gray-700">
                     <CardContent className="p-8">
                       <div className="space-y-6">
-                        {/* Currency Selection */}
+                        {/* Cryptocurrency - Fixed to USDT */}
                         <div>
-                          <Label className="text-gray-300 text-sm font-medium">Select Cryptocurrency</Label>
-                          <select
-                            value={selectedCrypto}
-                            onChange={(e) => {
-                              setSelectedCrypto(e.target.value);
-                              setSelectedNetwork('TRC20'); // Default network to TRC20 for USDT
-                            }}
-                            className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                          >
-                            <option value="USDT">Tether (USDT)</option>
-                          </select>
+                          <Label className="text-gray-300 text-sm font-medium">Cryptocurrency</Label>
+                          <div className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            USDT
+                          </div>
                         </div>
 
                         {/* Network Selection */}
                         <div>
-                          <Label className="text-gray-300 text-sm font-medium">Withdrawal Network</Label>
+                          <Label className="text-gray-300 text-sm font-medium">Network</Label>
                           <select
                             value={selectedNetwork}
                             onChange={(e) => setSelectedNetwork(e.target.value)}
                             className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                           >
-                            {selectedCrypto === 'USDT' && (
-                              <>
-                                <option value="TRC20">TRC20 (Tron)</option>
-                                <option value="ERC20">ERC20 (Ethereum)</option>
-                                <option value="BEP20">BEP20 (BSC)</option>
-                              </>
-                            )}
-                            {selectedCrypto === 'BTC' && (
-                              <option value="BTC">Bitcoin Network</option>
-                            )}
-                            {selectedCrypto === 'ETH' && (
-                              <option value="ERC20">ERC20 (Ethereum)</option>
-                            )}
-                            {selectedCrypto === 'SOL' && (
-                              <option value="SOL">Solana Network</option>
-                            )}
+                            <option value="ERC20">USDT ERC20 (Ethereum Network)</option>
+                            <option value="TRC20">USDT TRC20 (Tron Network)</option>
+                            <option value="BEP20">USDT BEP20 (BNB Chain)</option>
                           </select>
                           <div className="text-xs text-gray-400 mt-1">
                             Please ensure you select the correct network to avoid loss of funds
@@ -1113,13 +1093,13 @@ export default function WalletPage() {
                               className="bg-gray-700 border-gray-600 text-white pr-16 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                             />
                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
-                              {selectedCrypto}
+                              USDT
                             </div>
                           </div>
                           <div className="flex justify-between text-sm text-gray-400 mt-1">
-                            <span>Available: {balances.find(b => b.symbol === selectedCrypto)?.available || '0'} {selectedCrypto}</span>
+                            <span>Available: {balances.find(b => b.symbol === 'USDT')?.available || '0'} USDT</span>
                             <button
-                              onClick={() => setWithdrawAmount(balances.find(b => b.symbol === selectedCrypto)?.available || '0')}
+                              onClick={() => setWithdrawAmount(balances.find(b => b.symbol === 'USDT')?.available || '0')}
                               className="text-purple-400 hover:text-purple-300"
                             >
                               Max
@@ -1134,7 +1114,7 @@ export default function WalletPage() {
                             id="withdrawAddress"
                             name="withdrawAddress"
                             type="text"
-                            placeholder={`Enter ${selectedCrypto} address`}
+                            placeholder={`Enter USDT-${selectedNetwork} address`}
                             value={withdrawAddress}
                             onChange={(e) => setWithdrawAddress(e.target.value)}
                             className="mt-2 bg-gray-700 border-gray-600 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
@@ -1208,7 +1188,7 @@ export default function WalletPage() {
                             withdrawMutation.mutate({
                               address: withdrawAddress,
                               amount: withdrawAmount,
-                              currency: selectedCrypto,
+                              currency: 'USDT',
                               password: fundPassword
                             });
                           }}
