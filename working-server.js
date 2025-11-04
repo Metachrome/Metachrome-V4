@@ -8950,6 +8950,30 @@ app.post('/api/superadmin/deposit', async (req, res) => {
         throw error;
       }
       console.log('✅ Supabase balance updated successfully:', data);
+
+      // Create deposit record in deposits table
+      const depositRecord = {
+        id: `manual-deposit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        user_id: userId,
+        amount: amount,
+        currency: 'USDT',
+        status: 'completed',
+        tx_hash: `manual-superadmin-${Date.now()}`,
+        wallet_address: 'Manual Deposit by Superadmin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: depositError } = await supabase
+        .from('deposits')
+        .insert(depositRecord);
+
+      if (depositError) {
+        console.error('⚠️ Failed to create deposit record:', depositError);
+        // Don't throw error - balance update was successful
+      } else {
+        console.log('✅ Deposit record created:', depositRecord.id);
+      }
     } else {
       // Development mode - update local file
       const userIndex = users.findIndex(u => u.id === userId);
@@ -9008,6 +9032,30 @@ app.post('/api/superadmin/withdrawal', async (req, res) => {
         throw error;
       }
       console.log('✅ Supabase balance updated');
+
+      // Create withdrawal record in withdrawals table
+      const withdrawalRecord = {
+        id: `manual-withdrawal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        user_id: userId,
+        amount: amount,
+        currency: 'USDT',
+        status: 'completed',
+        tx_hash: `manual-superadmin-${Date.now()}`,
+        wallet_address: 'Manual Withdrawal by Superadmin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: withdrawalError } = await supabase
+        .from('withdrawals')
+        .insert(withdrawalRecord);
+
+      if (withdrawalError) {
+        console.error('⚠️ Failed to create withdrawal record:', withdrawalError);
+        // Don't throw error - balance update was successful
+      } else {
+        console.log('✅ Withdrawal record created:', withdrawalRecord.id);
+      }
     } else {
       // Development mode - update local file
       const userIndex = users.findIndex(u => u.id === userId);
