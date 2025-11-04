@@ -761,7 +761,7 @@ export default function WalletPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Add Funds Section - Left Side (2 columns) */}
                 <div className="lg:col-span-2">
-                  <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+                  <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
                       <CardTitle className="text-white">Add Funds</CardTitle>
                       <CardDescription className="text-gray-400">
@@ -769,7 +769,7 @@ export default function WalletPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
+                      <div className="space-y-6">
 
                     {/* Deposit Network Selection */}
                     <div>
