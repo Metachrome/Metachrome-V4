@@ -154,7 +154,7 @@ export default function WalletPage() {
       name: 'USDT ERC20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
       network: 'USDT ERC20',
-      minAmount: 10,
+      minAmount: 100,
       description: 'Send USDT on Ethereum network to this address',
       chainId: 1
     },
@@ -162,7 +162,7 @@ export default function WalletPage() {
       name: 'USDT TRC20',
       address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
       network: 'USDT TRC20',
-      minAmount: 10,
+      minAmount: 100,
       description: 'Send USDT on TRON network to this address',
       chainId: null
     },
@@ -170,7 +170,7 @@ export default function WalletPage() {
       name: 'USDT BEP20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
       network: 'USDT BEP20',
-      minAmount: 10,
+      minAmount: 100,
       description: 'Send USDT on Binance Smart Chain to this address',
       chainId: 56
     }
@@ -1018,7 +1018,7 @@ export default function WalletPage() {
                                     ? 'bg-green-500/20 text-green-400'
                                     : 'bg-red-500/20 text-red-400'
                                 }`}>
-                                  {deposit.status === 'approved' ? 'Completed' : deposit.status.charAt(0).toUpperCase() + deposit.status.slice(1)}
+                                  {deposit.status === 'approved' ? 'Completed' : deposit.status === 'pending' ? 'Pending' : deposit.status.charAt(0).toUpperCase() + deposit.status.slice(1)}
                                 </span>
                               </div>
                             </div>

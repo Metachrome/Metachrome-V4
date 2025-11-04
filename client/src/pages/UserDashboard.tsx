@@ -108,7 +108,7 @@ export default function UserDashboard() {
       name: 'USDT ERC20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
       network: 'USDT ERC20',
-      minAmount: 10,
+      minAmount: 100,
       description: 'Send USDT on Ethereum network to this address',
       chainId: 1
     },
@@ -116,7 +116,7 @@ export default function UserDashboard() {
       name: 'USDT TRC20',
       address: 'TTZzHBjpmksYqaM6seVjCSLSe6m77Bfjp9',
       network: 'USDT TRC20',
-      minAmount: 10,
+      minAmount: 100,
       description: 'Send USDT on TRON network to this address',
       chainId: null
     },
@@ -124,7 +124,7 @@ export default function UserDashboard() {
       name: 'USDT BEP20',
       address: '0x06292164c039E611B37ff0c4B71ce0F72e56AB7A',
       network: 'USDT BEP20',
-      minAmount: 10,
+      minAmount: 100,
       description: 'Send USDT on Binance Smart Chain to this address',
       chainId: 56
     }

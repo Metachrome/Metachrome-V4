@@ -3717,9 +3717,9 @@ app.post('/api/deposits', (req, res, next) => {
       'BTC': 0.001,
       'ETH': 0.01,
       'SOL': 0.1,
-      'USDT-ERC20': 10,
-      'USDT-TRC20': 10,
-      'USDT-BEP20': 10
+      'USDT-ERC20': 100,
+      'USDT-TRC20': 100,
+      'USDT-BEP20': 100
     };
 
     const minAmount = minAmounts[currency] || 1;

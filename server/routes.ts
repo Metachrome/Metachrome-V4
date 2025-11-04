@@ -2468,9 +2468,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate minimum amounts
       const minAmounts: { [key: string]: number } = {
-        'USDT-ERC': 10,
-        'USDT-BEP': 10,
-        'USDT-TRC': 10,
+        'USDT-ERC': 100,
+        'USDT-BEP': 100,
+        'USDT-TRC': 100,
+        'USDT-ERC20': 100,
+        'USDT-BEP20': 100,
+        'USDT-TRC20': 100,
         'BTC': 0.001,
         'ETH': 0.01,
         'SOL': 0.1
@@ -2601,9 +2604,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate minimum amounts
       const minAmounts: { [key: string]: number } = {
-        'USDT-ERC': 10,
+        'USDT-ERC': 100,
+        'USDT-BEP': 100,
+        'USDT-TRC': 100,
+        'USDT-ERC20': 100,
+        'USDT-BEP20': 100,
+        'USDT-TRC20': 100,
         'BTC': 0.001,
-        'ETH': 0.01
+        'ETH': 0.01,
+        'SOL': 0.1
       };
 
       const minAmount = minAmounts[currency] || 1;
