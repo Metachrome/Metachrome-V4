@@ -24,6 +24,11 @@ export function NotificationBell() {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   console.log('🔔 NotificationBell component rendered');
+  console.log('🔔 Current state:', {
+    notificationsCount: notifications.length,
+    unreadCount,
+    isOpen
+  });
 
   // Connect to SSE stream
   useEffect(() => {
@@ -199,22 +204,50 @@ export function NotificationBell() {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       oscillator.frequency.value = 800;
       oscillator.type = 'sine';
-      
+
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
+
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
     } catch (error) {
       console.error('Error playing notification sound:', error);
     }
   };
+
+  // TEST FUNCTION - Add a fake notification manually
+  const addTestNotification = () => {
+    const testNotification: Notification = {
+      id: `test-${Date.now()}`,
+      type: 'deposit',
+      userId: 'test-user-id',
+      username: 'Test User',
+      amount: '1000',
+      currency: 'USDT',
+      timestamp: new Date(),
+      read: false
+    };
+
+    console.log('🧪 Adding test notification:', testNotification);
+    setNotifications(prev => [testNotification, ...prev]);
+    playNotificationSound();
+  };
+
+  // Expose test function to window for debugging
+  useEffect(() => {
+    (window as any).testNotification = addTestNotification;
+    console.log('💡 Test function available: window.testNotification()');
+
+    return () => {
+      delete (window as any).testNotification;
+    };
+  }, []);
 
   const getNotificationIcon = (type: string) => {
     if (type === 'deposit') return '💰';
