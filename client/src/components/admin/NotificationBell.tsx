@@ -28,13 +28,18 @@ export function NotificationBell() {
   // Connect to SSE stream
   useEffect(() => {
     console.log('🔔 Connecting to notification stream...');
-    
+    console.log('🔔 SSE URL:', '/api/admin/notifications/stream');
+    console.log('🔔 Current user from session:', document.cookie);
+
     const eventSource = new EventSource('/api/admin/notifications/stream', {
       withCredentials: true
     });
-    
+
+    console.log('🔔 EventSource created, readyState:', eventSource.readyState);
+
     eventSource.onopen = () => {
-      console.log('✅ Notification stream connected');
+      console.log('✅ Notification stream connected successfully!');
+      console.log('✅ EventSource readyState:', eventSource.readyState);
     };
     
     eventSource.onmessage = (event) => {
@@ -76,13 +81,14 @@ export function NotificationBell() {
     
     eventSource.onerror = (error) => {
       console.error('❌ Notification stream error:', error);
+      console.error('❌ Error details:', {
+        readyState: eventSource.readyState,
+        url: eventSource.url
+      });
       eventSource.close();
-      
-      // Reconnect after 5 seconds
-      setTimeout(() => {
-        console.log('🔄 Reconnecting to notification stream...');
-        window.location.reload();
-      }, 5000);
+
+      // DO NOT auto-reload - just log the error
+      console.log('⚠️ Notification stream disconnected. Please refresh manually if needed.');
     };
     
     eventSourceRef.current = eventSource;
