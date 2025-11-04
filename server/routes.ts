@@ -267,6 +267,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================
+  // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
+  // ============================================
+
+  // SSE endpoint for real-time notifications (Superadmin only)
+  // MUST BE BEFORE OTHER ROUTES to avoid conflicts
+  app.get("/api/admin/notifications/stream", requireSessionSuperAdmin, (req, res) => {
+    const user = req.session?.user || req.user;
+    console.log('🔔 Superadmin connected to notification stream');
+    console.log('🔔 User:', user?.email, 'Role:', user?.role);
+    console.log('🔔 Total SSE clients before:', sseClients.size);
+
+    // Set headers for SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
+
+    // Add client to set
+    sseClients.add(res);
+    console.log('🔔 Total SSE clients after:', sseClients.size);
+
+    // Send initial connection message
+    const connectedMsg = JSON.stringify({ type: 'connected', message: 'Notification stream connected' });
+    console.log('📤 Sending connection message:', connectedMsg);
+    res.write(`data: ${connectedMsg}\n\n`);
+
+    // Send existing unread notifications
+    const unreadNotifications = adminNotifications.filter(n => !n.read);
+    console.log('📬 Sending', unreadNotifications.length, 'unread notifications');
+    if (unreadNotifications.length > 0) {
+      unreadNotifications.forEach(notification => {
+        res.write(`data: ${JSON.stringify(notification)}\n\n`);
+      });
+    }
+
+    // Keep connection alive with heartbeat
+    const heartbeat = setInterval(() => {
+      try {
+        res.write(`: heartbeat\n\n`);
+      } catch (error) {
+        console.error('❌ Heartbeat error:', error);
+        clearInterval(heartbeat);
+        sseClients.delete(res);
+      }
+    }, 30000); // Every 30 seconds
+
+    // Clean up on client disconnect
+    req.on('close', () => {
+      console.log('🔔 Superadmin disconnected from notification stream');
+      console.log('🔔 Total SSE clients after disconnect:', sseClients.size - 1);
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    });
+  });
+
+  // Get all notifications (Superadmin only)
+  app.get("/api/admin/notifications", requireSessionSuperAdmin, (req, res) => {
+    try {
+      res.json({ notifications: adminNotifications });
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  // Mark notification as read (Superadmin only)
+  app.post("/api/admin/notifications/:id/read", requireSessionSuperAdmin, (req, res) => {
+    try {
+      const { id } = req.params;
+      const notification = adminNotifications.find(n => n.id === id);
+
+      if (notification) {
+        notification.read = true;
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: "Notification not found" });
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read (Superadmin only)
+  app.post("/api/admin/notifications/read-all", requireSessionSuperAdmin, (req, res) => {
+    try {
+      adminNotifications.forEach(n => n.read = true);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
   // Initialize OAuth authentication
   setupOAuth(app);
 
@@ -2297,100 +2392,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending user message:", error);
       res.status(500).json({ message: "Failed to send message" });
-    }
-  });
-
-  // ============================================
-  // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
-  // ============================================
-
-  // SSE endpoint for real-time notifications (Superadmin only)
-  app.get("/api/admin/notifications/stream", requireSessionSuperAdmin, (req, res) => {
-    const user = req.session?.user || req.user;
-    console.log('🔔 Superadmin connected to notification stream');
-    console.log('🔔 User:', user?.email, 'Role:', user?.role);
-    console.log('🔔 Total SSE clients before:', sseClients.size);
-
-    // Set headers for SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
-
-    // Add client to set
-    sseClients.add(res);
-    console.log('🔔 Total SSE clients after:', sseClients.size);
-
-    // Send initial connection message
-    const connectedMsg = JSON.stringify({ type: 'connected', message: 'Notification stream connected' });
-    console.log('📤 Sending connection message:', connectedMsg);
-    res.write(`data: ${connectedMsg}\n\n`);
-
-    // Send existing unread notifications
-    const unreadNotifications = adminNotifications.filter(n => !n.read);
-    console.log('📬 Sending', unreadNotifications.length, 'unread notifications');
-    if (unreadNotifications.length > 0) {
-      unreadNotifications.forEach(notification => {
-        res.write(`data: ${JSON.stringify(notification)}\n\n`);
-      });
-    }
-
-    // Keep connection alive with heartbeat
-    const heartbeat = setInterval(() => {
-      try {
-        res.write(`: heartbeat\n\n`);
-      } catch (error) {
-        console.error('❌ Heartbeat error:', error);
-        clearInterval(heartbeat);
-        sseClients.delete(res);
-      }
-    }, 30000); // Every 30 seconds
-
-    // Clean up on client disconnect
-    req.on('close', () => {
-      console.log('🔔 Superadmin disconnected from notification stream');
-      console.log('🔔 Total SSE clients after disconnect:', sseClients.size - 1);
-      clearInterval(heartbeat);
-      sseClients.delete(res);
-    });
-  });
-
-  // Get all notifications (Superadmin only)
-  app.get("/api/admin/notifications", requireSessionSuperAdmin, (req, res) => {
-    try {
-      res.json({ notifications: adminNotifications });
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      res.status(500).json({ message: "Failed to fetch notifications" });
-    }
-  });
-
-  // Mark notification as read (Superadmin only)
-  app.post("/api/admin/notifications/:id/read", requireSessionSuperAdmin, (req, res) => {
-    try {
-      const { id } = req.params;
-      const notification = adminNotifications.find(n => n.id === id);
-
-      if (notification) {
-        notification.read = true;
-        res.json({ message: "Notification marked as read" });
-      } else {
-        res.status(404).json({ message: "Notification not found" });
-      }
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "Failed to mark notification as read" });
-    }
-  });
-
-  // Mark all notifications as read (Superadmin only)
-  app.post("/api/admin/notifications/read-all", requireSessionSuperAdmin, (req, res) => {
-    try {
-      adminNotifications.forEach(n => n.read = true);
-      res.json({ message: "All notifications marked as read" });
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-      res.status(500).json({ message: "Failed to mark all notifications as read" });
     }
   });
 
