@@ -23,6 +23,8 @@ export function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  console.log('🔔 NotificationBell component rendered');
+
   // Connect to SSE stream
   useEffect(() => {
     console.log('🔔 Connecting to notification stream...');
@@ -209,17 +211,19 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       {/* Bell Icon Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+        onClick={() => {
+          console.log('🔔 Bell clicked, isOpen:', isOpen);
+          setIsOpen(!isOpen);
+        }}
+        className="relative p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors border border-gray-600"
+        title="Notifications"
       >
         <Bell className="w-6 h-6" />
-        
-        {/* Unread Badge */}
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
+
+        {/* Unread Badge - Always show for testing */}
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
       </button>
 
       {/* Notification Dropdown */}
