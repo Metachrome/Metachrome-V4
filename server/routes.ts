@@ -309,6 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (walletAddress && !username && !password) {
         // Check if user exists
         let user = await storage.getUserByWallet?.(walletAddress);
+        let isNewUser = false;
 
         if (!user) {
           // Create new user
@@ -316,10 +317,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             walletAddress,
             role: 'user',
           });
+          isNewUser = true;
         }
 
         // Update last login
         await storage.updateUser(user.id, { lastLogin: new Date() });
+
+        // 🔔 SEND REAL-TIME NOTIFICATION TO SUPERADMIN for new users
+        if (isNewUser) {
+          const notification: AdminNotification = {
+            id: `registration_${user.id}_${Date.now()}`,
+            type: 'registration',
+            userId: user.id,
+            username: user.username || walletAddress.substring(0, 8) + '...',
+            email: user.email || 'MetaMask User',
+            timestamp: new Date(),
+            read: false
+          };
+          broadcastNotification(notification);
+          console.log(`🔔 Sent new MetaMask user registration notification: ${walletAddress}`);
+        }
 
         // Store user in session
         req.session.user = {
@@ -362,6 +379,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName,
           role: 'user',
         });
+
+        // 🔔 SEND REAL-TIME NOTIFICATION TO SUPERADMIN
+        const notification: AdminNotification = {
+          id: `registration_${user.id}_${Date.now()}`,
+          type: 'registration',
+          userId: user.id,
+          username: user.username || username,
+          email: user.email || email,
+          timestamp: new Date(),
+          read: false
+        };
+        broadcastNotification(notification);
+        console.log(`🔔 Sent new user registration notification: ${user.username} (${user.email})`);
 
         // Store user in session for auto-login
         req.session.user = {

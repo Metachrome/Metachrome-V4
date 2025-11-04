@@ -1392,10 +1392,7 @@ export default function WorkingAdminDashboard() {
   // Load data on component mount
   useEffect(() => {
     fetchData();
-
-    // Set up auto-refresh every 5 seconds (less frequent since we have real-time updates)
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+    // No auto-refresh - rely on real-time notifications and manual Force Refresh only
   }, []);
 
   const getTradingModeBadge = (mode: string) => {
@@ -1457,15 +1454,6 @@ export default function WorkingAdminDashboard() {
               {/* Real-time Notification Bell */}
               {user?.role === 'super_admin' && <NotificationBell />}
 
-              <Button
-                onClick={fetchData}
-                variant="outline"
-                size="sm"
-                disabled={loading}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
               <Button
                 onClick={forceRefreshTransactions}
                 variant="outline"
