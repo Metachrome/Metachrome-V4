@@ -23,8 +23,8 @@ export default function WalletPage() {
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
-  const [selectedNetwork, setSelectedNetwork] = useState('BTC');
+  const [selectedCrypto, setSelectedCrypto] = useState('USDT');
+  const [selectedNetwork, setSelectedNetwork] = useState('TRC20');
   const [fundPassword, setFundPassword] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1066,14 +1066,11 @@ export default function WalletPage() {
                             value={selectedCrypto}
                             onChange={(e) => {
                               setSelectedCrypto(e.target.value);
-                              setSelectedNetwork(e.target.value); // Default network to same as crypto
+                              setSelectedNetwork('TRC20'); // Default network to TRC20 for USDT
                             }}
                             className="w-full mt-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                           >
-                            <option value="BTC">Bitcoin (BTC)</option>
-                            <option value="ETH">Ethereum (ETH)</option>
                             <option value="USDT">Tether (USDT)</option>
-                            <option value="SOL">Solana (SOL)</option>
                           </select>
                         </div>
 
