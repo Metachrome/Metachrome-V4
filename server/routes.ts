@@ -2674,14 +2674,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: `deposit_${transaction.id}_${Date.now()}`,
         type: 'deposit',
         userId: user.id,
-        username: user.username || user.email,
+        username: user.username || user.email || 'Unknown User',
         amount: amount,
         currency: currency,
         timestamp: new Date(),
         read: false
       };
       broadcastNotification(notification);
-      console.log(`🔔 Sent deposit request notification for ${user.username}: ${amount} ${currency}`);
+      console.log(`🔔 Sent deposit request notification for ${user.username || user.email}: ${amount} ${currency}`);
 
       res.json({
         success: true,
@@ -2860,14 +2860,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: `deposit_${transaction.id}_${Date.now()}`,
           type: 'deposit',
           userId: user.id,
-          username: user.username || user.email,
+          username: user.username || user.email || 'Unknown User',
           amount: amount,
           currency: currency,
           timestamp: new Date(),
           read: false
         };
         broadcastNotification(notification);
-        console.log(`🔔 Sent deposit notification for ${user.username}: ${amount} ${currency}`);
+        console.log(`🔔 Sent deposit notification for ${user.username || user.email}: ${amount} ${currency}`);
       }
 
       // For crypto deposits with receipts, keep as pending for manual review
@@ -2898,14 +2898,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: amount,
           currency: currency,
           receiptUploaded: !!receiptFile
-        });
-      } else {
-        // Bank transfers remain pending
-        res.json({
-          transaction,
-          message: "Deposit submitted for verification. You will be notified once approved.",
-          amount: amount,
-          currency: currency
         });
       }
     } catch (error) {
@@ -3040,14 +3032,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: `withdrawal_${transaction.id}_${Date.now()}`,
         type: 'withdrawal',
         userId: user.id,
-        username: user.username || user.email,
+        username: user.username || user.email || 'Unknown User',
         amount: amount,
         currency: currency,
         timestamp: new Date(),
         read: false
       };
       broadcastNotification(notification);
-      console.log(`🔔 Sent withdrawal notification for ${user.username}: ${amount} ${currency}`);
+      console.log(`🔔 Sent withdrawal notification for ${user.username || user.email}: ${amount} ${currency}`);
 
       res.json({
         transaction,
