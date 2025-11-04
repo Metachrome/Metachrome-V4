@@ -11,7 +11,12 @@
     "build": "vite build",
     "start": "node working-server.js",
     "start:production": "node working-server.js",
-    "dev": "node working-server.js"
+    "dev": "node working-server.js",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build": "npm run build && npx cap sync android",
+    "android:build:debug": "cd android && gradlew assembleDebug",
+    "android:build:release": "cd android && gradlew assembleRelease"
   },
   "keywords": [
     "trading",
@@ -22,6 +27,9 @@
   "author": "METACHROME Team",
   "license": "MIT",
   "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
     "@hookform/resolvers": "^3.3.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",
