@@ -6,11 +6,12 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
   id: string;
-  type: 'deposit' | 'withdrawal';
+  type: 'deposit' | 'withdrawal' | 'registration';
   userId: string;
   username: string;
-  amount: string;
-  currency: string;
+  amount?: string;
+  currency?: string;
+  email?: string;
   timestamp: Date;
   read: boolean;
 }
@@ -44,17 +45,24 @@ export function NotificationBell() {
         }
         
         // Add new notification
-        if (data.type === 'deposit' || data.type === 'withdrawal') {
+        if (data.type === 'deposit' || data.type === 'withdrawal' || data.type === 'registration') {
           console.log('🔔 New notification received:', data);
           setNotifications(prev => [data, ...prev]);
-          
+
           // Play notification sound (optional)
           playNotificationSound();
-          
+
           // Show browser notification if permitted
           if (Notification.permission === 'granted') {
-            new Notification(`New ${data.type} request`, {
-              body: `${data.username} requested ${data.amount} ${data.currency}`,
+            let notificationBody = '';
+            if (data.type === 'registration') {
+              notificationBody = `${data.username} (${data.email}) registered`;
+            } else {
+              notificationBody = `${data.username} requested ${data.amount} ${data.currency}`;
+            }
+
+            new Notification(`New ${data.type} ${data.type === 'registration' ? '' : 'request'}`, {
+              body: notificationBody,
               icon: '/new-metachrome-logo.png'
             });
           }
@@ -177,11 +185,24 @@ export function NotificationBell() {
   };
 
   const getNotificationIcon = (type: string) => {
-    return type === 'deposit' ? '💰' : '💸';
+    if (type === 'deposit') return '💰';
+    if (type === 'withdrawal') return '💸';
+    if (type === 'registration') return '👤';
+    return '🔔';
   };
 
   const getNotificationColor = (type: string) => {
-    return type === 'deposit' ? 'text-green-400' : 'text-yellow-400';
+    if (type === 'deposit') return 'text-green-400';
+    if (type === 'withdrawal') return 'text-yellow-400';
+    if (type === 'registration') return 'text-blue-400';
+    return 'text-gray-400';
+  };
+
+  const getNotificationTitle = (type: string) => {
+    if (type === 'deposit') return 'New Deposit';
+    if (type === 'withdrawal') return 'New Withdrawal';
+    if (type === 'registration') return 'New User Registration';
+    return 'Notification';
   };
 
   return (
@@ -246,20 +267,29 @@ export function NotificationBell() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <span className={`font-semibold ${getNotificationColor(notification.type)}`}>
-                          {notification.type === 'deposit' ? 'New Deposit' : 'New Withdrawal'}
+                          {getNotificationTitle(notification.type)}
                         </span>
                         {!notification.read && (
                           <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                         )}
                       </div>
-                      
+
                       <p className="text-sm text-gray-300">
-                        <span className="font-medium">{notification.username}</span> requested{' '}
-                        <span className="font-bold text-white">
-                          {notification.amount} {notification.currency}
-                        </span>
+                        {notification.type === 'registration' ? (
+                          <>
+                            <span className="font-medium">{notification.username}</span> registered with email{' '}
+                            <span className="font-bold text-white">{notification.email}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-medium">{notification.username}</span> requested{' '}
+                            <span className="font-bold text-white">
+                              {notification.amount} {notification.currency}
+                            </span>
+                          </>
+                        )}
                       </p>
-                      
+
                       <p className="text-xs text-gray-500 mt-1">
                         {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
                       </p>

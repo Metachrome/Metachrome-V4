@@ -30,11 +30,12 @@ import { transactions } from "@shared/schema";
 // Notification system for real-time admin alerts
 interface AdminNotification {
   id: string;
-  type: 'deposit' | 'withdrawal';
+  type: 'deposit' | 'withdrawal' | 'registration';
   userId: string;
   username: string;
-  amount: string;
-  currency: string;
+  amount?: string;
+  currency?: string;
+  email?: string;
   timestamp: Date;
   read: boolean;
 }
@@ -722,6 +723,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         role: 'user',
       });
+
+      // 🔔 SEND REAL-TIME NOTIFICATION TO SUPERADMIN
+      const notification: AdminNotification = {
+        id: `registration_${user.id}_${Date.now()}`,
+        type: 'registration',
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        timestamp: new Date(),
+        read: false
+      };
+      broadcastNotification(notification);
+      console.log(`🔔 Sent new user registration notification: ${user.username} (${user.email})`);
 
       res.json({ user, message: "Registration successful" });
     } catch (error) {
