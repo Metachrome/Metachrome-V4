@@ -770,225 +770,220 @@ export default function WalletPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-6">
+                        {/* Deposit Network Selection */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Deposit network
+                          </label>
+                          <select
+                            value={selectedCrypto}
+                            onChange={(e) => setSelectedCrypto(e.target.value)}
+                            className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          >
+                            <option value="BTC">BTC</option>
+                            <option value="ETH">ETH</option>
+                            <option value="SOL">SOL</option>
+                            <option value="USDT-ERC20">USDT-ERC20</option>
+                            <option value="USDT-TRC20">USDT-TRC20</option>
+                            <option value="USDT-BEP20">USDT-BEP20</option>
+                          </select>
+                        </div>
 
-                    {/* Deposit Network Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Deposit network
-                      </label>
-                      <select
-                        value={selectedCrypto}
-                        onChange={(e) => setSelectedCrypto(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      >
-                        <option value="BTC">BTC</option>
-                        <option value="ETH">ETH</option>
-                        <option value="SOL">SOL</option>
-                        <option value="USDT-ERC20">USDT-ERC20</option>
-                        <option value="USDT-TRC20">USDT-TRC20</option>
-                        <option value="USDT-BEP20">USDT-BEP20</option>
-                      </select>
-                    </div>
+                        {/* Deposit Amount */}
+                        <div>
+                          <label htmlFor="depositAmount" className="block text-sm font-medium text-gray-300 mb-2">
+                            Deposit amount <span className="text-red-400">*</span>
+                          </label>
+                          <input
+                            id="depositAmount"
+                            name="depositAmount"
+                            type="number"
+                            placeholder="Please enter the recharge amount"
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                            className={`w-full bg-gray-800 border rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                              !depositAmount ? 'border-red-500' : 'border-gray-600'
+                            }`}
+                            min={cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount || 0}
+                            step="0.01"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Minimum: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount} {selectedCrypto}
+                          </p>
 
-                    {/* Deposit Amount */}
-                    <div>
-                      <label htmlFor="depositAmount" className="block text-sm font-medium text-gray-300 mb-2">
-                        Deposit amount <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        id="depositAmount"
-                        name="depositAmount"
-                        type="number"
-                        placeholder="Please enter the recharge amount"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                        className={`w-full bg-gray-800 border rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                          !depositAmount ? 'border-red-500' : 'border-gray-600'
-                        }`}
-                        min={cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount || 0}
-                        step="0.01"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Minimum: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount} {selectedCrypto}
-                      </p>
+                          {/* Auto-Convert Info with Real-Time Price - Only for non-USDT currencies */}
+                          {depositAmount && parseFloat(depositAmount) > 0 && !selectedCrypto.startsWith('USDT') && (
+                            <div className="mt-3 p-3 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg">
+                              <div className="flex items-center mb-2">
+                                <span className="text-purple-400 text-sm font-medium">💱 Auto-convert:</span>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-300 text-xs">You deposit:</span>
+                                  <span className="text-white text-sm font-bold">{depositAmount} {selectedCrypto}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-300 text-xs">Current price:</span>
+                                  <span className="text-blue-300 text-sm font-medium">
+                                    {getMarketPrice(selectedCrypto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                                  </span>
+                                </div>
+                                <div className="border-t border-purple-500/20 my-2"></div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-purple-300 text-xs font-medium">You will receive:</span>
+                                  <span className="text-green-400 text-base font-bold">
+                                    ≈ {(parseFloat(depositAmount) * getMarketPrice(selectedCrypto)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-2 italic">
+                                * Your {selectedCrypto} will be automatically converted to USDT at the current market rate
+                              </p>
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Auto-Convert Info with Real-Time Price - Only for non-USDT currencies */}
-                      {depositAmount && parseFloat(depositAmount) > 0 && !selectedCrypto.startsWith('USDT') && (
-                        <div className="mt-3 p-3 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg">
-                          <div className="flex items-center mb-2">
-                            <span className="text-purple-400 text-sm font-medium">💱 Auto-convert:</span>
+                        {/* Platform Deposit Address */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Platform Deposit Address
+                          </label>
+                          <div className="p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg mb-2">
+                            <p className="text-blue-300 text-xs mb-1">
+                              ⚠️ Send {selectedCrypto} to this address to deposit funds to your METACHROME account
+                            </p>
+                            <p className="text-yellow-300 text-xs">
+                              <strong>Important:</strong> Only send on {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}.
+                              Sending on wrong network will result in loss of funds!
+                            </p>
                           </div>
-                          <div className="space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300 text-xs">You deposit:</span>
-                              <span className="text-white text-sm font-bold">{depositAmount} {selectedCrypto}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300 text-xs">Current price:</span>
-                              <span className="text-blue-300 text-sm font-medium">
-                                {getMarketPrice(selectedCrypto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                              </span>
-                            </div>
-                            <div className="border-t border-purple-500/20 my-2"></div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-purple-300 text-xs font-medium">You will receive:</span>
-                              <span className="text-green-400 text-base font-bold">
-                                ≈ {(parseFloat(depositAmount) * getMarketPrice(selectedCrypto)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2">
+                            <span className="text-white text-sm font-mono flex-1 break-all">
+                              {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-purple-400 hover:text-purple-300 p-2 hover:bg-gray-700"
+                              onClick={() => copyToClipboard(cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address)}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
                           </div>
-                          <p className="text-xs text-gray-400 mt-2 italic">
-                            * Your {selectedCrypto} will be automatically converted to USDT at the current market rate
+                          <p className="text-xs text-gray-500 mt-1">
+                            Network: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.description}
                           </p>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Platform Deposit Address */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Platform Deposit Address
-                      </label>
-                      <div className="p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg mb-2">
-                        <p className="text-blue-300 text-xs mb-1">
-                          ⚠️ Send {selectedCrypto} to this address to deposit funds to your METACHROME account
-                        </p>
-                        <p className="text-yellow-300 text-xs">
-                          <strong>Important:</strong> Only send on {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}.
-                          Sending on wrong network will result in loss of funds!
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2">
-                        <span className="text-white text-sm font-mono flex-1 break-all">
-                          {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-purple-400 hover:text-purple-300 p-2 hover:bg-gray-700"
-                          onClick={() => copyToClipboard(cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address)}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Network: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.description}
-                      </p>
-                    </div>
+                        {/* QR Code */}
+                        <div className="space-y-4">
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            QR Code - Deposit Address
+                          </label>
 
-                    {/* QR Code */}
-                    <div className="space-y-4">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        QR Code - Deposit Address
-                      </label>
+                          <div className="text-center">
+                            <div className="bg-white p-6 rounded-lg inline-block">
+                              <QRCodeGenerator
+                                value={generateQRCode()}
+                                size={200}
+                                className="mx-auto"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-300 mt-3">
+                              Scan to see deposit information (copy the address manually)
+                            </p>
+                            <p className="text-xs text-yellow-300 mt-1">
+                              Make sure to send on <strong>{cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}</strong>
+                            </p>
+                            <p className="text-xs text-blue-300 mt-1">
+                              Address: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address}
+                            </p>
+                          </div>
 
-                      <div className="text-center">
-                        <div className="bg-white p-6 rounded-lg inline-block">
-                          <QRCodeGenerator
-                            value={generateQRCode()}
-                            size={200}
-                            className="mx-auto"
+                          {/* Copy Address Button */}
+                          <div className="mt-4">
+                            <Button
+                              onClick={() => copyToClipboard(cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address)}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white"
+                              size="sm"
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy Deposit Address
+                            </Button>
+                          </div>
+
+                          {/* Additional Info */}
+                          <div className="mt-4 p-3 bg-gray-800/50 border border-gray-600 rounded-lg">
+                            <h5 className="text-sm font-medium text-gray-300 mb-2">💡 How to use:</h5>
+                            <ul className="text-xs text-gray-400 space-y-1">
+                              <li>• <strong>Scan QR Code:</strong> View deposit info (manually copy the address)</li>
+                              <li>• <strong>Copy Address:</strong> Click the button to copy address to clipboard</li>
+                              <li>• <strong>Manual Entry:</strong> Type or paste address in your wallet</li>
+                              <li>• <strong>Send Crypto:</strong> Send to the address on the correct network</li>
+                              <li>• <strong>Upload Receipt:</strong> Upload transaction proof and confirm</li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        {/* Upload Receipt */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Upload receipt <span className="text-red-400">*</span>
+                          </label>
+                          <div
+                            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-purple-500 transition-colors ${
+                              !uploadedFile ? 'border-red-500' : 'border-gray-600'
+                            }`}
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            {uploadedFile ? (
+                              <div className="flex items-center justify-center space-x-2">
+                                <CheckCircle className="w-6 h-6 text-green-500" />
+                                <span className="text-green-400 text-sm">{uploadedFile.name}</span>
+                              </div>
+                            ) : (
+                              <>
+                                <Plus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-gray-400 text-sm">Click to upload receipt</p>
+                                <p className="text-gray-500 text-xs mt-1">JPEG, PNG, PDF (max 5MB)</p>
+                              </>
+                            )}
+                          </div>
+                          <input
+                            id="receiptUpload"
+                            name="receiptUpload"
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/jpg,application/pdf"
+                            onChange={handleFileUpload}
+                            className="hidden"
                           />
                         </div>
-                        <p className="text-xs text-gray-300 mt-3">
-                          Scan to see deposit information (copy the address manually)
-                        </p>
-                        <p className="text-xs text-yellow-300 mt-1">
-                          Make sure to send on <strong>{cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.network}</strong>
-                        </p>
-                        <p className="text-xs text-blue-300 mt-1">
-                          Address: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address}
-                        </p>
-                      </div>
 
-                      {/* Copy Address Button */}
-                      <div className="mt-4">
-                        <Button
-                          onClick={() => copyToClipboard(cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.address)}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white"
-                          size="sm"
-                        >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy Deposit Address
-                        </Button>
-                      </div>
-
-                      {/* Additional Info */}
-                      <div className="mt-4 p-3 bg-gray-800/50 border border-gray-600 rounded-lg">
-                        <h5 className="text-sm font-medium text-gray-300 mb-2">💡 How to use:</h5>
-                        <ul className="text-xs text-gray-400 space-y-1">
-                          <li>• <strong>Scan QR Code:</strong> View deposit info (manually copy the address)</li>
-                          <li>• <strong>Copy Address:</strong> Click the button to copy address to clipboard</li>
-                          <li>• <strong>Manual Entry:</strong> Type or paste address in your wallet</li>
-                          <li>• <strong>Send Crypto:</strong> Send to the address on the correct network</li>
-                          <li>• <strong>Upload Receipt:</strong> Upload transaction proof and confirm</li>
-                        </ul>
-                      </div>
-
-
-                    </div>
-
-
-
-                    {/* Upload Receipt */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Upload receipt <span className="text-red-400">*</span>
-                      </label>
-                      <div
-                        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-purple-500 transition-colors ${
-                          !uploadedFile ? 'border-red-500' : 'border-gray-600'
-                        }`}
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        {uploadedFile ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <CheckCircle className="w-6 h-6 text-green-500" />
-                            <span className="text-green-400 text-sm">{uploadedFile.name}</span>
+                        {/* Required Fields Notice */}
+                        {(!depositAmount || !uploadedFile) && (
+                          <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg mb-4">
+                            <p className="text-yellow-300 text-sm">
+                              ⚠️ Please complete all required fields:
+                            </p>
+                            <ul className="text-yellow-200 text-xs mt-1 ml-4">
+                              {!depositAmount && <li>• Enter deposit amount</li>}
+                              {!uploadedFile && <li>• Upload transaction receipt</li>}
+                            </ul>
                           </div>
-                        ) : (
-                          <>
-                            <Plus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-gray-400 text-sm">Click to upload receipt</p>
-                            <p className="text-gray-500 text-xs mt-1">JPEG, PNG, PDF (max 5MB)</p>
-                          </>
                         )}
-                      </div>
-                      <input
-                        id="receiptUpload"
-                        name="receiptUpload"
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/jpg,application/pdf"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </div>
 
-                    {/* Required Fields Notice */}
-                    {(!depositAmount || !uploadedFile) && (
-                      <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg mb-4">
-                        <p className="text-yellow-300 text-sm">
-                          ⚠️ Please complete all required fields:
-                        </p>
-                        <ul className="text-yellow-200 text-xs mt-1 ml-4">
-                          {!depositAmount && <li>• Enter deposit amount</li>}
-                          {!uploadedFile && <li>• Upload transaction receipt</li>}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Confirm Button */}
-                    <Button
-                      className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={handleDepositSubmit}
-                      disabled={depositMutation.isPending || !depositAmount || !uploadedFile}
-                    >
-                      {depositMutation.isPending ? 'Processing...' : 'Confirm recharge'}
-                    </Button>
+                        {/* Confirm Button */}
+                        <Button
+                          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleDepositSubmit}
+                          disabled={depositMutation.isPending || !depositAmount || !uploadedFile}
+                        >
+                          {depositMutation.isPending ? 'Processing...' : 'Confirm recharge'}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
