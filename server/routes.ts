@@ -271,6 +271,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
   // ============================================
 
+  console.log('🚀 ========================================');
+  console.log('🚀 REGISTERING NOTIFICATION ENDPOINTS');
+  console.log('🚀 ========================================');
+
   // DEBUG: Test endpoint to verify routing works
   app.get("/api/admin/notifications/test", (req, res) => {
     console.log('🧪 Test endpoint hit!');
@@ -280,6 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       timestamp: new Date().toISOString()
     });
   });
+  console.log('✅ Registered: GET /api/admin/notifications/test');
 
   // SSE endpoint for real-time notifications (Superadmin only)
   // MUST BE BEFORE OTHER ROUTES to avoid conflicts
@@ -348,6 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sseClients.delete(res);
     });
   });
+  console.log('✅ Registered: GET /api/admin/notifications/stream');
 
   // Get all notifications (Superadmin only)
   app.get("/api/admin/notifications", requireSessionSuperAdmin, (req, res) => {
@@ -358,6 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch notifications" });
     }
   });
+  console.log('✅ Registered: GET /api/admin/notifications');
 
   // Mark notification as read (Superadmin only)
   app.post("/api/admin/notifications/:id/read", requireSessionSuperAdmin, (req, res) => {
@@ -376,6 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
+  console.log('✅ Registered: POST /api/admin/notifications/:id/read');
 
   // Mark all notifications as read (Superadmin only)
   app.post("/api/admin/notifications/read-all", requireSessionSuperAdmin, (req, res) => {
@@ -387,6 +395,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to mark all notifications as read" });
     }
   });
+  console.log('✅ Registered: POST /api/admin/notifications/read-all');
+
+  console.log('🚀 ========================================');
+  console.log('🚀 ALL NOTIFICATION ENDPOINTS REGISTERED');
+  console.log('🚀 ========================================');
 
   // Initialize OAuth authentication
   setupOAuth(app);
