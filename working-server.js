@@ -13527,25 +13527,33 @@ app.get("/sse/notifications/stream", async (req, res) => {
   try {
     // Token format can be:
     // 1. user-session-{base64UserId}-{timestamp}
-    // 2. admin-session-{userId}-{timestamp}
-    const parts = authToken.split('-');
-    console.log('🔔 Token parts:', parts);
+    // 2. admin-session-{userId}-{timestamp} where userId can contain hyphens
 
-    if (parts.length >= 4) {
-      if (parts[0] === 'user' && parts[1] === 'session') {
-        // Format: user-session-{base64UserId}-{timestamp}
+    if (authToken.startsWith('user-session-')) {
+      // Format: user-session-{base64UserId}-{timestamp}
+      const parts = authToken.split('-');
+      if (parts.length >= 4) {
         userId = Buffer.from(parts[2], 'base64').toString('utf-8');
         console.log('🔔 Decoded user ID from base64:', userId);
-      } else if (parts[0] === 'admin' && parts[1] === 'session') {
-        // Format: admin-session-{userId}-{timestamp}
-        userId = parts[2];
+      } else {
+        console.log('🔔 Invalid user-session token format');
+        return res.status(401).json({ message: 'Invalid token format' });
+      }
+    } else if (authToken.startsWith('admin-session-')) {
+      // Format: admin-session-{userId}-{timestamp}
+      // Extract everything between 'admin-session-' and the last '-{timestamp}'
+      const withoutPrefix = authToken.substring('admin-session-'.length);
+      const parts = withoutPrefix.split('-');
+      // Last part is timestamp, everything else is userId
+      if (parts.length >= 2) {
+        userId = parts.slice(0, -1).join('-');
         console.log('🔔 User ID from admin token:', userId);
       } else {
-        console.log('🔔 Invalid token format - unknown prefix:', parts[0], parts[1]);
+        console.log('🔔 Invalid admin-session token format');
         return res.status(401).json({ message: 'Invalid token format' });
       }
     } else {
-      console.log('🔔 Invalid token format - not enough parts:', parts.length);
+      console.log('🔔 Invalid token format - unknown prefix');
       return res.status(401).json({ message: 'Invalid token format' });
     }
   } catch (error) {
