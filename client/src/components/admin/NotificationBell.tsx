@@ -38,9 +38,19 @@ export function NotificationBell() {
 
     const connectToStream = () => {
       console.log('🔔 Connecting to notification stream... (attempt', retryCount + 1, ')');
-      console.log('🔔 SSE URL:', '/sse/notifications/stream');
 
-      const eventSource = new EventSource('/sse/notifications/stream', {
+      // Get auth token from localStorage
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('❌ No auth token found, cannot connect to notification stream');
+        return;
+      }
+
+      // EventSource doesn't support custom headers, so we pass token as query param
+      const sseUrl = `/sse/notifications/stream?token=${encodeURIComponent(token)}`;
+      console.log('🔔 SSE URL:', sseUrl);
+
+      const eventSource = new EventSource(sseUrl, {
         withCredentials: true
       });
 

@@ -13509,34 +13509,47 @@ app.get("/sse/test", (req, res) => {
 });
 
 // SSE endpoint for real-time notifications (Superadmin only)
-app.get("/sse/notifications/stream", (req, res) => {
+app.get("/sse/notifications/stream", async (req, res) => {
   console.log('🔔 /sse/notifications/stream endpoint hit!');
 
-  // Get user from auth token
-  const authToken = req.headers.authorization?.replace('Bearer ', '');
+  // Get user from auth token (query param or header)
+  const authToken = req.query.token || req.headers.authorization?.replace('Bearer ', '');
 
   if (!authToken) {
     console.log('🔔 No auth token provided');
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
+  console.log('🔔 Auth token received:', authToken.substring(0, 30) + '...');
+
   // Decode user ID from token
   let userId;
   try {
-    userId = Buffer.from(authToken, 'base64').toString('utf-8');
+    // Token format: user-session-{base64UserId}-{timestamp}
+    const parts = authToken.split('-');
+    if (parts.length >= 3 && parts[0] === 'user' && parts[1] === 'session') {
+      userId = Buffer.from(parts[2], 'base64').toString('utf-8');
+      console.log('🔔 Decoded user ID:', userId);
+    } else {
+      console.log('🔔 Invalid token format');
+      return res.status(401).json({ message: 'Invalid token format' });
+    }
   } catch (error) {
-    console.log('🔔 Failed to decode token');
+    console.log('🔔 Failed to decode token:', error);
     return res.status(401).json({ message: 'Invalid token' });
   }
 
+  // Get all users
+  const allUsers = await getUsers();
+
   // Check if user is superadmin
-  const user = users.find(u => u.id === userId);
+  const user = allUsers.find(u => u.id === userId);
   if (!user || user.role !== 'super_admin') {
-    console.log('🔔 User is not superadmin:', user?.role);
+    console.log('🔔 User is not superadmin:', user?.role || 'user not found');
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  console.log('🔔 Superadmin authenticated, setting up SSE stream');
+  console.log('🔔 Superadmin authenticated:', user.username, 'setting up SSE stream');
 
   // Set headers for SSE
   res.setHeader('Content-Type', 'text/event-stream');
