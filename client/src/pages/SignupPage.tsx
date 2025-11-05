@@ -160,6 +160,21 @@ export default function SignupPage() {
             const uploadResult = await response.json();
             setUploadProgress(100);
             console.log('✅ Verification document uploaded successfully:', uploadResult);
+
+            // Update user data in localStorage to reflect uploaded documents
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              try {
+                const userData = JSON.parse(storedUser);
+                userData.verificationStatus = 'pending';
+                userData.hasUploadedDocuments = true;
+                localStorage.setItem('user', JSON.stringify(userData));
+                console.log('✅ Updated user data in localStorage with verification status');
+              } catch (e) {
+                console.error('Failed to update user data in localStorage:', e);
+              }
+            }
+
             toast({
               title: "Account Created & Document Uploaded!",
               description: "Your account is pending verification. You'll be notified once approved.",
@@ -186,6 +201,10 @@ export default function SignupPage() {
           duration: 5000,
         });
       }
+
+      // Wait a bit to ensure database is updated before redirecting
+      console.log('⏳ Waiting for database sync before redirect...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Redirect to dashboard after successful signup and auto-login
       console.log('🔄 Redirecting to dashboard...');
