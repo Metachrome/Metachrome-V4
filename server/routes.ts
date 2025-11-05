@@ -204,6 +204,10 @@ function getNetworkInfo(currency: string): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log('🚀 ========================================');
+  console.log('🚀 REGISTERING SSE ENDPOINTS');
+  console.log('🚀 ========================================');
+
   // ============================================
   // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
   // MUST BE FIRST - BEFORE ANY OTHER ROUTES
@@ -212,16 +216,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // DEBUG: Test endpoint to verify routing works
   app.get("/sse/test", (req, res) => {
+    console.log('🧪 /sse/test endpoint hit!');
     res.json({
       success: true,
       message: 'SSE endpoint routing works!',
       timestamp: new Date().toISOString()
     });
   });
+  console.log('✅ Registered: GET /sse/test');
 
   // SSE endpoint for real-time notifications (Superadmin only)
   // Using /sse/* path to bypass /api/* rate limiter
   app.get("/sse/notifications/stream", (req, res) => {
+    console.log('🔔 /sse/notifications/stream endpoint hit!');
+    console.log('🔔 User:', req.session?.user || (req as any).user);
     const user = req.session?.user || (req as any).user;
 
     // Check authentication
@@ -261,10 +269,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Clean up on client disconnect
     req.on('close', () => {
+      console.log('🔔 Client disconnected from SSE stream');
       clearInterval(heartbeat);
       sseClients.delete(res);
     });
   });
+  console.log('✅ Registered: GET /sse/notifications/stream');
+
+  console.log('🚀 ========================================');
+  console.log('🚀 SSE ENDPOINTS REGISTERED SUCCESSFULLY');
+  console.log('🚀 ========================================');
 
   // Get all notifications (Superadmin only)
   app.get("/api/admin/notifications", requireSessionSuperAdmin, (req, res) => {
