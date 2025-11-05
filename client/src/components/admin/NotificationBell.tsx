@@ -16,7 +16,11 @@ interface Notification {
   read: boolean;
 }
 
-export function NotificationBell() {
+interface NotificationBellProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export function NotificationBell({ onTabChange }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -280,6 +284,25 @@ export function NotificationBell() {
     return 'Notification';
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+
+    // Navigate to appropriate tab
+    if (onTabChange) {
+      if (notification.type === 'registration') {
+        onTabChange('users');
+      } else if (notification.type === 'deposit' || notification.type === 'withdrawal') {
+        onTabChange('pending');
+      }
+    }
+
+    // Close dropdown
+    setIsOpen(false);
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell Icon Button */}
@@ -335,7 +358,7 @@ export function NotificationBell() {
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
                   className={`p-4 border-b border-gray-700 hover:bg-gray-700/50 cursor-pointer transition-colors ${
                     !notification.read ? 'bg-gray-700/30' : ''
                   }`}
@@ -382,13 +405,17 @@ export function NotificationBell() {
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="p-3 border-t border-gray-700 text-center">
-              <a
-                href="#deposits-withdrawals"
+              <button
                 className="text-sm text-blue-400 hover:text-blue-300"
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  if (onTabChange) {
+                    onTabChange('pending');
+                  }
+                  setIsOpen(false);
+                }}
               >
                 View all transactions →
-              </a>
+              </button>
             </div>
           )}
         </Card>

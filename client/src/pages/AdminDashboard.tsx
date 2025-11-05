@@ -214,6 +214,7 @@ export default function WorkingAdminDashboard() {
 
   // Search and filter states
   const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Get current user role - with fallback for admin access
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -1452,7 +1453,7 @@ export default function WorkingAdminDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               {/* Real-time Notification Bell */}
-              {user?.role === 'super_admin' && <NotificationBell />}
+              {user?.role === 'super_admin' && <NotificationBell onTabChange={setActiveTab} />}
 
               <Button
                 onClick={forceRefreshTransactions}
@@ -1482,7 +1483,7 @@ export default function WorkingAdminDashboard() {
       </div>
 
       <div className="max-w-full mx-auto p-6">
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex w-full overflow-x-auto bg-gray-800 border-gray-700 scrollbar-hide gap-2 p-2">
             <TabsTrigger value="overview" className="flex-shrink-0 px-4 py-2">
               <BarChart3 className="w-4 h-4 mr-2" />
