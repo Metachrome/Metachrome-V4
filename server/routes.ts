@@ -218,61 +218,13 @@ function getNetworkInfo(currency: string): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // EMERGENCY BYPASS: System settings endpoint BEFORE any other middleware
-  app.put("/api/system-config", (req: any, res: any) => {
-    console.log('🚀 /api/system-config endpoint hit!');
-    console.log('📦 Request body:', req.body);
-    try {
-      res.setHeader('Content-Type', 'application/json');
-      const { tradingEnabled, maintenanceMode, minTradeAmount, maxTradeAmount } = req.body;
-      
-      global.systemSettings = global.systemSettings || {
-        tradingEnabled: true,
-        maintenanceMode: false,
-        minTradeAmount: '10',
-        maxTradeAmount: '10000'
-      };
-      
-      if (typeof tradingEnabled === 'boolean') {
-        global.systemSettings.tradingEnabled = tradingEnabled;
-        console.log(`🎮 Trading ${tradingEnabled ? 'ENABLED' : 'DISABLED'} by admin`);
-      }
-      
-      if (typeof maintenanceMode === 'boolean') {
-        global.systemSettings.maintenanceMode = maintenanceMode;
-        console.log(`🔧 Maintenance mode ${maintenanceMode ? 'ENABLED' : 'DISABLED'} by admin`);
-      }
-      
-      if (minTradeAmount) {
-        global.systemSettings.minTradeAmount = minTradeAmount;
-      }
-      
-      if (maxTradeAmount) {
-        global.systemSettings.maxTradeAmount = maxTradeAmount;
-      }
-      
-      res.json({
-        success: true,
-        message: 'System settings updated successfully',
-        settings: global.systemSettings,
-        timestamp: new Date().toISOString()
-      });
-      
-    } catch (error) {
-      console.error('Error updating system settings:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to update system settings'
-      });
-    }
-  });
-
   // ============================================
   // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
+  // MUST BE FIRST - BEFORE ANY OTHER ROUTES
   // ============================================
 
   console.log('🚀 ========================================');
-  console.log('🚀 REGISTERING NOTIFICATION ENDPOINTS');
+  console.log('🚀 REGISTERING NOTIFICATION ENDPOINTS (FIRST!)');
   console.log('🚀 ========================================');
 
   // DEBUG: Test endpoint to verify routing works
@@ -287,7 +239,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('✅ Registered: GET /api/admin/notifications/test');
 
   // SSE endpoint for real-time notifications (Superadmin only)
-  // MUST BE BEFORE OTHER ROUTES to avoid conflicts
   app.get("/api/admin/notifications/stream", (req, res) => {
     console.log('🔔 ========================================');
     console.log('🔔 SSE ENDPOINT HIT!');
@@ -295,10 +246,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('🔔 Method:', req.method);
     console.log('🔔 Headers:', req.headers);
     console.log('🔔 Session:', req.session);
-    console.log('🔔 User:', req.user);
+    console.log('🔔 User:', (req as any).user);
     console.log('🔔 ========================================');
 
-    const user = req.session?.user || req.user;
+    const user = req.session?.user || (req as any).user;
 
     // Check authentication
     if (!user || user.role !== 'super_admin') {
@@ -371,7 +322,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const notification = adminNotifications.find(n => n.id === id);
-
       if (notification) {
         notification.read = true;
         res.json({ success: true });
@@ -400,6 +350,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('🚀 ========================================');
   console.log('🚀 ALL NOTIFICATION ENDPOINTS REGISTERED');
   console.log('🚀 ========================================');
+
+  // EMERGENCY BYPASS: System settings endpoint BEFORE any other middleware
+  app.put("/api/system-config", (req: any, res: any) => {
+    console.log('🚀 /api/system-config endpoint hit!');
+    console.log('📦 Request body:', req.body);
+    try {
+      res.setHeader('Content-Type', 'application/json');
+      const { tradingEnabled, maintenanceMode, minTradeAmount, maxTradeAmount } = req.body;
+      
+      global.systemSettings = global.systemSettings || {
+        tradingEnabled: true,
+        maintenanceMode: false,
+        minTradeAmount: '10',
+        maxTradeAmount: '10000'
+      };
+      
+      if (typeof tradingEnabled === 'boolean') {
+        global.systemSettings.tradingEnabled = tradingEnabled;
+        console.log(`🎮 Trading ${tradingEnabled ? 'ENABLED' : 'DISABLED'} by admin`);
+      }
+      
+      if (typeof maintenanceMode === 'boolean') {
+        global.systemSettings.maintenanceMode = maintenanceMode;
+        console.log(`🔧 Maintenance mode ${maintenanceMode ? 'ENABLED' : 'DISABLED'} by admin`);
+      }
+      
+      if (minTradeAmount) {
+        global.systemSettings.minTradeAmount = minTradeAmount;
+      }
+      
+      if (maxTradeAmount) {
+        global.systemSettings.maxTradeAmount = maxTradeAmount;
+      }
+      
+      res.json({
+        success: true,
+        message: 'System settings updated successfully',
+        settings: global.systemSettings,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error('Error updating system settings:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update system settings'
+      });
+    }
+  });
 
   // Initialize OAuth authentication
   setupOAuth(app);
