@@ -2165,6 +2165,17 @@ app.post('/api/auth/register', async (req, res) => {
     const encodedUserId = Buffer.from(newUser.id).toString('base64');
     const token = `user-session-${encodedUserId}-${Date.now()}`;
 
+    // REAL-TIME NOTIFICATION: Broadcast new user registration to superadmin
+    broadcastNotification({
+      id: `notif-${Date.now()}`,
+      type: 'registration',
+      userId: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+      timestamp: new Date(),
+      read: false
+    });
+
     res.json({
       success: true,
       message: 'Registration successful',
@@ -13463,10 +13474,147 @@ app.post('/api/test/create-sample-deposit', (req, res) => {
   });
 });
 
+// ===== REAL-TIME NOTIFICATION SYSTEM (SSE) =====
+// Store for admin notifications and SSE clients
+const adminNotifications = [];
+const sseClients = new Set();
+
+// Helper function to broadcast notification to all connected admin clients
+function broadcastNotification(notification) {
+  adminNotifications.unshift(notification);
+
+  if (adminNotifications.length > 50) {
+    adminNotifications.splice(50);
+  }
+
+  const data = JSON.stringify(notification);
+
+  sseClients.forEach(client => {
+    try {
+      client.write(`data: ${data}\n\n`);
+    } catch (error) {
+      sseClients.delete(client);
+    }
+  });
+}
+
+// DEBUG: Test endpoint to verify routing works
+app.get("/sse/test", (req, res) => {
+  console.log('🧪 /sse/test endpoint hit!');
+  res.json({
+    success: true,
+    message: 'SSE endpoint routing works!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// SSE endpoint for real-time notifications (Superadmin only)
+app.get("/sse/notifications/stream", (req, res) => {
+  console.log('🔔 /sse/notifications/stream endpoint hit!');
+
+  // Get user from auth token
+  const authToken = req.headers.authorization?.replace('Bearer ', '');
+
+  if (!authToken) {
+    console.log('🔔 No auth token provided');
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  // Decode user ID from token
+  let userId;
+  try {
+    userId = Buffer.from(authToken, 'base64').toString('utf-8');
+  } catch (error) {
+    console.log('🔔 Failed to decode token');
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+
+  // Check if user is superadmin
+  const user = users.find(u => u.id === userId);
+  if (!user || user.role !== 'super_admin') {
+    console.log('🔔 User is not superadmin:', user?.role);
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  console.log('🔔 Superadmin authenticated, setting up SSE stream');
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  // Add client to set
+  sseClients.add(res);
+
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Notification stream connected' })}\n\n`);
+
+  // Send existing unread notifications
+  const unreadNotifications = adminNotifications.filter(n => !n.read);
+  if (unreadNotifications.length > 0) {
+    unreadNotifications.forEach(notification => {
+      res.write(`data: ${JSON.stringify(notification)}\n\n`);
+    });
+  }
+
+  // Keep connection alive with heartbeat
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`: heartbeat\n\n`);
+    } catch (error) {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    }
+  }, 30000);
+
+  // Clean up on client disconnect
+  req.on('close', () => {
+    console.log('🔔 Client disconnected from SSE stream');
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
+});
+
+// Get all notifications (Superadmin only)
+app.get("/api/admin/notifications", (req, res) => {
+  try {
+    res.json({ notifications: adminNotifications });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch notifications" });
+  }
+});
+
+// Mark notification as read (Superadmin only)
+app.post("/api/admin/notifications/:id/read", (req, res) => {
+  try {
+    const { id } = req.params;
+    const notification = adminNotifications.find(n => n.id === id);
+    if (notification) {
+      notification.read = true;
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ message: "Notification not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Failed to mark notification as read" });
+  }
+});
+
+// Mark all notifications as read (Superadmin only)
+app.post("/api/admin/notifications/read-all", (req, res) => {
+  try {
+    adminNotifications.forEach(n => n.read = true);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to mark all notifications as read" });
+  }
+});
+
 // ===== SPA ROUTING =====
-// Only catch GET requests that don't start with /api or /assets
-// This ensures static files (CSS, JS, images) are served correctly
-app.get(/^(?!\/api|\/assets).*/, (req, res) => {
+// Only catch GET requests that don't start with /api, /assets, or /sse
+// This ensures static files (CSS, JS, images) and SSE endpoints are served correctly
+app.get(/^(?!\/api|\/assets|\/sse).*/, (req, res) => {
   const indexPath = path.join(distPath, 'index.html');
   console.log('📄 Serving SPA route:', req.path);
 
