@@ -38,9 +38,9 @@ export function NotificationBell() {
 
     const connectToStream = () => {
       console.log('🔔 Connecting to notification stream... (attempt', retryCount + 1, ')');
-      console.log('🔔 SSE URL:', '/api/admin/notifications/stream');
+      console.log('🔔 SSE URL:', '/sse/notifications/stream');
 
-      const eventSource = new EventSource('/api/admin/notifications/stream', {
+      const eventSource = new EventSource('/sse/notifications/stream', {
         withCredentials: true
       });
 

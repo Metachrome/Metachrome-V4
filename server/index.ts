@@ -74,11 +74,17 @@ app.use(cors({
 }));
 
 // Enhanced Rate limiting with specific limits for different endpoints
-app.use('/api', apiLimiter);
+// Exclude /sse/* from rate limiting (for Server-Sent Events)
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/sse/')) {
+    return next(); // Skip rate limiting for SSE endpoints
+  }
+  return apiLimiter(req, res, next);
+});
 app.use('/api/auth', authLimiter);
 app.use('/api/trades', tradingLimiter);
 
-console.log('🛡️ Enhanced rate limiting enabled for all API endpoints');
+console.log('🛡️ Enhanced rate limiting enabled for all API endpoints (excluding /sse/*)');
 
 // Session configuration
 app.use(session({

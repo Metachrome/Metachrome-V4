@@ -207,19 +207,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ============================================
   // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
   // MUST BE FIRST - BEFORE ANY OTHER ROUTES
+  // Using /sse/* path to avoid /api/* rate limiting
   // ============================================
 
   // DEBUG: Test endpoint to verify routing works
-  app.get("/api/admin/notifications/test", (req, res) => {
+  app.get("/sse/test", (req, res) => {
     res.json({
       success: true,
-      message: 'Notification endpoint routing works!',
+      message: 'SSE endpoint routing works!',
       timestamp: new Date().toISOString()
     });
   });
 
   // SSE endpoint for real-time notifications (Superadmin only)
-  app.get("/api/admin/notifications/stream", (req, res) => {
+  // Using /sse/* path to bypass /api/* rate limiter
+  app.get("/sse/notifications/stream", (req, res) => {
     const user = req.session?.user || (req as any).user;
 
     // Check authentication
