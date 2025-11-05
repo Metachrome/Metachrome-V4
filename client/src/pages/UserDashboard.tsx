@@ -399,14 +399,6 @@ export default function UserDashboard() {
           </p>
         </div>
 
-        {/* Debug Verification Status - TEMPORARY: Show in production to debug */}
-        <div className="mb-4 p-3 bg-gray-900/50 border border-gray-600 rounded text-xs text-gray-400">
-          <strong>Debug Info:</strong> verificationStatus: {String(user?.verificationStatus)},
-          hasUploadedDocuments: {String(user?.hasUploadedDocuments)},
-          shouldShowYellowBanner: {String((!user?.verificationStatus || user?.verificationStatus === 'unverified') && !user?.hasUploadedDocuments)},
-          shouldShowBlueBanner: {String(user?.verificationStatus === 'pending' || (user?.hasUploadedDocuments && user?.verificationStatus !== 'verified'))}
-        </div>
-
         {/* Verification Status Notification - Show only if NOT verified and has NOT uploaded documents */}
         {(!user?.verificationStatus || user?.verificationStatus === 'unverified') && !user?.hasUploadedDocuments && (
           <div className="mb-8">
