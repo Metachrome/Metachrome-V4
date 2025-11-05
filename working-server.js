@@ -13520,18 +13520,32 @@ app.get("/sse/notifications/stream", async (req, res) => {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  console.log('🔔 Auth token received:', authToken.substring(0, 30) + '...');
+  console.log('🔔 Auth token received:', authToken.substring(0, 50) + '...');
 
   // Decode user ID from token
   let userId;
   try {
-    // Token format: user-session-{base64UserId}-{timestamp}
+    // Token format can be:
+    // 1. user-session-{base64UserId}-{timestamp}
+    // 2. admin-session-{userId}-{timestamp}
     const parts = authToken.split('-');
-    if (parts.length >= 3 && parts[0] === 'user' && parts[1] === 'session') {
-      userId = Buffer.from(parts[2], 'base64').toString('utf-8');
-      console.log('🔔 Decoded user ID:', userId);
+    console.log('🔔 Token parts:', parts);
+
+    if (parts.length >= 4) {
+      if (parts[0] === 'user' && parts[1] === 'session') {
+        // Format: user-session-{base64UserId}-{timestamp}
+        userId = Buffer.from(parts[2], 'base64').toString('utf-8');
+        console.log('🔔 Decoded user ID from base64:', userId);
+      } else if (parts[0] === 'admin' && parts[1] === 'session') {
+        // Format: admin-session-{userId}-{timestamp}
+        userId = parts[2];
+        console.log('🔔 User ID from admin token:', userId);
+      } else {
+        console.log('🔔 Invalid token format - unknown prefix:', parts[0], parts[1]);
+        return res.status(401).json({ message: 'Invalid token format' });
+      }
     } else {
-      console.log('🔔 Invalid token format');
+      console.log('🔔 Invalid token format - not enough parts:', parts.length);
       return res.status(401).json({ message: 'Invalid token format' });
     }
   } catch (error) {
@@ -13541,15 +13555,19 @@ app.get("/sse/notifications/stream", async (req, res) => {
 
   // Get all users
   const allUsers = await getUsers();
+  console.log('🔔 Total users in database:', allUsers.length);
 
   // Check if user is superadmin
   const user = allUsers.find(u => u.id === userId);
+  console.log('🔔 User lookup result:', user ? `Found: ${user.username} (${user.role})` : 'Not found');
+
   if (!user || user.role !== 'super_admin') {
     console.log('🔔 User is not superadmin:', user?.role || 'user not found');
+    console.log('🔔 Looking for user ID:', userId);
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  console.log('🔔 Superadmin authenticated:', user.username, 'setting up SSE stream');
+  console.log('🔔 ✅ Superadmin authenticated:', user.username, 'setting up SSE stream');
 
   // Set headers for SSE
   res.setHeader('Content-Type', 'text/event-stream');
