@@ -12,6 +12,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { FaGoogle } from 'react-icons/fa';
 import { SiEthereum } from 'react-icons/si';
 import metachromeLogo from '../assets/new-metachrome-logo.png';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 // Declare MetaMask types
@@ -44,6 +45,7 @@ export default function SignupPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { register, metamaskLogin } = useAuth();
+  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isMetaMaskConnecting, setIsMetaMaskConnecting] = useState(false);
@@ -170,6 +172,12 @@ export default function SignupPage() {
                 userData.hasUploadedDocuments = true;
                 localStorage.setItem('user', JSON.stringify(userData));
                 console.log('✅ Updated user data in localStorage with verification status');
+
+                // CRITICAL FIX: Invalidate React Query cache to force fresh data fetch
+                // This ensures dashboard shows correct verification status
+                queryClient.setQueryData(["/api/auth"], userData);
+                queryClient.invalidateQueries({ queryKey: ["/api/auth"] });
+                console.log('🔄 Invalidated React Query cache - dashboard will fetch fresh data');
               } catch (e) {
                 console.error('Failed to update user data in localStorage:', e);
               }
