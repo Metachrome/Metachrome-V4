@@ -6,12 +6,13 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
   id: string;
-  type: 'deposit' | 'withdrawal' | 'registration';
+  type: 'deposit' | 'withdrawal' | 'registration' | 'verification';
   userId: string;
   username: string;
   amount?: string;
   currency?: string;
   email?: string;
+  documentType?: string;
   timestamp: Date;
   read: boolean;
 }
@@ -77,7 +78,7 @@ export function NotificationBell({ onTabChange }: NotificationBellProps) {
           }
 
           // Add new notification
-          if (data.type === 'deposit' || data.type === 'withdrawal' || data.type === 'registration') {
+          if (data.type === 'deposit' || data.type === 'withdrawal' || data.type === 'registration' || data.type === 'verification') {
             console.log('🔔 New notification received:', data);
             setNotifications(prev => [data, ...prev]);
 
@@ -89,11 +90,13 @@ export function NotificationBell({ onTabChange }: NotificationBellProps) {
               let notificationBody = '';
               if (data.type === 'registration') {
                 notificationBody = `${data.username} (${data.email || 'N/A'}) registered`;
+              } else if (data.type === 'verification') {
+                notificationBody = `${data.username} uploaded ID for verification`;
               } else {
                 notificationBody = `${data.username} requested ${data.amount} ${data.currency}`;
               }
 
-              new Notification(`New ${data.type} ${data.type === 'registration' ? '' : 'request'}`, {
+              new Notification(`New ${data.type} ${data.type === 'registration' ? '' : data.type === 'verification' ? '' : 'request'}`, {
                 body: notificationBody,
                 icon: '/new-metachrome-logo.png'
               });
@@ -267,6 +270,7 @@ export function NotificationBell({ onTabChange }: NotificationBellProps) {
     if (type === 'deposit') return '💰';
     if (type === 'withdrawal') return '💸';
     if (type === 'registration') return '👤';
+    if (type === 'verification') return '📄';
     return '🔔';
   };
 
@@ -274,6 +278,7 @@ export function NotificationBell({ onTabChange }: NotificationBellProps) {
     if (type === 'deposit') return 'text-green-400';
     if (type === 'withdrawal') return 'text-yellow-400';
     if (type === 'registration') return 'text-blue-400';
+    if (type === 'verification') return 'text-purple-400';
     return 'text-gray-400';
   };
 
@@ -281,6 +286,7 @@ export function NotificationBell({ onTabChange }: NotificationBellProps) {
     if (type === 'deposit') return 'New Deposit';
     if (type === 'withdrawal') return 'New Withdrawal';
     if (type === 'registration') return 'New User Registration';
+    if (type === 'verification') return 'ID Verification Upload';
     return 'Notification';
   };
 
@@ -296,6 +302,8 @@ export function NotificationBell({ onTabChange }: NotificationBellProps) {
         onTabChange('users');
       } else if (notification.type === 'deposit' || notification.type === 'withdrawal') {
         onTabChange('pending');
+      } else if (notification.type === 'verification') {
+        onTabChange('verification');
       }
     }
 

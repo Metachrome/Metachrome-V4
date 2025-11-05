@@ -3673,6 +3673,20 @@ app.post('/api/transactions/deposit-request', async (req, res) => {
 
   console.log('💰 Deposit request created:', depositId, 'for user:', currentUser.username);
 
+  // 🔔 Send notification to superadmin
+  const notification = {
+    id: `deposit-${Date.now()}`,
+    type: 'deposit',
+    userId: currentUser.id,
+    username: currentUser.username,
+    amount: amount,
+    currency: cleanCurrency,
+    timestamp: new Date(),
+    read: false
+  };
+  broadcastNotification(notification);
+  console.log(`🔔 Sent deposit request notification for ${currentUser.username}: ${amount} ${cleanCurrency}`);
+
   res.json({
     success: true,
     depositId,
@@ -9489,6 +9503,21 @@ app.post('/api/user/upload-verification', (req, res, next) => {
         .eq('id', user.id);
 
       console.log('✅ Verification document uploaded to database:', data);
+
+      // 🔔 Send notification to superadmin
+      const notification = {
+        id: `verification-${Date.now()}`,
+        type: 'verification',
+        message: `${user.username || user.email} uploaded ID for verification`,
+        userId: user.id,
+        userName: user.username || user.email,
+        documentType: documentType,
+        timestamp: new Date(),
+        read: false
+      };
+      broadcastNotification(notification);
+      console.log(`🔔 Sent ID verification notification for ${user.username || user.email}`);
+
       res.json({ success: true, document: data });
     } else {
       // Development mode - store in local file system
