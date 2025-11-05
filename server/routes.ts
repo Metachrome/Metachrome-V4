@@ -45,35 +45,21 @@ const sseClients: Set<any> = new Set();
 
 // Helper function to broadcast notification to all connected admin clients
 function broadcastNotification(notification: AdminNotification) {
-  console.log('📢 Broadcasting notification:', notification.type, 'to', sseClients.size, 'clients');
-  adminNotifications.unshift(notification); // Add to beginning of array
+  adminNotifications.unshift(notification);
 
-  // Keep only last 50 notifications
   if (adminNotifications.length > 50) {
     adminNotifications.splice(50);
   }
 
-  // Broadcast to all connected SSE clients
   const data = JSON.stringify(notification);
-  console.log('📤 Sending SSE data:', data);
-
-  let successCount = 0;
-  let errorCount = 0;
 
   sseClients.forEach(client => {
     try {
       client.write(`data: ${data}\n\n`);
-      successCount++;
     } catch (error) {
-      console.error('❌ Error broadcasting to SSE client:', error);
       sseClients.delete(client);
-      errorCount++;
     }
   });
-
-  console.log(`✅ Broadcast complete: ${successCount} success, ${errorCount} errors`);
-
-  console.log(`📢 Broadcasted ${notification.type} notification to ${sseClients.size} admin clients`);
 }
 
 // Helper functions for deposit addresses and network info
@@ -223,62 +209,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // MUST BE FIRST - BEFORE ANY OTHER ROUTES
   // ============================================
 
-  console.log('🚀 ========================================');
-  console.log('🚀 REGISTERING NOTIFICATION ENDPOINTS (FIRST!)');
-  console.log('🚀 ========================================');
-
   // DEBUG: Test endpoint to verify routing works
   app.get("/api/admin/notifications/test", (req, res) => {
-    console.log('🧪 Test endpoint hit!');
     res.json({
       success: true,
       message: 'Notification endpoint routing works!',
       timestamp: new Date().toISOString()
     });
   });
-  console.log('✅ Registered: GET /api/admin/notifications/test');
 
   // SSE endpoint for real-time notifications (Superadmin only)
   app.get("/api/admin/notifications/stream", (req, res) => {
-    console.log('🔔 ========================================');
-    console.log('🔔 SSE ENDPOINT HIT!');
-    console.log('🔔 URL:', req.url);
-    console.log('🔔 Method:', req.method);
-    console.log('🔔 Headers:', req.headers);
-    console.log('🔔 Session:', req.session);
-    console.log('🔔 User:', (req as any).user);
-    console.log('🔔 ========================================');
-
     const user = req.session?.user || (req as any).user;
 
     // Check authentication
     if (!user || user.role !== 'super_admin') {
-      console.log('❌ Unauthorized access attempt to notification stream');
-      console.log('❌ User:', user);
       return res.status(401).json({ message: 'Unauthorized' });
     }
-
-    console.log('✅ Superadmin authenticated:', user.email);
-    console.log('🔔 Total SSE clients before:', sseClients.size);
 
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
+    res.setHeader('X-Accel-Buffering', 'no');
 
     // Add client to set
     sseClients.add(res);
-    console.log('🔔 Total SSE clients after:', sseClients.size);
 
     // Send initial connection message
-    const connectedMsg = JSON.stringify({ type: 'connected', message: 'Notification stream connected' });
-    console.log('📤 Sending connection message:', connectedMsg);
-    res.write(`data: ${connectedMsg}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'connected', message: 'Notification stream connected' })}\n\n`);
 
     // Send existing unread notifications
     const unreadNotifications = adminNotifications.filter(n => !n.read);
-    console.log('📬 Sending', unreadNotifications.length, 'unread notifications');
     if (unreadNotifications.length > 0) {
       unreadNotifications.forEach(notification => {
         res.write(`data: ${JSON.stringify(notification)}\n\n`);
@@ -290,32 +252,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         res.write(`: heartbeat\n\n`);
       } catch (error) {
-        console.error('❌ Heartbeat error:', error);
         clearInterval(heartbeat);
         sseClients.delete(res);
       }
-    }, 30000); // Every 30 seconds
+    }, 30000);
 
     // Clean up on client disconnect
     req.on('close', () => {
-      console.log('🔔 Superadmin disconnected from notification stream');
-      console.log('🔔 Total SSE clients after disconnect:', sseClients.size - 1);
       clearInterval(heartbeat);
       sseClients.delete(res);
     });
   });
-  console.log('✅ Registered: GET /api/admin/notifications/stream');
 
   // Get all notifications (Superadmin only)
   app.get("/api/admin/notifications", requireSessionSuperAdmin, (req, res) => {
     try {
       res.json({ notifications: adminNotifications });
     } catch (error) {
-      console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Failed to fetch notifications" });
     }
   });
-  console.log('✅ Registered: GET /api/admin/notifications');
 
   // Mark notification as read (Superadmin only)
   app.post("/api/admin/notifications/:id/read", requireSessionSuperAdmin, (req, res) => {
@@ -329,11 +285,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Notification not found" });
       }
     } catch (error) {
-      console.error("Error marking notification as read:", error);
       res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
-  console.log('✅ Registered: POST /api/admin/notifications/:id/read');
 
   // Mark all notifications as read (Superadmin only)
   app.post("/api/admin/notifications/read-all", requireSessionSuperAdmin, (req, res) => {
@@ -341,15 +295,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       adminNotifications.forEach(n => n.read = true);
       res.json({ success: true });
     } catch (error) {
-      console.error("Error marking all notifications as read:", error);
       res.status(500).json({ message: "Failed to mark all notifications as read" });
     }
   });
-  console.log('✅ Registered: POST /api/admin/notifications/read-all');
-
-  console.log('🚀 ========================================');
-  console.log('🚀 ALL NOTIFICATION ENDPOINTS REGISTERED');
-  console.log('🚀 ========================================');
 
   // EMERGENCY BYPASS: System settings endpoint BEFORE any other middleware
   app.put("/api/system-config", (req: any, res: any) => {
