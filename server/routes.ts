@@ -271,12 +271,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
   // ============================================
 
+  // DEBUG: Test endpoint to verify routing works
+  app.get("/api/admin/notifications/test", (req, res) => {
+    console.log('🧪 Test endpoint hit!');
+    res.json({
+      success: true,
+      message: 'Notification endpoint routing works!',
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // SSE endpoint for real-time notifications (Superadmin only)
   // MUST BE BEFORE OTHER ROUTES to avoid conflicts
-  app.get("/api/admin/notifications/stream", requireSessionSuperAdmin, (req, res) => {
+  app.get("/api/admin/notifications/stream", (req, res) => {
+    console.log('🔔 ========================================');
+    console.log('🔔 SSE ENDPOINT HIT!');
+    console.log('🔔 URL:', req.url);
+    console.log('🔔 Method:', req.method);
+    console.log('🔔 Headers:', req.headers);
+    console.log('🔔 Session:', req.session);
+    console.log('🔔 User:', req.user);
+    console.log('🔔 ========================================');
+
     const user = req.session?.user || req.user;
-    console.log('🔔 Superadmin connected to notification stream');
-    console.log('🔔 User:', user?.email, 'Role:', user?.role);
+
+    // Check authentication
+    if (!user || user.role !== 'super_admin') {
+      console.log('❌ Unauthorized access attempt to notification stream');
+      console.log('❌ User:', user);
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    console.log('✅ Superadmin authenticated:', user.email);
     console.log('🔔 Total SSE clients before:', sseClients.size);
 
     // Set headers for SSE
