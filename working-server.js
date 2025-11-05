@@ -3807,6 +3807,18 @@ app.post('/api/deposits', (req, res, next) => {
 
     console.log('💰 Wallet deposit request created:', depositId, 'for user:', user.username);
 
+    // REAL-TIME NOTIFICATION: Broadcast deposit request to superadmin
+    broadcastNotification({
+      id: `notif-${Date.now()}`,
+      type: 'deposit',
+      userId: user.id,
+      username: user.username,
+      amount: amount,
+      currency: currency,
+      timestamp: new Date(),
+      read: false
+    });
+
     res.json({
       success: true,
       depositId,
@@ -5423,6 +5435,18 @@ app.post('/api/withdrawals', async (req, res) => {
         }
       });
     }
+
+    // REAL-TIME NOTIFICATION: Broadcast withdrawal request to superadmin
+    broadcastNotification({
+      id: `notif-${Date.now()}`,
+      type: 'withdrawal',
+      userId: user.id,
+      username: user.username,
+      amount: withdrawalAmount.toString(),
+      currency: currency.toUpperCase(),
+      timestamp: new Date(),
+      read: false
+    });
 
     res.json({
       success: true,
@@ -12908,6 +12932,18 @@ app.post('/api/user/withdraw', async (req, res) => {
       }
     }
 
+    // REAL-TIME NOTIFICATION: Broadcast withdrawal request to superadmin
+    broadcastNotification({
+      id: `notif-${Date.now()}`,
+      type: 'withdrawal',
+      userId: user.id,
+      username: user.username,
+      amount: withdrawal.amount.toString(),
+      currency: withdrawal.currency,
+      timestamp: new Date(),
+      read: false
+    });
+
     res.json({
       success: true,
       message: 'Withdrawal request submitted successfully',
@@ -13053,6 +13089,18 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
         console.error('⚠️ Supabase withdrawal sync error (endpoint 3):', dbError);
       }
     }
+
+    // REAL-TIME NOTIFICATION: Broadcast withdrawal request to superadmin
+    broadcastNotification({
+      id: `notif-${Date.now()}`,
+      type: 'withdrawal',
+      userId: user.id,
+      username: user.username,
+      amount: withdrawal.amount.toString(),
+      currency: withdrawal.currency,
+      timestamp: new Date(),
+      read: false
+    });
 
     res.json({
       success: true,
