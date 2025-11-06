@@ -262,12 +262,13 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
 
     // Calculate profit/loss
     const profitPercentages: { [key: number]: number } = {
-      30: 10,  // 30s = 10% profit
-      60: 15,  // 60s = 15% profit
+      30: 10,  // 30s = 10% profit/loss
+      60: 15,  // 60s = 15% profit/loss
     };
 
     const profitPercentage = profitPercentages[trade.duration] || 10;
     const profitAmount = isWin ? trade.amount * (profitPercentage / 100) : 0;
+    const lossAmount = !isWin ? trade.amount * (profitPercentage / 100) : 0;
     const totalPayout = isWin ? trade.amount + profitAmount : 0;
 
     // Update trade status
@@ -326,7 +327,7 @@ async function completeOptionsTrade(tradeId: string, userId: string) {
     try {
       if (supabaseAdmin) {
         const transactionType = isWin ? 'trade_win' : 'trade_loss';
-        const transactionAmount = isWin ? profitAmount : trade.amount;
+        const transactionAmount = isWin ? profitAmount : lossAmount;
 
         const { data: transaction, error: txError } = await supabaseAdmin
           .from('transactions')

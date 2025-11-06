@@ -201,7 +201,7 @@ class TradingService {
       const setting = optionsSettings.find(s => s.duration === trade.duration);
       const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
 
-      const profit = isWin ? tradeAmount * (profitPercentage / 100) : -tradeAmount;
+      const profit = isWin ? tradeAmount * (profitPercentage / 100) : -(tradeAmount * (profitPercentage / 100));
 
       // Update trade
       await storage.updateTrade(tradeId, {
