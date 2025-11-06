@@ -3147,6 +3147,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Backfill missing transactions from completed trades (ADMIN ONLY)
+  app.post("/api/admin/backfill-transactions", requireSessionAdmin, async (req, res) => {
+    try {
+      console.log('🔄 Starting transaction backfill from completed trades...');
+
+      // Get all completed trades
+      const allTrades = await storage.getAllTrades();
+      const completedTrades = allTrades.filter(trade => trade.status === 'completed');
+
+      console.log(`📊 Found ${completedTrades.length} completed trades`);
+
+      let created = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      for (const trade of completedTrades) {
+        try {
+          // Check if transaction already exists for this trade
+          const existingTransactions = await storage.getUserTransactions(trade.userId, 1000);
+          const hasTransaction = existingTransactions.some(tx => tx.referenceId === trade.id);
+
+          if (hasTransaction) {
+            skipped++;
+            continue;
+          }
+
+          // Determine if win or loss
+          const isWin = trade.profit && parseFloat(trade.profit.toString()) > 0;
+          const profit = trade.profit ? Math.abs(parseFloat(trade.profit.toString())) : 0;
+
+          // Create transaction
+          const transactionType = isWin ? 'trade_win' : 'trade_loss';
+          const transactionAmount = profit.toFixed(8);
+
+          await storage.createTransaction({
+            userId: trade.userId,
+            type: transactionType as any,
+            amount: transactionAmount,
+            symbol: 'USDT',
+            status: 'completed',
+            description: `${isWin ? 'Win' : 'Loss'} on ${trade.symbol} trade (backfilled)`,
+            referenceId: trade.id
+          });
+
+          created++;
+          console.log(`✅ Created transaction for trade ${trade.id}: ${transactionType} ${transactionAmount} USDT`);
+        } catch (error) {
+          errors++;
+          console.error(`❌ Failed to create transaction for trade ${trade.id}:`, error);
+        }
+      }
+
+      const summary = {
+        totalTrades: completedTrades.length,
+        transactionsCreated: created,
+        transactionsSkipped: skipped,
+        errors: errors
+      };
+
+      console.log('✅ Transaction backfill completed:', summary);
+
+      res.json({
+        message: "Transaction backfill completed",
+        summary
+      });
+    } catch (error) {
+      console.error("Error during transaction backfill:", error);
+      res.status(500).json({ message: "Failed to backfill transactions" });
+    }
+  });
+
   // Get all transactions for admin analytics
   app.get("/api/admin/transactions", requireSessionAdmin, async (req, res) => {
     try {

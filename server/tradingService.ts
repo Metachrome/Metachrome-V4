@@ -235,13 +235,15 @@ class TradingService {
           type: transactionType,
           amount: transactionAmount,
           profit: profit,
-          isWin: isWin
+          isWin: isWin,
+          symbol: trade.symbol
         });
 
         await storage.createTransaction({
           userId: trade.userId,
           type: transactionType as any,
           amount: transactionAmount,
+          symbol: 'USDT', // Trading profits/losses are in USDT
           status: 'completed',
           description: `${isWin ? 'Win' : 'Loss'} on ${trade.symbol} trade`,
           referenceId: tradeId

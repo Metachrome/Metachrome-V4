@@ -542,14 +542,20 @@ class DatabaseStorage implements IStorage {
   // Transaction operations
   async createTransaction(transactionData: InsertTransaction): Promise<Transaction> {
     // Ensure amount is properly converted to string for decimal storage
-    // Only include fields that exist in the actual database
+    // Include all fields that exist in the database schema
     const normalizedData = {
       userId: transactionData.userId,
       type: transactionData.type,
       amount: transactionData.amount ? transactionData.amount.toString() : '0',
       status: transactionData.status || 'pending',
       description: transactionData.description,
-      referenceId: transactionData.referenceId
+      referenceId: transactionData.referenceId,
+      symbol: transactionData.symbol || 'USDT', // Default to USDT if not provided
+      fee: transactionData.fee ? transactionData.fee.toString() : undefined,
+      txHash: transactionData.txHash,
+      method: transactionData.method,
+      currency: transactionData.currency,
+      metadata: transactionData.metadata
     };
 
     console.log(`💾 INSERTING TRANSACTION:`, {
@@ -558,7 +564,8 @@ class DatabaseStorage implements IStorage {
       originalAmount: transactionData.amount,
       originalAmountType: typeof transactionData.amount,
       userId: normalizedData.userId,
-      type: normalizedData.type
+      type: normalizedData.type,
+      symbol: normalizedData.symbol
     });
 
     const [transaction] = await db.insert(transactions).values(normalizedData).returning();
@@ -567,13 +574,15 @@ class DatabaseStorage implements IStorage {
       id: transaction.id,
       storedAmount: transaction.amount,
       storedAmountType: typeof transaction.amount,
-      storedAmountString: transaction.amount?.toString()
+      storedAmountString: transaction.amount?.toString(),
+      symbol: transaction.symbol
     });
 
     // Convert Decimal amounts back to strings for consistency
     return {
       ...transaction,
-      amount: transaction.amount ? transaction.amount.toString() : '0'
+      amount: transaction.amount ? transaction.amount.toString() : '0',
+      fee: transaction.fee ? transaction.fee.toString() : undefined
     };
   }
 
