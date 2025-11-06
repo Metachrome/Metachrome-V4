@@ -201,6 +201,7 @@ export default function TransactionHistory() {
       case 'pending':
         return <Clock className="h-4 w-4 text-yellow-500" />;
       case 'failed':
+      case 'rejected':
         return <XCircle className="h-4 w-4 text-red-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />;
@@ -214,6 +215,7 @@ export default function TransactionHistory() {
       case 'pending':
         return 'bg-yellow-600';
       case 'failed':
+      case 'rejected':
         return 'bg-red-600';
       default:
         return 'bg-gray-600';

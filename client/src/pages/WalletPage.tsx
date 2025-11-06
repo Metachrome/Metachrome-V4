@@ -1018,7 +1018,7 @@ export default function WalletPage() {
                                     ? 'bg-green-500/20 text-green-400'
                                     : 'bg-red-500/20 text-red-400'
                                 }`}>
-                                  {deposit.status === 'approved' ? 'Completed' : deposit.status === 'pending' ? 'Pending' : deposit.status.charAt(0).toUpperCase() + deposit.status.slice(1)}
+                                  {deposit.status === 'approved' ? 'Completed' : deposit.status === 'pending' ? 'Pending' : deposit.status === 'rejected' ? 'Rejected' : deposit.status.charAt(0).toUpperCase() + deposit.status.slice(1)}
                                 </span>
                               </div>
                             </div>
