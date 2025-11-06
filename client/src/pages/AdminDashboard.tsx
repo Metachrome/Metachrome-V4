@@ -2315,6 +2315,65 @@ export default function WorkingAdminDashboard() {
 
           {/* Pending Requests Tab */}
           <TabsContent value="pending" className="space-y-6">
+            {/* Sync Old Withdrawals Button */}
+            <Card className="bg-gradient-to-r from-purple-600 to-blue-600 border-purple-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <RefreshCw className="w-6 h-6 text-white" />
+                    <div>
+                      <h3 className="text-white font-semibold">Sync Old Withdrawals</h3>
+                      <p className="text-purple-100 text-sm">
+                        Sync old withdrawal records to transaction history
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        const response = await fetch('/api/admin/sync-old-withdrawals', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json'
+                          }
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                          alert(`✅ Successfully synced ${data.synced} withdrawals!`);
+                          // Refresh data
+                          fetchAllData();
+                        } else {
+                          alert(`❌ Sync failed: ${data.error}`);
+                        }
+                      } catch (error) {
+                        console.error('Sync error:', error);
+                        alert('❌ Sync failed. Check console for details.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="bg-white text-purple-600 hover:bg-purple-50"
+                  >
+                    {loading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Sync Now
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Pending Deposits */}
               <Card className="bg-gray-800 border-gray-700">
