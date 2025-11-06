@@ -1448,7 +1448,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+
+      console.log(`📊 Fetching transactions for user ${userId}, limit: ${limit}`);
+
       const transactions = await storage.getUserTransactions(userId, limit);
+
+      console.log(`✅ Found ${transactions.length} transactions for user ${userId}`);
+      console.log(`📋 Transaction types:`, [...new Set(transactions.map(t => t.type))]);
+      console.log(`📋 Sample transaction:`, transactions[0]);
+
       res.json(transactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);
@@ -3144,6 +3152,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching pending transactions:", error);
       res.status(500).json({ message: "Failed to fetch pending transactions" });
+    }
+  });
+
+  // Check database schema for transactions table (ADMIN ONLY - DEBUG)
+  app.get("/api/admin/check-schema", requireSessionAdmin, async (req, res) => {
+    try {
+      console.log('🔍 Checking database schema...');
+
+      // Get all transactions to see what fields exist
+      const allTransactions = await storage.getAllTransactions();
+      const sampleTransaction = allTransactions[0];
+
+      console.log('📊 Sample transaction:', sampleTransaction);
+      console.log('📊 Transaction fields:', sampleTransaction ? Object.keys(sampleTransaction) : 'No transactions');
+
+      res.json({
+        message: "Schema check completed",
+        sampleTransaction: sampleTransaction || null,
+        fields: sampleTransaction ? Object.keys(sampleTransaction) : [],
+        totalTransactions: allTransactions.length,
+        transactionTypes: [...new Set(allTransactions.map(t => t.type))]
+      });
+    } catch (error) {
+      console.error("Error checking schema:", error);
+      res.status(500).json({ message: "Failed to check schema", error: String(error) });
     }
   });
 
