@@ -3155,14 +3155,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Simple database test (ADMIN ONLY - DEBUG)
+  app.get("/api/admin/test-db", requireSessionAdmin, async (req, res) => {
+    try {
+      console.log('🔍 Testing database connection...');
+
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Test 1: Get user transactions (simple query)
+      const userTransactions = await storage.getUserTransactions(user.id, 5);
+      console.log(`✅ Test 1 passed: Got ${userTransactions.length} user transactions`);
+
+      // Test 2: Check if symbol field exists
+      const hasSymbol = userTransactions.length > 0 && 'symbol' in userTransactions[0];
+      console.log(`✅ Test 2: Symbol field exists? ${hasSymbol}`);
+
+      res.json({
+        message: "Database test completed",
+        tests: {
+          userTransactions: {
+            passed: true,
+            count: userTransactions.length,
+            sample: userTransactions[0] || null
+          },
+          symbolField: {
+            passed: true,
+            exists: hasSymbol,
+            fields: userTransactions[0] ? Object.keys(userTransactions[0]) : []
+          }
+        }
+      });
+    } catch (error: any) {
+      console.error("❌ Database test failed:", error);
+      res.status(500).json({
+        message: "Database test failed",
+        error: error.message || String(error)
+      });
+    }
+  });
+
   // Check database schema for transactions table (ADMIN ONLY - DEBUG)
   app.get("/api/admin/check-schema", requireSessionAdmin, async (req, res) => {
     try {
       console.log('🔍 Checking database schema...');
 
-      // Get all transactions to see what fields exist
-      const allTransactions = await storage.getAllTransactions();
-      console.log(`📊 Total transactions in database: ${allTransactions.length}`);
+      let allTransactions: any[] = [];
+      let errorMessage = null;
+
+      try {
+        // Try to get all transactions
+        allTransactions = await storage.getAllTransactions();
+        console.log(`📊 Total transactions in database: ${allTransactions.length}`);
+      } catch (txError: any) {
+        console.error('❌ Error fetching transactions:', txError.message);
+        errorMessage = txError.message;
+
+        // Try to get at least one user's transactions as fallback
+        try {
+          const user = req.session.user;
+          if (user) {
+            allTransactions = await storage.getUserTransactions(user.id, 10);
+            console.log(`📊 Fallback: Got ${allTransactions.length} transactions for user ${user.id}`);
+          }
+        } catch (fallbackError: any) {
+          console.error('❌ Fallback also failed:', fallbackError.message);
+        }
+      }
 
       const sampleTransaction = allTransactions.length > 0 ? allTransactions[0] : null;
 
@@ -3180,12 +3241,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📊 Transaction types found:', transactionTypes);
 
       res.json({
-        message: "Schema check completed",
+        message: errorMessage ? `Schema check completed with errors: ${errorMessage}` : "Schema check completed",
         sampleTransaction: sampleTransaction,
         fields: sampleTransaction ? Object.keys(sampleTransaction) : [],
         totalTransactions: allTransactions.length,
         transactionTypes: transactionTypes,
-        hasSymbolField: sampleTransaction ? 'symbol' in sampleTransaction : false
+        hasSymbolField: sampleTransaction ? 'symbol' in sampleTransaction : false,
+        error: errorMessage
       });
     } catch (error: any) {
       console.error("❌ Error checking schema:", error);
@@ -3203,9 +3265,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Starting transaction backfill from completed trades...');
 
-      // Get all completed trades
-      const allTrades = await storage.getAllTrades();
-      console.log(`📊 Total trades in database: ${allTrades.length}`);
+      let allTrades: any[] = [];
+
+      try {
+        // Get all completed trades
+        allTrades = await storage.getAllTrades();
+        console.log(`📊 Total trades in database: ${allTrades.length}`);
+      } catch (tradeError: any) {
+        console.error('❌ Error fetching trades:', tradeError.message);
+        return res.status(500).json({
+          message: "Failed to fetch trades from database",
+          error: tradeError.message
+        });
+      }
 
       const completedTrades = allTrades.filter(trade => trade.status === 'completed');
       console.log(`📊 Completed trades: ${completedTrades.length}`);
