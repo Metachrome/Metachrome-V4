@@ -4656,6 +4656,9 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
 });
 
 // ===== SYNC OLD WITHDRAWALS TO TRANSACTIONS TABLE =====
+// Handle OPTIONS preflight request
+app.options('/api/admin/sync-old-withdrawals', cors());
+
 app.post('/api/admin/sync-old-withdrawals', async (req, res) => {
   console.log('🔄 Starting sync of old withdrawals to transactions table...');
 
