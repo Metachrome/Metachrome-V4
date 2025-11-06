@@ -4689,6 +4689,26 @@ app.get('/api/users/:userId/transactions', async (req, res) => {
 
     const transactions = await getTransactions(userId);
     console.log('💰 Found transactions for user:', transactions.length);
+
+    // Debug: Log first transaction to see structure
+    if (transactions.length > 0) {
+      console.log('💰 First transaction fields:', Object.keys(transactions[0]));
+      console.log('💰 First transaction sample:', {
+        id: transactions[0].id,
+        type: transactions[0].type,
+        amount: transactions[0].amount,
+        symbol: transactions[0].symbol,
+        status: transactions[0].status
+      });
+
+      // Count by type
+      const typeCounts = {};
+      transactions.forEach(t => {
+        typeCounts[t.type] = (typeCounts[t.type] || 0) + 1;
+      });
+      console.log('💰 Transaction types:', typeCounts);
+    }
+
     res.json(transactions);
   } catch (error) {
     console.error('❌ Error getting user transactions:', error);
