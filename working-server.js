@@ -4598,6 +4598,32 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
           console.error('❌ Failed to update transaction status:', txnUpdateError);
         } else if (!txnUpdateData || txnUpdateData.length === 0) {
           console.warn(`⚠️ No transaction found with tx_hash: ${withdrawalId}`);
+          console.log('🔧 Creating missing transaction record for old withdrawal...');
+
+          // Create transaction record for old withdrawals that don't have one
+          const newTransaction = {
+            id: uuidv4(),
+            user_id: withdrawal.user_id,
+            type: 'withdraw',
+            amount: parseFloat(withdrawal.amount),
+            symbol: withdrawal.currency,
+            status: transactionStatus,
+            tx_hash: withdrawalId,
+            created_at: withdrawal.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+
+          const { data: newTxnData, error: newTxnError } = await supabase
+            .from('transactions')
+            .insert([newTransaction])
+            .select();
+
+          if (newTxnError) {
+            console.error('❌ Failed to create transaction record:', newTxnError);
+          } else {
+            console.log('✅ Transaction record created for old withdrawal');
+            console.log('✅ Created transaction:', newTxnData[0]);
+          }
         } else {
           console.log(`✅ Transaction status updated to ${transactionStatus} in transactions table`);
           console.log('✅ Updated transaction:', txnUpdateData[0]);
