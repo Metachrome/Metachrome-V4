@@ -2344,7 +2344,7 @@ export default function WorkingAdminDashboard() {
                         if (response.ok) {
                           alert(`✅ Successfully synced ${data.synced} withdrawals!`);
                           // Refresh data
-                          fetchAllData();
+                          fetchData();
                         } else {
                           alert(`❌ Sync failed: ${data.error}`);
                         }
