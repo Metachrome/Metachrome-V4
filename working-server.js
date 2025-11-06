@@ -4655,6 +4655,94 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
   }
 });
 
+// ===== SYNC OLD WITHDRAWALS TO TRANSACTIONS TABLE =====
+app.post('/api/admin/sync-old-withdrawals', async (req, res) => {
+  console.log('🔄 Starting sync of old withdrawals to transactions table...');
+
+  if (!supabase) {
+    return res.status(500).json({ error: 'Database not available' });
+  }
+
+  try {
+    // 1️⃣ Get all withdrawals from database
+    const { data: allWithdrawals, error: withdrawalsError } = await supabase
+      .from('withdrawals')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (withdrawalsError) {
+      console.error('❌ Failed to fetch withdrawals:', withdrawalsError);
+      return res.status(500).json({ error: 'Failed to fetch withdrawals' });
+    }
+
+    console.log(`📊 Found ${allWithdrawals.length} total withdrawals`);
+
+    // 2️⃣ Get all existing transactions
+    const { data: allTransactions, error: transactionsError } = await supabase
+      .from('transactions')
+      .select('tx_hash')
+      .eq('type', 'withdraw');
+
+    if (transactionsError) {
+      console.error('❌ Failed to fetch transactions:', transactionsError);
+      return res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+
+    const existingTxHashes = new Set(allTransactions.map(t => t.tx_hash));
+    console.log(`📊 Found ${existingTxHashes.size} existing withdrawal transactions`);
+
+    // 3️⃣ Find withdrawals that don't have transaction records
+    const missingWithdrawals = allWithdrawals.filter(w => !existingTxHashes.has(w.id));
+    console.log(`🔍 Found ${missingWithdrawals.length} withdrawals missing transaction records`);
+
+    if (missingWithdrawals.length === 0) {
+      return res.json({
+        success: true,
+        message: 'All withdrawals already have transaction records',
+        synced: 0
+      });
+    }
+
+    // 4️⃣ Create transaction records for missing withdrawals
+    const newTransactions = missingWithdrawals.map(w => ({
+      id: uuidv4(),
+      user_id: w.user_id,
+      type: 'withdraw',
+      amount: parseFloat(w.amount),
+      symbol: w.currency,
+      status: w.status === 'approved' ? 'completed' : w.status === 'rejected' ? 'failed' : 'pending',
+      tx_hash: w.id,
+      created_at: w.created_at || new Date().toISOString(),
+      updated_at: w.updated_at || new Date().toISOString()
+    }));
+
+    console.log(`💾 Creating ${newTransactions.length} transaction records...`);
+
+    const { data: insertedTransactions, error: insertError } = await supabase
+      .from('transactions')
+      .insert(newTransactions)
+      .select();
+
+    if (insertError) {
+      console.error('❌ Failed to insert transactions:', insertError);
+      return res.status(500).json({ error: 'Failed to create transaction records' });
+    }
+
+    console.log(`✅ Successfully synced ${insertedTransactions.length} withdrawals to transactions table`);
+
+    return res.json({
+      success: true,
+      message: `Successfully synced ${insertedTransactions.length} withdrawals`,
+      synced: insertedTransactions.length,
+      transactions: insertedTransactions
+    });
+
+  } catch (error) {
+    console.error('❌ Sync error:', error);
+    return res.status(500).json({ error: 'Sync failed', details: error.message });
+  }
+});
+
 // ===== ADD NEW PENDING REQUEST (FOR TESTING) =====
 app.post('/api/admin/add-test-requests', async (req, res) => {
   console.log('🧪 Adding test pending requests');
