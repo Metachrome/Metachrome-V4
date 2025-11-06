@@ -3162,21 +3162,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all transactions to see what fields exist
       const allTransactions = await storage.getAllTransactions();
-      const sampleTransaction = allTransactions[0];
+      console.log(`📊 Total transactions in database: ${allTransactions.length}`);
 
-      console.log('📊 Sample transaction:', sampleTransaction);
-      console.log('📊 Transaction fields:', sampleTransaction ? Object.keys(sampleTransaction) : 'No transactions');
+      const sampleTransaction = allTransactions.length > 0 ? allTransactions[0] : null;
+
+      if (sampleTransaction) {
+        console.log('📊 Sample transaction:', JSON.stringify(sampleTransaction, null, 2));
+        console.log('📊 Transaction fields:', Object.keys(sampleTransaction));
+      } else {
+        console.log('⚠️ No transactions found in database');
+      }
+
+      const transactionTypes = allTransactions.length > 0
+        ? [...new Set(allTransactions.map(t => t.type))]
+        : [];
+
+      console.log('📊 Transaction types found:', transactionTypes);
 
       res.json({
         message: "Schema check completed",
-        sampleTransaction: sampleTransaction || null,
+        sampleTransaction: sampleTransaction,
         fields: sampleTransaction ? Object.keys(sampleTransaction) : [],
         totalTransactions: allTransactions.length,
-        transactionTypes: [...new Set(allTransactions.map(t => t.type))]
+        transactionTypes: transactionTypes,
+        hasSymbolField: sampleTransaction ? 'symbol' in sampleTransaction : false
       });
-    } catch (error) {
-      console.error("Error checking schema:", error);
-      res.status(500).json({ message: "Failed to check schema", error: String(error) });
+    } catch (error: any) {
+      console.error("❌ Error checking schema:", error);
+      console.error("❌ Error stack:", error.stack);
+      res.status(500).json({
+        message: "Failed to check schema",
+        error: error.message || String(error),
+        stack: error.stack
+      });
     }
   });
 
@@ -3187,13 +3205,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all completed trades
       const allTrades = await storage.getAllTrades();
-      const completedTrades = allTrades.filter(trade => trade.status === 'completed');
+      console.log(`📊 Total trades in database: ${allTrades.length}`);
 
-      console.log(`📊 Found ${completedTrades.length} completed trades`);
+      const completedTrades = allTrades.filter(trade => trade.status === 'completed');
+      console.log(`📊 Completed trades: ${completedTrades.length}`);
 
       let created = 0;
       let skipped = 0;
       let errors = 0;
+      const errorDetails: any[] = [];
 
       for (const trade of completedTrades) {
         try {
@@ -3203,6 +3223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (hasTransaction) {
             skipped++;
+            console.log(`⏭️ Skipping trade ${trade.id} - transaction already exists`);
             continue;
           }
 
@@ -3213,6 +3234,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create transaction
           const transactionType = isWin ? 'trade_win' : 'trade_loss';
           const transactionAmount = profit.toFixed(8);
+
+          console.log(`📝 Creating transaction for trade ${trade.id}:`, {
+            userId: trade.userId,
+            type: transactionType,
+            amount: transactionAmount,
+            symbol: 'USDT'
+          });
 
           await storage.createTransaction({
             userId: trade.userId,
@@ -3226,17 +3254,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           created++;
           console.log(`✅ Created transaction for trade ${trade.id}: ${transactionType} ${transactionAmount} USDT`);
-        } catch (error) {
+        } catch (error: any) {
           errors++;
-          console.error(`❌ Failed to create transaction for trade ${trade.id}:`, error);
+          const errorMsg = error.message || String(error);
+          console.error(`❌ Failed to create transaction for trade ${trade.id}:`, errorMsg);
+          errorDetails.push({
+            tradeId: trade.id,
+            error: errorMsg
+          });
         }
       }
 
       const summary = {
-        totalTrades: completedTrades.length,
+        totalTrades: allTrades.length,
+        completedTrades: completedTrades.length,
         transactionsCreated: created,
         transactionsSkipped: skipped,
-        errors: errors
+        errors: errors,
+        errorDetails: errorDetails.slice(0, 5) // Only return first 5 errors
       };
 
       console.log('✅ Transaction backfill completed:', summary);
@@ -3245,9 +3280,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Transaction backfill completed",
         summary
       });
-    } catch (error) {
-      console.error("Error during transaction backfill:", error);
-      res.status(500).json({ message: "Failed to backfill transactions" });
+    } catch (error: any) {
+      console.error("❌ Error during transaction backfill:", error);
+      console.error("❌ Error stack:", error.stack);
+      res.status(500).json({
+        message: "Failed to backfill transactions",
+        error: error.message || String(error),
+        stack: error.stack
+      });
     }
   });
 
