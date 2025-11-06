@@ -4583,18 +4583,24 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
 
         // 2️⃣ ALSO update transactions table (for user transaction history)
         const transactionStatus = action === 'approve' ? 'completed' : 'failed';
-        const { error: txnUpdateError } = await supabase
+        console.log(`🔄 Attempting to update transaction with tx_hash: ${withdrawalId} to status: ${transactionStatus}`);
+
+        const { data: txnUpdateData, error: txnUpdateError } = await supabase
           .from('transactions')
           .update({
             status: transactionStatus,
             updated_at: new Date().toISOString()
           })
-          .eq('tx_hash', withdrawalId); // Find transaction by withdrawal ID
+          .eq('tx_hash', withdrawalId)
+          .select(); // Return updated rows
 
         if (txnUpdateError) {
           console.error('❌ Failed to update transaction status:', txnUpdateError);
+        } else if (!txnUpdateData || txnUpdateData.length === 0) {
+          console.warn(`⚠️ No transaction found with tx_hash: ${withdrawalId}`);
         } else {
           console.log(`✅ Transaction status updated to ${transactionStatus} in transactions table`);
+          console.log('✅ Updated transaction:', txnUpdateData[0]);
         }
       } catch (dbError) {
         console.error('⚠️ Database withdrawal update error:', dbError);
