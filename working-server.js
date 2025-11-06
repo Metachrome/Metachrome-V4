@@ -4564,6 +4564,7 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     // Update in Supabase database
     if (supabase) {
       try {
+        // 1️⃣ Update withdrawals table
         const { error: updateError } = await supabase
           .from('withdrawals')
           .update({
@@ -4578,6 +4579,22 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
           console.error('❌ Failed to update withdrawal in database:', updateError);
         } else {
           console.log('✅ Withdrawal status updated in database');
+        }
+
+        // 2️⃣ ALSO update transactions table (for user transaction history)
+        const transactionStatus = action === 'approve' ? 'completed' : 'failed';
+        const { error: txnUpdateError } = await supabase
+          .from('transactions')
+          .update({
+            status: transactionStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('tx_hash', withdrawalId); // Find transaction by withdrawal ID
+
+        if (txnUpdateError) {
+          console.error('❌ Failed to update transaction status:', txnUpdateError);
+        } else {
+          console.log(`✅ Transaction status updated to ${transactionStatus} in transactions table`);
         }
       } catch (dbError) {
         console.error('⚠️ Database withdrawal update error:', dbError);
