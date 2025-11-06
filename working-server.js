@@ -7734,30 +7734,46 @@ app.post('/api/trades/complete', async (req, res) => {
       await saveUsers(users);
     }
 
-    // Create transaction record
+    // Create transaction record with symbol from trade
+    const tradeSymbol = existingTrade?.symbol || 'USDT';
     const transaction = {
       user_id: actualUserId,
       type: finalOutcome ? 'trade_win' : 'trade_loss', // Use 'trade_win' for wins, 'trade_loss' for losses
       amount: balanceChange,
+      symbol: tradeSymbol, // Add symbol from trade
       status: 'completed',
       description: `Options trade ${finalOutcome ? 'win' : 'loss'} - ${tradeId}${overrideReason}`,
       created_at: new Date().toISOString()
     };
 
+    console.log('💾 ==========================================');
+    console.log('💾 CREATING TRANSACTION RECORD');
+    console.log('💾 ==========================================');
+    console.log('💾 Transaction data:', transaction);
+    console.log('💾 Trade symbol:', tradeSymbol);
+    console.log('💾 User ID:', actualUserId);
+    console.log('💾 Type:', transaction.type);
+    console.log('💾 Amount:', transaction.amount);
+
     // Save transaction to database
     if (supabase) {
       try {
-        const { error: txnError } = await supabase
+        console.log('💾 Attempting to insert transaction into Supabase...');
+        const { data: insertedData, error: txnError } = await supabase
           .from('transactions')
-          .insert([transaction]);
+          .insert([transaction])
+          .select();
 
         if (txnError) {
           console.error('❌ Error saving transaction to Supabase:', txnError);
+          console.error('❌ Transaction data that failed:', transaction);
         } else {
-          console.log('✅ Transaction saved to Supabase:', transaction.id);
+          console.log('✅ Transaction saved to Supabase successfully!');
+          console.log('✅ Inserted transaction:', insertedData);
         }
       } catch (error) {
         console.error('❌ Transaction save error:', error);
+        console.error('❌ Error stack:', error.stack);
       }
     } else {
       // Development: Add transaction to local list with ID
