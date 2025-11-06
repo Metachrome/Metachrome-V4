@@ -5415,18 +5415,18 @@ app.post('/api/withdrawals', async (req, res) => {
     console.log('✅ Withdrawal request created:', withdrawalRequest.id);
     console.log('💰 Balance NOT deducted yet - will be deducted only when approved');
 
-    // CRITICAL FIX: Also save to Supabase database for admin dashboard
+    // CRITICAL FIX: Save to BOTH withdrawals and transactions tables
     if (supabase) {
       try {
+        // 1️⃣ Save to withdrawals table (for admin dashboard)
         const supabaseWithdrawal = {
           id: withdrawalRequest.id,
           user_id: withdrawalRequest.user_id,
           username: withdrawalRequest.username,
           amount: parseFloat(withdrawalRequest.amount),
           currency: withdrawalRequest.currency,
-          address: withdrawalRequest.address, // FIX: Use address column that exists in database
+          address: withdrawalRequest.address,
           status: 'pending',
-          // user_balance: parseFloat(withdrawalRequest.user_balance), // REMOVED: Column doesn't exist in database
           created_at: withdrawalRequest.created_at,
           updated_at: withdrawalRequest.updated_at
         };
@@ -5446,6 +5446,34 @@ app.post('/api/withdrawals', async (req, res) => {
         } else {
           console.log('✅ Withdrawal saved to Supabase database for admin dashboard');
           console.log('✅ Inserted data:', insertedData);
+        }
+
+        // 2️⃣ ALSO save to transactions table (for user transaction history)
+        const transactionRecord = {
+          id: `txn-${withdrawalRequest.id}`,
+          user_id: withdrawalRequest.user_id,
+          type: 'withdraw',
+          amount: parseFloat(withdrawalRequest.amount),
+          symbol: withdrawalRequest.currency,
+          status: 'pending',
+          tx_hash: withdrawalRequest.id, // Link to withdrawal record
+          created_at: withdrawalRequest.created_at,
+          updated_at: withdrawalRequest.updated_at
+        };
+
+        console.log('💾 Attempting to save transaction to Supabase:', transactionRecord);
+
+        const { data: txnData, error: txnError } = await supabase
+          .from('transactions')
+          .insert([transactionRecord])
+          .select();
+
+        if (txnError) {
+          console.error('❌ Failed to save transaction to Supabase:', txnError);
+          console.error('❌ Error details:', txnError.message);
+        } else {
+          console.log('✅ Withdrawal also saved to transactions table for user history');
+          console.log('✅ Transaction data:', txnData);
         }
       } catch (dbError) {
         console.error('⚠️ Supabase withdrawal sync error:', dbError);
