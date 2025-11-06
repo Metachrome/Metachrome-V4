@@ -10,6 +10,15 @@ const http = require('http');
 // Import fetch for Node.js
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+// UUID v4 generator
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 // VERSION TRACKING FOR DEPLOYMENT VERIFICATION
 const SERVER_VERSION = '2025-10-28-v3-AGGRESSIVE-PROFIT-FIX';
 console.log(`🚀 SERVER STARTING - VERSION: ${SERVER_VERSION}`);
@@ -5450,7 +5459,7 @@ app.post('/api/withdrawals', async (req, res) => {
 
         // 2️⃣ ALSO save to transactions table (for user transaction history)
         const transactionRecord = {
-          id: `txn-${withdrawalRequest.id}`,
+          id: uuidv4(), // Generate proper UUID
           user_id: withdrawalRequest.user_id,
           type: 'withdraw',
           amount: parseFloat(withdrawalRequest.amount),
