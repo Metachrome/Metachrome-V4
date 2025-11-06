@@ -3396,7 +3396,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create withdrawal transaction
+  // Create withdrawal request (used by WalletPage)
+  app.post("/api/withdrawals", async (req, res) => {
+    try {
+      // Get user from session
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { amount, currency, address, password } = req.body;
+
+      if (!amount || !currency || !address || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: "Invalid amount, currency, or address" });
+      }
+
+      // Verify password
+      if (!password) {
+        return res.status(400).json({ message: "Fund password is required" });
+      }
+
+      // Check if user has sufficient balance
+      const currentBalance = await storage.getBalance(user.id, currency);
+      if (!currentBalance || parseFloat(currentBalance.available) < parseFloat(amount)) {
+        return res.status(400).json({ message: "Insufficient balance" });
+      }
+
+      // Generate withdrawal ID
+      const withdrawalId = `withdrawal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // 1️⃣ Save to withdrawals table (for admin dashboard)
+      console.log('💰 Attempting to save withdrawal to Supabase:', {
+        id: withdrawalId,
+        user_id: user.id,
+        username: user.username || user.email,
+        amount: parseFloat(amount),
+        currency,
+        address,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+      const { data: withdrawalData, error: withdrawalError } = await supabase
+        .from('withdrawals')
+        .insert({
+          id: withdrawalId,
+          user_id: user.id,
+          username: user.username || user.email,
+          amount: parseFloat(amount),
+          currency,
+          address,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select();
+
+      if (withdrawalError) {
+        console.error('❌ Error saving withdrawal to Supabase:', withdrawalError);
+        throw new Error('Failed to save withdrawal request');
+      }
+
+      console.log('✅ Withdrawal saved to Supabase database for admin dashboard');
+      console.log('✅ Inserted data:', withdrawalData);
+
+      // 2️⃣ ALSO save to transactions table (for user transaction history)
+      const transaction = await storage.createTransaction({
+        userId: user.id,
+        type: 'withdraw',
+        symbol: currency,
+        amount: amount,
+        fee: '0',
+        status: 'pending',
+        txHash: withdrawalId, // Link to withdrawal record
+        createdAt: new Date(),
+      });
+
+      console.log('✅ Withdrawal also saved to transactions table for user history');
+
+      // 3️⃣ Update user balance (subtract the withdrawal amount)
+      const newAvailable = (parseFloat(currentBalance.available) - parseFloat(amount)).toString();
+      await storage.updateBalance(user.id, currency, newAvailable, currentBalance.locked);
+
+      console.log(`💰 Balance updated: ${currentBalance.available} → ${newAvailable}`);
+
+      // 4️⃣ SEND REAL-TIME NOTIFICATION TO SUPERADMIN
+      const notification: AdminNotification = {
+        id: `withdrawal_${withdrawalId}_${Date.now()}`,
+        type: 'withdrawal',
+        userId: user.id,
+        username: user.username || user.email || 'Unknown User',
+        amount: amount,
+        currency: currency,
+        timestamp: new Date(),
+        read: false
+      };
+      broadcastNotification(notification);
+      console.log(`🔔 Sent withdrawal notification for ${user.username || user.email}: ${amount} ${currency}`);
+
+      res.json({
+        transaction,
+        message: "Withdrawal initiated",
+        amount: amount,
+        currency: currency
+      });
+    } catch (error) {
+      console.error("Error processing withdrawal:", error);
+      res.status(500).json({ message: "Failed to process withdrawal" });
+    }
+  });
+
+  // Create withdrawal transaction (legacy endpoint)
   app.post("/api/transactions/withdraw", async (req, res) => {
     try {
       // Get user from session
