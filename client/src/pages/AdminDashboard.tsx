@@ -216,6 +216,11 @@ export default function WorkingAdminDashboard() {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Real-time polling states
+  const [isPolling, setIsPolling] = useState(true);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+  const [hasNewData, setHasNewData] = useState(false);
+
   // Get current user role - with fallback for admin access
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const authToken = localStorage.getItem('authToken') || '';
@@ -532,6 +537,108 @@ export default function WorkingAdminDashboard() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Silent background fetch (no loading state, no error toasts)
+  const silentFetchData = async () => {
+    try {
+      const timestamp = Date.now();
+      const cacheHeaders = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      };
+
+      let hasNewData = false;
+
+      // Fetch users silently
+      try {
+        const usersRes = await fetch(`/api/admin/users?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          if (JSON.stringify(usersData) !== JSON.stringify(users)) {
+            setUsers(usersData);
+            hasNewData = true;
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Silent users fetch failed');
+      }
+
+      // Fetch pending requests silently
+      try {
+        const pendingRes = await fetch(`/api/admin/pending-requests?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
+        if (pendingRes.ok) {
+          const pendingData = await pendingRes.json();
+          if (JSON.stringify(pendingData) !== JSON.stringify(pendingRequests)) {
+            setPendingRequests(pendingData);
+            hasNewData = true;
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Silent pending requests fetch failed');
+      }
+
+      // Fetch transactions silently
+      try {
+        const transactionsRes = await fetch(`/api/admin/transactions?_t=${timestamp}&_r=${Math.random()}`, {
+          headers: {
+            ...cacheHeaders,
+            'X-Requested-With': 'XMLHttpRequest',
+            'If-None-Match': '*'
+          }
+        });
+        if (transactionsRes.ok) {
+          const transactionsData = await transactionsRes.json();
+          if (JSON.stringify(transactionsData) !== JSON.stringify(transactions)) {
+            setTransactions(transactionsData);
+            hasNewData = true;
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Silent transactions fetch failed');
+      }
+
+      // Fetch trades silently
+      try {
+        const tradesRes = await fetch(`/api/admin/live-trades?_t=${timestamp}`, {
+          headers: cacheHeaders
+        });
+        if (tradesRes.ok) {
+          const tradesData = await tradesRes.json();
+          const tradesArray = tradesData.trades || tradesData;
+          if (JSON.stringify(tradesArray) !== JSON.stringify(trades)) {
+            setTrades(tradesArray);
+            hasNewData = true;
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Silent trades fetch failed');
+      }
+
+      // Update last update time and show notification if new data
+      if (hasNewData) {
+        setLastUpdateTime(new Date());
+        setHasNewData(true);
+
+        // Show subtle toast notification
+        toast({
+          title: "✨ New Data Available",
+          description: "Dashboard updated with latest information",
+          duration: 3000
+        });
+
+        // Auto-hide notification after 5 seconds
+        setTimeout(() => setHasNewData(false), 5000);
+      }
+
+    } catch (error) {
+      console.log('⚠️ Silent fetch error:', error);
     }
   };
 
@@ -1021,6 +1128,9 @@ export default function WorkingAdminDashboard() {
 
   // Approve/Reject deposit
   const handleDepositAction = async (depositId: string, action: 'approve' | 'reject', reason?: string) => {
+    // Pause polling during action
+    setIsPolling(false);
+
     try {
       console.log('🏦 Deposit action:', depositId, action, reason);
       const response = await fetch(`/api/admin/deposits/${depositId}/action`, {
@@ -1052,11 +1162,17 @@ export default function WorkingAdminDashboard() {
         variant: "destructive",
         duration: 5000
       });
+    } finally {
+      // Resume polling after action
+      setIsPolling(true);
     }
   };
 
   // Handle withdrawal actions
   const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject', reason?: string) => {
+    // Pause polling during action
+    setIsPolling(false);
+
     try {
       console.log('💰 Withdrawal action:', withdrawalId, action, reason);
       const response = await fetch(`/api/admin/withdrawals/${withdrawalId}/action`, {
@@ -1088,6 +1204,9 @@ export default function WorkingAdminDashboard() {
         variant: "destructive",
         duration: 5000
       });
+    } finally {
+      // Resume polling after action
+      setIsPolling(true);
     }
   };
 
@@ -1387,14 +1506,29 @@ export default function WorkingAdminDashboard() {
     }
   };
 
-  // Real-time updates will be handled by the polling mechanism for now
-  // WebSocket integration can be added later when the hook is properly imported
-
-  // Load data on component mount
+  // Real-time updates with smart polling
   useEffect(() => {
+    // Initial data load
     fetchData();
-    // No auto-refresh - rely on real-time notifications and manual Force Refresh only
-  }, []);
+
+    // Set up smart polling - only when enabled
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    if (isPolling) {
+      pollInterval = setInterval(() => {
+        console.log('🔄 AUTO-REFRESH: Silent polling for new data...');
+        silentFetchData(); // Use silent fetch to avoid loading state
+      }, 15000); // Poll every 15 seconds (not too aggressive)
+    }
+
+    // Cleanup interval on unmount
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        console.log('🔄 AUTO-REFRESH: Polling stopped');
+      }
+    };
+  }, [isPolling]); // Re-run when polling state changes
 
   const getTradingModeBadge = (mode: string) => {
     const colors = {
@@ -1454,6 +1588,19 @@ export default function WorkingAdminDashboard() {
             <div className="flex items-center space-x-4">
               {/* Real-time Notification Bell */}
               {user?.role === 'super_admin' && <NotificationBell onTabChange={setActiveTab} />}
+
+              {/* Real-time Status Indicator */}
+              <div className="flex items-center space-x-2 bg-gray-700/50 rounded-lg px-3 py-2 border border-gray-600">
+                <div className={`w-2 h-2 rounded-full ${isPolling ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+                <div className="text-xs text-gray-400">
+                  <div className="font-medium">
+                    {isPolling ? 'Live Updates' : 'Paused'}
+                  </div>
+                  <div className="text-[10px]">
+                    {lastUpdateTime.toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
 
               <Button
                 onClick={forceRefreshTransactions}
