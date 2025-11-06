@@ -222,6 +222,14 @@ export default function TransactionHistory() {
     }
   };
 
+  const getStatusLabel = (status: string, type: string) => {
+    // For deposit/withdraw, show "rejected" instead of "failed"
+    if ((type === 'deposit' || type === 'withdraw') && status === 'failed') {
+      return 'rejected';
+    }
+    return status;
+  };
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'deposit':
@@ -383,7 +391,7 @@ export default function TransactionHistory() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-white capitalize">{transaction.type}</span>
                           <Badge className={getStatusColor(transaction.status)}>
-                            {transaction.status}
+                            {getStatusLabel(transaction.status, transaction.type)}
                           </Badge>
                         </div>
                         <div className="text-sm text-gray-400 flex items-center gap-2">

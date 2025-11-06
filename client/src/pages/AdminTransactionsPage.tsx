@@ -66,8 +66,11 @@ export default function AdminTransactionsPage() {
     },
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (status: string, type: string) => {
+    // For deposit/withdraw, show "rejected" instead of "failed"
+    const displayStatus = (type === 'deposit' || type === 'withdraw') && status === 'failed' ? 'rejected' : status;
+
+    switch (displayStatus) {
       case 'pending':
         return <Badge variant="outline" className="text-yellow-600 border-yellow-600"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
       case 'completed':
@@ -77,7 +80,7 @@ export default function AdminTransactionsPage() {
       case 'rejected':
         return <Badge variant="outline" className="text-red-600 border-red-600"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{displayStatus}</Badge>;
     }
   };
 
@@ -133,7 +136,7 @@ export default function AdminTransactionsPage() {
                         <h3 className="text-lg font-semibold">
                           {transaction.type.toUpperCase()} - {transaction.amount} {transaction.symbol}
                         </h3>
-                        {getStatusBadge(transaction.status)}
+                        {getStatusBadge(transaction.status, transaction.type)}
                         <Badge variant="secondary">{transaction.method}</Badge>
                       </div>
                       
