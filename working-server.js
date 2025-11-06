@@ -7600,6 +7600,20 @@ app.post('/api/trades/complete', async (req, res) => {
     console.log('🎯 ⚡ TRADE CONTROL ENFORCEMENT COMPLETE!');
     console.log('🎯 ⚡ Results:', { originalWon, finalOutcome, overrideApplied: finalOutcome !== originalWon, overrideReason });
 
+    // Update user balance and trade count
+    // Use the actual user ID that was found (could be different for admin users)
+    const actualUserId = user.id;
+    const userIndex = users.findIndex(u => u.id === actualUserId);
+    if (userIndex === -1) {
+      console.error(`❌ User index not found for actual user ID: ${actualUserId}`);
+      return res.status(404).json({
+        success: false,
+        message: "User not found for balance update"
+      });
+    }
+
+    const oldBalance = parseFloat(users[userIndex].balance) || 0;
+
     // Calculate balance change and profit separately
     const tradeAmount = parseFloat(amount);
     let balanceChange = 0;
@@ -7634,19 +7648,6 @@ app.post('/api/trades/complete', async (req, res) => {
       console.log(`❌ LOSE: Loss percentage (${profitPercentageAmount}) USDT lost (already deducted at trade start). P&L: ${profitAmount}`);
     }
 
-    // Update user balance and trade count
-    // Use the actual user ID that was found (could be different for admin users)
-    const actualUserId = user.id;
-    const userIndex = users.findIndex(u => u.id === actualUserId);
-    if (userIndex === -1) {
-      console.error(`❌ User index not found for actual user ID: ${actualUserId}`);
-      return res.status(404).json({
-        success: false,
-        message: "User not found for balance update"
-      });
-    }
-
-    const oldBalance = parseFloat(users[userIndex].balance) || 0;
     const newBalance = oldBalance + balanceChange;
     users[userIndex].balance = newBalance; // Keep as number for now
     users[userIndex].total_trades = (users[userIndex].total_trades || 0) + 1;
