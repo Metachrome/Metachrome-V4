@@ -7760,20 +7760,30 @@ app.post('/api/trades/complete', async (req, res) => {
     if (supabase) {
       try {
         console.log('💾 Attempting to insert transaction into Supabase...');
+        console.log('💾 Supabase client exists:', !!supabase);
+        console.log('💾 Transaction to insert:', JSON.stringify(transaction, null, 2));
+
         const { data: insertedData, error: txnError } = await supabase
           .from('transactions')
           .insert([transaction])
           .select();
 
+        console.log('💾 Insert completed. Error:', txnError, 'Data:', insertedData);
+
         if (txnError) {
           console.error('❌ Error saving transaction to Supabase:', txnError);
-          console.error('❌ Transaction data that failed:', transaction);
+          console.error('❌ Error code:', txnError.code);
+          console.error('❌ Error message:', txnError.message);
+          console.error('❌ Error details:', JSON.stringify(txnError, null, 2));
+          console.error('❌ Transaction data that failed:', JSON.stringify(transaction, null, 2));
         } else {
           console.log('✅ Transaction saved to Supabase successfully!');
-          console.log('✅ Inserted transaction:', insertedData);
+          console.log('✅ Inserted transaction:', JSON.stringify(insertedData, null, 2));
         }
       } catch (error) {
-        console.error('❌ Transaction save error:', error);
+        console.error('❌ Transaction save EXCEPTION:', error);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Error message:', error.message);
         console.error('❌ Error stack:', error.stack);
       }
     } else {
