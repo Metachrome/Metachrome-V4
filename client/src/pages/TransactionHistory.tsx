@@ -165,7 +165,10 @@ export default function TransactionHistory() {
                          transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.users?.username?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesType = filterType === 'all' || transaction.type === filterType;
+    // Handle "trade" filter to include both trade_win and trade_loss
+    const matchesType = filterType === 'all' ||
+                       transaction.type === filterType ||
+                       (filterType === 'trade' && (transaction.type === 'trade_win' || transaction.type === 'trade_loss'));
     const matchesStatus = filterStatus === 'all' || transaction.status === filterStatus;
 
     return matchesSearch && matchesType && matchesStatus;
@@ -246,6 +249,19 @@ export default function TransactionHistory() {
         return 'text-blue-400';
       default:
         return 'text-gray-400';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'trade_win':
+        return 'Trade Win';
+      case 'trade_loss':
+        return 'Trade Loss';
+      case 'withdraw':
+        return 'Withdrawal';
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
     }
   };
 
@@ -389,7 +405,7 @@ export default function TransactionHistory() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-white capitalize">{transaction.type}</span>
+                          <span className="font-medium text-white">{getTypeLabel(transaction.type)}</span>
                           <Badge className={getStatusColor(transaction.status)}>
                             {getStatusLabel(transaction.status, transaction.type)}
                           </Badge>
