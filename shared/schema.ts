@@ -117,8 +117,7 @@ export const optionsSettings = pgTable("options_settings", {
 });
 
 // Transactions
-// NOTE: Actual database schema has: id, user_id (text), type, amount (numeric 15,8), status, description, reference_id, created_at, updated_at
-// We only include columns that actually exist in the database
+// NOTE: Extended schema to match SQLite version for compatibility
 export const transactions = pgTable("transactions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull(), // Database has TEXT, not UUID
@@ -127,6 +126,12 @@ export const transactions = pgTable("transactions", {
   status: varchar("status").default('pending'), // Using varchar instead of enum
   description: text("description"), // This column exists in the database
   referenceId: varchar("reference_id"), // This column exists in the database
+  symbol: varchar("symbol"), // Currency symbol (USDT, BTC, ETH, etc.)
+  fee: decimal("fee", { precision: 15, scale: 8 }), // Transaction fee
+  txHash: varchar("tx_hash"), // Transaction hash for blockchain transactions
+  method: varchar("method"), // Payment method (crypto, card, bank)
+  currency: varchar("currency"), // Currency for the transaction
+  metadata: text("metadata"), // JSON metadata for additional information
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

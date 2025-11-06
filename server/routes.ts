@@ -2974,6 +2974,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateBalance(transaction.userId, transaction.symbol, newAvailable, currentBalance?.locked || '0');
         }
 
+        // For withdrawals, balance was already deducted when request was created
+        // Just mark as completed
+
         res.json({ message: "Transaction approved and processed", transaction });
       } else {
         // Reject transaction
@@ -2987,11 +2990,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
         });
 
+        // If rejecting withdrawal, refund the balance
+        if (transaction.type === 'withdraw') {
+          const currentBalance = await storage.getBalance(transaction.userId, transaction.symbol);
+          const newAvailable = currentBalance
+            ? (parseFloat(currentBalance.available) + parseFloat(transaction.amount)).toString()
+            : transaction.amount;
+
+          await storage.updateBalance(transaction.userId, transaction.symbol, newAvailable, currentBalance?.locked || '0');
+        }
+
         res.json({ message: "Transaction rejected", transaction });
       }
     } catch (error) {
       console.error("Error processing transaction approval:", error);
       res.status(500).json({ message: "Failed to process transaction approval" });
+    }
+  });
+
+  // Admin endpoint to approve/reject deposits (alias for transactions endpoint)
+  app.post("/api/admin/deposits/:id/action", requireSessionAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action, reason } = req.body;
+
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
+      }
+
+      const transaction = await storage.getTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ message: "Deposit not found" });
+      }
+
+      if (transaction.type !== 'deposit') {
+        return res.status(400).json({ message: "Transaction is not a deposit" });
+      }
+
+      if (transaction.status !== 'pending') {
+        return res.status(400).json({ message: "Deposit is not pending approval" });
+      }
+
+      if (action === 'approve') {
+        await storage.updateTransaction(id, {
+          status: 'completed',
+          metadata: JSON.stringify({
+            ...JSON.parse(transaction.metadata || '{}'),
+            approvedBy: req.session.user?.id,
+            approvedAt: new Date().toISOString()
+          })
+        });
+
+        // Update user balance
+        const currentBalance = await storage.getBalance(transaction.userId, transaction.symbol);
+        const newAvailable = currentBalance
+          ? (parseFloat(currentBalance.available) + parseFloat(transaction.amount)).toString()
+          : transaction.amount;
+
+        await storage.updateBalance(transaction.userId, transaction.symbol, newAvailable, currentBalance?.locked || '0');
+
+        console.log(`✅ Deposit approved: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
+        res.json({ message: "Deposit approved and processed", transaction });
+      } else {
+        await storage.updateTransaction(id, {
+          status: 'failed',
+          metadata: JSON.stringify({
+            ...JSON.parse(transaction.metadata || '{}'),
+            rejectedBy: req.session.user?.id,
+            rejectedAt: new Date().toISOString(),
+            rejectionReason: reason || 'No reason provided'
+          })
+        });
+
+        console.log(`❌ Deposit rejected: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
+        res.json({ message: "Deposit rejected", transaction });
+      }
+    } catch (error) {
+      console.error("Error processing deposit action:", error);
+      res.status(500).json({ message: "Failed to process deposit action" });
+    }
+  });
+
+  // Admin endpoint to approve/reject withdrawals
+  app.post("/api/admin/withdrawals/:id/action", requireSessionAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action, reason } = req.body;
+
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'reject'" });
+      }
+
+      const transaction = await storage.getTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ message: "Withdrawal not found" });
+      }
+
+      if (transaction.type !== 'withdraw') {
+        return res.status(400).json({ message: "Transaction is not a withdrawal" });
+      }
+
+      if (transaction.status !== 'pending') {
+        return res.status(400).json({ message: "Withdrawal is not pending approval" });
+      }
+
+      if (action === 'approve') {
+        // Mark as completed (balance was already deducted when request was created)
+        await storage.updateTransaction(id, {
+          status: 'completed',
+          metadata: JSON.stringify({
+            ...JSON.parse(transaction.metadata || '{}'),
+            approvedBy: req.session.user?.id,
+            approvedAt: new Date().toISOString()
+          })
+        });
+
+        console.log(`✅ Withdrawal approved: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
+        res.json({ message: "Withdrawal approved and processed", transaction });
+      } else {
+        // Reject and refund balance
+        await storage.updateTransaction(id, {
+          status: 'failed',
+          metadata: JSON.stringify({
+            ...JSON.parse(transaction.metadata || '{}'),
+            rejectedBy: req.session.user?.id,
+            rejectedAt: new Date().toISOString(),
+            rejectionReason: reason || 'No reason provided'
+          })
+        });
+
+        // Refund the balance
+        const currentBalance = await storage.getBalance(transaction.userId, transaction.symbol);
+        const newAvailable = currentBalance
+          ? (parseFloat(currentBalance.available) + parseFloat(transaction.amount)).toString()
+          : transaction.amount;
+
+        await storage.updateBalance(transaction.userId, transaction.symbol, newAvailable, currentBalance?.locked || '0');
+
+        console.log(`❌ Withdrawal rejected and refunded: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
+        res.json({ message: "Withdrawal rejected and balance refunded", transaction });
+      }
+    } catch (error) {
+      console.error("Error processing withdrawal action:", error);
+      res.status(500).json({ message: "Failed to process withdrawal action" });
     }
   });
 
