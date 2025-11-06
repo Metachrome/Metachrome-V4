@@ -3155,6 +3155,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Quick schema check - simpler version
+  app.get("/api/admin/schema-check", requireSessionAdmin, async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const txs = await storage.getUserTransactions(user.id, 1);
+      const sample = txs.length > 0 ? txs[0] : null;
+
+      res.json({
+        hasTransactions: txs.length > 0,
+        hasSymbolField: sample ? ('symbol' in sample) : false,
+        fields: sample ? Object.keys(sample) : [],
+        sample: sample
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Simple database test (ADMIN ONLY - DEBUG)
   app.get("/api/admin/test-db", requireSessionAdmin, async (req, res) => {
     try {
