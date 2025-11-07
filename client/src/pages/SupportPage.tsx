@@ -50,7 +50,7 @@ export default function SupportPage() {
   return (
     <div className="min-h-[30vh] bg-[#0B0E11]" key={`support-page-clean-${cacheKey}`}>
       {/* CLEAN BANNER SECTION - ORIGINAL BANNER WITHOUT TEXT */}
-      <section className={`relative overflow-hidden bg-black w-full ${isMobile ? 'py-5' : 'py-8'}`}>
+      <section className={`relative overflow-hidden bg-black w-full ${isMobile ? 'py-0' : 'py-8'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Original Banner Images - Clean without embedded text */}
           <div className={`relative overflow-hidden rounded-lg ${isMobile ? 'min-h-[30vh]' : 'h-80'}`}>
