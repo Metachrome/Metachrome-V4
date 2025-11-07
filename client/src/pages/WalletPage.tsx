@@ -595,7 +595,7 @@ export default function WalletPage() {
                     {showDetailedBalance ? 'Simple View' : 'Detailed View'}
                   </button>
                 </div>
-                <div className="text-[2rem] font-bold text-white leading-[2.5rem]">
+                <div className="text-[29px] font-bold text-white leading-[2.5rem]">
                   {balancesLoading ? (
                     <span className="animate-pulse">Loading...</span>
                   ) : (
