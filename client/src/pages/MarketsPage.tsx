@@ -7,8 +7,6 @@ import { useIsMobile } from "../hooks/use-mobile";
 import { useCryptoData } from "../services/cryptoDataService";
 import type { MarketData } from "@shared/schema";
 import { Card, CardContent } from "../components/ui/card";
-import marketBannerDesktop from "../assets/market_banner_desktop.jpg";
-import marketBannerMobile from "../assets/market_banner_mobile.jpg";
 
 export default function MarketsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,23 +23,13 @@ export default function MarketsPage() {
 
   return (
     <div className="min-h-screen bg-[#10121E]">
-      {/* BANNER SECTION - Markets Banner */}
-      <section className="relative overflow-hidden bg-black w-full py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Banner Images - Desktop and Mobile */}
-          <div className={`relative overflow-hidden ${isMobile ? 'h-32 sm:h-40' : 'h-48'}`}>
-            <img
-              src={isMobile ? marketBannerMobile : marketBannerDesktop}
-              alt="Markets Banner"
-              className="w-full h-full object-cover"
-              style={isMobile ? { objectFit: 'contain' } : {}}
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Content Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">Markets</h1>
+          <p className="text-gray-400">Live crypto data in real time</p>
+        </div>
         {/* Search and Refresh */}
         <div className={`mb-8 ${isMobile ? 'flex gap-2' : 'flex items-center justify-end space-x-4'}`}>
           <div className={`relative ${isMobile ? 'flex-1' : ''}`}>

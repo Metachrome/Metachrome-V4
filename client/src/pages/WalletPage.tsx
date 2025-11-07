@@ -14,8 +14,6 @@ import { useCryptoData } from "../services/cryptoDataService";
 
 import StripePayment from "../components/StripePayment";
 import { CreditCard, ArrowUpRight, ArrowDownLeft, Send, Download, Users, Wallet, Plus, Copy, CheckCircle } from "lucide-react";
-import walletBannerDesktop from "../assets/wallet_banner_desktop.jpg";
-import walletBannerMobile from "../assets/wallet_banner_mobile.jpg";
 
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState("Balance");
@@ -548,22 +546,12 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-[#1a1b2e]">
-      {/* BANNER SECTION - Wallet Banner */}
-      <section className="relative overflow-hidden bg-black w-full py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Banner Images - Desktop and Mobile */}
-          <div className={`relative overflow-hidden ${isMobile ? 'h-32 sm:h-40' : 'h-48'}`}>
-            <img
-              src={isMobile ? walletBannerMobile : walletBannerDesktop}
-              alt="Wallet Banner"
-              className="w-full h-full object-cover"
-              style={isMobile ? { objectFit: 'contain' } : {}}
-            />
-          </div>
-        </div>
-      </section>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">Wallet</h1>
+          <p className="text-gray-400">Manage your digital assets</p>
+        </div>
 
         {/* Header Tabs */}
         <div className="mb-8">
