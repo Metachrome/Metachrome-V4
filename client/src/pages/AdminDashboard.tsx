@@ -621,17 +621,10 @@ export default function WorkingAdminDashboard() {
         console.log('⚠️ Silent trades fetch failed');
       }
 
-      // Update last update time and show notification if new data
+      // Update last update time silently if new data
       if (hasNewData) {
         setLastUpdateTime(new Date());
         setHasNewData(true);
-
-        // Show subtle toast notification
-        toast({
-          title: "✨ New Data Available",
-          description: "Dashboard updated with latest information",
-          duration: 3000
-        });
 
         // Auto-hide notification after 5 seconds
         setTimeout(() => setHasNewData(false), 5000);
