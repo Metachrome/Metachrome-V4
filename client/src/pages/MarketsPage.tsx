@@ -26,7 +26,7 @@ export default function MarketsPage() {
   return (
     <div className="min-h-screen bg-[#10121E]">
       {/* BANNER SECTION - Markets Banner */}
-      <section className="relative overflow-hidden bg-black w-full">
+      <section className="relative overflow-hidden bg-black w-full py-5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Banner Images - Desktop and Mobile */}
           <div className={`relative overflow-hidden ${isMobile ? 'h-32 sm:h-40' : 'h-48'}`}>
