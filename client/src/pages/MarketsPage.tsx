@@ -23,6 +23,9 @@ export default function MarketsPage() {
     crypto.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // For mobile, limit to 3 items
+  const displayData = isMobile ? filteredMarketData.slice(0, 3) : filteredMarketData;
+
   return (
     <div className="min-h-screen bg-[#10121E]">
       {/* BANNER SECTION - Markets Banner */}
@@ -81,7 +84,7 @@ export default function MarketsPage() {
             )}
           </div>
           <span className="text-xs text-gray-500">
-            {filteredMarketData.length} cryptocurrencies
+            {isMobile ? `${displayData.length} of ${filteredMarketData.length}` : filteredMarketData.length} cryptocurrencies
           </span>
         </div>
 
@@ -119,14 +122,14 @@ export default function MarketsPage() {
                         <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>
                       </tr>
                     ))
-                  ) : filteredMarketData.length === 0 ? (
+                  ) : displayData.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-12 text-center">
                         <span className="text-gray-400">No cryptocurrencies found matching "{searchQuery}"</span>
                       </td>
                     </tr>
                   ) : (
-                    filteredMarketData.map((crypto) => (
+                    displayData.map((crypto) => (
                       <tr key={crypto.symbol} className="border-b border-purple-800/20 hover:bg-purple-900/20 transition-colors">
                         <td className="p-6">
                           <div className="flex items-center space-x-3">
