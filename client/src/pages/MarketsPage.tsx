@@ -34,6 +34,7 @@ export default function MarketsPage() {
               src={isMobile ? marketBannerMobile : marketBannerDesktop}
               alt="Markets Banner"
               className="w-full h-full object-cover"
+              style={isMobile ? { objectFit: 'contain' } : {}}
             />
           </div>
         </div>

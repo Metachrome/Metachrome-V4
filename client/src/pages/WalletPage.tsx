@@ -557,6 +557,7 @@ export default function WalletPage() {
               src={isMobile ? walletBannerMobile : walletBannerDesktop}
               alt="Wallet Banner"
               className="w-full h-full object-cover"
+              style={isMobile ? { objectFit: 'contain' } : {}}
             />
           </div>
         </div>
