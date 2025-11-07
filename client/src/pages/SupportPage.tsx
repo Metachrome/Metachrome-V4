@@ -53,7 +53,7 @@ export default function SupportPage() {
       <section className={`relative overflow-hidden bg-black w-full ${isMobile ? 'py-5' : 'py-8'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Original Banner Images - Clean without embedded text */}
-          <div className={`relative overflow-hidden rounded-lg ${isMobile ? 'h-48 sm:h-64' : 'h-80'}`}>
+          <div className={`relative overflow-hidden rounded-lg ${isMobile ? 'min-h-[30vh]' : 'h-80'}`}>
             <img
               src={isMobile ? supportBannerMobile : supportBannerDesktop}
               alt="Support Banner"
