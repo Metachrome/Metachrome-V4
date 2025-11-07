@@ -8,6 +8,10 @@ import { useCryptoData } from "../services/cryptoDataService";
 import type { MarketData } from "@shared/schema";
 import { Card, CardContent } from "../components/ui/card";
 
+// Import banner images
+import marketBannerDesktop from "/assets/market_banner_desktop.jpg";
+import marketBannerMobile from "/assets/market_banner_mobile.jpg";
+
 export default function MarketsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
@@ -23,12 +27,19 @@ export default function MarketsPage() {
 
   return (
     <div className="min-h-screen bg-[#10121E]">
-      {/* Header Section with Dark Background */}
-      <div className="bg-[#0B0E17] py-8">
+      {/* BANNER SECTION - Markets Banner */}
+      <section className="relative overflow-hidden bg-black w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className={`font-bold text-white py-5 ${isMobile ? 'text-xl' : 'text-3xl'}`}>Markets</h1>
+          {/* Banner Images - Desktop and Mobile */}
+          <div className={`relative overflow-hidden ${isMobile ? 'h-32 sm:h-40' : 'h-48'}`}>
+            <img
+              src={isMobile ? marketBannerMobile : marketBannerDesktop}
+              alt="Markets Banner"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Content Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
