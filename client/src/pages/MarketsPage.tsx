@@ -91,15 +91,15 @@ export default function MarketsPage() {
         {/* Market Data Table */}
         <Card className="bg-[#1a1340]/80 border-purple-800/30 backdrop-blur-sm">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            <div className={isMobile ? '' : 'overflow-x-auto'}>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-purple-800/30">
-                    <th className="text-left p-6 font-medium text-gray-400 text-sm">Name</th>
-                    <th className="text-left p-6 font-medium text-gray-400 text-sm">Last Price</th>
-                    <th className="text-left p-6 font-medium text-gray-400 text-sm">24h Change</th>
-                    <th className="text-left p-6 font-medium text-gray-400 text-sm">24h High</th>
-                    <th className="text-left p-6 font-medium text-gray-400 text-sm">24h Low</th>
+                    <th className={`text-left font-medium text-gray-400 ${isMobile ? 'p-3 text-xs' : 'p-6 text-sm'}`}>Name</th>
+                    <th className={`text-left font-medium text-gray-400 ${isMobile ? 'p-3 text-xs' : 'p-6 text-sm'}`}>{isMobile ? 'Price' : 'Last Price'}</th>
+                    <th className={`text-left font-medium text-gray-400 ${isMobile ? 'p-3 text-xs' : 'p-6 text-sm'}`}>{isMobile ? '24h' : '24h Change'}</th>
+                    {!isMobile && <th className="text-left p-6 font-medium text-gray-400 text-sm">24h High</th>}
+                    {!isMobile && <th className="text-left p-6 font-medium text-gray-400 text-sm">24h Low</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -107,37 +107,37 @@ export default function MarketsPage() {
                     // Loading skeleton rows
                     Array.from({ length: 5 }).map((_, index) => (
                       <tr key={index} className="border-b border-purple-800/20">
-                        <td className="p-6">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gray-700 rounded-full animate-pulse"></div>
+                        <td className={isMobile ? 'p-3' : 'p-6'}>
+                          <div className={`flex items-center ${isMobile ? 'space-x-2' : 'space-x-3'}`}>
+                            <div className={`bg-gray-700 rounded-full animate-pulse ${isMobile ? 'w-6 h-6' : 'w-10 h-10'}`}></div>
                             <div>
-                              <div className="h-4 bg-gray-700 rounded animate-pulse mb-1 w-20"></div>
-                              <div className="h-3 bg-gray-700 rounded animate-pulse w-16"></div>
+                              <div className={`bg-gray-700 rounded animate-pulse mb-1 ${isMobile ? 'h-3 w-12' : 'h-4 w-20'}`}></div>
+                              <div className={`bg-gray-700 rounded animate-pulse ${isMobile ? 'h-2 w-8' : 'h-3 w-16'}`}></div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-24"></div></td>
-                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-16"></div></td>
-                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>
-                        <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>
+                        <td className={isMobile ? 'p-3' : 'p-6'}><div className={`bg-gray-700 rounded animate-pulse ${isMobile ? 'h-3 w-16' : 'h-4 w-24'}`}></div></td>
+                        <td className={isMobile ? 'p-3' : 'p-6'}><div className={`bg-gray-700 rounded animate-pulse ${isMobile ? 'h-3 w-10' : 'h-4 w-16'}`}></div></td>
+                        {!isMobile && <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>}
+                        {!isMobile && <td className="p-6"><div className="h-4 bg-gray-700 rounded animate-pulse w-20"></div></td>}
                       </tr>
                     ))
                   ) : displayData.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-12 text-center">
+                      <td colSpan={isMobile ? 3 : 5} className="py-12 text-center">
                         <span className="text-gray-400">No cryptocurrencies found matching "{searchQuery}"</span>
                       </td>
                     </tr>
                   ) : (
                     displayData.map((crypto) => (
                       <tr key={crypto.symbol} className="border-b border-purple-800/20 hover:bg-purple-900/20 transition-colors">
-                        <td className="p-6">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center border border-purple-500/30">
+                        <td className={isMobile ? 'p-3' : 'p-6'}>
+                          <div className={`flex items-center ${isMobile ? 'space-x-2' : 'space-x-3'}`}>
+                            <div className={`rounded-full overflow-hidden bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex items-center justify-center border border-purple-500/30 ${isMobile ? 'w-8 h-8' : 'w-12 h-12'}`}>
                               <img
                                 src={crypto.image || `https://cryptoicons.org/api/icon/${crypto.symbol.split('/')[0].toLowerCase()}/200`}
                                 alt={crypto.name}
-                                className="w-9 h-9 object-contain"
+                                className={`object-contain ${isMobile ? 'w-6 h-6' : 'w-9 h-9'}`}
                                 onError={(e) => {
                                   const target = e.currentTarget;
                                   target.style.display = 'none';
@@ -146,26 +146,26 @@ export default function MarketsPage() {
                                 }}
                               />
                               <span
-                                className="text-white font-bold text-sm hidden"
+                                className={`text-white font-bold hidden ${isMobile ? 'text-xs' : 'text-sm'}`}
                               >
                                 {crypto.symbol.split('/')[0].charAt(0)}
                               </span>
                             </div>
                             <div>
-                              <div className="font-medium text-white">{crypto.symbol}</div>
-                              <div className="text-sm text-gray-400">{crypto.name}</div>
+                              <div className={`font-medium text-white ${isMobile ? 'text-sm' : ''}`}>{crypto.symbol}</div>
+                              <div className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>{crypto.name}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-6 text-white font-medium">{crypto.price}</td>
-                        <td className="p-6">
+                        <td className={`text-white font-medium ${isMobile ? 'p-3 text-sm' : 'p-6'}`}>{crypto.price}</td>
+                        <td className={isMobile ? 'p-3' : 'p-6'}>
                           <div className={`flex items-center space-x-1 ${crypto.isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                            {crypto.isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                            <span className="font-medium">{crypto.change}</span>
+                            {crypto.isPositive ? <TrendingUp className={isMobile ? 'w-3 h-3' : 'w-4 h-4'} /> : <TrendingDown className={isMobile ? 'w-3 h-3' : 'w-4 h-4'} />}
+                            <span className={`font-medium ${isMobile ? 'text-xs' : ''}`}>{crypto.change}</span>
                           </div>
                         </td>
-                        <td className="p-6 text-gray-300">{crypto.high}</td>
-                        <td className="p-6 text-gray-300">{crypto.low}</td>
+                        {!isMobile && <td className="p-6 text-gray-300">{crypto.high}</td>}
+                        {!isMobile && <td className="p-6 text-gray-300">{crypto.low}</td>}
                       </tr>
                     ))
                   )}
