@@ -8,10 +8,6 @@ import { useCryptoData } from "../services/cryptoDataService";
 import type { MarketData } from "@shared/schema";
 import { Card, CardContent } from "../components/ui/card";
 
-// Import banner images
-import marketBannerDesktop from "/assets/market_banner_desktop.jpg";
-import marketBannerMobile from "/assets/market_banner_mobile.jpg";
-
 export default function MarketsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
@@ -33,7 +29,7 @@ export default function MarketsPage() {
           {/* Banner Images - Desktop and Mobile */}
           <div className={`relative overflow-hidden ${isMobile ? 'h-32 sm:h-40' : 'h-48'}`}>
             <img
-              src={isMobile ? marketBannerMobile : marketBannerDesktop}
+              src={isMobile ? '/assets/market_banner_mobile.jpg' : '/assets/market_banner_desktop.jpg'}
               alt="Markets Banner"
               className="w-full h-full object-cover"
             />
