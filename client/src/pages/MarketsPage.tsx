@@ -171,26 +171,6 @@ export default function MarketsPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Pagination */}
-        <div className="flex justify-center mt-8">
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-8 h-8 rounded-full bg-purple-600 text-white hover:bg-purple-700"
-            >
-              1
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-8 h-8 rounded-full bg-transparent text-gray-400 hover:bg-gray-700"
-            >
-              2
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
