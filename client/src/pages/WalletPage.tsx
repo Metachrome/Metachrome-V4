@@ -556,7 +556,7 @@ export default function WalletPage() {
             <img
               src={isMobile ? walletBannerMobile : walletBannerDesktop}
               alt="Wallet Banner"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
         </div>

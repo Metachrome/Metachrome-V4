@@ -33,7 +33,7 @@ export default function MarketsPage() {
             <img
               src={isMobile ? marketBannerMobile : marketBannerDesktop}
               alt="Markets Banner"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
         </div>
