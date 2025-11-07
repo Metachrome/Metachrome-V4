@@ -53,7 +53,7 @@ export default function SupportPage() {
       <section className={`relative overflow-hidden bg-black w-full ${isMobile ? 'py-0' : 'py-8'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Original Banner Images - Clean without embedded text */}
-          <div className={`relative overflow-hidden rounded-lg ${isMobile ? 'min-h-[30vh]' : 'h-80'}`}>
+          <div className={`relative overflow-hidden rounded-lg ${isMobile ? 'h-auto' : 'h-80'}`}>
             <img
               src={isMobile ? supportBannerMobile : supportBannerDesktop}
               alt="Support Banner"
@@ -67,7 +67,7 @@ export default function SupportPage() {
 
       {/* Black background section for support options */}
       <section className="bg-black">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${isMobile ? 'py-4' : 'py-8 sm:py-16'}`}>
 
           {/* Support Options - 2 Cards Full Width */}
           <div className={`grid gap-6 ${isMobile ? 'grid-cols-1 mb-8' : 'grid-cols-1 md:grid-cols-2 gap-8 mb-20'}`}>
