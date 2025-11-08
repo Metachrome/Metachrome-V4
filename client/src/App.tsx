@@ -14,6 +14,9 @@ import SpotPage from "./pages/SpotPage";
 import TradingPage from "./pages/TradingPage";
 import WalletPage from "./pages/WalletPage";
 import SupportPage from "./pages/SupportPage";
+import TradePolicyPage from "./pages/TradePolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRedirect from "./pages/AdminRedirect";
@@ -83,6 +86,9 @@ function Router() {
           </ProtectedUserRoute>
         </Route>
         <Route path="/support" component={SupportPage} />
+        <Route path="/trade-policy" component={TradePolicyPage} />
+        <Route path="/terms-of-service" component={TermsOfServicePage} />
+        <Route path="/privacy-policy" component={PrivacyPolicyPage} />
         <Route path="/test-price-sync" component={TestPriceSyncPage} />
         <Route path="/login" component={UserLogin} />
         <Route path="/signup" component={SignupPage} />
