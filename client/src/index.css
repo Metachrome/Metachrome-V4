@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prose Strong Tag Styling for Legal Pages */
+.prose :where(strong):not(:where([class~=not-prose],[class~=not-prose] *)) {
+    color: #ededed;
+    font-weight: 600;
+}
+
 /* Custom Tailwind Utility Overrides */
 .max-w-6xl {
     max-width: 76rem;
