@@ -1,6 +1,6 @@
 export default function TradePolicyPage() {
   return (
-    <div className="min-h-screen bg-[#0B0E11]">
+    <div className="min-h-screen" style={{ backgroundColor: 'rgb(13 11 31 / 98%)' }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Trade Policy – Metachrome</h1>
         <p className="text-gray-400 mb-8"><strong>Effective Date:</strong> October 26, 2024</p>
