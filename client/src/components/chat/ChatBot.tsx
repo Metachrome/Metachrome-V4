@@ -111,12 +111,16 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
       setIsInitialized(true);
     }
 
-    // Reset when chat is closed
+    // Reset when chat is closed (with delay to allow transition)
     if (!isOpen && isInitialized) {
-      setMessages([]);
-      setIsInitialized(false);
-      setShowFAQs(true);
-      setInputMessage('');
+      const resetTimer = setTimeout(() => {
+        setMessages([]);
+        setIsInitialized(false);
+        setShowFAQs(true);
+        setInputMessage('');
+      }, 300); // Wait for close animation
+
+      return () => clearTimeout(resetTimer);
     }
   }, [isOpen, isInitialized, loadFAQs, addBotMessage]);
 
