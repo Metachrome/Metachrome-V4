@@ -33,6 +33,7 @@ import {
   Logger
 } from "./errorHandler";
 import { setupChatTables } from "./setup-chat-tables";
+import { checkChatTables } from "./check-chat-tables";
 
 const app = express();
 
@@ -154,10 +155,20 @@ app.use((req, res, next) => {
 
   // Setup chat system tables
   try {
-    await setupChatTables();
-    console.log('✅ Chat system tables initialized');
+    // First check if tables exist
+    const checkResult = await checkChatTables();
+
+    if (!checkResult.allTablesExist) {
+      console.log('⚠️ Chat tables missing, attempting to create...');
+      await setupChatTables();
+      console.log('✅ Chat system tables created successfully');
+    } else {
+      console.log('✅ Chat system tables already exist');
+      console.log(`📊 Current data: ${checkResult.counts?.conversations || 0} conversations, ${checkResult.counts?.messages || 0} messages, ${checkResult.counts?.faqs || 0} FAQs`);
+    }
   } catch (error) {
     console.error('❌ Failed to setup chat tables:', error);
+    console.error('❌ MANUAL ACTION REQUIRED: Run CHAT_SYSTEM_QUICK_FIX.sql in Supabase SQL Editor');
     // Continue server startup even if chat tables fail
   }
 

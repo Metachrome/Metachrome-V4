@@ -4,7 +4,44 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { requireAuth, requireSessionAdmin } from "./auth";
 
 export function registerChatRoutes(app: Express) {
-  
+
+  // Health check endpoint for chat system
+  app.get("/api/chat/health", async (req, res) => {
+    try {
+      // Check if tables exist by trying to count records
+      const conversationsCheck = await db.execute(sql`
+        SELECT COUNT(*) as count FROM chat_conversations LIMIT 1
+      `);
+      const messagesCheck = await db.execute(sql`
+        SELECT COUNT(*) as count FROM chat_messages LIMIT 1
+      `);
+      const faqCheck = await db.execute(sql`
+        SELECT COUNT(*) as count FROM chat_faq LIMIT 1
+      `);
+
+      res.json({
+        status: 'healthy',
+        tables: {
+          conversations: true,
+          messages: true,
+          faq: true
+        },
+        counts: {
+          conversations: parseInt(conversationsCheck.rows[0]?.count || '0'),
+          messages: parseInt(messagesCheck.rows[0]?.count || '0'),
+          faqs: parseInt(faqCheck.rows[0]?.count || '0')
+        }
+      });
+    } catch (error) {
+      console.error("❌ Chat health check failed:", error);
+      res.status(500).json({
+        status: 'unhealthy',
+        error: 'Chat tables not initialized',
+        message: 'Please run CHAT_SYSTEM_QUICK_FIX.sql in Supabase SQL Editor'
+      });
+    }
+  });
+
   // Get FAQ list
   app.get("/api/chat/faq", async (req, res) => {
     try {
