@@ -32,6 +32,19 @@ interface LiveChatProps {
   onClose: () => void;
 }
 
+// Helper function to safely format timestamp
+const formatMessageTime = (timestamp: string | undefined): string => {
+  if (!timestamp) return '';
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return '';
+  }
+};
+
 export default function LiveChat({ userId, username, isOpen, onClose }: LiveChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -383,7 +396,7 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
                           <p className="text-sm whitespace-pre-line">{message.message}</p>
                         </div>
                         <p className="text-xs text-gray-500 mt-1 px-1">
-                          {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {formatMessageTime(message.created_at)}
                         </p>
                       </div>
                     </div>

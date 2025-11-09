@@ -46,6 +46,19 @@ interface Conversation {
   unread_count?: number;
 }
 
+// Helper function to safely format timestamp
+const formatMessageTime = (timestamp: string | undefined): string => {
+  if (!timestamp) return '';
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return '';
+  }
+};
+
 export default function ChatManagement() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -561,7 +574,7 @@ export default function ChatManagement() {
                               <p className="text-sm whitespace-pre-line">{message.message}</p>
                             </div>
                             <p className="text-xs text-gray-500 mt-1 px-1">
-                              {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {formatMessageTime(message.created_at)}
                             </p>
                           </div>
                         </div>
