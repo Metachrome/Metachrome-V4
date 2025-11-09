@@ -87,10 +87,25 @@ export default function ChatManagement() {
 
   const loadCurrentAdmin = async () => {
     try {
-      const response = await fetch('/api/user');
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        console.error('No auth token found');
+        return;
+      }
+
+      const response = await fetch('/api/auth', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        credentials: 'include'
+      });
+
       if (response.ok) {
         const data = await response.json();
         setCurrentAdminId(data.id);
+        console.log('✅ Admin loaded:', data.id);
+      } else {
+        console.error('Failed to load admin:', response.status);
       }
     } catch (error) {
       console.error('Error loading admin:', error);
@@ -194,8 +209,24 @@ export default function ChatManagement() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !selectedConversation) return;
 
+    if (!currentAdminId) {
+      console.error('❌ No admin ID available');
+      toast({
+        title: "Send Failed",
+        description: "Admin ID not loaded. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const messageText = inputMessage;
     setInputMessage('');
+
+    console.log('📤 Sending message:', {
+      conversationId: selectedConversation.id,
+      senderId: currentAdminId,
+      message: messageText
+    });
 
     // Optimistically add message
     const tempMessage: ChatMessage = {
@@ -221,9 +252,12 @@ export default function ChatManagement() {
         })
       });
 
+      console.log('📡 Send response:', response.status, response.ok);
+
       if (response.ok) {
         const data = await response.json();
-        setMessages(prev => prev.map(msg => 
+        console.log('✅ Message sent successfully:', data);
+        setMessages(prev => prev.map(msg =>
           msg.id === tempMessage.id ? data : msg
         ));
 
@@ -238,17 +272,29 @@ export default function ChatManagement() {
             }
           }));
         }
+
+        toast({
+          title: "Message Sent",
+          description: "Your message has been sent successfully",
+        });
       } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Send failed:', response.status, errorData);
         setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
         toast({
           title: "Send Failed",
-          description: "Failed to send message",
+          description: errorData.error || "Failed to send message",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      toast({
+        title: "Send Failed",
+        description: "Network error. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 

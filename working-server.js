@@ -14284,11 +14284,26 @@ app.post('/api/admin/chat/send', async (req, res) => {
   try {
     const { conversationId, message, senderId, senderType } = req.body;
 
+    console.log('📨 Admin send request:', { conversationId, message, senderId, senderType });
+
     if (!conversationId || !message || !senderId) {
+      console.error('❌ Missing required fields:', { conversationId, message, senderId });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     console.log('💬 Admin sending message to conversation:', conversationId);
+
+    // Get conversation to find user_id
+    const { data: conversation, error: convError } = await supabase
+      .from('chat_conversations')
+      .select('user_id')
+      .eq('id', conversationId)
+      .single();
+
+    if (convError || !conversation) {
+      console.error('❌ Conversation not found:', conversationId);
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
 
     // Insert message
     const { data: newMessage, error: msgError } = await supabase
@@ -14303,7 +14318,10 @@ app.post('/api/admin/chat/send', async (req, res) => {
       .select()
       .single();
 
-    if (msgError) throw msgError;
+    if (msgError) {
+      console.error('❌ Error inserting message:', msgError);
+      throw msgError;
+    }
 
     // Update conversation last_message_at
     await supabase
@@ -14312,6 +14330,20 @@ app.post('/api/admin/chat/send', async (req, res) => {
       .eq('id', conversationId);
 
     console.log('✅ Admin message sent:', newMessage.id);
+
+    // Broadcast to user via WebSocket
+    const userId = conversation.user_id;
+    wss.clients.forEach(client => {
+      if (client.userId === userId && client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'new_message',
+          data: newMessage
+        }));
+      }
+    });
+
+    console.log('📡 Message broadcasted to user:', userId);
+
     res.json(newMessage);
   } catch (error) {
     console.error('❌ Error sending admin message:', error);
