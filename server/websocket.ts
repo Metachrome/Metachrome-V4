@@ -10,6 +10,8 @@ interface WebSocketMessage {
 interface ClientSubscription {
   ws: WebSocket;
   subscriptions: Set<string>;
+  userId?: string;
+  isAdmin?: boolean;
 }
 
 export function setupWebSocket(server: Server) {
@@ -93,6 +95,40 @@ export function setupWebSocket(server: Server) {
       case 'ping':
         client.ws.send(JSON.stringify({ type: 'pong' }));
         break;
+
+      case 'subscribe_chat':
+        // User subscribes to their own chat updates
+        if (message.data?.userId) {
+          client.userId = message.data.userId;
+          console.log(`User ${message.data.userId} subscribed to chat updates`);
+        }
+        break;
+
+      case 'subscribe_admin_chat':
+        // Admin subscribes to all chat updates
+        client.isAdmin = true;
+        console.log(`Admin subscribed to all chat updates`);
+        break;
+
+      case 'send_message':
+        // User sends a message - broadcast to admin
+        if (message.data) {
+          broadcastToAdmins({
+            type: 'new_message',
+            data: message.data
+          });
+        }
+        break;
+
+      case 'admin_message':
+        // Admin sends a message - broadcast to specific user
+        if (message.data?.userId) {
+          broadcastToUser(message.data.userId, {
+            type: 'new_message',
+            data: message.data
+          });
+        }
+        break;
     }
   }
 
@@ -125,6 +161,14 @@ export function setupWebSocket(server: Server) {
   function broadcastToAll(message: WebSocketMessage) {
     clients.forEach((client) => {
       if (client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify(message));
+      }
+    });
+  }
+
+  function broadcastToAdmins(message: WebSocketMessage) {
+    clients.forEach((client) => {
+      if (client.isAdmin && client.ws.readyState === WebSocket.OPEN) {
         client.ws.send(JSON.stringify(message));
       }
     });

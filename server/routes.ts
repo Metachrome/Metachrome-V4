@@ -21,6 +21,8 @@ import { priceService } from "./priceService";
 import { tradingService } from "./tradingService";
 import { hashPassword, verifyPassword, generateToken, verifyToken, authenticateToken, requireAdmin, requireSuperAdmin, requireAuth, requireSessionAdmin, requireSessionSuperAdmin, requirePermission, type AuthenticatedRequest } from "./auth";
 import { setupOAuth } from "./oauth";
+import { registerChatRoutes } from "./chat-routes";
+import { setupChatTables } from "./setup-chat-tables";
 // import { paymentService } from "./paymentService";
 import { z } from "zod";
 import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdminControlSchema } from "@shared/schema";
@@ -3705,7 +3707,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         console.log('✅ Demo data already exists, skipping seed');
       }
-      
+
+      // Setup chat tables
+      try {
+        await setupChatTables();
+      } catch (error) {
+        console.error('⚠️ Error setting up chat tables (may already exist):', error);
+      }
+
       // Start real-time price updates
       priceService.startPriceUpdates();
     } catch (error) {
@@ -4188,6 +4197,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Register chat routes
+  console.log('💬 Registering chat routes...');
+  registerChatRoutes(app);
+  console.log('✅ Chat routes registered');
 
   return httpServer;
 }

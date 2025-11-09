@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../components/ui/collapsible";
@@ -7,12 +7,29 @@ import { useIsMobile } from "../hooks/use-mobile";
 import faqImage from "../assets/FAQ_image-2_1755414462649.png";
 import supportBannerDesktop from "../assets/support_banner_desktop.jpg";
 import supportBannerMobile from "../assets/support_banner_mobile.jpg";
+import ChatBot from "../components/chat/ChatBot";
+import LiveChat from "../components/chat/LiveChat";
 
 
 export default function SupportPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isChatBotOpen, setIsChatBotOpen] = useState(false);
+  const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    // Get current user from session
+    fetch('/api/user')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setCurrentUser(data);
+        }
+      })
+      .catch(err => console.error('Error fetching user:', err));
+  }, []);
 
   // Force cache refresh
   const cacheKey = Date.now();
@@ -91,7 +108,11 @@ export default function SupportPage() {
                   <p className={`text-white font-medium ${isMobile ? 'mb-4 text-sm' : 'mb-6'}`}>{option.contact}</p>
                 )}
                 {option.title !== "Email Us" && (
-                  <Button className={`text-white w-full rounded-lg font-medium mt-auto hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`} style={{ backgroundColor: '#AB00FF' }}>
+                  <Button
+                    onClick={() => setIsChatBotOpen(true)}
+                    className={`text-white w-full rounded-lg font-medium mt-auto hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
+                    style={{ backgroundColor: '#AB00FF' }}
+                  >
                     {option.action}
                   </Button>
                 )}
@@ -200,6 +221,27 @@ export default function SupportPage() {
           </div>
         )}
       </section>
+
+      {/* Chat Components */}
+      {isChatBotOpen && (
+        <ChatBot
+          isOpen={isChatBotOpen}
+          onClose={() => setIsChatBotOpen(false)}
+          onContactSupport={() => {
+            setIsChatBotOpen(false);
+            setIsLiveChatOpen(true);
+          }}
+        />
+      )}
+
+      {isLiveChatOpen && currentUser && (
+        <LiveChat
+          userId={currentUser.id}
+          username={currentUser.username || currentUser.email}
+          isOpen={isLiveChatOpen}
+          onClose={() => setIsLiveChatOpen(false)}
+        />
+      )}
     </div>
   );
 }

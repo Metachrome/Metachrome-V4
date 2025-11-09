@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from '../hooks/use-toast';
 import { useAuth } from '../hooks/useAuth';
 import { NotificationBell } from '../components/admin/NotificationBell';
+import ChatManagement from '../components/admin/ChatManagement';
 import {
   Users,
   TrendingUp,
@@ -3013,26 +3014,7 @@ export default function WorkingAdminDashboard() {
 
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-6">
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Support Center</CardTitle>
-                <CardDescription className="text-gray-400">
-                  User support and communication management
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <MessageSquare className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-white mb-2">Support System</h3>
-                  <p className="text-gray-400 mb-4">
-                    Advanced support features coming soon
-                  </p>
-                  <Button variant="outline">
-                    Configure Support
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ChatManagement />
           </TabsContent>
         </Tabs>
       </div>
