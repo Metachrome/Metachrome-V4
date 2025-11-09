@@ -17,23 +17,35 @@ export default function SupportPage() {
   const [isChatBotOpen, setIsChatBotOpen] = useState(false);
   const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     // Get current user from session
     console.log('Fetching current user...');
+    setIsLoadingUser(true);
     fetch('/api/user')
       .then(res => {
         console.log('User API response status:', res.status, res.ok);
-        return res.ok ? res.json() : null;
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
       })
       .then(data => {
         console.log('User data received:', data);
-        if (data) {
+        if (data && data.id) {
           setCurrentUser(data);
+        } else {
+          console.warn('No valid user data received');
         }
       })
-      .catch(err => console.error('Error fetching user:', err));
+      .catch(err => {
+        console.error('Error fetching user:', err);
+      })
+      .finally(() => {
+        setIsLoadingUser(false);
+      });
   }, []);
 
   const supportOptions = [
@@ -227,29 +239,41 @@ export default function SupportPage() {
           isOpen={isChatBotOpen}
           onClose={() => setIsChatBotOpen(false)}
           onContactSupport={async () => {
-            console.log('Contact Support clicked, currentUser:', currentUser);
+            console.log('=== Contact Support Clicked ===');
+            console.log('Current user state:', currentUser);
+            console.log('Is loading user:', isLoadingUser);
 
             // Try to fetch user if not already loaded
             let user = currentUser;
-            if (!user) {
+            if (!user || !user.id) {
               console.log('User not loaded, fetching now...');
               try {
                 const res = await fetch('/api/user');
+                console.log('Fetch response:', res.status, res.ok);
                 if (res.ok) {
                   user = await res.json();
-                  setCurrentUser(user);
-                  console.log('User fetched successfully:', user);
+                  console.log('User fetched:', user);
+                  if (user && user.id) {
+                    setCurrentUser(user);
+                  } else {
+                    console.error('Invalid user data:', user);
+                    user = null;
+                  }
+                } else {
+                  console.error('Fetch failed with status:', res.status);
                 }
               } catch (err) {
                 console.error('Error fetching user:', err);
               }
             }
 
-            if (!user) {
+            if (!user || !user.id) {
+              console.error('No valid user found, showing alert');
               alert('Please login first to contact live support');
               return;
             }
 
+            console.log('Opening live chat for user:', user.id, user.username || user.email);
             // First open live chat, then close chatbot with delay
             setIsLiveChatOpen(true);
             setTimeout(() => {
