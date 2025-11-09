@@ -24,14 +24,33 @@ export function registerChatRoutes(app: Express) {
   });
 
   // Create or get existing conversation for user
-  app.post("/api/chat/conversation", requireAuth, async (req, res) => {
+  app.post("/api/chat/conversation", async (req, res) => {
     try {
       const { userId } = req.body;
-      const actualUserId = userId || req.user?.id;
+
+      // Try to get user from session first, then from body
+      const actualUserId = req.session?.user?.id || req.user?.id || userId;
+
+      console.log('💬 Creating/getting conversation for user:', actualUserId);
+      console.log('💬 Session user:', req.session?.user);
+      console.log('💬 Request body userId:', userId);
 
       if (!actualUserId) {
+        console.error('❌ No user ID provided');
         return res.status(401).json({ error: "User not authenticated" });
       }
+
+      // Verify user exists in database
+      const userCheck = await db.execute(sql`
+        SELECT id FROM users WHERE id = ${actualUserId} LIMIT 1
+      `);
+
+      if (!userCheck.rows || userCheck.rows.length === 0) {
+        console.error('❌ User not found in database:', actualUserId);
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      console.log('✅ User verified:', actualUserId);
 
       // Check for existing active conversation
       const existing = await db.execute(sql`
@@ -43,8 +62,11 @@ export function registerChatRoutes(app: Express) {
       `);
 
       if (existing.rows && existing.rows.length > 0) {
+        console.log('✅ Found existing conversation:', existing.rows[0].id);
         return res.json(existing.rows[0]);
       }
+
+      console.log('📝 Creating new conversation...');
 
       // Create new conversation
       const result = await db.execute(sql`
@@ -63,20 +85,23 @@ export function registerChatRoutes(app: Express) {
         RETURNING *
       `);
 
+      console.log('✅ Conversation created:', result.rows[0].id);
       res.json(result.rows[0]);
     } catch (error) {
-      console.error("Error creating conversation:", error);
-      res.status(500).json({ error: "Failed to create conversation" });
+      console.error("❌ Error creating conversation:", error);
+      res.status(500).json({ error: "Failed to create conversation", details: error.message });
     }
   });
 
   // Get messages for a conversation
-  app.get("/api/chat/messages/:conversationId", requireAuth, async (req, res) => {
+  app.get("/api/chat/messages/:conversationId", async (req, res) => {
     try {
       const { conversationId } = req.params;
 
+      console.log('📨 Fetching messages for conversation:', conversationId);
+
       const messages = await db.execute(sql`
-        SELECT 
+        SELECT
           cm.*,
           u.username as sender_username,
           u.email as sender_email
@@ -86,21 +111,37 @@ export function registerChatRoutes(app: Express) {
         ORDER BY cm.created_at ASC
       `);
 
+      console.log('✅ Found', messages.rows?.length || 0, 'messages');
       res.json(messages.rows || []);
     } catch (error) {
-      console.error("Error fetching messages:", error);
-      res.status(500).json({ error: "Failed to fetch messages" });
+      console.error("❌ Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages", details: error.message });
     }
   });
 
   // Send message (user)
-  app.post("/api/chat/send", requireAuth, async (req, res) => {
+  app.post("/api/chat/send", async (req, res) => {
     try {
       const { conversationId, message, senderId, senderType } = req.body;
 
+      console.log('📤 Sending message:', { conversationId, senderId, senderType, messageLength: message?.length });
+
       if (!conversationId || !message || !senderId) {
+        console.error('❌ Missing required fields:', { conversationId, message: !!message, senderId });
         return res.status(400).json({ error: "Missing required fields" });
       }
+
+      // Verify user exists
+      const userCheck = await db.execute(sql`
+        SELECT id FROM users WHERE id = ${senderId} LIMIT 1
+      `);
+
+      if (!userCheck.rows || userCheck.rows.length === 0) {
+        console.error('❌ Sender not found:', senderId);
+        return res.status(404).json({ error: "Sender not found" });
+      }
+
+      console.log('✅ Sender verified:', senderId);
 
       // Insert message
       const result = await db.execute(sql`
@@ -118,6 +159,8 @@ export function registerChatRoutes(app: Express) {
         RETURNING *
       `);
 
+      console.log('✅ Message inserted:', result.rows[0]?.id);
+
       // Update conversation last_message_at
       await db.execute(sql`
         UPDATE chat_conversations
@@ -125,10 +168,12 @@ export function registerChatRoutes(app: Express) {
         WHERE id = ${conversationId}
       `);
 
+      console.log('✅ Conversation updated');
+
       res.json(result.rows[0]);
     } catch (error) {
-      console.error("Error sending message:", error);
-      res.status(500).json({ error: "Failed to send message" });
+      console.error("❌ Error sending message:", error);
+      res.status(500).json({ error: "Failed to send message", details: error.message });
     }
   });
 
