@@ -13951,6 +13951,185 @@ app.post("/api/admin/notifications/read-all", (req, res) => {
   }
 });
 
+// ===== CHAT SYSTEM ENDPOINTS =====
+
+// Health check endpoint for chat system
+app.get('/api/chat/health', async (req, res) => {
+  try {
+    const { data: faqs, error } = await supabase
+      .from('chat_faq')
+      .select('*');
+
+    if (error) throw error;
+
+    res.json({
+      status: 'healthy',
+      counts: {
+        faqs: faqs?.length || 0
+      }
+    });
+  } catch (error) {
+    console.error('❌ Chat health check failed:', error);
+    res.status(500).json({ status: 'unhealthy', error: error.message });
+  }
+});
+
+// Get or create conversation for current user
+app.get('/api/chat/conversation', async (req, res) => {
+  try {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    console.log('💬 Getting/creating conversation for user:', userId);
+
+    // Check if conversation exists
+    const { data: existing, error: fetchError } = await supabase
+      .from('chat_conversations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (fetchError) throw fetchError;
+
+    if (existing && existing.length > 0) {
+      console.log('✅ Found existing conversation:', existing[0].id);
+      return res.json({ conversation: existing[0] });
+    }
+
+    // Create new conversation
+    const { data: newConv, error: createError } = await supabase
+      .from('chat_conversations')
+      .insert({
+        user_id: userId,
+        status: 'active',
+        priority: 'normal',
+        category: 'general'
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+
+    console.log('✅ Created new conversation:', newConv.id);
+    res.json({ conversation: newConv });
+  } catch (error) {
+    console.error('❌ Error getting/creating conversation:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Send message
+app.post('/api/chat/send', async (req, res) => {
+  try {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    console.log('💬 Sending message from user:', userId);
+
+    // Get or create conversation
+    let { data: conversation, error: convError } = await supabase
+      .from('chat_conversations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (convError || !conversation) {
+      // Create new conversation
+      const { data: newConv, error: createError } = await supabase
+        .from('chat_conversations')
+        .insert({
+          user_id: userId,
+          status: 'active',
+          priority: 'normal',
+          category: 'general'
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+      conversation = newConv;
+    }
+
+    // Insert message
+    const { data: newMessage, error: msgError } = await supabase
+      .from('chat_messages')
+      .insert({
+        conversation_id: conversation.id,
+        sender_id: userId,
+        sender_type: 'user',
+        message: message,
+        is_read: false
+      })
+      .select()
+      .single();
+
+    if (msgError) throw msgError;
+
+    console.log('✅ Message sent:', newMessage.id);
+    res.json({ message: newMessage });
+  } catch (error) {
+    console.error('❌ Error sending message:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get messages for conversation
+app.get('/api/chat/messages/:conversationId', async (req, res) => {
+  try {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { conversationId } = req.params;
+
+    const { data: messages, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    res.json({ messages: messages || [] });
+  } catch (error) {
+    console.error('❌ Error fetching messages:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get FAQ
+app.get('/api/chat/faq', async (req, res) => {
+  try {
+    const { data: faqs, error } = await supabase
+      .from('chat_faq')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+
+    res.json({ faqs: faqs || [] });
+  } catch (error) {
+    console.error('❌ Error fetching FAQ:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ===== SPA ROUTING =====
 // Only catch GET requests that don't start with /api, /assets, or /sse
 // This ensures static files (CSS, JS, images) and SSE endpoints are served correctly

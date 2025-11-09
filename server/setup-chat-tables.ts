@@ -1,12 +1,15 @@
-import { db } from "../db";
-import { sql } from "drizzle-orm";
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function setupChatTables() {
   console.log('💬 Setting up chat system tables...');
 
   try {
     // 1. Create chat_conversations table
-    await db.execute(sql`
+    await supabase.rpc('exec_sql', { sql_query: `
       CREATE TABLE IF NOT EXISTS chat_conversations (
         id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

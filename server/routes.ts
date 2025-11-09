@@ -186,25 +186,6 @@ if (multer) {
   console.log("⚠️ File upload system using text-only mode (multer not available)");
 }
 
-// Helper functions for deposit addresses and network info
-function getDepositAddress(currency: string): string {
-  const addresses: { [key: string]: string } = {
-    'USDT-ERC': '0x3BC095D473398033496F94a1a1a3A7084c',
-    'BTC': 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-    'ETH': '0x3BC095D473398033496F94a1a1a3A7084c'
-  };
-  return addresses[currency] || addresses['USDT-ERC'];
-}
-
-function getNetworkInfo(currency: string): string {
-  const networks: { [key: string]: string } = {
-    'USDT-ERC': 'Ethereum (ERC-20)',
-    'BTC': 'Bitcoin',
-    'ETH': 'Ethereum'
-  };
-  return networks[currency] || 'Ethereum (ERC-20)';
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log('🚀 ========================================');
   console.log('🚀 REGISTERING SSE ENDPOINTS');
