@@ -42,7 +42,9 @@ export default function SupportPage() {
     }
 
     // Fallback to API
-    fetch('/api/auth')
+    fetch('/api/auth', {
+      credentials: 'include' // Include session cookies
+    })
       .then(res => {
         console.log('User API response status:', res.status, res.ok);
         if (!res.ok) {
