@@ -24,7 +24,7 @@ export default function SupportPage() {
     // Get current user from session
     console.log('Fetching current user...');
     setIsLoadingUser(true);
-    fetch('/api/user')
+    fetch('/api/auth')
       .then(res => {
         console.log('User API response status:', res.status, res.ok);
         if (!res.ok) {
@@ -248,7 +248,7 @@ export default function SupportPage() {
             if (!user || !user.id) {
               console.log('User not loaded, fetching now...');
               try {
-                const res = await fetch('/api/user');
+                const res = await fetch('/api/auth');
                 console.log('Fetch response:', res.status, res.ok);
                 if (res.ok) {
                   user = await res.json();
