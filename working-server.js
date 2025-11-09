@@ -14280,16 +14280,9 @@ wss.on('connection', (ws, req) => {
   }));
 });
 
-// Handle WebSocket upgrade requests
-server.on('upgrade', (request, socket, head) => {
-  if (request.url === '/ws') {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
-    });
-  } else {
-    socket.destroy();
-  }
-});
+// NOTE: WebSocket upgrade is automatically handled by WebSocketServer
+// because we passed { server, path: '/ws' } in the constructor.
+// No need for manual server.on('upgrade') handler - it causes double handling!
 
 // Catch-all route for SPA - serve index.html for non-API routes
 app.get('*', (req, res) => {
