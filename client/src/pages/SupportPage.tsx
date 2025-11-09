@@ -222,6 +222,13 @@ export default function SupportPage() {
           isOpen={isChatBotOpen}
           onClose={() => setIsChatBotOpen(false)}
           onContactSupport={() => {
+            console.log('Contact Support clicked, currentUser:', currentUser);
+
+            if (!currentUser) {
+              alert('Please login first to contact live support');
+              return;
+            }
+
             // First open live chat, then close chatbot with delay
             setIsLiveChatOpen(true);
             setTimeout(() => {
