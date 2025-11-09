@@ -11,6 +11,7 @@ import { toast } from '../hooks/use-toast';
 import { useAuth } from '../hooks/useAuth';
 import { NotificationBell } from '../components/admin/NotificationBell';
 import ChatManagement from '../components/admin/ChatManagement';
+import ChatNotificationBadge from '../components/admin/ChatNotificationBadge';
 import {
   Users,
   TrendingUp,
@@ -1661,6 +1662,7 @@ export default function WorkingAdminDashboard() {
             <TabsTrigger value="support" className="flex-shrink-0 px-4 py-2">
               <MessageSquare className="w-4 h-4 mr-2" />
               Support
+              <ChatNotificationBadge />
             </TabsTrigger>
           </TabsList>
 

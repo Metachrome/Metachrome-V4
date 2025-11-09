@@ -14099,7 +14099,33 @@ app.post('/api/chat/send', async (req, res) => {
 
     if (msgError) throw msgError;
 
+    // Update conversation last_message_at
+    await supabase
+      .from('chat_conversations')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', conversation.id);
+
     console.log('✅ Message sent:', newMessage.id);
+
+    // Broadcast to admin via WebSocket
+    const messageWithUser = {
+      ...newMessage,
+      sender_username: user.username,
+      sender_email: user.email,
+      conversation_id: conversation.id
+    };
+
+    wss.clients.forEach(client => {
+      if (client.isAdmin && client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'new_message',
+          data: messageWithUser
+        }));
+      }
+    });
+
+    console.log('📡 Message broadcasted to admin clients');
+
     res.json({ message: newMessage });
   } catch (error) {
     console.error('❌ Error sending message:', error);
@@ -14311,6 +14337,22 @@ app.post('/api/admin/chat/mark-read/:conversationId', async (req, res) => {
   }
 });
 
+// Admin: Get unread message count
+app.get('/api/admin/chat/unread-count', async (req, res) => {
+  try {
+    const { count } = await supabase
+      .from('chat_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('sender_type', 'user')
+      .eq('is_read', false);
+
+    res.json({ count: count || 0 });
+  } catch (error) {
+    console.error('❌ Error fetching unread count:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Admin: Update conversation status
 app.patch('/api/admin/chat/conversation/:conversationId/status', async (req, res) => {
   try {
@@ -14419,6 +14461,47 @@ wss.on('connection', (ws, req) => {
         }
         userClientMap.get(userId).add(ws);
         console.log(`🔌 Mapped user ${userId} to WebSocket client. Total users: ${userClientMap.size}`);
+      }
+
+      // Handle admin chat subscription
+      if (data.type === 'subscribe_admin_chat') {
+        ws.isAdmin = true;
+        console.log('👨‍💼 Admin subscribed to chat updates');
+      }
+
+      // Handle user chat subscription
+      if (data.type === 'subscribe_chat') {
+        ws.userId = data.data?.userId;
+        console.log(`💬 User ${ws.userId} subscribed to chat updates`);
+      }
+
+      // Handle user sending message
+      if (data.type === 'send_message') {
+        console.log('💬 User message received, broadcasting to admins:', data.data);
+        // Broadcast to all admin clients
+        wss.clients.forEach(client => {
+          if (client.isAdmin && client.readyState === 1) {
+            client.send(JSON.stringify({
+              type: 'new_message',
+              data: data.data
+            }));
+          }
+        });
+      }
+
+      // Handle admin sending message
+      if (data.type === 'admin_message') {
+        console.log('💬 Admin message received, broadcasting to user:', data.data);
+        // Broadcast to specific user
+        const targetUserId = data.data?.userId;
+        wss.clients.forEach(client => {
+          if (client.userId === targetUserId && client.readyState === 1) {
+            client.send(JSON.stringify({
+              type: 'new_message',
+              data: data.data
+            }));
+          }
+        });
       }
 
       // Handle ping/pong for keep-alive
