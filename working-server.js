@@ -14164,19 +14164,30 @@ app.get('/api/admin/chat/conversations', async (req, res) => {
   try {
     console.log('📋 Admin fetching all conversations');
 
-    const { data: conversations, error } = await supabase
+    // Get all conversations
+    const { data: conversations, error: convError } = await supabase
       .from('chat_conversations')
-      .select(`
-        *,
-        users!inner(username, email)
-      `)
+      .select('*')
       .order('last_message_at', { ascending: false });
 
-    if (error) throw error;
+    if (convError) {
+      console.error('❌ Error fetching conversations:', convError);
+      throw convError;
+    }
 
-    // Get unread count for each conversation
-    const conversationsWithUnread = await Promise.all(
+    console.log('📋 Found', conversations?.length || 0, 'conversations');
+
+    // Enrich each conversation with user data and unread count
+    const enrichedConversations = await Promise.all(
       (conversations || []).map(async (conv) => {
+        // Get user data
+        const { data: user } = await supabase
+          .from('users')
+          .select('id, username, email')
+          .eq('id', conv.user_id)
+          .single();
+
+        // Get unread count
         const { count } = await supabase
           .from('chat_messages')
           .select('*', { count: 'exact', head: true })
@@ -14186,14 +14197,14 @@ app.get('/api/admin/chat/conversations', async (req, res) => {
 
         return {
           ...conv,
-          user: conv.users,
+          user: user || { username: 'Unknown', email: 'unknown@example.com' },
           unread_count: count || 0
         };
       })
     );
 
-    console.log('✅ Found', conversationsWithUnread.length, 'conversations');
-    res.json(conversationsWithUnread);
+    console.log('✅ Enriched', enrichedConversations.length, 'conversations with user data');
+    res.json(enrichedConversations);
   } catch (error) {
     console.error('❌ Error fetching admin conversations:', error);
     res.status(500).json({ error: error.message });
@@ -14208,17 +14219,34 @@ app.get('/api/admin/chat/messages/:conversationId', async (req, res) => {
 
     const { data: messages, error } = await supabase
       .from('chat_messages')
-      .select(`
-        *,
-        users!inner(username, email)
-      `)
+      .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
 
-    console.log('✅ Found', messages?.length || 0, 'messages');
-    res.json(messages || []);
+    // Enrich messages with sender info
+    const enrichedMessages = await Promise.all(
+      (messages || []).map(async (msg) => {
+        if (msg.sender_type === 'user' || msg.sender_type === 'admin') {
+          const { data: sender } = await supabase
+            .from('users')
+            .select('username, email')
+            .eq('id', msg.sender_id)
+            .single();
+
+          return {
+            ...msg,
+            sender_username: sender?.username || 'Unknown',
+            sender_email: sender?.email || 'unknown@example.com'
+          };
+        }
+        return msg;
+      })
+    );
+
+    console.log('✅ Found', enrichedMessages.length, 'messages');
+    res.json(enrichedMessages);
   } catch (error) {
     console.error('❌ Error fetching admin messages:', error);
     res.status(500).json({ error: error.message });
