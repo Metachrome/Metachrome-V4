@@ -21,9 +21,14 @@ export default function SupportPage() {
 
   useEffect(() => {
     // Get current user from session
+    console.log('Fetching current user...');
     fetch('/api/user')
-      .then(res => res.ok ? res.json() : null)
+      .then(res => {
+        console.log('User API response status:', res.status, res.ok);
+        return res.ok ? res.json() : null;
+      })
       .then(data => {
+        console.log('User data received:', data);
         if (data) {
           setCurrentUser(data);
         }
@@ -221,10 +226,26 @@ export default function SupportPage() {
         <ChatBot
           isOpen={isChatBotOpen}
           onClose={() => setIsChatBotOpen(false)}
-          onContactSupport={() => {
+          onContactSupport={async () => {
             console.log('Contact Support clicked, currentUser:', currentUser);
 
-            if (!currentUser) {
+            // Try to fetch user if not already loaded
+            let user = currentUser;
+            if (!user) {
+              console.log('User not loaded, fetching now...');
+              try {
+                const res = await fetch('/api/user');
+                if (res.ok) {
+                  user = await res.json();
+                  setCurrentUser(user);
+                  console.log('User fetched successfully:', user);
+                }
+              } catch (err) {
+                console.error('Error fetching user:', err);
+              }
+            }
+
+            if (!user) {
               alert('Please login first to contact live support');
               return;
             }
