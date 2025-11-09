@@ -135,6 +135,8 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
   const initializeChat = async () => {
     setIsLoading(true);
     try {
+      console.log('🔄 Initializing chat for user:', userId);
+
       // Get or create conversation
       const convResponse = await fetch('/api/chat/conversation', {
         method: 'POST',
@@ -142,23 +144,55 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
         body: JSON.stringify({ userId })
       });
 
+      console.log('📡 Conversation response:', convResponse.status, convResponse.ok);
+
       if (convResponse.ok) {
         const convData = await convResponse.json();
+        console.log('✅ Conversation created/loaded:', convData);
         setConversation(convData);
 
         // Load messages
         const messagesResponse = await fetch(`/api/chat/messages/${convData.id}`);
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json();
+          console.log('📨 Messages loaded:', messagesData.length);
           setMessages(messagesData);
         }
+      } else {
+        const errorText = await convResponse.text();
+        console.error('❌ Failed to create conversation:', convResponse.status, errorText);
+
+        // Create a mock conversation to allow chatting
+        console.log('⚠️ Creating mock conversation as fallback');
+        setConversation({
+          id: `temp-${userId}-${Date.now()}`,
+          user_id: userId,
+          status: 'active',
+          priority: 'normal',
+          category: 'general',
+          last_message_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        });
       }
     } catch (error) {
       console.error('Error initializing chat:', error);
+
+      // Create a mock conversation to allow chatting even if API fails
+      console.log('⚠️ Creating mock conversation due to error');
+      setConversation({
+        id: `temp-${userId}-${Date.now()}`,
+        user_id: userId,
+        status: 'active',
+        priority: 'normal',
+        category: 'general',
+        last_message_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      });
+
       toast({
-        title: "Connection Error",
-        description: "Failed to connect to support chat. Please try again.",
-        variant: "destructive"
+        title: "Limited Mode",
+        description: "Chat is running in limited mode. Messages may not be saved.",
+        variant: "default"
       });
     } finally {
       setIsLoading(false);
@@ -335,14 +369,14 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   placeholder="Type your message..."
-                  disabled={!conversation || !isConnected}
+                  disabled={!conversation}
                   className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!conversation || !isConnected || !inputMessage.trim()}
+                  disabled={!conversation || !inputMessage.trim()}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
