@@ -159,10 +159,10 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
       if (convResponse.ok) {
         const convData = await convResponse.json();
         console.log('✅ Conversation created/loaded:', convData);
-        setConversation(convData);
+        setConversation(convData.conversation);
 
         // Load messages
-        const messagesResponse = await fetch(`/api/chat/messages/${convData.id}`, {
+        const messagesResponse = await fetch(`/api/chat/messages/${convData.conversation.id}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`
           },
