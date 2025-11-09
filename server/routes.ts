@@ -211,6 +211,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('🚀 ========================================');
 
   // ============================================
+  // SKIP WEBSOCKET REQUESTS FROM EXPRESS ROUTING
+  // MUST BE FIRST - BEFORE ANY OTHER MIDDLEWARE
+  // ============================================
+  app.use((req: any, res, next) => {
+    // Skip WebSocket upgrade requests
+    if (req.headers.upgrade === 'websocket') {
+      console.log('🔌 WebSocket upgrade request detected, skipping Express routing');
+      return; // Don't call next(), let WebSocket server handle it
+    }
+    next();
+  });
+
+  // ============================================
   // REAL-TIME NOTIFICATION SYSTEM FOR SUPERADMIN
   // MUST BE FIRST - BEFORE ANY OTHER ROUTES
   // Using /sse/* path to avoid /api/* rate limiting
