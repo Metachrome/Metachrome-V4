@@ -13979,12 +13979,16 @@ app.get('/api/chat/conversation', async (req, res) => {
   try {
     // Get auth token
     const authToken = req.headers.authorization?.replace('Bearer ', '');
+    console.log('💬 Chat conversation - Auth token:', authToken ? authToken.substring(0, 30) + '...' : 'NONE');
+
     if (!authToken) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
     // Get user from token
     const user = await getUserFromToken(authToken);
+    console.log('💬 Chat conversation - User from token:', user ? { id: user.id, username: user.username } : 'NULL');
+
     if (!user) {
       return res.status(401).json({ error: 'Invalid authentication' });
     }
