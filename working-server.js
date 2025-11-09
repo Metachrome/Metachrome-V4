@@ -14283,9 +14283,9 @@ wss.on('connection', (ws, req) => {
 // Handle WebSocket upgrade requests
 server.on('upgrade', (request, socket, head) => {
   if (request.url === '/ws') {
-    // handleUpgrade will automatically emit 'connection' event
-    // Pass empty callback to avoid double handling
-    wss.handleUpgrade(request, socket, head, () => {});
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
   } else {
     socket.destroy();
   }
