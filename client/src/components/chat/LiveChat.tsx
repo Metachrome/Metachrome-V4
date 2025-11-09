@@ -231,8 +231,9 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Message sent successfully:', data);
         // Replace temp message with real one
-        setMessages(prev => prev.map(msg => 
+        setMessages(prev => prev.map(msg =>
           msg.id === tempMessage.id ? data : msg
         ));
 
@@ -250,10 +251,12 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
         }
       } else {
         // Remove temp message on error
+        const errorText = await response.text();
+        console.error('❌ Failed to send message:', response.status, errorText);
         setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
         toast({
           title: "Send Failed",
-          description: "Failed to send message. Please try again.",
+          description: `Failed to send message (${response.status}). Please try again.`,
           variant: "destructive"
         });
       }

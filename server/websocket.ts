@@ -27,13 +27,16 @@ export function setupWebSocket(server: Server) {
   server.on('upgrade', (request, socket, head) => {
     const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
 
+    console.log('🔌 WebSocket upgrade request received for path:', pathname);
+
     if (pathname === '/ws') {
-      console.log('🔌 Handling WebSocket upgrade request for /ws');
+      console.log('✅ Valid WebSocket path, handling upgrade...');
       wss.handleUpgrade(request, socket, head, (ws) => {
+        console.log('✅ WebSocket upgrade successful, emitting connection event');
         wss.emit('connection', ws, request);
       });
     } else {
-      console.log('❌ Invalid WebSocket path:', pathname);
+      console.log('❌ Invalid WebSocket path:', pathname, '- destroying socket');
       socket.destroy();
     }
   });
