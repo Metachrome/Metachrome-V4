@@ -32,6 +32,7 @@ import {
   healthCheck,
   Logger
 } from "./errorHandler";
+import { setupChatTables } from "./setup-chat-tables";
 
 const app = express();
 
@@ -150,6 +151,15 @@ app.use((req, res, next) => {
 (async () => {
   // Setup test route for debugging database connection
   setupTestRoute(app);
+
+  // Setup chat system tables
+  try {
+    await setupChatTables();
+    console.log('✅ Chat system tables initialized');
+  } catch (error) {
+    console.error('❌ Failed to setup chat tables:', error);
+    // Continue server startup even if chat tables fail
+  }
 
   const server = await registerRoutes(app);
 
