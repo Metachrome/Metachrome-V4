@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Bot, User, Send, X, Minimize2, Maximize2 } from 'lucide-react';
@@ -30,61 +30,75 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showFAQs, setShowFAQs] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load FAQs
-    loadFAQs();
-    
-    // Welcome message
-    if (messages.length === 0) {
+    if (isOpen && messages.length === 0) {
+      // Load FAQs
+      loadFAQs();
+
+      // Welcome message
       addBotMessage(
         "👋 Hello! I'm your METACHROME assistant. How can I help you today?\n\nYou can ask me common questions or click 'Contact Support' to chat with our team."
       );
     }
-  }, []);
+  }, [isOpen]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const loadFAQs = async () => {
+    // Set fallback FAQs immediately
+    const fallbackFAQs = [
+      {
+        id: '1',
+        question: 'How do I deposit funds?',
+        answer: 'To deposit funds, go to Wallet page, click Deposit, select your preferred cryptocurrency (USDT, BTC, ETH, SOL), choose the network, and send funds to the displayed address.',
+        category: 'deposit'
+      },
+      {
+        id: '2',
+        question: 'How do I withdraw funds?',
+        answer: 'To withdraw, go to Wallet page, click Withdraw, enter the amount and your wallet address, then submit. A superadmin will review and approve your request within 24 hours.',
+        category: 'withdrawal'
+      },
+      {
+        id: '3',
+        question: 'What are the trading durations?',
+        answer: 'We offer two trading durations: 30 seconds (minimum 100 USDT with 10% profit) and 60 seconds (minimum 1000 USDT with 15% profit).',
+        category: 'trading'
+      },
+      {
+        id: '4',
+        question: 'How do I verify my account?',
+        answer: 'Go to Profile page, click on Verification section, upload your ID document and proof of address. Our team will review within 24-48 hours.',
+        category: 'verification'
+      },
+      {
+        id: '5',
+        question: 'What cryptocurrencies are supported?',
+        answer: 'We support USDT (BEP20, TRC20, ERC20), Bitcoin (BTC), Ethereum (ETH), and Solana (SOL) for deposits and withdrawals.',
+        category: 'general'
+      }
+    ];
+
+    setFaqs(fallbackFAQs);
+
     try {
       const response = await fetch('/api/chat/faq');
       if (response.ok) {
         const data = await response.json();
-        setFaqs(data.slice(0, 5)); // Show top 5 FAQs
+        console.log('✅ Loaded FAQs from API:', data);
+        if (data && data.length > 0) {
+          setFaqs(data.slice(0, 5)); // Show top 5 FAQs
+        }
+      } else {
+        console.log('⚠️ FAQ API returned non-OK status, using fallback FAQs');
       }
     } catch (error) {
-      console.error('Error loading FAQs:', error);
-      // Fallback FAQs
-      setFaqs([
-        {
-          id: '1',
-          question: 'How do I deposit funds?',
-          answer: 'To deposit funds, go to Wallet page, click Deposit, select your preferred cryptocurrency (USDT, BTC, ETH, SOL), choose the network, and send funds to the displayed address.',
-          category: 'deposit'
-        },
-        {
-          id: '2',
-          question: 'How do I withdraw funds?',
-          answer: 'To withdraw, go to Wallet page, click Withdraw, enter the amount and your wallet address, then submit. A superadmin will review and approve your request within 24 hours.',
-          category: 'withdrawal'
-        },
-        {
-          id: '3',
-          question: 'What are the trading durations?',
-          answer: 'We offer two trading durations: 30 seconds (minimum 100 USDT with 10% profit) and 60 seconds (minimum 1000 USDT with 15% profit).',
-          category: 'trading'
-        },
-        {
-          id: '4',
-          question: 'How do I verify my account?',
-          answer: 'Go to Profile page, click on Verification section, upload your ID document and proof of address. Our team will review within 24-48 hours.',
-          category: 'verification'
-        },
-        {
-          id: '5',
-          question: 'What cryptocurrencies are supported?',
-          answer: 'We support USDT (BEP20, TRC20, ERC20), Bitcoin (BTC), Ethereum (ETH), and Solana (SOL) for deposits and withdrawals.',
-          category: 'general'
-        }
-      ]);
+      console.error('❌ Error loading FAQs, using fallback:', error);
     }
   };
 
@@ -274,6 +288,9 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
                   ))}
                 </div>
               )}
+
+              {/* Auto-scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
