@@ -9,9 +9,10 @@
   },
   "scripts": {
     "build": "vite build",
-    "start": "node working-server.js",
-    "start:production": "node working-server.js",
-    "dev": "node working-server.js",
+    "start": "tsx server/index.ts",
+    "start:production": "tsx server/index.ts",
+    "start:legacy": "node working-server.js",
+    "dev": "tsx server/index.ts",
     "android:sync": "npx cap sync android",
     "android:open": "npx cap open android",
     "android:build": "npm run build && npx cap sync android",
@@ -110,6 +111,7 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@types/ws": "^8.5.8",
+    "tsx": "^4.20.6",
     "typescript": "^5.2.2"
   }
 }
