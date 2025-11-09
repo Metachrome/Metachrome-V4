@@ -137,12 +137,21 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
     try {
       console.log('🔄 Initializing chat for user:', userId);
 
+      // Get auth token
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        console.error('❌ No auth token found');
+        setIsLoading(false);
+        return;
+      }
+
       // Get or create conversation
       const convResponse = await fetch('/api/chat/conversation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Include session cookies
-        body: JSON.stringify({ userId })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        credentials: 'include'
       });
 
       console.log('📡 Conversation response:', convResponse.status, convResponse.ok);
@@ -154,6 +163,9 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
 
         // Load messages
         const messagesResponse = await fetch(`/api/chat/messages/${convData.id}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
           credentials: 'include'
         });
         if (messagesResponse.ok) {
@@ -221,15 +233,27 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
     setMessages(prev => [...prev, tempMessage]);
 
     try {
+      // Get auth token
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        console.error('❌ No auth token found');
+        toast({
+          title: "Authentication Error",
+          description: "Please login again",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const response = await fetch('/api/chat/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Include session cookies
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        credentials: 'include',
         body: JSON.stringify({
-          conversationId: conversation.id,
-          message: messageText,
-          senderId: userId,
-          senderType: 'user'
+          message: messageText
         })
       });
 

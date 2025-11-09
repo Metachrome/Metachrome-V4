@@ -13977,11 +13977,19 @@ app.get('/api/chat/health', async (req, res) => {
 // Get or create conversation for current user
 app.get('/api/chat/conversation', async (req, res) => {
   try {
-    const userId = req.session?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Get user from token
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    const userId = user.id;
     console.log('💬 Getting/creating conversation for user:', userId);
 
     // Check if conversation exists
@@ -14025,11 +14033,19 @@ app.get('/api/chat/conversation', async (req, res) => {
 // Send message
 app.post('/api/chat/send', async (req, res) => {
   try {
-    const userId = req.session?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
+    // Get user from token
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    const userId = user.id;
     const { message } = req.body;
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -14090,9 +14106,16 @@ app.post('/api/chat/send', async (req, res) => {
 // Get messages for conversation
 app.get('/api/chat/messages/:conversationId', async (req, res) => {
   try {
-    const userId = req.session?.userId;
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    // Get auth token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (!authToken) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Get user from token
+    const user = await getUserFromToken(authToken);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid authentication' });
     }
 
     const { conversationId } = req.params;
