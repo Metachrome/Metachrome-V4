@@ -14157,6 +14157,154 @@ app.get('/api/chat/faq', async (req, res) => {
   }
 });
 
+// ===== ADMIN CHAT ENDPOINTS =====
+
+// Admin: Get all conversations
+app.get('/api/admin/chat/conversations', async (req, res) => {
+  try {
+    console.log('📋 Admin fetching all conversations');
+
+    const { data: conversations, error } = await supabase
+      .from('chat_conversations')
+      .select(`
+        *,
+        users!inner(username, email)
+      `)
+      .order('last_message_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Get unread count for each conversation
+    const conversationsWithUnread = await Promise.all(
+      (conversations || []).map(async (conv) => {
+        const { count } = await supabase
+          .from('chat_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', conv.id)
+          .eq('sender_type', 'user')
+          .eq('is_read', false);
+
+        return {
+          ...conv,
+          user: conv.users,
+          unread_count: count || 0
+        };
+      })
+    );
+
+    console.log('✅ Found', conversationsWithUnread.length, 'conversations');
+    res.json(conversationsWithUnread);
+  } catch (error) {
+    console.error('❌ Error fetching admin conversations:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Get messages for a conversation
+app.get('/api/admin/chat/messages/:conversationId', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    console.log('📨 Admin fetching messages for conversation:', conversationId);
+
+    const { data: messages, error } = await supabase
+      .from('chat_messages')
+      .select(`
+        *,
+        users!inner(username, email)
+      `)
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    console.log('✅ Found', messages?.length || 0, 'messages');
+    res.json(messages || []);
+  } catch (error) {
+    console.error('❌ Error fetching admin messages:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Send message
+app.post('/api/admin/chat/send', async (req, res) => {
+  try {
+    const { conversationId, message, senderId, senderType } = req.body;
+
+    if (!conversationId || !message || !senderId) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    console.log('💬 Admin sending message to conversation:', conversationId);
+
+    // Insert message
+    const { data: newMessage, error: msgError } = await supabase
+      .from('chat_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        sender_type: senderType || 'admin',
+        message: message,
+        is_read: false
+      })
+      .select()
+      .single();
+
+    if (msgError) throw msgError;
+
+    // Update conversation last_message_at
+    await supabase
+      .from('chat_conversations')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    console.log('✅ Admin message sent:', newMessage.id);
+    res.json(newMessage);
+  } catch (error) {
+    console.error('❌ Error sending admin message:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Mark messages as read
+app.post('/api/admin/chat/mark-read/:conversationId', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    await supabase
+      .from('chat_messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .eq('sender_type', 'user');
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Error marking messages as read:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Update conversation status
+app.patch('/api/admin/chat/conversation/:conversationId/status', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { status } = req.body;
+
+    if (!['active', 'waiting', 'closed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    await supabase
+      .from('chat_conversations')
+      .update({ status: status, updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Error updating conversation status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ===== SPA ROUTING =====
 // Only catch GET requests that don't start with /api, /assets, or /sse
 // This ensures static files (CSS, JS, images) and SSE endpoints are served correctly
