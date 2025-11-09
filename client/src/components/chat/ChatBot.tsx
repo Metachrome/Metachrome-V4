@@ -30,10 +30,11 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showFAQs, setShowFAQs] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen && !isInitialized) {
       // Load FAQs
       loadFAQs();
 
@@ -41,12 +42,16 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
       addBotMessage(
         "👋 Hello! I'm your METACHROME assistant. How can I help you today?\n\nYou can ask me common questions or click 'Contact Support' to chat with our team."
       );
+
+      setIsInitialized(true);
     }
-  }, [isOpen]);
+  }, [isOpen, isInitialized]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const loadFAQs = async () => {
