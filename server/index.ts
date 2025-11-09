@@ -34,6 +34,7 @@ import {
 } from "./errorHandler";
 import { setupChatTables } from "./setup-chat-tables";
 import { checkChatTables } from "./check-chat-tables";
+import { registerChatSetupRoute } from "./setup-chat-admin";
 
 const app = express();
 
@@ -171,6 +172,9 @@ app.use((req, res, next) => {
     console.error('❌ MANUAL ACTION REQUIRED: Run CHAT_SYSTEM_QUICK_FIX.sql in Supabase SQL Editor');
     // Continue server startup even if chat tables fail
   }
+
+  // Register chat setup admin route (must be before registerRoutes)
+  registerChatSetupRoute(app);
 
   const server = await registerRoutes(app);
 
