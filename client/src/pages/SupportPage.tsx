@@ -222,8 +222,11 @@ export default function SupportPage() {
           isOpen={isChatBotOpen}
           onClose={() => setIsChatBotOpen(false)}
           onContactSupport={() => {
-            setIsChatBotOpen(false);
+            // First open live chat, then close chatbot with delay
             setIsLiveChatOpen(true);
+            setTimeout(() => {
+              setIsChatBotOpen(false);
+            }, 100);
           }}
         />
       )}
