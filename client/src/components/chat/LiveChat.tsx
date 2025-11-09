@@ -141,6 +141,7 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
       const convResponse = await fetch('/api/chat/conversation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include session cookies
         body: JSON.stringify({ userId })
       });
 
@@ -152,7 +153,9 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
         setConversation(convData);
 
         // Load messages
-        const messagesResponse = await fetch(`/api/chat/messages/${convData.id}`);
+        const messagesResponse = await fetch(`/api/chat/messages/${convData.id}`, {
+          credentials: 'include'
+        });
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json();
           console.log('📨 Messages loaded:', messagesData.length);
@@ -221,6 +224,7 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
       const response = await fetch('/api/chat/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Include session cookies
         body: JSON.stringify({
           conversationId: conversation.id,
           message: messageText,
