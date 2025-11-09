@@ -15,14 +15,28 @@ interface ClientSubscription {
 }
 
 export function setupWebSocket(server: Server) {
-  const wss = new WebSocketServer({ 
-    server, 
-    path: '/ws',
+  const wss = new WebSocketServer({
+    noServer: true,
     perMessageDeflate: false,
   });
 
   const clients = new Map<string, ClientSubscription>();
   const priceFeeds = new Map<string, any>();
+
+  // Manual upgrade handling to prevent Express from interfering
+  server.on('upgrade', (request, socket, head) => {
+    const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+
+    if (pathname === '/ws') {
+      console.log('🔌 Handling WebSocket upgrade request for /ws');
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      console.log('❌ Invalid WebSocket path:', pathname);
+      socket.destroy();
+    }
+  });
 
   wss.on('connection', (ws) => {
     const clientId = generateClientId();
