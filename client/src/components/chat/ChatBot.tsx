@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Bot, User, Send, X, Minimize2, Maximize2 } from 'lucide-react';
@@ -33,28 +33,19 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
   const [isInitialized, setIsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isOpen && !isInitialized) {
-      // Load FAQs
-      loadFAQs();
+  const addBotMessage = useCallback((text: string, delay: number = 0) => {
+    setTimeout(() => {
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        text,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, newMessage]);
+    }, delay);
+  }, []);
 
-      // Welcome message
-      addBotMessage(
-        "👋 Hello! I'm your METACHROME assistant. How can I help you today?\n\nYou can ask me common questions or click 'Contact Support' to chat with our team."
-      );
-
-      setIsInitialized(true);
-    }
-  }, [isOpen, isInitialized]);
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  const loadFAQs = async () => {
+  const loadFAQs = useCallback(async () => {
     // Set fallback FAQs immediately
     const fallbackFAQs = [
       {
@@ -105,19 +96,36 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
     } catch (error) {
       console.error('❌ Error loading FAQs, using fallback:', error);
     }
-  };
+  }, []);
 
-  const addBotMessage = (text: string, delay: number = 0) => {
-    setTimeout(() => {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text,
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, newMessage]);
-    }, delay);
-  };
+  useEffect(() => {
+    if (isOpen && !isInitialized) {
+      // Load FAQs
+      loadFAQs();
+
+      // Welcome message
+      addBotMessage(
+        "👋 Hello! I'm your METACHROME assistant. How can I help you today?\n\nYou can ask me common questions or click 'Contact Support' to chat with our team."
+      );
+
+      setIsInitialized(true);
+    }
+
+    // Reset when chat is closed
+    if (!isOpen && isInitialized) {
+      setMessages([]);
+      setIsInitialized(false);
+      setShowFAQs(true);
+      setInputMessage('');
+    }
+  }, [isOpen, isInitialized, loadFAQs, addBotMessage]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const addUserMessage = (text: string) => {
     const newMessage: Message = {

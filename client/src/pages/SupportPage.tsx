@@ -31,12 +31,6 @@ export default function SupportPage() {
       .catch(err => console.error('Error fetching user:', err));
   }, []);
 
-  // Force cache refresh
-  const cacheKey = Date.now();
-
-  // Debug log to verify component is loading
-  console.log('SupportPage loaded - NO BANNER TEXT should appear!', { cacheKey });
-
   const supportOptions = [
     {
       icon: "/icon_support_email.png",
@@ -65,7 +59,7 @@ export default function SupportPage() {
   ];
 
   return (
-    <div className="min-h-[10vh] bg-[#0B0E11]" key={`support-page-clean-${cacheKey}`}>
+    <div className="min-h-[10vh] bg-[#0B0E11]">
       {/* CLEAN BANNER SECTION - ORIGINAL BANNER WITHOUT TEXT */}
       <section className={`relative overflow-hidden bg-black w-full ${isMobile ? 'pt-[25px] pb-0' : 'py-8'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
