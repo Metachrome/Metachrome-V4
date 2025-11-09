@@ -170,8 +170,8 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
         });
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json();
-          console.log('📨 Messages loaded:', messagesData.length);
-          setMessages(messagesData);
+          console.log('📨 Messages loaded:', messagesData.messages?.length || 0);
+          setMessages(messagesData.messages || []);
         }
       } else {
         const errorText = await convResponse.text();
@@ -262,7 +262,7 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
         console.log('✅ Message sent successfully:', data);
         // Replace temp message with real one
         setMessages(prev => prev.map(msg =>
-          msg.id === tempMessage.id ? data : msg
+          msg.id === tempMessage.id ? data.message : msg
         ));
 
         // Send via WebSocket for real-time delivery
