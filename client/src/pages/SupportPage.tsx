@@ -21,9 +21,27 @@ export default function SupportPage() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Get current user from session
+    // Get current user from session or localStorage
     console.log('Fetching current user...');
     setIsLoadingUser(true);
+
+    // First try localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        console.log('User from localStorage:', user);
+        if (user && user.id) {
+          setCurrentUser(user);
+          setIsLoadingUser(false);
+          return;
+        }
+      } catch (e) {
+        console.error('Error parsing stored user:', e);
+      }
+    }
+
+    // Fallback to API
     fetch('/api/auth')
       .then(res => {
         console.log('User API response status:', res.status, res.ok);
@@ -36,6 +54,8 @@ export default function SupportPage() {
         console.log('User data received:', data);
         if (data && data.id) {
           setCurrentUser(data);
+          // Store in localStorage for future use
+          localStorage.setItem('user', JSON.stringify(data));
         } else {
           console.warn('No valid user data received');
         }
@@ -246,24 +266,47 @@ export default function SupportPage() {
             // Try to fetch user if not already loaded
             let user = currentUser;
             if (!user || !user.id) {
-              console.log('User not loaded, fetching now...');
-              try {
-                const res = await fetch('/api/auth');
-                console.log('Fetch response:', res.status, res.ok);
-                if (res.ok) {
-                  user = await res.json();
-                  console.log('User fetched:', user);
+              console.log('User not loaded, trying localStorage...');
+
+              // Try localStorage first
+              const storedUser = localStorage.getItem('user');
+              if (storedUser) {
+                try {
+                  user = JSON.parse(storedUser);
+                  console.log('User from localStorage:', user);
                   if (user && user.id) {
                     setCurrentUser(user);
                   } else {
-                    console.error('Invalid user data:', user);
                     user = null;
                   }
-                } else {
-                  console.error('Fetch failed with status:', res.status);
+                } catch (e) {
+                  console.error('Error parsing stored user:', e);
+                  user = null;
                 }
-              } catch (err) {
-                console.error('Error fetching user:', err);
+              }
+
+              // If still no user, try API
+              if (!user || !user.id) {
+                console.log('Fetching from API...');
+                try {
+                  const res = await fetch('/api/auth');
+                  console.log('Fetch response:', res.status, res.ok);
+                  if (res.ok) {
+                    user = await res.json();
+                    console.log('User fetched:', user);
+                    if (user && user.id) {
+                      setCurrentUser(user);
+                      localStorage.setItem('user', JSON.stringify(user));
+                    } else {
+                      console.error('Invalid user data:', user);
+                      user = null;
+                    }
+                  } else {
+                    console.error('Fetch failed with status:', res.status);
+                  }
+                } catch (err) {
+                  console.error('Error fetching user:', err);
+                }
               }
             }
 
