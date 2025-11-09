@@ -571,7 +571,7 @@ export default function WalletPage() {
           <div className="space-y-8">
             {/* Balance Header */}
             <div>
-              <h1 className="text-[31px] font-bold text-white mb-2">Balance</h1>
+              <h1 className="text-[26px] md:text-[31px] font-bold text-white mb-2">Balance</h1>
               
 
 
