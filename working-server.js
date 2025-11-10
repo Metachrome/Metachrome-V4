@@ -1699,6 +1699,10 @@ app.post('/api/auth', async (req, res) => {
           const newUser = await createUser(userData);
           console.log('✅ Wallet user created in database:', newUser.id);
 
+          // Wait to ensure user is fully persisted in database
+          console.log('⏳ Waiting for database sync...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
           // REAL-TIME UPDATE: Notify admin dashboard of new user
           broadcastToAdmins({
             type: 'new_user_registered',
@@ -1810,6 +1814,10 @@ app.post('/api/auth', async (req, res) => {
       }
 
       console.log('✅ User registration successful:', username);
+
+      // Wait to ensure user is fully persisted in database
+      console.log('⏳ Waiting for database sync...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // REAL-TIME UPDATE: Notify admin dashboard of new user
       broadcastToAdmins({
@@ -2168,8 +2176,9 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(500).json({ error: 'Failed to create user' });
     }
 
-    // Wait a bit to ensure user is fully persisted
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait to ensure user is fully persisted in database (increased from 500ms to 1000ms)
+    console.log('⏳ Waiting for database sync...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Generate a simple token for authentication
     // Use the actual user ID from the database (which is a Supabase UUID)
@@ -2263,6 +2272,10 @@ app.post('/api/auth/user/register', async (req, res) => {
 
     console.log('✅ User created in database:', newUser.id);
     console.log('✅ Created user object:', { id: newUser.id, username: newUser.username, email: newUser.email });
+
+    // Wait to ensure user is fully persisted in database
+    console.log('⏳ Waiting for database sync...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // REAL-TIME UPDATE: Notify admin dashboard of new user
     broadcastToAdmins({
@@ -7367,11 +7380,13 @@ app.post('/api/trades/options', async (req, res) => {
 
     // Handle admin users - find the actual admin user in database
     let finalUserId = userId;
-    const users = await getUsers();
+
+    // CRITICAL FIX: Fetch fresh user data from database to avoid timing issues
+    let users = await getUsers();
 
     console.log(`🔍 DEBUG: Looking for user with ID: ${userId}`);
     console.log(`🔍 DEBUG: Total users in database: ${users.length}`);
-    console.log(`🔍 DEBUG: First 3 user IDs: ${users.slice(0, 3).map(u => u.id).join(', ')}`);
+    console.log(`🔍 DEBUG: Sample user IDs:`, users.slice(0, 3).map(u => ({ id: u.id, username: u.username })));
 
     // Check if this is an admin user by role or username
     let adminUser = users.find(u => u.id === userId);
@@ -7392,6 +7407,17 @@ app.post('/api/trades/options', async (req, res) => {
       } else {
         finalUserId = `${userId}-trading`;
         console.log(`🔧 Admin user ${userId} trading as ${finalUserId} (fallback)`);
+      }
+    }
+
+    // CRITICAL FIX: If user not found, try fetching fresh data one more time
+    let user = users.find(u => u.id === finalUserId || u.username === finalUserId);
+    if (!user) {
+      console.log(`⚠️ User not found in cached data, fetching fresh data...`);
+      users = await getUsers(); // Fetch again
+      user = users.find(u => u.id === finalUserId || u.username === finalUserId);
+      if (user) {
+        console.log(`✅ User found after refresh: ${user.username}`);
       }
     }
 
@@ -7423,17 +7449,17 @@ app.post('/api/trades/options', async (req, res) => {
       });
     }
 
-    // Check user balance - users already loaded above
-    console.log(`🔍 DEBUG: Searching for user with finalUserId: ${finalUserId}`);
-    const user = users.find(u => u.id === finalUserId || u.username === finalUserId);
+    // Check user balance - user already loaded/refreshed above
+    console.log(`🔍 DEBUG: Final check for user with finalUserId: ${finalUserId}`);
 
     if (!user) {
-      console.error(`❌ USER NOT FOUND! finalUserId: ${finalUserId}`);
-      console.error(`❌ Available user IDs: ${users.map(u => u.id).slice(0, 5).join(', ')}...`);
-      console.error(`❌ Available usernames: ${users.map(u => u.username).slice(0, 5).join(', ')}...`);
+      console.error(`❌ USER NOT FOUND AFTER REFRESH! finalUserId: ${finalUserId}`);
+      console.error(`❌ Original userId from request: ${userId}`);
+      console.error(`❌ Total users in database: ${users.length}`);
+      console.error(`❌ Sample user IDs:`, users.slice(0, 5).map(u => ({ id: u.id, username: u.username })));
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found. Please try logging out and logging in again.'
       });
     }
 
