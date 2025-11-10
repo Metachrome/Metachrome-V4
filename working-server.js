@@ -7365,6 +7365,10 @@ app.post('/api/trades/options', async (req, res) => {
     let finalUserId = userId;
     const users = await getUsers();
 
+    console.log(`🔍 DEBUG: Looking for user with ID: ${userId}`);
+    console.log(`🔍 DEBUG: Total users in database: ${users.length}`);
+    console.log(`🔍 DEBUG: First 3 user IDs: ${users.slice(0, 3).map(u => u.id).join(', ')}`);
+
     // Check if this is an admin user by role or username
     let adminUser = users.find(u => u.id === userId);
     if (!adminUser) {
@@ -7416,14 +7420,20 @@ app.post('/api/trades/options', async (req, res) => {
     }
 
     // Check user balance - users already loaded above
+    console.log(`🔍 DEBUG: Searching for user with finalUserId: ${finalUserId}`);
     const user = users.find(u => u.id === finalUserId || u.username === finalUserId);
 
     if (!user) {
+      console.error(`❌ USER NOT FOUND! finalUserId: ${finalUserId}`);
+      console.error(`❌ Available user IDs: ${users.map(u => u.id).slice(0, 5).join(', ')}...`);
+      console.error(`❌ Available usernames: ${users.map(u => u.username).slice(0, 5).join(', ')}...`);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
+
+    console.log(`✅ User found: ${user.username} (ID: ${user.id}, Balance: ${user.balance})`);
 
     const userBalance = parseFloat(user.balance || '0');
     if (userBalance < tradeAmount) {
