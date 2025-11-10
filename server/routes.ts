@@ -1641,8 +1641,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate profit for display/transaction purposes
       const profit = isWin ? profitAmount : -profitAmount;
 
-      console.log(`📊 Calculated profit: ${profit} (isWin: ${isWin})`);
-      console.log(`📊 Profit details:`, {
+      console.log(`🔥🔥🔥 [ROUTES.TS] Calculated profit: ${profit} (isWin: ${isWin})`);
+      console.log(`🔥🔥🔥 [ROUTES.TS] Profit details:`, {
         tradeAmount,
         profitPercentage,
         profitAmount,
@@ -1669,14 +1669,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : parseFloat(currentBalance.available || '0');
         const newLocked = parseFloat(currentBalance.locked || '0') - tradeAmount;
 
-        console.log(`💰 Balance update:`, {
+        console.log(`🔥🔥🔥 [ROUTES.TS] Balance update:`, {
           oldAvailable: currentBalance.available,
           oldLocked: currentBalance.locked,
           newAvailable: newAvailable.toString(),
           newLocked: Math.max(0, newLocked).toString(),
           tradeAmount,
           profitAmount,
-          isWin
+          isWin,
+          calculation: isWin ? `${currentBalance.available} + ${tradeAmount} + ${profitAmount} = ${newAvailable}` : `${currentBalance.available} (unchanged)`
         });
 
         await storage.updateBalance(

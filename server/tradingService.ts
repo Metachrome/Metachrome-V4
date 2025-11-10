@@ -201,7 +201,7 @@ class TradingService {
       const setting = optionsSettings.find(s => s.duration === trade.duration);
       const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
 
-      console.log(`📊 PROFIT CALCULATION:`, {
+      console.log(`🚨🚨🚨 [TRADING SERVICE] PROFIT CALCULATION:`, {
         tradeAmount,
         duration: trade.duration,
         profitPercentage,
@@ -212,7 +212,7 @@ class TradingService {
       const profitAmount = tradeAmount * (profitPercentage / 100);
       const profit = isWin ? profitAmount : -profitAmount;
 
-      console.log(`📊 CALCULATED PROFIT:`, {
+      console.log(`🚨🚨🚨 [TRADING SERVICE] CALCULATED PROFIT:`, {
         profitAmount,
         profit,
         calculation: `${tradeAmount} * (${profitPercentage} / 100) = ${profitAmount}`
@@ -232,7 +232,7 @@ class TradingService {
         const currentAvailable = parseFloat(userBalance.available || '0');
         const currentLocked = parseFloat(userBalance.locked || '0');
 
-        console.log(`💰 BEFORE Balance update:`, {
+        console.log(`🚨🚨🚨 [TRADING SERVICE] BEFORE Balance update:`, {
           currentAvailable,
           currentLocked,
           total: currentAvailable + currentLocked,
@@ -253,7 +253,7 @@ class TradingService {
           newAvailable = currentAvailable + tradeAmount + profitAmount;
           newLocked = currentLocked - tradeAmount;
 
-          console.log(`💰 WIN Calculation:`, {
+          console.log(`🚨🚨🚨 [TRADING SERVICE] WIN Calculation:`, {
             step1_unlock: `${currentAvailable} (current) + ${tradeAmount} (unlock) = ${currentAvailable + tradeAmount}`,
             step2_profit: `${currentAvailable + tradeAmount} + ${profitAmount} (profit) = ${newAvailable}`,
             finalFormula: `${currentAvailable} + ${tradeAmount} + ${profitAmount} = ${newAvailable}`,
@@ -268,7 +268,7 @@ class TradingService {
           newAvailable = currentAvailable + tradeAmount - profitAmount;
           newLocked = currentLocked - tradeAmount;
 
-          console.log(`💰 LOSE Calculation:`, {
+          console.log(`🚨🚨🚨 [TRADING SERVICE] LOSE Calculation:`, {
             step1_unlock: `${currentAvailable} (current) + ${tradeAmount} (unlock) = ${currentAvailable + tradeAmount}`,
             step2_loss: `${currentAvailable + tradeAmount} - ${profitAmount} (loss) = ${newAvailable}`,
             finalFormula: `${currentAvailable} + ${tradeAmount} - ${profitAmount} = ${newAvailable}`,
@@ -277,7 +277,7 @@ class TradingService {
           });
         }
 
-        console.log(`💰 AFTER Balance update:`, {
+        console.log(`🚨🚨🚨 [TRADING SERVICE] AFTER Balance update:`, {
           newAvailable,
           newLocked,
           total: newAvailable + newLocked,
