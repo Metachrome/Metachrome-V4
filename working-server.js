@@ -1678,6 +1678,7 @@ app.post('/api/auth', async (req, res) => {
           });
         } else {
           // Create new wallet user
+          // GIVE NEW USERS 50000 USDT STARTING BALANCE FOR TESTING
           const userData = {
             id: `wallet-${Date.now()}`,
             username: walletAddress,
@@ -1685,7 +1686,7 @@ app.post('/api/auth', async (req, res) => {
             password_hash: '', // No password for wallet users
             firstName: '',
             lastName: '',
-            balance: 0,
+            balance: 50000, // Starting balance for new users
             role: 'user',
             status: 'active',
             trading_mode: 'normal',
@@ -1756,13 +1757,14 @@ app.post('/api/auth', async (req, res) => {
       const referralCode = `REF${username.toUpperCase().substring(0, 4)}${Date.now().toString().slice(-4)}`;
 
       // Create new user
+      // GIVE NEW USERS 50000 USDT STARTING BALANCE FOR TESTING
       const userData = {
         username,
         email,
         password_hash: hashedPassword,
         firstName: firstName || '',
         lastName: lastName || '',
-        balance: 0, // Starting balance
+        balance: 50000, // Starting balance for new users
         role: 'user',
         status: 'active',
         trading_mode: 'normal',
@@ -2139,13 +2141,14 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Create new user with proper structure including new fields
     // NOTE: Do NOT include 'id' field - let Supabase generate UUID
+    // GIVE NEW USERS 50000 USDT STARTING BALANCE FOR TESTING
     const userData = {
       username,
       email,
       password_hash: hashedPassword,
       firstName: firstName || '',
       lastName: lastName || '',
-      balance: 0,
+      balance: 50000, // Starting balance for new users
       role: 'user',
       status: 'active',
       trading_mode: 'normal',
@@ -2235,13 +2238,14 @@ app.post('/api/auth/user/register', async (req, res) => {
 
     // Create new user with firstName and lastName support
     // NOTE: Do NOT include 'id' field - let Supabase generate UUID
+    // GIVE NEW USERS 50000 USDT STARTING BALANCE FOR TESTING
     const userData = {
       username,
       email,
       password_hash: hashedPassword,
       firstName: firstName || '',
       lastName: lastName || '',
-      balance: 0,
+      balance: 50000, // Starting balance for new users
       role: 'user',
       status: 'active',
       trading_mode: 'normal',
