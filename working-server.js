@@ -7941,20 +7941,23 @@ app.post('/api/trades/complete', async (req, res) => {
     else if (duration === 300) profitRate = 0.75;
     else if (duration === 600) profitRate = 1.00;
 
-    const profitPercentageAmount = tradeAmount * profitRate; // Profit/Loss percentage amount (e.g., 25% of 10,000 = 2,500)
+    const profitPercentageAmount = tradeAmount * profitRate; // Profit/Loss percentage amount (e.g., 15% of 20,000 = 3,000)
 
     if (finalOutcome) {
-      // Win: Add back the full amount PLUS the profit
-      // At trade start, only the loss percentage was deducted, so we add back full amount + profit
-      profitAmount = profitPercentageAmount; // For notification display: +2,500
-      balanceChange = tradeAmount + profitPercentageAmount; // Add back FULL amount + profit
-      console.log(`✅ WIN: Adding back full amount (${tradeAmount}) + profit (${profitPercentageAmount}) = ${balanceChange} USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}`);
+      // WIN: Add ONLY the profit percentage
+      // At trade start, full amount was moved to locked balance (not deducted from total)
+      // At trade end, locked amount is returned to available + profit is added
+      // So balance change = profit only (the unlock happens separately in locked balance)
+      profitAmount = profitPercentageAmount; // For notification display: +3,000
+      balanceChange = profitPercentageAmount; // FIXED: Add ONLY profit, not full amount
+      console.log(`✅ WIN: Adding profit only (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}`);
     } else {
-      // Lose: Loss percentage already deducted at trade start
-      // CRITICAL FIX: Loss P&L is the loss percentage that was already deducted
-      profitAmount = -profitPercentageAmount; // Loss amount (negative) - the percentage (e.g., -2,500)
-      balanceChange = 0; // CRITICAL FIX: Balance was already deducted at trade start, don't deduct again!
-      console.log(`❌ LOSE: Loss percentage (${profitPercentageAmount}) USDT lost (already deducted at trade start). P&L: ${profitAmount}`);
+      // LOSE: Deduct the loss percentage
+      // At trade start, full amount was moved to locked balance
+      // At trade end, locked amount is lost + loss percentage is deducted from available
+      profitAmount = -profitPercentageAmount; // Loss amount (negative) - the percentage (e.g., -3,000)
+      balanceChange = -profitPercentageAmount; // FIXED: Deduct loss percentage
+      console.log(`❌ LOSE: Deducting loss (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}. P&L: ${profitAmount}`);
     }
 
     const newBalance = oldBalance + balanceChange;
