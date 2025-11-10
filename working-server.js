@@ -6412,24 +6412,25 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     else if (duration === 600) profitRate = 1.00;
 
     let profitAmount = 0;
-    const profitPercentageAmount = amount * profitRate; // Profit/Loss percentage amount (e.g., 25% of 10,000 = 2,500)
+    const profitPercentageAmount = amount * profitRate; // Profit/Loss percentage amount (e.g., 15% of 20,000 = 3,000)
 
     if (finalWon) {
-      // Win: Return the deducted profit + earn the profit
-      // At trade start, profit percentage was deducted
-      // On WIN: add back the profit + earn the profit = 2x profit
-      profitAmount = profitPercentageAmount; // For notification display: profit earned
-      balanceChange = profitPercentageAmount + profitPercentageAmount; // Return profit + earn profit
+      // WIN: Add ONLY the profit percentage
+      // At trade start, full amount was moved to locked balance (not deducted from total)
+      // At trade end, locked amount is returned to available + profit is added
+      // So balance change = profit only (the unlock happens separately in locked balance)
+      profitAmount = profitPercentageAmount; // For notification display: +3,000
+      balanceChange = profitPercentageAmount; // FIXED: Add ONLY profit, not 2x profit
       users[userIndex].balance = (oldBalance + balanceChange).toString();
-      console.log(`✅ WIN: Return profit (${profitPercentageAmount}) + Earn profit (${profitPercentageAmount}) = ${balanceChange} USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}`);
+      console.log(`✅ WIN: Adding profit only (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}`);
     } else {
-      // Lose: Loss percentage already deducted at trade start
-      // CRITICAL FIX: Loss P&L is the loss percentage that was already deducted
-      profitAmount = -profitPercentageAmount; // Loss amount (negative) - the percentage (e.g., -1,000)
-      balanceChange = 0; // Balance already deducted at trade start
-      // DON'T CHANGE BALANCE - it was already deducted when trade started
-      // users[userIndex].balance remains as oldBalance (which already has the deduction)
-      console.log(`❌ LOSE: Loss percentage (${profitPercentageAmount}) USDT lost (already deducted at trade start). P&L: ${profitAmount}`);
+      // LOSE: Deduct the loss percentage
+      // At trade start, full amount was moved to locked balance
+      // At trade end, locked amount is lost + loss percentage is deducted from available
+      profitAmount = -profitPercentageAmount; // Loss amount (negative) - the percentage (e.g., -3,000)
+      balanceChange = -profitPercentageAmount; // FIXED: Deduct loss percentage
+      users[userIndex].balance = (oldBalance + balanceChange).toString();
+      console.log(`❌ LOSE: Deducting loss (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}. P&L: ${profitAmount}`);
       console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitPercentageAmount=${profitPercentageAmount}, profitAmount=${profitAmount}, duration=${duration}`);
     }
 
@@ -6522,7 +6523,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         if (error) {
           console.error('❌ Database update error:', error);
         } else {
-          console.log(`✅ Trade ${tradeId} updated in database: ${finalWon ? 'WIN' : 'LOSE'}, exit price: ${exitPrice}`);
+          console.log(`✅ Trade ${tradeId} updated in database: ${finalWon ? 'WIN' : 'LOSE'}, exit price: ${calculatedExitPrice}`);
         }
       } catch (dbError) {
         console.error('❌ Database update exception:', dbError);
