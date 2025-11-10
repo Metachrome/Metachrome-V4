@@ -2549,16 +2549,21 @@ app.get('/api/auth/google/callback', async (req, res) => {
     if (!user) {
       // Create new user
       // NOTE: Do NOT include 'id' field - let Supabase generate UUID
+      // GIVE NEW USERS 50000 USDT STARTING BALANCE FOR TESTING
       const userData = {
         username: googleUser.email.split('@')[0] + '_' + Date.now(),
         email: googleUser.email,
         password_hash: '', // No password for OAuth users
         firstName: googleUser.given_name || '',
         lastName: googleUser.family_name || '',
-        balance: 0,
+        balance: 50000, // Starting balance for new users
         role: 'user',
         status: 'active',
         trading_mode: 'normal',
+        verification_status: 'unverified',
+        referral_code: `REF${googleUser.email.split('@')[0].toUpperCase().substring(0, 4)}${Date.now().toString().slice(-4)}`,
+        total_trades: 0,
+        pending_bonus_restrictions: [],
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       };
@@ -2572,11 +2577,25 @@ app.get('/api/auth/google/callback', async (req, res) => {
       }
 
       console.log('✅ Google user created in database:', user.id);
+
+      // Wait to ensure user is fully persisted in database
+      console.log('⏳ Waiting for database sync...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
     } else {
       // Update last login
       user.last_login = new Date().toISOString();
-      await updateUser(user.id, { last_login: user.last_login });
-      console.log('✅ Existing Google user logged in:', user.email);
+      const updateData = { last_login: user.last_login };
+
+      // CRITICAL FIX: If existing user has 0 balance, give them starting balance
+      const currentBalance = parseFloat(user.balance || '0');
+      if (currentBalance === 0) {
+        console.log(`⚠️ Existing user ${user.email} has 0 balance, giving 50000 USDT starting balance`);
+        updateData.balance = 50000;
+        user.balance = 50000; // Update local object too
+      }
+
+      await updateUser(user.id, updateData);
+      console.log('✅ Existing Google user logged in:', user.email, 'Balance:', user.balance);
     }
 
     // Generate token and redirect to dashboard
