@@ -1239,14 +1239,17 @@ async function getUserFromToken(token) {
       try {
         // Decode the Base64 encoded user ID
         userId = Buffer.from(encodedUserId, 'base64').toString('utf-8');
+        console.log('🔍 getUserFromToken: Decoded user ID:', userId);
       } catch (decodeError) {
         // If Base64 decode fails, assume it's the old format
         userId = encodedUserId;
+        console.log('🔍 getUserFromToken: Using raw user ID (decode failed):', userId);
       }
 
       // If Supabase is configured, prioritize Supabase
       if (isSupabaseConfigured && supabase) {
         try {
+          console.log('🔍 getUserFromToken: Querying Supabase for user ID:', userId);
           const { data, error } = await supabase
             .from('users')
             .select('*')
@@ -1254,24 +1257,33 @@ async function getUserFromToken(token) {
             .single();
 
           if (error && error.code !== 'PGRST116') {
+            console.error('❌ getUserFromToken: Supabase error:', error);
             throw error;
           }
 
           if (data) {
+            console.log('✅ getUserFromToken: Found user in Supabase:', data.username);
             return data;
+          } else {
+            console.log('⚠️ getUserFromToken: User not found in Supabase, trying local storage');
           }
         } catch (supabaseError) {
+          console.error('❌ getUserFromToken: Supabase query failed:', supabaseError);
           // Fall through to local storage
         }
       }
 
       // Fall back to local storage
+      console.log('🔍 getUserFromToken: Querying local storage for user ID:', userId);
       const users = await getUsers();
+      console.log('🔍 getUserFromToken: Total users in local storage:', users.length);
       let foundUser = users.find(u => u.id === userId);
       if (foundUser) {
+        console.log('✅ getUserFromToken: Found user in local storage:', foundUser.username);
         return foundUser;
       }
 
+      console.log('❌ getUserFromToken: User not found anywhere! User ID:', userId);
       return null;
     } else if (token.startsWith('admin-session-')) {
       // Handle admin tokens
