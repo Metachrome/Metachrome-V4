@@ -75,8 +75,6 @@ export default function UserDashboard() {
   // Simple calculations for now - use API balance if available, fallback to user session balance
   const usdtBalance = Array.isArray(balances) ? balances.find(b => b.symbol === 'USDT') : balances?.USDT;
   const totalBalance = usdtBalance?.available ? parseFloat(usdtBalance.available) : (user?.balance || 0);
-  const totalTrades = 0;
-  const winRate = '0';
 
   // Real platform deposit addresses (where users send crypto to deposit)
   const cryptoNetworks = {
@@ -472,10 +470,9 @@ export default function UserDashboard() {
           </div>
         )}
 
-        {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Balance Card */}
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-green-500/50 transition-colors">
+        {/* Total Portfolio Value - Single Card */}
+        <div className="mb-8">
+          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">
                 Total Portfolio Value
@@ -501,99 +498,56 @@ export default function UserDashboard() {
               </p>
             </CardContent>
           </Card>
-
-          {/* Total Trades Card */}
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-blue-500/50 transition-colors">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
-                Total Trades
-              </CardTitle>
-              <BarChart3 className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {totalTrades}
-              </div>
-              <p className="text-xs text-gray-400">
-                All time
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Win Rate Card */}
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 hover:border-green-500/50 transition-colors">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
-                Win Rate
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {winRate}%
-              </div>
-              <p className="text-xs text-gray-400">
-                Success rate
-              </p>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                <div
-                  className="bg-gradient-to-r from-green-500 to-green-400 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min(parseFloat(winRate), 100)}%` }}
-                ></div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Quick Actions */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Quick Actions</CardTitle>
-              <CardDescription className="text-gray-400">
-                Start trading or manage your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Link href="/trade/options">
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Options Trading
-                </Button>
-              </Link>
-              <Link href="/trade/spot">
-                <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Spot Trading
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+        {/* Quick Actions */}
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white">Quick Actions</CardTitle>
+            <CardDescription className="text-gray-400">
+              Start trading or manage your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Link href="/trade/options">
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Options Trading
+              </Button>
+            </Link>
+            <Link href="/trade/spot">
+              <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Spot Trading
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
-          {/* Account Management */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Account Management</CardTitle>
-              <CardDescription className="text-gray-400">
-                Manage your account settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Link href="/profile">
-                <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                  View Profile
-                </Button>
-              </Link>
-              <Link href="/transactions">
-                <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                  Transaction History
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+        {/* Account Management */}
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white">Account Management</CardTitle>
+            <CardDescription className="text-gray-400">
+              Manage your account settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Link href="/profile">
+              <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
+                View Profile
+              </Button>
+            </Link>
+            <Link href="/transactions">
+              <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
+                Transaction History
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
-          {/* Add Funds Section */}
-          <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700">
+        {/* Add Funds Section */}
+        <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 mb-8">
             <CardHeader>
               <CardTitle className="text-white">Add Funds</CardTitle>
               <CardDescription className="text-gray-400">
@@ -789,38 +743,6 @@ export default function UserDashboard() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Simple Trading Section */}
-        <div className="mt-8">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Start Trading</CardTitle>
-              <CardDescription className="text-gray-400">
-                Begin your trading journey
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <TrendingUp className="h-16 w-16 text-purple-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Ready to Trade?</h3>
-              <p className="text-gray-400 mb-6">Start trading with our advanced platform</p>
-              <div className="space-y-4">
-                <Link href="/trade/options">
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Options Trading
-                  </Button>
-                </Link>
-                <Link href="/trade/spot">
-                  <Button variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                    <BarChart3 className="w-4 w-4 mr-2" />
-                    Spot Trading
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
