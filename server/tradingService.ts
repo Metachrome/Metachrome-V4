@@ -246,23 +246,34 @@ class TradingService {
         let newLocked: number;
 
         if (isWin) {
-          // WIN: Unlock tradeAmount from locked, add profitAmount to available
-          // Formula: available + (locked amount returned) + (profit earned)
+          // WIN: Unlock tradeAmount from locked back to available, then add ONLY profit
+          // Step 1: Unlock the trade amount (return from locked to available)
+          // Step 2: Add profit to available
+          // Formula: available + tradeAmount (unlock) + profitAmount (profit ONLY)
           newAvailable = currentAvailable + tradeAmount + profitAmount;
           newLocked = currentLocked - tradeAmount;
 
           console.log(`💰 WIN Calculation:`, {
-            formula: `${currentAvailable} + ${tradeAmount} (unlock) + ${profitAmount} (profit) = ${newAvailable}`,
-            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked}`
+            step1_unlock: `${currentAvailable} (current) + ${tradeAmount} (unlock) = ${currentAvailable + tradeAmount}`,
+            step2_profit: `${currentAvailable + tradeAmount} + ${profitAmount} (profit) = ${newAvailable}`,
+            finalFormula: `${currentAvailable} + ${tradeAmount} + ${profitAmount} = ${newAvailable}`,
+            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked}`,
+            netChange: `+${profitAmount} (profit only)`
           });
         } else {
-          // LOSE: Locked amount is lost (removed from locked, not returned to available)
-          newAvailable = currentAvailable; // Available stays the same
-          newLocked = currentLocked - tradeAmount; // Remove from locked (lost)
+          // LOSE: Unlock tradeAmount from locked, but deduct loss from available
+          // Step 1: Unlock the trade amount (return from locked to available)
+          // Step 2: Deduct loss from available
+          // Formula: available + tradeAmount (unlock) - profitAmount (loss)
+          newAvailable = currentAvailable + tradeAmount - profitAmount;
+          newLocked = currentLocked - tradeAmount;
 
           console.log(`💰 LOSE Calculation:`, {
-            formula: `${currentAvailable} (unchanged)`,
-            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked} (lost)`
+            step1_unlock: `${currentAvailable} (current) + ${tradeAmount} (unlock) = ${currentAvailable + tradeAmount}`,
+            step2_loss: `${currentAvailable + tradeAmount} - ${profitAmount} (loss) = ${newAvailable}`,
+            finalFormula: `${currentAvailable} + ${tradeAmount} - ${profitAmount} = ${newAvailable}`,
+            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked}`,
+            netChange: `-${profitAmount} (loss only)`
           });
         }
 
@@ -270,7 +281,8 @@ class TradingService {
           newAvailable,
           newLocked,
           total: newAvailable + newLocked,
-          change: (newAvailable + newLocked) - (currentAvailable + currentLocked)
+          totalChange: (newAvailable + newLocked) - (currentAvailable + currentLocked),
+          expectedChange: isWin ? `+${profitAmount}` : `-${profitAmount}`
         });
 
         await storage.updateBalance(
