@@ -201,7 +201,22 @@ class TradingService {
       const setting = optionsSettings.find(s => s.duration === trade.duration);
       const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
 
-      const profit = isWin ? tradeAmount * (profitPercentage / 100) : -(tradeAmount * (profitPercentage / 100));
+      console.log(`📊 PROFIT CALCULATION:`, {
+        tradeAmount,
+        duration: trade.duration,
+        profitPercentage,
+        setting: setting ? { duration: setting.duration, profitPercentage: setting.profitPercentage } : 'NOT FOUND',
+        isWin
+      });
+
+      const profitAmount = tradeAmount * (profitPercentage / 100);
+      const profit = isWin ? profitAmount : -profitAmount;
+
+      console.log(`📊 CALCULATED PROFIT:`, {
+        profitAmount,
+        profit,
+        calculation: `${tradeAmount} * (${profitPercentage} / 100) = ${profitAmount}`
+      });
 
       // Update trade
       await storage.updateTrade(tradeId, {
@@ -214,32 +229,48 @@ class TradingService {
       // Update user balance - unlock the locked amount and add/subtract profit
       const userBalance = await storage.getBalance(trade.userId, 'USDT');
       if (userBalance) {
-        // For WIN: unlock tradeAmount from locked, add profit to available
-        // For LOSE: unlock 0 (amount stays locked and lost), available unchanged
         const currentAvailable = parseFloat(userBalance.available || '0');
         const currentLocked = parseFloat(userBalance.locked || '0');
+
+        console.log(`💰 BEFORE Balance update:`, {
+          currentAvailable,
+          currentLocked,
+          total: currentAvailable + currentLocked,
+          tradeAmount,
+          profitAmount,
+          profit,
+          isWin
+        });
 
         let newAvailable: number;
         let newLocked: number;
 
         if (isWin) {
-          // WIN: Return locked amount to available + add profit
-          newAvailable = currentAvailable + tradeAmount + profit;
+          // WIN: Unlock tradeAmount from locked, add profitAmount to available
+          // Formula: available + (locked amount returned) + (profit earned)
+          newAvailable = currentAvailable + tradeAmount + profitAmount;
           newLocked = currentLocked - tradeAmount;
+
+          console.log(`💰 WIN Calculation:`, {
+            formula: `${currentAvailable} + ${tradeAmount} (unlock) + ${profitAmount} (profit) = ${newAvailable}`,
+            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked}`
+          });
         } else {
-          // LOSE: Locked amount is lost, deduct loss from available
-          newAvailable = currentAvailable;
-          newLocked = currentLocked - tradeAmount;
+          // LOSE: Locked amount is lost (removed from locked, not returned to available)
+          newAvailable = currentAvailable; // Available stays the same
+          newLocked = currentLocked - tradeAmount; // Remove from locked (lost)
+
+          console.log(`💰 LOSE Calculation:`, {
+            formula: `${currentAvailable} (unchanged)`,
+            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked} (lost)`
+          });
         }
 
-        console.log(`💰 Balance update (tradingService):`, {
-          oldAvailable: userBalance.available,
-          oldLocked: userBalance.locked,
-          newAvailable: newAvailable.toString(),
-          newLocked: Math.max(0, newLocked).toString(),
-          tradeAmount,
-          profit,
-          isWin
+        console.log(`💰 AFTER Balance update:`, {
+          newAvailable,
+          newLocked,
+          total: newAvailable + newLocked,
+          change: (newAvailable + newLocked) - (currentAvailable + currentLocked)
         });
 
         await storage.updateBalance(
