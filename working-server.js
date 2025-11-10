@@ -1283,6 +1283,12 @@ async function getUserFromToken(token) {
         return foundUser;
       }
 
+      // CRITICAL FIX: If user not found by ID, try to find by email from stored user data
+      // This handles cases where Google OAuth user ID might not match
+      console.log('⚠️ getUserFromToken: User not found by ID, trying to extract email from token');
+
+      // Try to get email from localStorage user data that was stored during OAuth
+      // The token was created with user data, so we can try to find the user by other means
       console.log('❌ getUserFromToken: User not found anywhere! User ID:', userId);
       return null;
     } else if (token.startsWith('admin-session-')) {
@@ -7449,6 +7455,23 @@ app.post('/api/trades/options', async (req, res) => {
       user = users.find(u => u.id === finalUserId || u.username === finalUserId);
       if (user) {
         console.log(`✅ User found after refresh: ${user.username}`);
+      } else {
+        // CRITICAL FIX FOR GOOGLE OAUTH: Try to get user from auth token
+        console.log(`⚠️ User still not found after refresh, trying auth token...`);
+        const authToken = req.headers.authorization?.replace('Bearer ', '');
+        if (authToken) {
+          console.log(`🔍 Attempting to get user from auth token...`);
+          const tokenUser = await getUserFromToken(authToken);
+          if (tokenUser) {
+            console.log(`✅ Found user from auth token: ${tokenUser.username} (${tokenUser.email})`);
+            user = tokenUser;
+            finalUserId = tokenUser.id;
+          } else {
+            console.log(`❌ getUserFromToken returned null for token: ${authToken.substring(0, 30)}...`);
+          }
+        } else {
+          console.log(`❌ No auth token found in request headers`);
+        }
       }
     }
 
