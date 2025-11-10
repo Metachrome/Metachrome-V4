@@ -211,11 +211,36 @@ class TradingService {
         completedAt: new Date(),
       });
 
-      // Update user balance
+      // Update user balance - unlock the locked amount and add/subtract profit
       const userBalance = await storage.getBalance(trade.userId, 'USDT');
       if (userBalance) {
-        const newAvailable = parseFloat(userBalance.available) + tradeAmount + profit;
-        const newLocked = parseFloat(userBalance.locked || '0') - tradeAmount;
+        // For WIN: unlock tradeAmount from locked, add profit to available
+        // For LOSE: unlock 0 (amount stays locked and lost), available unchanged
+        const currentAvailable = parseFloat(userBalance.available || '0');
+        const currentLocked = parseFloat(userBalance.locked || '0');
+
+        let newAvailable: number;
+        let newLocked: number;
+
+        if (isWin) {
+          // WIN: Return locked amount to available + add profit
+          newAvailable = currentAvailable + tradeAmount + profit;
+          newLocked = currentLocked - tradeAmount;
+        } else {
+          // LOSE: Locked amount is lost, deduct loss from available
+          newAvailable = currentAvailable;
+          newLocked = currentLocked - tradeAmount;
+        }
+
+        console.log(`💰 Balance update (tradingService):`, {
+          oldAvailable: userBalance.available,
+          oldLocked: userBalance.locked,
+          newAvailable: newAvailable.toString(),
+          newLocked: Math.max(0, newLocked).toString(),
+          tradeAmount,
+          profit,
+          isWin
+        });
 
         await storage.updateBalance(
           trade.userId,
