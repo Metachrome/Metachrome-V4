@@ -5434,6 +5434,65 @@ app.put('/api/user/profile', async (req, res) => {
   }
 });
 
+// ===== HELPER FUNCTION: CHECK MINIMUM TRADE REQUIREMENT =====
+async function checkMinimumTradeRequirement(userId, username) {
+  const MINIMUM_TRADES = 3;
+
+  try {
+    if (!supabase) {
+      console.log('⚠️ Supabase not configured, skipping trade requirement check');
+      return { allowed: true, completedTrades: 0, requiredTrades: MINIMUM_TRADES };
+    }
+
+    const { data: userTrades, error: tradesError } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .or('result.eq.win,result.eq.lose');
+
+    if (tradesError) {
+      console.error('❌ Error fetching user trades for withdrawal validation:', tradesError);
+      // SECURITY: Block withdrawal if we can't verify trade count
+      return {
+        allowed: false,
+        completedTrades: 0,
+        requiredTrades: MINIMUM_TRADES,
+        error: 'Unable to verify trade history'
+      };
+    }
+
+    const completedTradesCount = userTrades ? userTrades.length : 0;
+    console.log(`📊 User ${username} has ${completedTradesCount} completed trades`);
+
+    if (completedTradesCount < MINIMUM_TRADES) {
+      console.log(`❌ Withdrawal blocked: User needs ${MINIMUM_TRADES - completedTradesCount} more completed trades`);
+      return {
+        allowed: false,
+        completedTrades: completedTradesCount,
+        requiredTrades: MINIMUM_TRADES,
+        message: `You need to complete at least ${MINIMUM_TRADES} trades before withdrawing. Current: ${completedTradesCount}/${MINIMUM_TRADES} trades completed.`
+      };
+    }
+
+    console.log('✅ Minimum trade requirement met:', completedTradesCount, 'trades completed');
+    return {
+      allowed: true,
+      completedTrades: completedTradesCount,
+      requiredTrades: MINIMUM_TRADES
+    };
+  } catch (error) {
+    console.error('❌ Error checking trade requirement:', error);
+    // SECURITY: Block withdrawal if check fails
+    return {
+      allowed: false,
+      completedTrades: 0,
+      requiredTrades: MINIMUM_TRADES,
+      error: 'Unable to verify trade history'
+    };
+  }
+}
+
 // ===== USER WITHDRAWAL REQUEST ENDPOINT =====
 // Force Railway deployment - 2025-01-10
 app.post('/api/withdrawals', async (req, res) => {
@@ -5469,35 +5528,14 @@ app.post('/api/withdrawals', async (req, res) => {
     console.log('💰 User balance:', user.balance);
 
     // Check minimum trade requirement (3 completed trades)
-    try {
-      const { data: userTrades, error: tradesError } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', user.id)
-        .in('status', ['completed'])
-        .or('result.eq.win,result.eq.lose');
-
-      if (tradesError) {
-        console.error('❌ Error fetching user trades for withdrawal validation:', tradesError);
-      }
-
-      const completedTradesCount = userTrades ? userTrades.length : 0;
-      console.log(`📊 User ${user.username} has ${completedTradesCount} completed trades`);
-
-      if (completedTradesCount < 3) {
-        console.log(`❌ Withdrawal blocked: User needs ${3 - completedTradesCount} more completed trades`);
-        return res.status(400).json({
-          error: 'Minimum trade requirement not met',
-          message: `You need to complete at least 3 trades before withdrawing. Current: ${completedTradesCount}/3 trades completed.`,
-          completedTrades: completedTradesCount,
-          requiredTrades: 3
-        });
-      }
-
-      console.log('✅ Minimum trade requirement met:', completedTradesCount, 'trades completed');
-    } catch (error) {
-      console.error('❌ Error checking trade requirement:', error);
-      // Continue with withdrawal if trade check fails (fallback for safety)
+    const tradeCheck = await checkMinimumTradeRequirement(user.id, user.username);
+    if (!tradeCheck.allowed) {
+      return res.status(400).json({
+        error: 'Minimum trade requirement not met',
+        message: tradeCheck.message || tradeCheck.error,
+        completedTrades: tradeCheck.completedTrades,
+        requiredTrades: tradeCheck.requiredTrades
+      });
     }
 
     // Verify user's login password - check both possible column names
@@ -13081,6 +13119,17 @@ app.post('/api/user/withdraw', async (req, res) => {
 
     console.log('💸 Processing withdrawal for user:', user.username, '(ID:', user.id, ')');
 
+    // Check minimum trade requirement (3 completed trades)
+    const tradeCheck = await checkMinimumTradeRequirement(user.id, user.username);
+    if (!tradeCheck.allowed) {
+      return res.status(400).json({
+        error: 'Minimum trade requirement not met',
+        message: tradeCheck.message || tradeCheck.error,
+        completedTrades: tradeCheck.completedTrades,
+        requiredTrades: tradeCheck.requiredTrades
+      });
+    }
+
     // Get fresh user data
     const users = await getUsers();
     const userIndex = users.findIndex(u => u.id === user.id);
@@ -13238,6 +13287,17 @@ app.post('/api/transactions/withdrawal-request', async (req, res) => {
     }
 
     console.log('💸 Processing withdrawal (transactions endpoint) for user:', user.username, '(ID:', user.id, ')');
+
+    // Check minimum trade requirement (3 completed trades)
+    const tradeCheck = await checkMinimumTradeRequirement(user.id, user.username);
+    if (!tradeCheck.allowed) {
+      return res.status(400).json({
+        error: 'Minimum trade requirement not met',
+        message: tradeCheck.message || tradeCheck.error,
+        completedTrades: tradeCheck.completedTrades,
+        requiredTrades: tradeCheck.requiredTrades
+      });
+    }
 
     // Get fresh user data
     const users = await getUsers();
