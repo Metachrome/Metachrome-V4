@@ -2087,6 +2087,8 @@ function OptionsPageContent({
 
       // User is already available from useAuth hook
       console.log('🔍 Current user for trade:', user);
+      console.log('🔍 User ID from auth:', user?.id);
+      console.log('🔍 User email from auth:', user?.email);
 
       // Determine correct user ID for trading
       let tradingUserId = 'user-1'; // fallback
@@ -2098,6 +2100,7 @@ function OptionsPageContent({
         tradingUserId = user.id;
       }
       console.log('🔍 Trading with user ID:', tradingUserId);
+      console.log('🔍 Auth token:', localStorage.getItem('authToken')?.substring(0, 50) + '...');
 
       if (!safeCurrentPrice || safeCurrentPrice <= 0) {
         alert('Price data not available. Please wait a moment and try again.');
@@ -2137,6 +2140,13 @@ function OptionsPageContent({
 
       if (!response.ok) {
         const error = await response.text();
+        console.error('❌ Trade failed:', error);
+
+        // If user not found, suggest re-login
+        if (error.includes('User not found')) {
+          throw new Error('User session expired. Please logout and login again to refresh your account.');
+        }
+
         throw new Error(error || 'Failed to place trade');
       }
 
