@@ -1638,10 +1638,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
       const profitAmount = tradeAmount * (profitPercentage / 100);
 
-      // For WIN: balance change = return profit + earn profit (profit was deducted at trade start)
-      // For LOSE: balance change = 0 (profit was already deducted)
-      const balanceChange = isWin ? profitAmount * 2 : 0;
-      const profit = isWin ? profitAmount : -profitAmount; // For display/transaction purposes
+      // Calculate profit for display/transaction purposes
+      const profit = isWin ? profitAmount : -profitAmount;
 
       console.log(`📊 Calculated profit: ${profit} (isWin: ${isWin})`);
       console.log(`📊 Profit details:`, {
@@ -1649,8 +1647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profitPercentage,
         profitAmount,
         isWin,
-        balanceChange,
-        profitCalculation: isWin ? `${tradeAmount} + (${tradeAmount} * ${profitPercentage}%) = ${balanceChange}` : `0 (already deducted)`,
+        profitCalculation: isWin ? `Unlock ${tradeAmount} + Profit ${profitAmount} = ${tradeAmount + profitAmount}` : `Loss ${profitAmount} (amount already locked)`,
         profitAsString: profit.toString()
       });
 
@@ -1662,11 +1659,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completedAt: new Date(),
       });
 
-      // Update user balance
+      // Update user balance - unlock the locked amount and add/subtract profit
       const currentBalance = await storage.getBalance(trade.userId, 'USDT');
       if (currentBalance) {
-        const newBalance = parseFloat(currentBalance.available || '0') + balanceChange;
-        await storage.updateBalance(trade.userId, 'USDT', newBalance.toString(), currentBalance.locked || '0');
+        // For WIN: unlock tradeAmount + add profitAmount
+        // For LOSE: unlock is 0, profitAmount is already deducted from locked
+        const newAvailable = isWin
+          ? parseFloat(currentBalance.available || '0') + tradeAmount + profitAmount
+          : parseFloat(currentBalance.available || '0');
+        const newLocked = parseFloat(currentBalance.locked || '0') - tradeAmount;
+
+        console.log(`💰 Balance update:`, {
+          oldAvailable: currentBalance.available,
+          oldLocked: currentBalance.locked,
+          newAvailable: newAvailable.toString(),
+          newLocked: Math.max(0, newLocked).toString(),
+          tradeAmount,
+          profitAmount,
+          isWin
+        });
+
+        await storage.updateBalance(
+          trade.userId,
+          'USDT',
+          newAvailable.toString(),
+          Math.max(0, newLocked).toString()
+        );
       }
 
       // Create transaction record for trade result
