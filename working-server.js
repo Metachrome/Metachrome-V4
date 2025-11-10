@@ -7922,17 +7922,19 @@ app.post('/api/trades/complete', async (req, res) => {
       });
     }
 
+    // CRITICAL FIX: Don't update balance here - completeTradeDirectly() already did it!
+    // This endpoint is called AFTER completeTradeDirectly() from setTimeout
+    // If we update balance again here, we'll double-update and cause incorrect balances
+
+    console.log(`⚠️ SKIPPING BALANCE UPDATE - completeTradeDirectly() already handled it`);
+
+    // Just get the current balance for logging and transaction purposes
     const oldBalance = parseFloat(users[userIndex].balance) || 0;
-
-    // Calculate balance change and profit separately
     const tradeAmount = parseFloat(amount);
-    let balanceChange = 0;
-    let profitAmount = 0;
+    const duration = existingTrade?.duration || 30;
 
-    const duration = existingTrade?.duration || 30; // Default to 30s
-
-    // CRITICAL FIX: Calculate profitRate based on duration (same logic as profitPercentage)
-    let profitRate = 0.10; // Default 10%
+    // Calculate profit for transaction record only (don't update balance)
+    let profitRate = 0.10;
     if (duration === 30) profitRate = 0.10;
     else if (duration === 60) profitRate = 0.15;
     else if (duration === 90) profitRate = 0.20;
@@ -7942,30 +7944,11 @@ app.post('/api/trades/complete', async (req, res) => {
     else if (duration === 300) profitRate = 0.75;
     else if (duration === 600) profitRate = 1.00;
 
-    const profitPercentageAmount = tradeAmount * profitRate; // Profit/Loss percentage amount (e.g., 15% of 20,000 = 3,000)
+    const profitPercentageAmount = tradeAmount * profitRate;
+    const profitAmount = finalOutcome ? profitPercentageAmount : -profitPercentageAmount;
+    const balanceChange = finalOutcome ? profitPercentageAmount : -profitPercentageAmount;
 
-    if (finalOutcome) {
-      // WIN: Add ONLY the profit percentage
-      // At trade start, full amount was moved to locked balance (not deducted from total)
-      // At trade end, locked amount is returned to available + profit is added
-      // So balance change = profit only (the unlock happens separately in locked balance)
-      profitAmount = profitPercentageAmount; // For notification display: +3,000
-      balanceChange = profitPercentageAmount; // FIXED: Add ONLY profit, not full amount
-      console.log(`✅ WIN: Adding profit only (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}`);
-    } else {
-      // LOSE: Deduct the loss percentage
-      // At trade start, full amount was moved to locked balance
-      // At trade end, locked amount is lost + loss percentage is deducted from available
-      profitAmount = -profitPercentageAmount; // Loss amount (negative) - the percentage (e.g., -3,000)
-      balanceChange = -profitPercentageAmount; // FIXED: Deduct loss percentage
-      console.log(`❌ LOSE: Deducting loss (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}. P&L: ${profitAmount}`);
-    }
-
-    const newBalance = oldBalance + balanceChange;
-    users[userIndex].balance = newBalance; // Keep as number for now
-    users[userIndex].total_trades = (users[userIndex].total_trades || 0) + 1;
-
-    console.log(`💰 BALANCE UPDATE: ${user.username} ${oldBalance} → ${newBalance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
+    console.log(`📊 Trade completion info: ${finalOutcome ? 'WIN' : 'LOSE'}, Profit/Loss: ${profitAmount}, Current Balance: ${oldBalance}`);
 
     // Update redeem code restrictions (track trades for withdrawal unlocking)
     if (supabase) {
