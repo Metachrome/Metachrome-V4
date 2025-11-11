@@ -6638,7 +6638,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           result: finalWon ? 'win' : 'lose',
           exitPrice: wsExitPrice,
           profitAmount: finalProfitAmount2,
-          newBalance: users[userIndex].balance,
+          newBalance: newBalance, // FIXED: Use newBalance instead of users[userIndex].balance
           // CRITICAL: Include these fields so client can display correct notification
           amount: amount, // The actual trade amount
           symbol: symbol || 'BTC/USDT', // The trading symbol
@@ -6707,9 +6707,9 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         type: 'balance_update',
         data: {
           userId: userId,
-          username: users[userIndex].username,
+          username: user.username, // FIXED: Use user instead of users[userIndex]
           oldBalance: oldBalance,
-          newBalance: users[userIndex].balance,
+          newBalance: newBalance, // FIXED: Use newBalance instead of users[userIndex].balance
           change: balanceChange,
           changeType: finalWon ? 'trade_win' : 'trade_loss',
           tradeId: tradeId,
@@ -6806,7 +6806,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       success: true,
       won: finalWon,
       balanceChange,
-      newBalance: users[userIndex].balance,
+      newBalance: newBalance, // FIXED: Use newBalance instead of users[userIndex].balance
       message: `Trade ${finalWon ? 'won' : 'lost'} - balance updated`
     };
 
