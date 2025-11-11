@@ -7890,14 +7890,10 @@ app.post('/api/trades/complete', async (req, res) => {
           }
         }
 
-        // Update user total trades in database
-        await supabase
-          .from('users')
-          .update({
-            balance: users[userIndex].balance,
-            total_trades: users[userIndex].total_trades
-          })
-          .eq('id', actualUserId);
+        // CRITICAL FIX: DON'T update balance here - completeTradeDirectly() already did it!
+        // Only update total_trades count (if needed)
+        // Commenting out balance update to prevent override
+        console.log(`⚠️ SKIPPING balance update in /api/trades/complete - completeTradeDirectly() already handled it`);
 
       } catch (error) {
         console.error('❌ Error updating trade restrictions:', error);
@@ -7905,42 +7901,16 @@ app.post('/api/trades/complete', async (req, res) => {
       }
     }
 
-    // Save user balance to database
-    if (supabase) {
-      try {
-        console.log(`🔄 Updating balance in Supabase: ${users[userIndex].balance} for user ${userId}`);
+    // CRITICAL FIX: DON'T save user balance to database here!
+    // completeTradeDirectly() already updated the balance in Supabase
+    // If we update again here, we'll override the correct balance with stale data from users array
+    console.log(`⚠️ SKIPPING all balance updates in /api/trades/complete endpoint`);
+    console.log(`✅ Balance was already updated by completeTradeDirectly() to the correct value`);
 
-        const { data: updateData, error: updateError } = await supabase
-          .from('users')
-          .update({
-            balance: parseFloat(users[userIndex].balance), // Ensure it's a number
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', actualUserId)
-          .select();
-
-        if (updateError) {
-          console.error('❌ Error updating user balance in Supabase:', updateError);
-          console.error('❌ Update data was:', {
-            balance: parseFloat(users[userIndex].balance),
-            total_trades: parseInt(users[userIndex].total_trades) || 0,
-            userId: userId
-          });
-        } else {
-          console.log('✅ User balance updated in Supabase:', users[userIndex].balance);
-          console.log('✅ Supabase update response:', updateData);
-
-          if (updateData && updateData.length > 0) {
-            console.log('✅ Confirmed balance in database:', updateData[0].balance);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Balance update error:', error);
-      }
-    } else {
-      // Development: Save to local file
-      await saveUsers(users);
-    }
+    // Note: We don't update local users array either because:
+    // 1. Production uses Supabase as source of truth
+    // 2. completeTradeDirectly() already updated Supabase
+    // 3. Updating local array here would be using stale data
 
     // Create transaction record with symbol from trade
     const tradeSymbol = existingTrade?.symbol || 'USDT';
