@@ -6362,11 +6362,35 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     console.log(`🔧 PAYOUT PARAMETER: ${payout} (type: ${typeof payout})`);
     console.log(`🔧 Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}`);
 
-    // Get current users
-    const users = await getUsers();
-    const userIndex = users.findIndex(u => u.id === userId || u.username === userId);
+    // CRITICAL FIX: Fetch user from Supabase directly to ensure we have latest balance
+    let user = null;
+    if (supabase) {
+      console.log(`🔍 Fetching user from Supabase: ${userId}`);
+      const { data: supabaseUser, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (userIndex === -1) {
+      if (fetchError || !supabaseUser) {
+        console.error(`❌ Failed to fetch user from Supabase:`, fetchError);
+        return { success: false, message: 'User not found in database' };
+      }
+
+      user = supabaseUser;
+      console.log(`✅ User fetched from Supabase: ${user.username}, Balance: ${user.balance}`);
+    } else {
+      // Fallback to local storage
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === userId || u.username === userId);
+      if (userIndex === -1) {
+        console.error(`❌ User not found: ${userId}`);
+        return { success: false, message: 'User not found' };
+      }
+      user = users[userIndex];
+    }
+
+    if (!user) {
       console.error(`❌ User not found: ${userId}`);
       return { success: false, message: 'User not found' };
     }
@@ -6397,7 +6421,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     }
 
     // Update user balance
-    const oldBalance = parseFloat(users[userIndex].balance || '0');
+    const oldBalance = parseFloat(user.balance || '0');
     let balanceChange = 0;
 
     // CRITICAL FIX: Calculate profitRate based on duration (same logic as profitPercentage)
@@ -6416,48 +6440,49 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
     if (finalWon) {
       // WIN: Add ONLY the profit percentage
-      // At trade start, full amount was moved to locked balance (not deducted from total)
-      // At trade end, locked amount is returned to available + profit is added
-      // So balance change = profit only (the unlock happens separately in locked balance)
       profitAmount = profitPercentageAmount; // For notification display: +3,000
       balanceChange = profitPercentageAmount; // FIXED: Add ONLY profit, not 2x profit
-      users[userIndex].balance = (oldBalance + balanceChange).toString();
-      console.log(`✅ WIN: Adding profit only (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}`);
+      console.log(`✅ WIN: Adding profit only (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}`);
     } else {
       // LOSE: Deduct the loss percentage
-      // At trade start, full amount was moved to locked balance
-      // At trade end, locked amount is lost + loss percentage is deducted from available
       profitAmount = -profitPercentageAmount; // Loss amount (negative) - the percentage (e.g., -3,000)
       balanceChange = -profitPercentageAmount; // FIXED: Deduct loss percentage
-      users[userIndex].balance = (oldBalance + balanceChange).toString();
-      console.log(`❌ LOSE: Deducting loss (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${users[userIndex].balance}. P&L: ${profitAmount}`);
+      console.log(`❌ LOSE: Deducting loss (${profitPercentageAmount}) USDT. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}. P&L: ${profitAmount}`);
       console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitPercentageAmount=${profitPercentageAmount}, profitAmount=${profitAmount}, duration=${duration}`);
     }
 
-    console.log(`💰 Balance update: ${users[userIndex].username} ${oldBalance} → ${users[userIndex].balance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
+    const newBalance = oldBalance + balanceChange;
+    console.log(`💰 Balance update: ${user.username} ${oldBalance} → ${newBalance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
 
-    // Save users to local storage
-    await saveUsers(users);
-
-    // CRITICAL: Also update balance in Supabase database
+    // CRITICAL FIX: Update balance in Supabase FIRST (primary source of truth)
     if (supabase) {
       try {
-        console.log(`🔄 Updating balance in Supabase for user ${userId}: ${oldBalance} → ${users[userIndex].balance}`);
+        console.log(`🔄 Updating balance in Supabase for user ${userId}: ${oldBalance} → ${newBalance}`);
         const { error: balanceUpdateError } = await supabase
           .from('users')
           .update({
-            balance: parseFloat(users[userIndex].balance),
+            balance: newBalance,
             updated_at: new Date().toISOString()
           })
           .eq('id', userId);
 
         if (balanceUpdateError) {
           console.error('❌ Failed to update balance in Supabase:', balanceUpdateError);
+          return { success: false, message: 'Failed to update balance in database' };
         } else {
-          console.log(`✅ Balance updated in Supabase: ${users[userIndex].balance}`);
+          console.log(`✅ Balance updated in Supabase: ${newBalance}`);
         }
       } catch (dbError) {
         console.error('❌ Error updating balance in Supabase:', dbError);
+        return { success: false, message: 'Database error' };
+      }
+    } else {
+      // Fallback: Update local storage
+      const users = await getUsers();
+      const userIndex = users.findIndex(u => u.id === userId);
+      if (userIndex !== -1) {
+        users[userIndex].balance = newBalance.toString();
+        await saveUsers(users);
       }
     }
 
