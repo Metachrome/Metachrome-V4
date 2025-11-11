@@ -6573,47 +6573,48 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       }
     }
 
+    // CRITICAL FIX: Calculate wsExitPrice OUTSIDE of if (global.wss) block so it's accessible everywhere
+    // Generate realistic exit price based on entry price
+    let wsExitPrice = 0;
+    if (entryPrice && entryPrice > 0) {
+      // Use trade ID as seed for consistent price generation
+      const seed = parseInt(tradeId.toString().slice(-6)) || 123456;
+      const seededRandom = (seed * 9301 + 49297) % 233280 / 233280;
+
+      // Generate realistic price movement
+      const maxMovement = 0.005; // 0.5% maximum movement
+      const minMovement = 0.0001; // 0.01% minimum movement
+      const movementRange = maxMovement - minMovement;
+      const movementPercent = (seededRandom * movementRange + minMovement);
+
+      // CRITICAL FIX: Determine direction based on BOTH trade direction AND outcome
+      let priceDirection = 1; // Default up
+      if (direction === 'up') {
+        // For UP trades: WIN means price goes up, LOSE means price goes down
+        priceDirection = finalWon ? 1 : -1;
+      } else if (direction === 'down') {
+        // For DOWN trades: WIN means price goes down, LOSE means price goes up
+        priceDirection = finalWon ? -1 : 1;
+      } else {
+        // Fallback for unknown direction
+        priceDirection = finalWon ? 1 : -1;
+      }
+
+      // Calculate realistic exit price
+      wsExitPrice = entryPrice * (1 + (movementPercent * priceDirection));
+
+      // Ensure minimum price difference
+      const minDifference = 0.01;
+      if (Math.abs(wsExitPrice - entryPrice) < minDifference) {
+        wsExitPrice = entryPrice + (priceDirection * minDifference);
+      }
+    } else {
+      // Fallback if no entry price
+      wsExitPrice = 50000 + (Math.random() - 0.5) * 2000;
+    }
+
     // Broadcast trade completion notification via WebSocket
     if (global.wss) {
-      // CRITICAL FIX: Use the actual entry price parameter, not a hardcoded default!
-      // Generate realistic exit price based on entry price
-      let wsExitPrice = 0;
-      if (entryPrice && entryPrice > 0) {
-        // Use trade ID as seed for consistent price generation
-        const seed = parseInt(tradeId.toString().slice(-6)) || 123456;
-        const seededRandom = (seed * 9301 + 49297) % 233280 / 233280;
-
-        // Generate realistic price movement
-        const maxMovement = 0.005; // 0.5% maximum movement
-        const minMovement = 0.0001; // 0.01% minimum movement
-        const movementRange = maxMovement - minMovement;
-        const movementPercent = (seededRandom * movementRange + minMovement);
-
-        // CRITICAL FIX: Determine direction based on BOTH trade direction AND outcome
-        let priceDirection = 1; // Default up
-        if (direction === 'up') {
-          // For UP trades: WIN means price goes up, LOSE means price goes down
-          priceDirection = finalWon ? 1 : -1;
-        } else if (direction === 'down') {
-          // For DOWN trades: WIN means price goes down, LOSE means price goes up
-          priceDirection = finalWon ? -1 : 1;
-        } else {
-          // Fallback for unknown direction
-          priceDirection = finalWon ? 1 : -1;
-        }
-
-        // Calculate realistic exit price
-        wsExitPrice = entryPrice * (1 + (movementPercent * priceDirection));
-
-        // Ensure minimum price difference
-        const minDifference = 0.01;
-        if (Math.abs(wsExitPrice - entryPrice) < minDifference) {
-          wsExitPrice = entryPrice + (priceDirection * minDifference);
-        }
-      } else {
-        // Fallback if no entry price
-        wsExitPrice = 50000 + (Math.random() - 0.5) * 2000;
-      }
 
       // CRITICAL FIX: Calculate profitPercentage based on duration (same logic as below)
       let profitPercentageForMessage = 10; // Default
