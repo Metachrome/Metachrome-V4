@@ -14649,8 +14649,22 @@ app.delete('/api/admin/chat/message/:messageId', async (req, res) => {
 
 // ===== CONTACT AGENT FORM ENDPOINT =====
 // Configure multer for contact form image uploads
+const contactStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'contact-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
 const contactUpload = multer({
-  storage: multer.memoryStorage(),
+  storage: contactStorage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
