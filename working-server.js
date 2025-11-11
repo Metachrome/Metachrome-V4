@@ -6368,15 +6368,22 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       console.log(`🔍 Fetching trade record from Supabase: ${tradeId}`);
       const { data: tradeData, error: tradeError } = await supabase
         .from('trades')
-        .select('initial_balance')
+        .select('*')
         .eq('id', tradeId)
         .single();
 
       if (tradeError || !tradeData) {
         console.error(`❌ Failed to fetch trade from Supabase:`, tradeError);
+        console.error(`❌ Trade ID: ${tradeId}`);
       } else {
-        initialBalance = parseFloat(tradeData.initial_balance || '0');
-        console.log(`✅ Trade initial balance: ${initialBalance}`);
+        console.log(`✅ Trade data fetched:`, tradeData);
+        if (tradeData.initial_balance !== null && tradeData.initial_balance !== undefined) {
+          initialBalance = parseFloat(tradeData.initial_balance);
+          console.log(`✅ Trade initial balance from DB: ${initialBalance}`);
+        } else {
+          console.warn(`⚠️ initial_balance field is null/undefined in trade record`);
+          console.warn(`⚠️ This might mean the field doesn't exist in database schema`);
+        }
       }
     }
 
@@ -6441,10 +6448,6 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     // Update user balance
     const currentBalance = parseFloat(user.balance || '0');
 
-    // NEW LOGIC: Calculate final balance based on initial balance (before deduction)
-    // Use initialBalance from trade record if available, otherwise use current balance
-    const baseBalance = initialBalance !== null ? initialBalance : currentBalance;
-
     // Calculate profitRate based on duration
     let profitRate = 0.10; // Default 10%
     if (duration === 30) profitRate = 0.10;
@@ -6459,24 +6462,50 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     let profitAmount = 0;
     const profitPercentageAmount = amount * profitRate; // Profit/Loss percentage amount (e.g., 15% of 20,000 = 3,000)
     let newBalance = 0;
+    let baseBalance = 0;
 
-    if (finalWon) {
-      // WIN: Final balance = Initial balance + profit
-      // Example: Initial 50,000 → After deduction 47,000 → After win 53,000 (initial + profit)
-      newBalance = baseBalance + profitPercentageAmount;
-      profitAmount = profitPercentageAmount; // For notification display: +3,000
-      console.log(`✅ WIN: Initial balance ${baseBalance} + profit ${profitPercentageAmount} = ${newBalance}`);
-      console.log(`✅ Current balance: ${currentBalance} → New balance: ${newBalance}`);
+    // NEW LOGIC: Calculate final balance based on initial balance (before deduction)
+    if (initialBalance !== null && initialBalance > 0) {
+      // Use initialBalance from trade record (preferred method)
+      baseBalance = initialBalance;
+      console.log(`✅ Using initial_balance from trade record: ${baseBalance}`);
+
+      if (finalWon) {
+        // WIN: Final balance = Initial balance + profit
+        // Example: Initial 50,000 → After deduction 47,000 → After win 53,000 (initial + profit)
+        newBalance = baseBalance + profitPercentageAmount;
+        profitAmount = profitPercentageAmount; // For notification display: +3,000
+        console.log(`✅ WIN: Initial balance ${baseBalance} + profit ${profitPercentageAmount} = ${newBalance}`);
+        console.log(`✅ Current balance: ${currentBalance} → New balance: ${newBalance}`);
+      } else {
+        // LOSE: Final balance = Initial balance - loss
+        // Example: Initial 50,000 → After deduction 47,000 → After lose 47,000 (initial - loss)
+        newBalance = baseBalance - profitPercentageAmount;
+        profitAmount = -profitPercentageAmount; // For notification display: -3,000
+        console.log(`❌ LOSE: Initial balance ${baseBalance} - loss ${profitPercentageAmount} = ${newBalance}`);
+        console.log(`❌ Current balance: ${currentBalance} → New balance: ${newBalance}`);
+      }
     } else {
-      // LOSE: Final balance = Initial balance - loss
-      // Example: Initial 50,000 → After deduction 47,000 → After lose 47,000 (initial - loss)
-      newBalance = baseBalance - profitPercentageAmount;
-      profitAmount = -profitPercentageAmount; // For notification display: -3,000
-      console.log(`❌ LOSE: Initial balance ${baseBalance} - loss ${profitPercentageAmount} = ${newBalance}`);
-      console.log(`❌ Current balance: ${currentBalance} → New balance: ${newBalance}`);
-      console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitPercentageAmount=${profitPercentageAmount}, profitAmount=${profitAmount}, duration=${duration}`);
+      // FALLBACK: If initial_balance not available (field doesn't exist in DB yet)
+      // Calculate initial balance by adding back the deduction
+      baseBalance = currentBalance + profitPercentageAmount;
+      console.warn(`⚠️ initial_balance not available, calculating from current balance`);
+      console.warn(`⚠️ Calculated initial balance: ${currentBalance} + ${profitPercentageAmount} = ${baseBalance}`);
+
+      if (finalWon) {
+        // WIN: Final balance = Calculated initial balance + profit
+        newBalance = baseBalance + profitPercentageAmount;
+        profitAmount = profitPercentageAmount;
+        console.log(`✅ WIN (FALLBACK): Calculated initial ${baseBalance} + profit ${profitPercentageAmount} = ${newBalance}`);
+      } else {
+        // LOSE: Final balance = Calculated initial balance - loss
+        newBalance = baseBalance - profitPercentageAmount;
+        profitAmount = -profitPercentageAmount;
+        console.log(`❌ LOSE (FALLBACK): Calculated initial ${baseBalance} - loss ${profitPercentageAmount} = ${newBalance}`);
+      }
     }
 
+    console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitPercentageAmount=${profitPercentageAmount}, profitAmount=${profitAmount}, duration=${duration}`);
     console.log(`💰 Balance update: ${user.username} ${currentBalance} → ${newBalance} (change: ${newBalance - currentBalance})`);
 
     // CRITICAL FIX: Update balance in Supabase FIRST (primary source of truth)
