@@ -86,25 +86,31 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
       
       ws.onopen = () => {
         console.log('✅ WebSocket connected for chat');
+        console.log('📡 Subscribing to chat updates for userId:', userId);
         setIsConnected(true);
-        
+
         // Subscribe to chat updates
-        ws.send(JSON.stringify({
+        const subscribeMessage = {
           type: 'subscribe_chat',
           data: { userId }
-        }));
+        };
+        console.log('📤 Sending subscribe message:', subscribeMessage);
+        ws.send(JSON.stringify(subscribeMessage));
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+          console.log('📨 WebSocket message received:', data);
+
           if (data.type === 'new_message') {
+            console.log('💬 New message received:', data.data);
             // Add new message to the list
             setMessages(prev => [...prev, data.data]);
-            
+
             // Play notification sound or show notification
             if (data.data.sender_type === 'admin') {
+              console.log('🔔 Admin message notification');
               toast({
                 title: "New message from support",
                 description: data.data.message.substring(0, 50) + '...',
@@ -112,7 +118,7 @@ export default function LiveChat({ userId, username, isOpen, onClose }: LiveChat
             }
           } else if (data.type === 'message_read') {
             // Update message read status
-            setMessages(prev => prev.map(msg => 
+            setMessages(prev => prev.map(msg =>
               msg.id === data.data.messageId ? { ...msg, is_read: true } : msg
             ));
           }
