@@ -234,7 +234,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed ${isMinimized ? 'bottom-4 right-4' : 'bottom-0 right-0 md:bottom-4 md:right-4'} z-50 ${isMinimized ? 'w-auto' : 'w-full md:w-96'} ${isMinimized ? 'h-auto' : 'h-screen md:h-[600px]'} transition-all duration-300`}>
+    <div className={`fixed ${isMinimized ? 'bottom-4 right-4' : 'bottom-0 right-0 md:bottom-4 md:right-4'} z-50 ${isMinimized ? 'w-auto' : 'w-full md:w-96'} ${isMinimized ? 'h-auto' : 'h-[calc(100vh-80px)] md:h-[600px]'} transition-all duration-300`}>
       <Card className="bg-[#1a1f2e] border-purple-500/30 shadow-2xl h-full flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-4 flex items-center justify-between rounded-t-lg">
@@ -266,7 +266,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0f1419]">
+            <div className="flex-1 overflow-y-auto p-4 pb-4 space-y-4 bg-[#0f1419]">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -316,8 +316,8 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input - Fixed for mobile */}
-            <div className="p-4 bg-[#1a1f2e] border-t border-gray-700 pb-safe">
+            {/* Input - Fixed for mobile with bottom navigation padding */}
+            <div className="p-4 pb-20 md:pb-4 bg-[#1a1f2e] border-t border-gray-700">
               <div className="flex gap-2 mb-3">
                 <input
                   type="text"
