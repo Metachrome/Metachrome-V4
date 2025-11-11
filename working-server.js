@@ -6362,6 +6362,24 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     console.log(`🔧 PAYOUT PARAMETER: ${payout} (type: ${typeof payout})`);
     console.log(`🔧 Direction: ${direction}, Symbol: ${symbol}, Duration: ${duration}`);
 
+    // CRITICAL: Fetch trade record to get initial_balance
+    let initialBalance = null;
+    if (supabase) {
+      console.log(`🔍 Fetching trade record from Supabase: ${tradeId}`);
+      const { data: tradeData, error: tradeError } = await supabase
+        .from('trades')
+        .select('initial_balance')
+        .eq('id', tradeId)
+        .single();
+
+      if (tradeError || !tradeData) {
+        console.error(`❌ Failed to fetch trade from Supabase:`, tradeError);
+      } else {
+        initialBalance = parseFloat(tradeData.initial_balance || '0');
+        console.log(`✅ Trade initial balance: ${initialBalance}`);
+      }
+    }
+
     // CRITICAL FIX: Fetch user from Supabase directly to ensure we have latest balance
     let user = null;
     if (supabase) {
@@ -6378,7 +6396,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       }
 
       user = supabaseUser;
-      console.log(`✅ User fetched from Supabase: ${user.username}, Balance: ${user.balance}`);
+      console.log(`✅ User fetched from Supabase: ${user.username}, Current Balance: ${user.balance}`);
     } else {
       // Fallback to local storage
       const users = await getUsers();
@@ -6421,10 +6439,12 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     }
 
     // Update user balance
-    const oldBalance = parseFloat(user.balance || '0');
-    let balanceChange = 0;
+    const currentBalance = parseFloat(user.balance || '0');
 
-    // NEW LOGIC: Balance was already deducted at trade START
+    // NEW LOGIC: Calculate final balance based on initial balance (before deduction)
+    // Use initialBalance from trade record if available, otherwise use current balance
+    const baseBalance = initialBalance !== null ? initialBalance : currentBalance;
+
     // Calculate profitRate based on duration
     let profitRate = 0.10; // Default 10%
     if (duration === 30) profitRate = 0.10;
@@ -6438,24 +6458,26 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
     let profitAmount = 0;
     const profitPercentageAmount = amount * profitRate; // Profit/Loss percentage amount (e.g., 15% of 20,000 = 3,000)
+    let newBalance = 0;
 
     if (finalWon) {
-      // WIN: Add back the profit percentage (balance was already deducted at start)
-      // Example: Start balance 158,440 → After deduction 155,440 → After win 158,440 (back to original)
+      // WIN: Final balance = Initial balance + profit
+      // Example: Initial 50,000 → After deduction 47,000 → After win 53,000 (initial + profit)
+      newBalance = baseBalance + profitPercentageAmount;
       profitAmount = profitPercentageAmount; // For notification display: +3,000
-      balanceChange = profitPercentageAmount; // Add profit back
-      console.log(`✅ WIN: Adding profit (${profitPercentageAmount}) USDT back. Balance: ${oldBalance} + ${balanceChange} = ${oldBalance + balanceChange}`);
+      console.log(`✅ WIN: Initial balance ${baseBalance} + profit ${profitPercentageAmount} = ${newBalance}`);
+      console.log(`✅ Current balance: ${currentBalance} → New balance: ${newBalance}`);
     } else {
-      // LOSE: No change needed (balance was already deducted at start)
-      // Example: Start balance 158,440 → After deduction 155,440 → After lose 155,440 (stays deducted)
+      // LOSE: Final balance = Initial balance - loss
+      // Example: Initial 50,000 → After deduction 47,000 → After lose 47,000 (initial - loss)
+      newBalance = baseBalance - profitPercentageAmount;
       profitAmount = -profitPercentageAmount; // For notification display: -3,000
-      balanceChange = 0; // No change at completion (already deducted at start)
-      console.log(`❌ LOSE: No balance change needed (already deducted ${profitPercentageAmount} at start). Balance remains: ${oldBalance}`);
+      console.log(`❌ LOSE: Initial balance ${baseBalance} - loss ${profitPercentageAmount} = ${newBalance}`);
+      console.log(`❌ Current balance: ${currentBalance} → New balance: ${newBalance}`);
       console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitPercentageAmount=${profitPercentageAmount}, profitAmount=${profitAmount}, duration=${duration}`);
     }
 
-    const newBalance = oldBalance + balanceChange;
-    console.log(`💰 Balance update: ${user.username} ${oldBalance} → ${newBalance} (${balanceChange > 0 ? '+' : ''}${balanceChange})`);
+    console.log(`💰 Balance update: ${user.username} ${currentBalance} → ${newBalance} (change: ${newBalance - currentBalance})`);
 
     // CRITICAL FIX: Update balance in Supabase FIRST (primary source of truth)
     if (supabase) {
@@ -7322,6 +7344,7 @@ app.post('/api/trades', async (req, res) => {
       expires_at: new Date(Date.now() + duration * 1000).toISOString(),
       result: 'pending',
       status: 'active',
+      initial_balance: userBalance, // CRITICAL: Store initial balance BEFORE deduction for WIN/LOSE calculation
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -7662,7 +7685,8 @@ app.post('/api/trades/options', async (req, res) => {
       entry_price: parseFloat(currentPrice), // Use number instead of string
       duration: parseInt(duration), // Ensure it's an integer
       expires_at: new Date(Date.now() + duration * 1000).toISOString(), // Use expires_at for consistency
-      result: 'pending'
+      result: 'pending',
+      initial_balance: userBalance // CRITICAL: Store initial balance BEFORE deduction for WIN/LOSE calculation
     };
 
     // Save trade to storage immediately - ALWAYS use Supabase if available
