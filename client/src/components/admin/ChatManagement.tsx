@@ -3,16 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
-import { 
-  MessageSquare, 
-  Send, 
-  User, 
-  Search, 
+import {
+  MessageSquare,
+  Send,
+  User,
+  Search,
   Filter,
   Clock,
   CheckCircle,
   AlertCircle,
-  XCircle
+  XCircle,
+  Trash2,
+  Image as ImageIcon,
+  Download,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 
@@ -311,6 +315,35 @@ export default function ChatManagement() {
     }
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/chat/message/${messageId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setMessages(prev => prev.filter(msg => msg.id !== messageId));
+        toast({
+          title: "Message Deleted",
+          description: "Message has been removed successfully",
+        });
+      } else {
+        throw new Error('Failed to delete message');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete message. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleUpdateStatus = async (conversationId: string, status: string) => {
     try {
       const response = await fetch(`/api/admin/chat/conversation/${conversationId}/status`, {
@@ -332,6 +365,74 @@ export default function ChatManagement() {
     } catch (error) {
       console.error('Error updating status:', error);
     }
+  };
+
+  // Helper function to extract image path from message
+  const extractImagePath = (message: string): string | null => {
+    const match = message.match(/🔗 File: (\/uploads\/[^\s\n]+)/);
+    return match ? match[1] : null;
+  };
+
+  // Helper function to render message with image preview
+  const renderMessageContent = (message: ChatMessage) => {
+    const imagePath = extractImagePath(message.message);
+    const messageText = message.message;
+
+    return (
+      <div className="space-y-2">
+        <p className="text-sm whitespace-pre-line">{messageText}</p>
+        {imagePath && (
+          <div className="mt-2 space-y-2">
+            <div className="relative group">
+              <img
+                src={imagePath}
+                alt="Attachment"
+                className="max-w-full h-auto rounded-lg border border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => window.open(imagePath, '_blank')}
+              />
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-black/50 hover:bg-black/70 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(imagePath, '_blank');
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => window.open(imagePath, '_blank')}
+              >
+                <ImageIcon className="w-3 h-3 mr-1" />
+                View Full Size
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = imagePath;
+                  link.download = imagePath.split('/').pop() || 'image.jpg';
+                  link.click();
+                }}
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Download
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const filteredConversations = conversations.filter(conv => {
@@ -557,25 +658,35 @@ export default function ChatManagement() {
                     messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex group ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div className={`flex gap-2 max-w-[80%] ${message.sender_type === 'admin' ? 'flex-row-reverse' : 'flex-row'}`}>
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            message.sender_type === 'admin' ? 'bg-blue-600' : 
+                            message.sender_type === 'admin' ? 'bg-blue-600' :
                             message.sender_type === 'user' ? 'bg-purple-600' : 'bg-gray-600'
                           }`}>
                             <User className="w-4 h-4 text-white" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <div className={`rounded-lg p-3 ${
-                              message.sender_type === 'admin' ? 'bg-blue-600 text-white' : 
+                              message.sender_type === 'admin' ? 'bg-blue-600 text-white' :
                               message.sender_type === 'user' ? 'bg-gray-700 text-white' : 'bg-gray-600 text-white'
                             }`}>
-                              <p className="text-sm whitespace-pre-line">{message.message}</p>
+                              {renderMessageContent(message)}
                             </div>
-                            <p className="text-xs text-gray-500 mt-1 px-1">
-                              {formatMessageTime(message.created_at)}
-                            </p>
+                            <div className="flex items-center justify-between mt-1 px-1">
+                              <p className="text-xs text-gray-500">
+                                {formatMessageTime(message.created_at)}
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                onClick={() => handleDeleteMessage(message.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>

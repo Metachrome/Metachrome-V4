@@ -395,5 +395,31 @@ export function registerChatRoutes(app: Express) {
       res.status(500).json({ error: "Failed to assign conversation" });
     }
   });
+
+  // Admin: Delete message
+  app.delete("/api/admin/chat/message/:messageId", requireSessionAdmin, async (req, res) => {
+    try {
+      const { messageId } = req.params;
+
+      console.log('🗑️ Deleting message:', messageId);
+
+      // Delete the message
+      const result = await db.execute(sql`
+        DELETE FROM chat_messages
+        WHERE id = ${messageId}
+        RETURNING *
+      `);
+
+      if (!result.rows || result.rows.length === 0) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      console.log('✅ Message deleted successfully:', messageId);
+      res.json({ success: true, message: "Message deleted successfully" });
+    } catch (error) {
+      console.error("❌ Error deleting message:", error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
 }
 

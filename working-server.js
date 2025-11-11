@@ -14616,6 +14616,37 @@ app.patch('/api/admin/chat/conversation/:conversationId/status', async (req, res
   }
 });
 
+// Admin: Delete message
+app.delete('/api/admin/chat/message/:messageId', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    console.log('🗑️ Deleting message:', messageId);
+
+    // Delete the message from Supabase
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('id', messageId)
+      .select();
+
+    if (error) {
+      console.error('❌ Error deleting message:', error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    console.log('✅ Message deleted successfully:', messageId);
+    res.json({ success: true, message: 'Message deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting message:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete message' });
+  }
+});
+
 // ===== CONTACT AGENT FORM ENDPOINT =====
 // Configure multer for contact form image uploads
 const contactUpload = multer({
