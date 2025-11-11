@@ -92,7 +92,6 @@ export default function SupportPage() {
   const faqs = [
     { question: "What products does METACHROME Ecosystem include?", answer: "Our ecosystem includes spot trading, futures, options, and advanced trading tools with MetaMask integration." },
     { question: "Why is it better to trade cryptocurrencies on METACHROME?", answer: "Advanced trading features with competitive fees, superior execution, and admin-controlled outcomes." },
-    { question: "Can I buy cryptocurrency with a credit card?", answer: "Yes, we support multiple payment methods including credit cards and crypto wallets." },
     { question: "How to buy cryptocurrency on METACHROME?", answer: "Connect your MetaMask wallet and start trading with our intuitive interface." },
     { question: "How to Complete Identity Verification?", answer: "Upload required documents through our secure verification system for enhanced features." }
   ];
@@ -164,8 +163,7 @@ export default function SupportPage() {
             <div className="text-center">
               <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">Frequently Asked Questions</h2>
               <p className="text-gray-400 mb-6 leading-relaxed text-sm sm:text-base px-2">
-                Begin your trading journey and stand a chance to earn exciting rewards
-                worth up to $300 through our Mystery Box promotion.
+                Essential information to support your trading journey.
               </p>
               <div className="flex justify-center mb-8">
                 <div className="w-48 h-48 sm:w-64 sm:h-64">
@@ -211,8 +209,7 @@ export default function SupportPage() {
             <div className="order-2 lg:order-1 p-0 m-0">
               <h2 className="text-5xl font-bold text-white mb-6">Frequently Asked Questions</h2>
               <p className="text-gray-400 mb-0 leading-relaxed text-xl">
-                Begin your trading journey and stand a chance to earn exciting rewards
-                worth up to $300 through our Mystery Box promotion.
+                Essential information to support your trading journey.
               </p>
               <div className="p-0 m-0">
                 <div className="w-[564px] h-[564px] p-0 m-0">
