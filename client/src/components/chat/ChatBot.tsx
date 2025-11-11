@@ -24,6 +24,17 @@ interface ChatBotProps {
   onClose: () => void;
 }
 
+// Helper function to render text with bold markdown
+const renderTextWithBold = (text: string) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={index}>{part}</span>;
+  });
+};
+
 export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -51,37 +62,37 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
       {
         id: '1',
         question: 'Deposit Funds',
-        answer: '→ Go to Wallet → Deposit, choose your preferred network, and send funds to the displayed address. Confirmations may take up to 24 hours. Please double-check all details before sending.\nFor further help, tap Contact Support below.',
+        answer: '→ Go to Wallet → Deposit, choose your preferred network, and send funds to the displayed address. Confirmations may take up to 24 hours. Please double-check all details before sending.\nFor further help, tap **Contact Support** below.',
         category: 'deposit'
       },
       {
         id: '2',
         question: 'Withdraw Funds',
-        answer: '→ Go to Wallet → Withdraw, enter your wallet address and amount, then submit. Processing time may take up to 24 hours. Please double-check all details before confirming.\nFor further help, tap Contact Support below.',
+        answer: '→ Go to Wallet → Withdraw, enter your wallet address and amount, then submit. Processing time may take up to 24 hours. Please double-check all details before confirming.\nFor further help, tap **Contact Support** below.',
         category: 'withdrawal'
       },
       {
         id: '3',
         question: 'Spot Trading',
-        answer: '→ Instantly buy or sell crypto at real-time market prices. You fully own the asset once the trade is completed.\nFor further help, tap Contact Support below.',
+        answer: '→ Instantly buy or sell crypto at real-time market prices. You fully own the asset once the trade is completed.\nFor further help, tap **Contact Support** below.',
         category: 'spot'
       },
       {
         id: '4',
         question: 'Options Trading',
-        answer: '→ Trade short-term price movements with 8 available timeframes (30s–600s) and fixed return ratios.\nCorrect predictions earn payouts based on the option\'s return rate.\nFor further help, tap Contact Support below.',
+        answer: '→ Trade short-term price movements with 8 available timeframes (30s–600s) and fixed return ratios.\nCorrect predictions earn payouts based on the option\'s return rate.\nFor further help, tap **Contact Support** below.',
         category: 'options'
       },
       {
         id: '5',
         question: 'Account Verification (KYC)',
-        answer: '→ Complete your verification under Profile → Verify. Upload your valid ID (ID/Driver License/Passport) to enable trading and withdrawal features.\nThe process may take up to 24 hours — once approved, your account status will show Verified.\nFor further help, tap Contact Support below.',
+        answer: '→ Complete your verification under Profile → Verify. Upload your valid ID (ID/Driver License/Passport) to enable trading and withdrawal features.\nThe process may take up to 24 hours — once approved, your account status will show Verified.\nFor further help, tap **Contact Support** below.',
         category: 'verification'
       },
       {
         id: '6',
         question: 'Supported Cryptocurrencies',
-        answer: '→ We offer 20 tradable crypto assets available on our platform. Check the Markets page for the full list and latest updates.\nFor further help, tap Contact Support below.',
+        answer: '→ We offer 20 tradable crypto assets available on our platform. Check the Markets page for the full list and latest updates.\nFor further help, tap **Contact Support** below.',
         category: 'general'
       }
     ];
@@ -111,7 +122,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
 
       // Welcome message
       addBotMessage(
-        "👋 Hello! I'm your METACHROME assistant. How can I help you today?\n\nYou can ask me common questions or click 'Contact Support' to chat with our team."
+        "👋 Hello! I'm your METACHROME assistant. How can I help you today?\n\nYou can ask me common questions or click **Contact Support** to chat with our team."
       );
 
       setIsInitialized(true);
@@ -285,7 +296,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
                         ) : (
-                          <p className="text-sm whitespace-pre-line">{message.text}</p>
+                          <p className="text-xs whitespace-pre-line">{renderTextWithBold(message.text)}</p>
                         )}
                       </div>
                       <p className="text-xs text-gray-500 mt-1 px-1">
@@ -299,7 +310,6 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
               {/* FAQ Suggestions */}
               {showFAQs && faqs.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-gray-400 text-xs px-2">Quick questions:</p>
                   {faqs.map((faq) => (
                     <button
                       key={faq.id}
@@ -325,20 +335,20 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Type your message..."
-                  className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
+                  className="flex-1 bg-gray-700 text-white px-4 py-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-4"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                 </Button>
               </div>
               <Button
                 onClick={onContactSupport}
                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium"
               >
-                Contact Our Agent
+                Contact Support
               </Button>
             </div>
           </>
