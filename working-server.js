@@ -14730,9 +14730,11 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
 
           // STEP 3: Create initial message with subject and message
           const fullMessage = `📧 Contact Form Submission\n\n` +
-                             `Subject: ${subject}\n\n` +
-                             `${message}` +
-                             (imageFile ? `\n\n📎 Attachment: ${imageFile.originalname}` : '');
+                             `👤 Name: ${name}\n` +
+                             `📧 Email: ${email}\n` +
+                             `📌 Subject: ${subject}\n\n` +
+                             `💬 Message:\n${message}` +
+                             (imageFile ? `\n\n📎 Attachment: ${imageFile.originalname}\n🔗 File: /uploads/${imageFile.filename}` : '');
 
           const { data: chatMessage, error: msgError } = await supabase
             .from('chat_messages')
@@ -14767,7 +14769,9 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
           subject,
           message,
           has_image: !!imageFile,
-          image_filename: imageFile?.originalname || null,
+          image_filename: imageFile ? imageFile.filename : null, // Save server filename for access
+          image_original_name: imageFile?.originalname || null, // Save original filename for display
+          image_path: imageFile ? `/uploads/${imageFile.filename}` : null, // Full path for access
           status: 'pending',
           conversation_id: conversationId, // Link to chat conversation
           created_at: new Date().toISOString()

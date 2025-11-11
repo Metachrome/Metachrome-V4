@@ -153,8 +153,8 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="bg-[#1a1f2e] border-purple-500/30 shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 pb-24 md:pb-4">
+      <Card className="bg-[#1a1f2e] border-purple-500/30 shadow-2xl w-full max-w-md max-h-[calc(100vh-120px)] md:max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-4 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-3">
@@ -175,7 +175,7 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 pb-8 md:pb-6 space-y-4">
           {/* Name */}
           <div>
             <label className="block text-white text-sm font-medium mb-2">

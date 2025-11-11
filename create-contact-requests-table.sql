@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS contact_requests (
   subject VARCHAR(500) NOT NULL,
   message TEXT NOT NULL,
   has_image BOOLEAN DEFAULT FALSE,
-  image_filename VARCHAR(255),
+  image_filename VARCHAR(255), -- Server filename (e.g., image-1234567890.jpg)
+  image_original_name VARCHAR(255), -- Original filename from user
+  image_path VARCHAR(500), -- Full path to access image (e.g., /uploads/image-1234567890.jpg)
   conversation_id UUID REFERENCES chat_conversations(id) ON DELETE SET NULL,
   status VARCHAR(50) DEFAULT 'pending', -- pending, in_progress, resolved
   admin_notes TEXT,
