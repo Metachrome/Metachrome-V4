@@ -466,6 +466,30 @@ app.use('/assets', express.static(assetsPath, {
   }
 }));
 
+// Serve uploaded files from /uploads directory
+const uploadsPath = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log('📁 Created uploads directory:', uploadsPath);
+}
+app.use('/uploads', express.static(uploadsPath, {
+  setHeaders: (res, filePath) => {
+    // Set correct MIME types for uploaded images
+    if (filePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filePath.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else if (filePath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/webp');
+    }
+    // No cache for uploaded files (they might be updated)
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+}));
+console.log('📁 Serving uploads from:', uploadsPath);
+
 // Serve other static files from dist/public (index.html, favicon, etc)
 app.use(express.static(distPath, {
   setHeaders: (res, filePath) => {
@@ -14644,6 +14668,48 @@ app.delete('/api/admin/chat/message/:messageId', async (req, res) => {
   } catch (error) {
     console.error('❌ Error deleting message:', error);
     res.status(500).json({ error: error.message || 'Failed to delete message' });
+  }
+});
+
+// Admin: Delete conversation (and all its messages)
+app.delete('/api/admin/chat/conversation/:conversationId', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    console.log('🗑️ Deleting conversation:', conversationId);
+
+    // First, delete all messages in the conversation
+    const { error: messagesError } = await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('conversation_id', conversationId);
+
+    if (messagesError) {
+      console.error('❌ Error deleting messages:', messagesError);
+      throw messagesError;
+    }
+
+    // Then delete the conversation itself
+    const { data, error: convError } = await supabase
+      .from('chat_conversations')
+      .delete()
+      .eq('id', conversationId)
+      .select();
+
+    if (convError) {
+      console.error('❌ Error deleting conversation:', convError);
+      throw convError;
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    console.log('✅ Conversation and all messages deleted successfully:', conversationId);
+    res.json({ success: true, message: 'Conversation deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting conversation:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete conversation' });
   }
 });
 

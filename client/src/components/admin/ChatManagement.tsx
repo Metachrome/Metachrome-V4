@@ -344,6 +344,45 @@ export default function ChatManagement() {
     }
   };
 
+  const handleDeleteConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent conversation selection when clicking delete
+
+    if (!confirm('Are you sure you want to delete this entire conversation? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/chat/conversation/${conversationId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Remove from conversations list
+        setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+
+        // Clear selected conversation if it was deleted
+        if (selectedConversation?.id === conversationId) {
+          setSelectedConversation(null);
+          setMessages([]);
+        }
+
+        toast({
+          title: "Conversation Deleted",
+          description: "Conversation and all messages have been removed successfully",
+        });
+      } else {
+        throw new Error('Failed to delete conversation');
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete conversation. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleUpdateStatus = async (conversationId: string, status: string) => {
     try {
       const response = await fetch(`/api/admin/chat/conversation/${conversationId}/status`, {
@@ -569,39 +608,55 @@ export default function ChatManagement() {
                 filteredConversations.map((conv) => (
                   <div
                     key={conv.id}
-                    onClick={() => setSelectedConversation(conv)}
-                    className={`p-4 border-b border-gray-700 cursor-pointer transition-colors ${
+                    className={`p-4 border-b border-gray-700 transition-colors relative group ${
                       selectedConversation?.id === conv.id ? 'bg-purple-600/20' : 'hover:bg-gray-700/50'
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
+                    {/* Delete Button - Top Right */}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute top-2 right-2 h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20 z-10"
+                      onClick={(e) => handleDeleteConversation(conv.id, e)}
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+
+                    {/* Conversation Content - Clickable */}
+                    <div
+                      onClick={() => setSelectedConversation(conv)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between mb-2 pr-8">
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">
+                              {conv.user?.username || conv.user?.email || 'Unknown User'}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(conv.last_message_at).toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-white font-medium">
-                            {conv.user?.username || conv.user?.email || 'Unknown User'}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(conv.last_message_at).toLocaleString()}
-                          </p>
-                        </div>
+                        {getStatusIcon(conv.status)}
                       </div>
-                      {getStatusIcon(conv.status)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`${getPriorityColor(conv.priority)} text-white text-xs`}>
-                        {conv.priority}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {conv.category}
-                      </Badge>
-                      {(conv.unread_count || 0) > 0 && (
-                        <Badge className="bg-red-500 text-white text-xs">
-                          {conv.unread_count}
+                      <div className="flex items-center gap-2">
+                        <Badge className={`${getPriorityColor(conv.priority)} text-white text-xs`}>
+                          {conv.priority}
                         </Badge>
-                      )}
+                        <Badge variant="outline" className="text-xs">
+                          {conv.category}
+                        </Badge>
+                        {(conv.unread_count || 0) > 0 && (
+                          <Badge className="bg-red-500 text-white text-xs">
+                            {conv.unread_count}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -674,20 +729,9 @@ export default function ChatManagement() {
                             }`}>
                               {renderMessageContent(message)}
                             </div>
-                            <div className="flex items-center justify-between mt-1 px-1">
-                              <p className="text-xs text-gray-500">
-                                {formatMessageTime(message.created_at)}
-                              </p>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="delete-btn h-6 px-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                                onClick={() => handleDeleteMessage(message.id)}
-                                title="Delete message"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
+                            <p className="text-xs text-gray-500 mt-1 px-1">
+                              {formatMessageTime(message.created_at)}
+                            </p>
                           </div>
                         </div>
                       </div>
