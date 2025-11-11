@@ -7097,7 +7097,7 @@ app.post('/api/spot/orders', async (req, res) => {
     }
 
     // Create spot order record
-    const orderId = `spot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const orderId = uuidv4(); // CRITICAL FIX: Use UUID format for database compatibility
     const currentPrice = tradePrice || (65000 + (Math.random() - 0.5) * 2000); // Mock price if not provided
 
     const order = {
@@ -7355,7 +7355,7 @@ app.post('/api/trades', async (req, res) => {
     }
 
     // Create trade record
-    const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const tradeId = uuidv4(); // CRITICAL FIX: Use UUID format for database compatibility
 
     // CRITICAL FIX: Use entryPrice from frontend (already fetched from real-time Binance API via PriceContext)
     // Frontend has real-time price updates, so we trust the entry price sent from frontend
@@ -7703,7 +7703,7 @@ app.post('/api/trades/options', async (req, res) => {
     }
 
     // Create trade record
-    const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const tradeId = uuidv4(); // CRITICAL FIX: Use UUID format for database compatibility
     const currentPrice = parseFloat(entryPrice); // Use the actual price from frontend
 
     const trade = {
@@ -8153,7 +8153,7 @@ app.post('/api/trades/complete', async (req, res) => {
     } else {
       // Development: Add transaction to local list with ID
       const transactions = await getTransactions();
-      transaction.id = `txn-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      transaction.id = uuidv4(); // CRITICAL FIX: Use UUID format for database compatibility
       transactions.push(transaction);
       await saveTransactions(transactions);
       console.log('✅ Transaction saved locally:', transaction.id);
