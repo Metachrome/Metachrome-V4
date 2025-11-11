@@ -14616,6 +14616,126 @@ app.patch('/api/admin/chat/conversation/:conversationId/status', async (req, res
   }
 });
 
+// ===== CONTACT AGENT FORM ENDPOINT =====
+// Configure multer for contact form image uploads
+const contactUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
+
+app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) => {
+  try {
+    console.log('📧 Contact agent form submission received');
+    const { name, email, subject, message } = req.body;
+    const imageFile = req.file;
+
+    // Validation
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ error: 'All fields except image are required' });
+    }
+
+    if (!email.includes('@')) {
+      return res.status(400).json({ error: 'Invalid email address' });
+    }
+
+    console.log('📧 Contact form data:', { name, email, subject, message, hasImage: !!imageFile });
+
+    // For now, we'll log the contact request
+    // In production, you would integrate with an email service like SendGrid, AWS SES, or Nodemailer
+
+    // Store contact request in Supabase (optional)
+    if (supabase) {
+      try {
+        const contactData = {
+          name,
+          email,
+          subject,
+          message,
+          has_image: !!imageFile,
+          image_filename: imageFile?.originalname || null,
+          status: 'pending',
+          created_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+          .from('contact_requests')
+          .insert([contactData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Error saving contact request to database:', error);
+          // Continue anyway - we'll still log it
+        } else {
+          console.log('✅ Contact request saved to database:', data.id);
+        }
+      } catch (dbError) {
+        console.error('❌ Database error:', dbError);
+        // Continue anyway
+      }
+    }
+
+    // Log the contact request for manual processing
+    console.log('📧 ========================================');
+    console.log('📧 NEW CONTACT REQUEST');
+    console.log('📧 ========================================');
+    console.log('📧 From:', name, `<${email}>`);
+    console.log('📧 Subject:', subject);
+    console.log('📧 Message:', message);
+    console.log('📧 Has Image:', !!imageFile);
+    if (imageFile) {
+      console.log('📧 Image:', imageFile.originalname, `(${imageFile.size} bytes)`);
+    }
+    console.log('📧 ========================================');
+    console.log('📧 TO: support@metachrome.io');
+    console.log('📧 ========================================');
+
+    // TODO: Integrate with email service
+    // Example with nodemailer (requires setup):
+    /*
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    const mailOptions = {
+      from: email,
+      to: 'support@metachrome.io',
+      subject: `Contact Form: ${subject}`,
+      text: `From: ${name} <${email}>\n\n${message}`,
+      attachments: imageFile ? [{
+        filename: imageFile.originalname,
+        content: imageFile.buffer
+      }] : []
+    };
+
+    await transporter.sendMail(mailOptions);
+    */
+
+    res.json({
+      success: true,
+      message: 'Your message has been received. We will get back to you within 24 hours.'
+    });
+
+  } catch (error) {
+    console.error('❌ Error processing contact form:', error);
+    res.status(500).json({ error: 'Failed to send message. Please try again.' });
+  }
+});
+
 // ===== SPA ROUTING =====
 // Only catch GET requests that don't start with /api, /assets, or /sse
 // This ensures static files (CSS, JS, images) and SSE endpoints are served correctly

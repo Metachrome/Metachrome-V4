@@ -46,36 +46,42 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
   }, []);
 
   const loadFAQs = useCallback(async () => {
-    // Set fallback FAQs immediately
+    // Set fallback FAQs immediately with new content
     const fallbackFAQs = [
       {
         id: '1',
-        question: 'How do I deposit funds?',
-        answer: 'To deposit funds, go to Wallet page, click Deposit, select your preferred cryptocurrency (USDT, BTC, ETH, SOL), choose the network, and send funds to the displayed address.',
+        question: 'Deposit Funds',
+        answer: '→ Go to Wallet → Deposit, choose your preferred network, and send funds to the displayed address. Confirmations may take up to 24 hours. Please double-check all details before sending.\nFor further help, tap Contact Support below.',
         category: 'deposit'
       },
       {
         id: '2',
-        question: 'How do I withdraw funds?',
-        answer: 'To withdraw, go to Wallet page, click Withdraw, enter the amount and your wallet address, then submit. A superadmin will review and approve your request within 24 hours.',
+        question: 'Withdraw Funds',
+        answer: '→ Go to Wallet → Withdraw, enter your wallet address and amount, then submit. Processing time may take up to 24 hours. Please double-check all details before confirming.\nFor further help, tap Contact Support below.',
         category: 'withdrawal'
       },
       {
         id: '3',
-        question: 'What are the trading durations?',
-        answer: 'We offer two trading durations: 30 seconds (minimum 100 USDT with 10% profit) and 60 seconds (minimum 1000 USDT with 15% profit).',
-        category: 'trading'
+        question: 'Spot Trading',
+        answer: '→ Instantly buy or sell crypto at real-time market prices. You fully own the asset once the trade is completed.\nFor further help, tap Contact Support below.',
+        category: 'spot'
       },
       {
         id: '4',
-        question: 'How do I verify my account?',
-        answer: 'Go to Profile page, click on Verification section, upload your ID document and proof of address. Our team will review within 24-48 hours.',
-        category: 'verification'
+        question: 'Options Trading',
+        answer: '→ Trade short-term price movements with 8 available timeframes (30s–600s) and fixed return ratios.\nCorrect predictions earn payouts based on the option\'s return rate.\nFor further help, tap Contact Support below.',
+        category: 'options'
       },
       {
         id: '5',
-        question: 'What cryptocurrencies are supported?',
-        answer: 'We support USDT (BEP20, TRC20, ERC20), Bitcoin (BTC), Ethereum (ETH), and Solana (SOL) for deposits and withdrawals.',
+        question: 'Account Verification (KYC)',
+        answer: '→ Complete your verification under Profile → Verify. Upload your valid ID (ID/Driver License/Passport) to enable trading and withdrawal features.\nThe process may take up to 24 hours — once approved, your account status will show Verified.\nFor further help, tap Contact Support below.',
+        category: 'verification'
+      },
+      {
+        id: '6',
+        question: 'Supported Cryptocurrencies',
+        answer: '→ We offer 20 tradable crypto assets available on our platform. Check the Markets page for the full list and latest updates.\nFor further help, tap Contact Support below.',
         category: 'general'
       }
     ];
@@ -88,7 +94,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
         const data = await response.json();
         console.log('✅ Loaded FAQs from API:', data);
         if (data && data.length > 0) {
-          setFaqs(data.slice(0, 5)); // Show top 5 FAQs
+          setFaqs(data.slice(0, 6)); // Show top 6 FAQs
         }
       } else {
         console.log('⚠️ FAQ API returned non-OK status, using fallback FAQs');
@@ -228,8 +234,8 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed ${isMinimized ? 'bottom-4 right-4' : 'bottom-0 right-0 md:bottom-4 md:right-4'} z-50 ${isMinimized ? 'w-auto' : 'w-full md:w-96'} ${isMinimized ? 'h-auto' : 'h-full md:h-[600px]'} transition-all duration-300`}>
-      <Card className="bg-[#1a1f2e] border-purple-500/30 shadow-2xl h-full flex flex-col">
+    <div className={`fixed ${isMinimized ? 'bottom-4 right-4' : 'bottom-0 right-0 md:bottom-4 md:right-4'} z-50 ${isMinimized ? 'w-auto' : 'w-full md:w-96'} ${isMinimized ? 'h-auto' : 'h-screen md:h-[600px]'} transition-all duration-300`}>
+      <Card className="bg-[#1a1f2e] border-purple-500/30 shadow-2xl h-full flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center gap-3">
@@ -310,8 +316,8 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            <div className="p-4 bg-[#1a1f2e] border-t border-gray-700">
+            {/* Input - Fixed for mobile */}
+            <div className="p-4 bg-[#1a1f2e] border-t border-gray-700 pb-safe">
               <div className="flex gap-2 mb-3">
                 <input
                   type="text"
@@ -319,20 +325,20 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Type your message..."
-                  className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5" />
                 </Button>
               </div>
               <Button
                 onClick={onContactSupport}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium"
               >
-                Contact Live Support
+                Contact Our Agent
               </Button>
             </div>
           </>

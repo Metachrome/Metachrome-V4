@@ -8,14 +8,14 @@ import faqImage from "../assets/FAQ_image-2_1755414462649.png";
 import supportBannerDesktop from "../assets/support_banner_desktop.jpg";
 import supportBannerMobile from "../assets/support_banner_mobile.jpg";
 import ChatBot from "../components/chat/ChatBot";
-import LiveChat from "../components/chat/LiveChat";
+import ContactAgentForm from "../components/chat/ContactAgentForm";
 
 
 export default function SupportPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isChatBotOpen, setIsChatBotOpen] = useState(false);
-  const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const isMobile = useIsMobile();
@@ -318,9 +318,9 @@ export default function SupportPage() {
               return;
             }
 
-            console.log('Opening live chat for user:', user.id, user.username || user.email);
-            // First open live chat, then close chatbot with delay
-            setIsLiveChatOpen(true);
+            console.log('Opening contact form for user:', user.id, user.username || user.email);
+            // First open contact form, then close chatbot with delay
+            setIsContactFormOpen(true);
             setTimeout(() => {
               setIsChatBotOpen(false);
             }, 100);
@@ -328,12 +328,14 @@ export default function SupportPage() {
         />
       )}
 
-      {isLiveChatOpen && currentUser && (
-        <LiveChat
-          userId={currentUser.id}
-          username={currentUser.username || currentUser.email}
-          isOpen={isLiveChatOpen}
-          onClose={() => setIsLiveChatOpen(false)}
+      {isContactFormOpen && (
+        <ContactAgentForm
+          isOpen={isContactFormOpen}
+          onClose={() => setIsContactFormOpen(false)}
+          userEmail={currentUser?.email || currentUser?.username}
+          userName={currentUser?.firstName && currentUser?.lastName
+            ? `${currentUser.firstName} ${currentUser.lastName}`
+            : currentUser?.username || currentUser?.email}
         />
       )}
     </div>
