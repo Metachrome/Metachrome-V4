@@ -6511,7 +6511,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     // CRITICAL FIX: Update balance in Supabase FIRST (primary source of truth)
     if (supabase) {
       try {
-        console.log(`🔄 Updating balance in Supabase for user ${userId}: ${oldBalance} → ${newBalance}`);
+        console.log(`🔄 Updating balance in Supabase for user ${userId}: ${currentBalance} → ${newBalance}`);
         const { data: updateData, error: balanceUpdateError } = await supabase
           .from('users')
           .update({
