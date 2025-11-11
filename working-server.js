@@ -7173,90 +7173,24 @@ app.post('/api/trades', async (req, res) => {
 
     const userBalance = parseFloat(user.balance || '0');
 
-    // Calculate profit percentage based on duration
-    let profitRate = 0.10; // Default 10%
-    if (duration === 30) profitRate = 0.10;
-    else if (duration === 60) profitRate = 0.15;
-    else if (duration === 90) profitRate = 0.20;
-    else if (duration === 120) profitRate = 0.25;
-    else if (duration === 180) profitRate = 0.30;
-    else if (duration === 240) profitRate = 0.50;
-    else if (duration === 300) profitRate = 0.75;
-    else if (duration === 600) profitRate = 1.00;
+    // CRITICAL FIX: At trade START, do NOT deduct balance
+    // Balance will only change at trade END based on WIN/LOSE outcome
+    // This matches the correct locked balance concept
 
-    // Deduct ONLY the profit percentage at trade start
-    const profitAmount = tradeAmount * profitRate;
-    const deductionAmount = profitAmount; // Deduct ONLY the profit percentage
-
-    if (userBalance < deductionAmount) {
+    // Just check if user has enough balance for the trade amount
+    if (userBalance < tradeAmount) {
       return res.status(400).json({
         success: false,
-        message: 'Insufficient balance for potential loss'
+        message: 'Insufficient balance for this trade'
       });
     }
 
-    console.log(`🔥 DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (profit ${profitRate * 100}% = ${profitAmount}) = ${userBalance - deductionAmount}`);
-    user.balance = (userBalance - deductionAmount).toString();
-    console.log('💰 NEW BALANCE SET TO:', user.balance);
+    console.log(`✅ TRADE START: Balance remains ${userBalance} (no deduction at start)`);
+    console.log(`💰 Trade amount: ${tradeAmount} USDT`);
 
-    // CRITICAL FIX: Save balance to Supabase (ALWAYS - removed production check)
-    if (supabase) {
-      console.log('💾 PRODUCTION: Updating balance in Supabase database...');
-      const { error: balanceError } = await supabase
-        .from('users')
-        .update({
-          balance: user.balance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', finalUserId);
-
-      if (balanceError) {
-        console.error('❌ Failed to update balance in Supabase:', balanceError);
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to update balance'
-        });
-      }
-      console.log('✅ Balance updated in Supabase:', userBalance, '→', user.balance);
-    } else {
-      // Development: Save to local file
-      await saveUsers(users);
-    }
-
-    console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
-
-    // Broadcast balance update via WebSocket for immediate frontend sync
-    if (global.wss) {
-      const balanceUpdateMessage = {
-        type: 'balance_update',
-        data: {
-          userId: finalUserId,
-          username: user.username,
-          oldBalance: userBalance.toString(),
-          newBalance: user.balance,
-          change: -deductionAmount, // Use the deduction amount (loss percentage), not full trade amount
-          changeType: 'trade_start',
-          tradeId: `trade-${Date.now()}`,
-          timestamp: new Date().toISOString()
-        }
-      };
-
-      console.log('📡 Broadcasting immediate balance deduction via WebSocket:', balanceUpdateMessage);
-
-      let broadcastCount = 0;
-      global.wss.clients.forEach(client => {
-        if (client.readyState === 1) { // WebSocket.OPEN
-          try {
-            client.send(JSON.stringify(balanceUpdateMessage));
-            broadcastCount++;
-          } catch (error) {
-            console.error('❌ Failed to broadcast balance update to client:', error);
-          }
-        }
-      });
-
-      console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
-    }
+    // NO BALANCE UPDATE AT TRADE START
+    // Balance will be updated at trade completion based on outcome
+    // No WebSocket broadcast needed here since balance doesn't change
 
     // Create trade record
     const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -7521,6 +7455,9 @@ app.post('/api/trades/options', async (req, res) => {
     console.log(`✅ User found: ${user.username} (ID: ${user.id}, Balance: ${user.balance})`);
 
     const userBalance = parseFloat(user.balance || '0');
+
+    // CRITICAL FIX: At trade START, do NOT deduct balance
+    // Balance will only change at trade END based on WIN/LOSE outcome
     if (userBalance < tradeAmount) {
       return res.status(400).json({
         success: false,
@@ -7528,82 +7465,12 @@ app.post('/api/trades/options', async (req, res) => {
       });
     }
 
-    // CRITICAL FIX: Deduct ONLY the loss percentage at trade start
-    // This way: WIN trades return full amount + profit, LOSE trades lose only the percentage
-    let lossPercentage = 0.10; // Default 10%
-    if (duration === 30) lossPercentage = 0.10;
-    else if (duration === 60) lossPercentage = 0.15;
-    else if (duration === 90) lossPercentage = 0.20;
-    else if (duration === 120) lossPercentage = 0.25;
-    else if (duration === 180) lossPercentage = 0.30;
-    else if (duration === 240) lossPercentage = 0.50;
-    else if (duration === 300) lossPercentage = 0.75;
-    else if (duration === 600) lossPercentage = 1.00;
+    console.log(`✅ OPTIONS TRADE START: Balance remains ${userBalance} (no deduction at start)`);
+    console.log(`💰 Trade amount: ${tradeAmount} USDT`);
 
-    const deductionAmount = tradeAmount * lossPercentage; // Deduct ONLY the loss percentage
-
-    console.log(`🔥 OPTIONS: DEDUCTING BALANCE: ${userBalance} - ${deductionAmount} (${(lossPercentage * 100).toFixed(0)}% of ${tradeAmount}) = ${userBalance - deductionAmount}`);
-    user.balance = (userBalance - deductionAmount).toString();
-    console.log('💰 OPTIONS: NEW BALANCE SET TO:', user.balance);
-
-    // CRITICAL FIX: Save balance to Supabase (ALWAYS - removed production check)
-    if (supabase) {
-      console.log('💾 PRODUCTION: Updating balance in Supabase database...');
-      const { error: balanceError } = await supabase
-        .from('users')
-        .update({
-          balance: user.balance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', finalUserId);
-
-      if (balanceError) {
-        console.error('❌ Failed to update balance in Supabase:', balanceError);
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to update balance'
-        });
-      }
-      console.log('✅ Balance updated in Supabase:', userBalance, '→', user.balance);
-    } else {
-      // Development: Save to local file
-      await saveUsers(users);
-    }
-
-    console.log(`💰 IMMEDIATE DEDUCTION: ${user.username} balance: ${userBalance} → ${user.balance}`);
-
-    // Broadcast balance update via WebSocket for immediate frontend sync
-    if (global.wss) {
-      const balanceUpdateMessage = {
-        type: 'balance_update',
-        data: {
-          userId: finalUserId,
-          username: user.username,
-          oldBalance: userBalance.toString(),
-          newBalance: user.balance,
-          change: -deductionAmount, // Use the deduction amount (loss percentage), not full trade amount
-          changeType: 'trade_start',
-          tradeId: `trade-${Date.now()}`,
-          timestamp: new Date().toISOString()
-        }
-      };
-
-      console.log('📡 Broadcasting immediate balance deduction via WebSocket:', balanceUpdateMessage);
-
-      let broadcastCount = 0;
-      global.wss.clients.forEach(client => {
-        if (client.readyState === 1) { // WebSocket.OPEN
-          try {
-            client.send(JSON.stringify(balanceUpdateMessage));
-            broadcastCount++;
-          } catch (error) {
-            console.error('❌ Failed to broadcast balance update to client:', error);
-          }
-        }
-      });
-
-      console.log(`📡 Balance update broadcasted to ${broadcastCount} clients`);
-    }
+    // NO BALANCE UPDATE AT TRADE START
+    // Balance will be updated at trade completion based on outcome
+    // No WebSocket broadcast needed here since balance doesn't change
 
     // Create trade record
     const tradeId = `trade-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
