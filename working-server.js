@@ -6458,19 +6458,37 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     if (supabase) {
       try {
         console.log(`🔄 Updating balance in Supabase for user ${userId}: ${oldBalance} → ${newBalance}`);
-        const { error: balanceUpdateError } = await supabase
+        const { data: updateData, error: balanceUpdateError } = await supabase
           .from('users')
           .update({
             balance: newBalance,
             updated_at: new Date().toISOString()
           })
-          .eq('id', userId);
+          .eq('id', userId)
+          .select();
 
         if (balanceUpdateError) {
           console.error('❌ Failed to update balance in Supabase:', balanceUpdateError);
           return { success: false, message: 'Failed to update balance in database' };
         } else {
           console.log(`✅ Balance updated in Supabase: ${newBalance}`);
+          console.log(`✅ Update response:`, updateData);
+
+          // CRITICAL: Verify the update by fetching the user again
+          const { data: verifyUser, error: verifyError } = await supabase
+            .from('users')
+            .select('balance')
+            .eq('id', userId)
+            .single();
+
+          if (verifyError) {
+            console.error('❌ Failed to verify balance update:', verifyError);
+          } else {
+            console.log(`✅ VERIFIED: Balance in database is now: ${verifyUser.balance}`);
+            if (parseFloat(verifyUser.balance) !== newBalance) {
+              console.error(`❌ CRITICAL: Balance mismatch! Expected ${newBalance}, got ${verifyUser.balance}`);
+            }
+          }
         }
       } catch (dbError) {
         console.error('❌ Error updating balance in Supabase:', dbError);
