@@ -14649,10 +14649,116 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
 
     console.log('📧 Contact form data:', { name, email, subject, message, hasImage: !!imageFile });
 
-    // For now, we'll log the contact request
-    // In production, you would integrate with an email service like SendGrid, AWS SES, or Nodemailer
+    // STEP 1: Find or create user by email
+    let userId = null;
+    let username = email;
 
-    // Store contact request in Supabase (optional)
+    if (supabase) {
+      try {
+        // Try to find existing user by email
+        const { data: existingUser, error: findError } = await supabase
+          .from('users')
+          .select('id, username, email')
+          .eq('email', email)
+          .single();
+
+        if (existingUser) {
+          userId = existingUser.id;
+          username = existingUser.username || existingUser.email;
+          console.log('✅ Found existing user:', userId, username);
+        } else {
+          // Create a guest user for contact form submission
+          const guestUserId = uuidv4();
+          const guestUsername = `guest_${email.split('@')[0]}_${Date.now()}`;
+
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert([{
+              id: guestUserId,
+              username: guestUsername,
+              email: email,
+              password: await bcrypt.hash('guest_' + Date.now(), 10), // Random password
+              first_name: name.split(' ')[0] || name,
+              last_name: name.split(' ').slice(1).join(' ') || '',
+              balance: 0,
+              role: 'user',
+              status: 'guest', // Mark as guest user
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('❌ Error creating guest user:', createError);
+          } else {
+            userId = newUser.id;
+            username = newUser.username;
+            console.log('✅ Created guest user:', userId, username);
+          }
+        }
+      } catch (userError) {
+        console.error('❌ Error handling user:', userError);
+      }
+    }
+
+    // STEP 2: Create chat conversation in Supabase
+    let conversationId = null;
+
+    if (supabase && userId) {
+      try {
+        // Create new conversation
+        const { data: conversation, error: convError } = await supabase
+          .from('chat_conversations')
+          .insert([{
+            user_id: userId,
+            status: 'active',
+            priority: 'normal',
+            category: 'general',
+            last_message_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (convError) {
+          console.error('❌ Error creating conversation:', convError);
+        } else {
+          conversationId = conversation.id;
+          console.log('✅ Created conversation:', conversationId);
+
+          // STEP 3: Create initial message with subject and message
+          const fullMessage = `📧 Contact Form Submission\n\n` +
+                             `Subject: ${subject}\n\n` +
+                             `${message}` +
+                             (imageFile ? `\n\n📎 Attachment: ${imageFile.originalname}` : '');
+
+          const { data: chatMessage, error: msgError } = await supabase
+            .from('chat_messages')
+            .insert([{
+              conversation_id: conversationId,
+              sender_id: userId,
+              sender_type: 'user',
+              message: fullMessage,
+              is_read: false,
+              created_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+          if (msgError) {
+            console.error('❌ Error creating chat message:', msgError);
+          } else {
+            console.log('✅ Created chat message:', chatMessage.id);
+          }
+        }
+      } catch (chatError) {
+        console.error('❌ Error creating chat conversation:', chatError);
+      }
+    }
+
+    // STEP 4: Store contact request in contact_requests table (for backup/tracking)
     if (supabase) {
       try {
         const contactData = {
@@ -14663,6 +14769,7 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
           has_image: !!imageFile,
           image_filename: imageFile?.originalname || null,
           status: 'pending',
+          conversation_id: conversationId, // Link to chat conversation
           created_at: new Date().toISOString()
         };
 
@@ -14674,7 +14781,7 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
 
         if (error) {
           console.error('❌ Error saving contact request to database:', error);
-          // Continue anyway - we'll still log it
+          // Continue anyway - we already created the chat conversation
         } else {
           console.log('✅ Contact request saved to database:', data.id);
         }
@@ -14682,6 +14789,32 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
         console.error('❌ Database error:', dbError);
         // Continue anyway
       }
+    }
+
+    // STEP 5: Broadcast WebSocket notification to all admin clients
+    if (conversationId) {
+      const notification = {
+        type: 'new_contact_request',
+        conversationId: conversationId,
+        userId: userId,
+        username: username,
+        name: name,
+        email: email,
+        subject: subject,
+        message: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('📡 Broadcasting contact request notification to admins');
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) { // WebSocket.OPEN
+          try {
+            client.send(JSON.stringify(notification));
+          } catch (err) {
+            console.error('Error sending WebSocket notification:', err);
+          }
+        }
+      });
     }
 
     // Log the contact request for manual processing
@@ -14695,8 +14828,10 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
     if (imageFile) {
       console.log('📧 Image:', imageFile.originalname, `(${imageFile.size} bytes)`);
     }
+    console.log('📧 Conversation ID:', conversationId);
+    console.log('📧 User ID:', userId);
     console.log('📧 ========================================');
-    console.log('📧 TO: support@metachrome.io');
+    console.log('📧 TO: support@metachrome.io (and Superadmin Chat)');
     console.log('📧 ========================================');
 
     // TODO: Integrate with email service
@@ -14727,7 +14862,7 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
 
     res.json({
       success: true,
-      message: 'Your message has been received. We will get back to you within 24 hours.'
+      message: 'Your message has been received. Our support team will respond shortly.'
     });
 
   } catch (error) {
