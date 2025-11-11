@@ -15114,14 +15114,25 @@ wss.on('connection', (ws, req) => {
         console.log('💬 Admin message received, broadcasting to user:', data.data);
         // Broadcast to specific user
         const targetUserId = data.data?.userId;
-        wss.clients.forEach(client => {
-          if (client.userId === targetUserId && client.readyState === 1) {
-            client.send(JSON.stringify({
-              type: 'new_message',
-              data: data.data
-            }));
+        const messageData = data.data?.message; // Extract the actual message object
+
+        if (targetUserId && messageData) {
+          let sentCount = 0;
+          wss.clients.forEach(client => {
+            if (client.userId === targetUserId && client.readyState === 1) {
+              client.send(JSON.stringify({
+                type: 'new_message',
+                data: messageData // Send only the message object, not the wrapper
+              }));
+              sentCount++;
+              console.log(`✅ Admin message sent to user ${targetUserId}`);
+            }
+          });
+
+          if (sentCount === 0) {
+            console.log(`⚠️ No active WebSocket connection found for user ${targetUserId}`);
           }
-        });
+        }
       }
 
       // Handle ping/pong for keep-alive

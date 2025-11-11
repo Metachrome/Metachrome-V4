@@ -278,16 +278,16 @@ export default function ChatManagement() {
           msg.id === tempMessage.id ? data : msg
         ));
 
-        // Send via WebSocket
+        // Send via WebSocket with complete message object
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({
             type: 'admin_message',
             data: {
-              conversationId: selectedConversation.id,
               userId: selectedConversation.user_id,
-              message: messageText
+              message: data // Send the complete message object from server response
             }
           }));
+          console.log('📡 WebSocket message sent to user:', selectedConversation.user_id);
         }
 
         toast({

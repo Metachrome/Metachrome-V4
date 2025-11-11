@@ -139,10 +139,11 @@ export function setupWebSocket(server: Server) {
 
       case 'admin_message':
         // Admin sends a message - broadcast to specific user
-        if (message.data?.userId) {
+        if (message.data?.userId && message.data?.message) {
+          console.log(`📤 Broadcasting admin message to user ${message.data.userId}`);
           broadcastToUser(message.data.userId, {
             type: 'new_message',
-            data: message.data
+            data: message.data.message // Send only the message object, not the wrapper
           });
         }
         break;
@@ -207,17 +208,19 @@ export function setupWebSocket(server: Server) {
   }
 
   function broadcastToUser(userId: string, message: WebSocketMessage) {
+    let sentCount = 0;
     clients.forEach((client, clientId) => {
-      // Check if this client belongs to the specific user
-      // You might need to implement user identification in WebSocket connection
-      if (client.ws.readyState === WebSocket.OPEN) {
-        const userMessage = {
-          ...message,
-          targetUserId: userId
-        };
-        client.ws.send(JSON.stringify(userMessage));
+      // Only send to clients that belong to the specific user
+      if (client.userId === userId && client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify(message));
+        sentCount++;
+        console.log(`✅ Message sent to user ${userId} (client ${clientId})`);
       }
     });
+
+    if (sentCount === 0) {
+      console.log(`⚠️ No active WebSocket connection found for user ${userId}`);
+    }
   }
 
   // Simulate real-time price updates
