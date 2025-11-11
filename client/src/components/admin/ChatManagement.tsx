@@ -658,7 +658,7 @@ export default function ChatManagement() {
                     messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex group ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex message-item ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'} mb-4`}
                       >
                         <div className={`flex gap-2 max-w-[80%] ${message.sender_type === 'admin' ? 'flex-row-reverse' : 'flex-row'}`}>
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -681,8 +681,9 @@ export default function ChatManagement() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 px-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                className="delete-btn h-6 px-2 text-red-400 hover:text-red-300 hover:bg-red-900/20"
                                 onClick={() => handleDeleteMessage(message.id)}
+                                title="Delete message"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </Button>
