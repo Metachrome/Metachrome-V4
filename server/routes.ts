@@ -1334,15 +1334,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check user balances
       const balances = await storage.getUserBalances(userId);
 
+      // Extract cryptocurrency symbol from trading pair (e.g., "BTCUSDT" -> "BTC")
+      const cryptoSymbol = symbol.replace('USDT', '');
+
       if (side === 'buy') {
         const usdtBalance = balances.find(b => b.currency === 'USDT')?.balance || 0;
         if (totalNum > usdtBalance) {
           return res.status(400).json({ message: "Insufficient USDT balance" });
         }
       } else {
-        const btcBalance = balances.find(b => b.currency === 'BTC')?.balance || 0;
-        if (amountNum > btcBalance) {
-          return res.status(400).json({ message: "Insufficient BTC balance" });
+        const cryptoBalance = balances.find(b => b.currency === cryptoSymbol)?.balance || 0;
+        if (amountNum > cryptoBalance) {
+          return res.status(400).json({ message: `Insufficient ${cryptoSymbol} balance` });
         }
       }
 
@@ -1355,14 +1358,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: amountNum,
         price: priceNum,
         total: totalNum,
-        status: 'pending'
+        status: 'filled' // Mark as filled immediately for market orders
       });
 
-      // Update user balances (lock funds)
+      // Update user balances - BOTH currencies must be updated!
       if (side === 'buy') {
+        // BUY: Deduct USDT, Add Cryptocurrency
         await storage.updateUserBalance(userId, 'USDT', -totalNum);
+        await storage.updateUserBalance(userId, cryptoSymbol, amountNum);
+        console.log(`✅ BUY ORDER: Deducted ${totalNum} USDT, Added ${amountNum} ${cryptoSymbol}`);
       } else {
-        await storage.updateUserBalance(userId, 'BTC', -amountNum);
+        // SELL: Deduct Cryptocurrency, Add USDT
+        await storage.updateUserBalance(userId, cryptoSymbol, -amountNum);
+        await storage.updateUserBalance(userId, 'USDT', totalNum);
+        console.log(`✅ SELL ORDER: Deducted ${amountNum} ${cryptoSymbol}, Added ${totalNum} USDT`);
       }
 
       res.json(order);
