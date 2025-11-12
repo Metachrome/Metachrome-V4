@@ -227,7 +227,7 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               placeholder="Type your message..."
-              rows={6}
+              rows={8}
               className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"
             />
           </div>
