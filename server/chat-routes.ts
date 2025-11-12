@@ -473,7 +473,7 @@ export function registerChatRoutes(app: Express) {
   // Contact Agent Form Submission with File Upload
   const contactHandler = contactUpload ? contactUpload.single('image') : (req: any, res: any, next: any) => next();
 
-  app.post("/api/contact-agent", contactHandler, async (req, res) => {
+  app.post("/api/contact-agent", contactHandler, async (req: any, res) => {
     try {
       const { name, email, subject, message } = req.body;
       const imageFile = req.file;
