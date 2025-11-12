@@ -54,7 +54,6 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
   const [openOrders, setOpenOrders] = useState<any[]>([]);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
   const hasLoadedInitialData = useRef(false);
-  const previousSymbol = useRef(selectedSymbol);
 
   // Use price context for synchronized price data - SINGLE SOURCE OF TRUTH
   const { priceData } = usePrice();
@@ -816,32 +815,25 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
   // REMOVED: Update current price from real market data - now using PriceContext
 
-  // Initialize price fields when current price is available from PriceContext
+  // Simplified price initialization - just update when we have valid price data
   useEffect(() => {
-    console.log('🔄 Initialize Price Effect:', { currentPrice, buyPrice, sellPrice, formattedPrice, isPriceLoading });
-    // Only set price when data is loaded and price is valid
-    if (!isPriceLoading && currentPrice > 0) {
-      if (!buyPrice) {
-        console.log('✅ Setting initial buyPrice:', formattedPrice);
-        setBuyPrice(formattedPrice);
-      }
-      if (!sellPrice) {
-        console.log('✅ Setting initial sellPrice:', formattedPrice);
-        setSellPrice(formattedPrice);
-      }
-    }
-  }, [currentPrice, buyPrice, sellPrice, formattedPrice, isPriceLoading]);
+    console.log('🔄 Price Update Effect:', {
+      selectedSymbol,
+      currentPrice,
+      formattedPrice,
+      isPriceLoading,
+      buyPrice,
+      sellPrice,
+      selectedSymbolPriceData
+    });
 
-  // Auto-update price fields when selected symbol changes
-  useEffect(() => {
-    // Only update if symbol actually changed, data is loaded, and we have a valid price
-    if (!isPriceLoading && previousSymbol.current !== selectedSymbol && currentPrice > 0 && formattedPrice !== '0.00') {
-      console.log('💱 Symbol changed from', previousSymbol.current, 'to', selectedSymbol, '- New price:', formattedPrice);
+    // Wait for price data to load and be valid
+    if (!isPriceLoading && currentPrice > 0 && formattedPrice !== '0.00') {
+      console.log('✅ Updating prices to:', formattedPrice);
       setBuyPrice(formattedPrice);
       setSellPrice(formattedPrice);
-      previousSymbol.current = selectedSymbol;
     }
-  }, [selectedSymbol, currentPrice, formattedPrice, isPriceLoading]);
+  }, [selectedSymbol, currentPrice, formattedPrice, isPriceLoading, selectedSymbolPriceData]);
 
   // Generate dynamic order book data based on current price
   const generateOrderBookData = (basePrice: number) => {
