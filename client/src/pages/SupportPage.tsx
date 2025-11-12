@@ -148,7 +148,7 @@ export default function SupportPage() {
                       className={`text-white flex-1 rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
                       style={{ backgroundColor: '#AB00FF' }}
                     >
-                      FAQ Bot
+                      Contact Support
                     </Button>
                     <Button
                       onClick={async () => {
