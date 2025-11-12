@@ -185,39 +185,38 @@ class DatabaseStorage implements IStorage {
     return await db.select().from(balances).where(eq(balances.userId, userId));
   }
 
-  async getBalance(userId: string, symbol: string): Promise<Balance | undefined> {
-    return await CacheManager.getUserBalance(userId, symbol, async () => {
+  async getBalance(userId: string, currency: string): Promise<Balance | undefined> {
+    return await CacheManager.getUserBalance(userId, currency, async () => {
       return await PerformanceMonitor.measureQuery(async () => {
         const [balance] = await db
           .select()
           .from(balances)
-          .where(and(eq(balances.userId, userId), eq(balances.symbol, symbol)));
+          .where(and(eq(balances.userId, userId), eq(balances.currency, currency)));
         return balance;
       });
     });
   }
 
-  async updateBalance(userId: string, symbol: string, available: string, locked: string): Promise<Balance> {
+  async updateBalance(userId: string, currency: string, balanceAmount: string): Promise<Balance> {
     return await PerformanceMonitor.measureQuery(async () => {
-      const existingBalance = await this.getBalance(userId, symbol);
+      const existingBalance = await this.getBalance(userId, currency);
 
       if (existingBalance) {
         const [balance] = await db
           .update(balances)
           .set({
-            available,
-            locked,
+            balance: balanceAmount,
             updatedAt: new Date()
           })
-          .where(and(eq(balances.userId, userId), eq(balances.symbol, symbol)))
+          .where(and(eq(balances.userId, userId), eq(balances.currency, currency)))
           .returning();
 
         // Invalidate cache after update
-        CacheManager.invalidateUserBalances(userId, symbol);
+        CacheManager.invalidateUserBalances(userId, currency);
         return balance;
       } else {
-        const result = await this.createBalance({ userId, symbol, available, locked });
-        CacheManager.invalidateUserBalances(userId, symbol);
+        const result = await this.createBalance({ userId, currency, balance: balanceAmount });
+        CacheManager.invalidateUserBalances(userId, currency);
         return result;
       }
     });
@@ -226,7 +225,7 @@ class DatabaseStorage implements IStorage {
   async createBalance(balanceData: InsertBalance): Promise<Balance> {
     return await PerformanceMonitor.measureQuery(async () => {
       const [balance] = await db.insert(balances).values(balanceData).returning();
-      CacheManager.invalidateUserBalances(balanceData.userId, balanceData.symbol);
+      CacheManager.invalidateUserBalances(balanceData.userId, balanceData.currency);
       return balance;
     });
   }

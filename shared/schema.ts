@@ -36,12 +36,12 @@ export const users = pgTable("users", {
 });
 
 // User balances
+// NOTE: Using TEXT for user_id to match actual Supabase database schema
 export const balances = pgTable("balances", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: uuid("user_id").references(() => users.id).notNull(),
-  symbol: varchar("symbol").notNull(), // BTC, ETH, USDT, etc.
-  available: decimal("available", { precision: 18, scale: 8 }).default('0'),
-  locked: decimal("locked", { precision: 18, scale: 8 }).default('0'),
+  userId: text("user_id").notNull(), // TEXT to match Supabase schema
+  currency: varchar("currency", { length: 10 }).default('USD'), // currency instead of symbol
+  balance: decimal("balance", { precision: 15, scale: 8 }).default('0'), // balance instead of available/locked
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
