@@ -361,84 +361,36 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
     },
   });
 
-  // Balance state variables for real-time updates
-  const [usdtBalance, setUsdtBalance] = useState(0);
-  const [btcBalance, setBtcBalance] = useState(0.5);
+  // Get user's main USDT balance directly from user object (single source of truth)
+  const usdtBalance = user?.balance || 0;
 
-  // Initialize balances from localStorage or API data
-  useEffect(() => {
-    if (!user) return;
-
-    // Try to load balances from localStorage first
-    const savedBalances = localStorage.getItem(`balances_${user.id || 'user-1'}`);
-
-    if (savedBalances) {
-      const { usdt, btc } = JSON.parse(savedBalances);
-      setUsdtBalance(usdt);
-      setBtcBalance(btc);
-      console.log('💾 Loaded balances from localStorage:', { usdt, btc });
-      return;
-    }
-
-    // If no saved balances, use API data or defaults
-    if (balances && Array.isArray(balances)) {
-      // Format: [{ symbol: "USDT", available: "700610", locked: "0" }, ...]
-      const usdtData = balances.find((b: any) => b.symbol === 'USDT');
-      const btcData = balances.find((b: any) => b.symbol === 'BTC');
-
-      const newUsdtBalance = parseFloat(usdtData?.available || '0');
-      const newBtcBalance = parseFloat(btcData?.available || '0.5');
-
-      setUsdtBalance(newUsdtBalance);
-      setBtcBalance(newBtcBalance);
-
-      // Save initial balances to localStorage
-      localStorage.setItem(`balances_${user.id || 'user-1'}`, JSON.stringify({
-        usdt: newUsdtBalance,
-        btc: newBtcBalance
-      }));
-
-      console.log('🔍 SPOT: Updated balances from API and saved to localStorage:', {
-        usdtData,
-        btcData,
-        newUsdtBalance,
-        newBtcBalance
-      });
-    }
-  }, [balances, user]);
-
-  // Save balances to localStorage
-  const saveBalances = (usdtBal: number, btcBal: number) => {
-    if (!user) return;
-    try {
-      localStorage.setItem(`balances_${user.id || 'user-1'}`, JSON.stringify({
-        usdt: usdtBal,
-        btc: btcBal
-      }));
-      console.log('💾 Saved balances to localStorage:', { usdt: usdtBal, btc: btcBal });
-    } catch (error) {
-      console.error('❌ Error saving balances:', error);
-    }
+  // Get cryptocurrency balance for selected symbol
+  const getCryptoBalance = (symbol: string): number => {
+    if (!balances || !Array.isArray(balances)) return 0;
+    const cryptoSymbol = symbol.replace('USDT', ''); // BTCUSDT -> BTC
+    const cryptoData = balances.find((b: any) => b.symbol === cryptoSymbol);
+    return parseFloat(cryptoData?.available || '0');
   };
+
+  // Get balance for currently selected cryptocurrency
+  const selectedCryptoSymbol = selectedSymbol.replace('USDT', ''); // BTCUSDT -> BTC
+  const selectedCryptoBalance = getCryptoBalance(selectedSymbol);
+
+  // Calculate USDT equivalent of selected crypto balance (real-time conversion)
+  const selectedCryptoValueInUSDT = selectedCryptoBalance * currentPrice;
 
   // ENHANCED Debug logging for balance sync
   console.log('🔍 SPOT PAGE BALANCE DEBUG:', {
-    user: user?.id,
-    balances,
-    usdtBalance,
-    btcBalance,
-    'balances?.USDT': balances?.USDT,
-    'balances?.USDT?.available': balances?.USDT?.available,
-    'Array.isArray(balances?.balances)': Array.isArray(balances?.balances),
-    'Array.isArray(balances)': Array.isArray(balances),
-    'typeof balances': typeof balances,
-    'balances keys': balances ? Object.keys(balances) : 'null'
+    'user.id': user?.id,
+    'user.balance (USDT)': user?.balance,
+    'usdtBalance': usdtBalance,
+    'selectedSymbol': selectedSymbol,
+    'selectedCryptoSymbol': selectedCryptoSymbol,
+    'selectedCryptoBalance': selectedCryptoBalance,
+    'currentPrice': currentPrice,
+    'selectedCryptoValueInUSDT': selectedCryptoValueInUSDT,
+    'balances': balances
   });
-
-  // ALERT: Show balance on screen for debugging
-  if (typeof window !== 'undefined') {
-    console.log(`🚨 SPOT PAGE: Displaying balance ${usdtBalance} USDT`);
-  }
 
   // Subscribe to balance updates via WebSocket
   useEffect(() => {
@@ -727,13 +679,13 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
     setBuyPercentage(percentage);
     const price = parseFloat(buyPrice) || currentPrice;
     const maxAmount = usdtBalance / price;
-    const amount = (maxAmount * percentage / 100).toFixed(6);
+    const amount = (maxAmount * percentage / 100).toFixed(8);
     setBuyAmount(amount);
   };
 
   const handleSellPercentageChange = (percentage: number) => {
     setSellPercentage(percentage);
-    const amount = (btcBalance * percentage / 100).toFixed(6);
+    const amount = (selectedCryptoBalance * percentage / 100).toFixed(8);
     setSellAmount(amount);
   };
 
@@ -777,7 +729,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
   const handleSellSubmit = () => {
     console.log('🔥 Sell button clicked!');
     console.log('User:', user);
-    console.log('BTC Balance:', btcBalance);
+    console.log(`${selectedCryptoSymbol} Balance:`, selectedCryptoBalance);
     console.log('Sell Amount:', sellAmount);
     console.log('Sell Price:', sellPrice);
 
@@ -794,8 +746,8 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
       return;
     }
 
-    if (amount > btcBalance) {
-      toast({ title: `Insufficient BTC balance. Need ${amount.toFixed(6)} but have ${btcBalance.toFixed(6)}`, variant: "destructive" });
+    if (amount > selectedCryptoBalance) {
+      toast({ title: `Insufficient ${selectedCryptoSymbol} balance. Need ${amount.toFixed(8)} but have ${selectedCryptoBalance.toFixed(8)}`, variant: "destructive" });
       return;
     }
 
@@ -1130,15 +1082,23 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                 </div>
               </div>
 
-              {/* Mobile Available Balance and Buy Suggestion - Same as Desktop */}
-              <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
+              {/* Mobile Available Balance and Buy Suggestion - Real-time Conversion */}
+              <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-blue-500/30">
                 {user ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Available {usdtBalance.toFixed(2)} USDT</span>
-                      <span className="text-blue-400">≈</span>
+                      <span className="font-medium text-blue-400">💰 Available Balance</span>
                     </div>
-                    <div className="text-green-400 font-medium">Can buy ≈ {(usdtBalance / currentPrice).toFixed(6)} BTC</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-bold">{usdtBalance.toFixed(2)} USDT</span>
+                      <span className="text-gray-400">≈</span>
+                    </div>
+                    <div className="text-green-400 font-medium">
+                      Can buy ≈ {(usdtBalance / currentPrice).toFixed(8)} {selectedCryptoSymbol}
+                    </div>
+                    <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
+                      💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
+                    </div>
                   </>
                 ) : (
                   <div className="text-center text-yellow-400">
@@ -1186,15 +1146,23 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                 </div>
               </div>
 
-              {/* Mobile Available Balance and Sell Suggestion - Same as Desktop */}
-              <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
+              {/* Mobile Available Balance and Sell Suggestion - Real-time Conversion */}
+              <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-red-500/30">
                 {user ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Available {btcBalance.toFixed(6)} BTC</span>
-                      <span className="text-blue-400">≈</span>
+                      <span className="font-medium text-red-400">💰 Available Balance</span>
                     </div>
-                    <div className="text-red-400 font-medium">Available ≈ {(btcBalance * currentPrice).toFixed(2)} USDT</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-bold">{selectedCryptoBalance.toFixed(8)} {selectedCryptoSymbol}</span>
+                      <span className="text-gray-400">≈</span>
+                    </div>
+                    <div className="text-red-400 font-medium">
+                      Worth ≈ {selectedCryptoValueInUSDT.toFixed(2)} USDT
+                    </div>
+                    <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
+                      💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
+                    </div>
                   </>
                 ) : (
                   <div className="text-center text-yellow-400">
@@ -1636,14 +1604,22 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                   </div>
                 </div>
 
-                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
+                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-blue-500/30">
                   {user ? (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">Available {usdtBalance.toFixed(2)} USDT</span>
-                        <span className="text-blue-400">≈</span>
+                        <span className="font-medium text-blue-400">💰 Available Balance</span>
                       </div>
-                      <div className="text-green-400 font-medium">Can buy ≈ {(usdtBalance / currentPrice).toFixed(6)} BTC</div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-bold">{usdtBalance.toFixed(2)} USDT</span>
+                        <span className="text-gray-400">≈</span>
+                      </div>
+                      <div className="text-green-400 font-medium">
+                        Can buy ≈ {(usdtBalance / currentPrice).toFixed(8)} {selectedCryptoSymbol}
+                      </div>
+                      <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
+                        💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
+                      </div>
                     </>
                   ) : (
                     <div className="text-center text-yellow-400">
@@ -1785,14 +1761,22 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                   </div>
                 </div>
 
-                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded">
+                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-red-500/30">
                   {user ? (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">Available {btcBalance.toFixed(6)} BTC</span>
-                        <span className="text-blue-400">≈</span>
+                        <span className="font-medium text-red-400">💰 Available Balance</span>
                       </div>
-                      <div className="text-red-400 font-medium">Available ≈ {(btcBalance * currentPrice).toFixed(2)} USDT</div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-bold">{selectedCryptoBalance.toFixed(8)} {selectedCryptoSymbol}</span>
+                        <span className="text-gray-400">≈</span>
+                      </div>
+                      <div className="text-red-400 font-medium">
+                        Worth ≈ {selectedCryptoValueInUSDT.toFixed(2)} USDT
+                      </div>
+                      <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
+                        💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
+                      </div>
                     </>
                   ) : (
                     <div className="text-center text-yellow-400">

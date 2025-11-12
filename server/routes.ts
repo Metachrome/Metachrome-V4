@@ -2635,31 +2635,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      console.log('💰 [/api/balances] User authenticated:', user.id, user.username);
+      console.log('💰 [/api/balances] User authenticated:', user.id, user.username, 'Main balance:', user.balance);
 
       // Get real user balances from database
-      const balances = await storage.getUserBalances(user.id);
+      let balances = await storage.getUserBalances(user.id);
       console.log('💰 [/api/balances] Balances from DB:', balances);
 
-      // If user has no balances, create default ones
-      if (!balances || balances.length === 0) {
-        console.log('⚠️ [/api/balances] No balances found, creating defaults');
-        const defaultBalances = [
-          { userId: user.id, symbol: 'USDT', available: '1000.00', locked: '0.00' },
-          { userId: user.id, symbol: 'BTC', available: '0.0', locked: '0.0' },
-          { userId: user.id, symbol: 'ETH', available: '0.0', locked: '0.0' },
-        ];
+      // Sync USDT balance with user's main balance (single source of truth)
+      const usdtBalance = balances.find(b => b.symbol === 'USDT');
+      const userMainBalance = user.balance || 0;
 
-        for (const balance of defaultBalances) {
-          await storage.createBalance(balance);
-        }
-
-        const newBalances = await storage.getUserBalances(user.id);
-        console.log('✅ [/api/balances] Created default balances:', newBalances);
-        return res.json(newBalances);
+      if (!usdtBalance) {
+        // Create USDT balance if doesn't exist, using user's main balance
+        console.log('⚠️ [/api/balances] No USDT balance found, creating with main balance:', userMainBalance);
+        await storage.createBalance({
+          userId: user.id,
+          symbol: 'USDT',
+          available: userMainBalance.toString(),
+          locked: '0.00'
+        });
+      } else if (parseFloat(usdtBalance.available) !== userMainBalance) {
+        // Update USDT balance to match user's main balance
+        console.log('🔄 [/api/balances] Syncing USDT balance:', parseFloat(usdtBalance.available), '→', userMainBalance);
+        await storage.updateBalance(
+          user.id,
+          'USDT',
+          userMainBalance.toString(),
+          usdtBalance.locked || '0.00'
+        );
       }
 
-      console.log('✅ [/api/balances] Returning balances:', balances);
+      // Refresh balances after sync
+      balances = await storage.getUserBalances(user.id);
+      console.log('✅ [/api/balances] Returning synced balances:', balances);
       res.json(balances);
     } catch (error) {
       console.error("❌ [/api/balances] Error fetching balances:", error);
