@@ -14714,25 +14714,9 @@ app.delete('/api/admin/chat/conversation/:conversationId', async (req, res) => {
 });
 
 // ===== CONTACT AGENT FORM ENDPOINT =====
-// Configure multer for contact form image uploads
-const contactStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'uploads', 'contact');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname);
-    const nameWithoutExt = path.basename(file.originalname, extension);
-    cb(null, `${nameWithoutExt}-${uniqueSuffix}${extension}`);
-  }
-});
-
+// Configure multer for contact form image uploads (memory storage for Supabase)
 const contactUpload = multer({
-  storage: contactStorage,
+  storage: multer.memoryStorage(), // Store in memory for Supabase upload
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
@@ -14761,17 +14745,55 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
     }
 
     console.log('📧 Contact form data:', { name, email, subject, message, hasImage: !!imageFile });
-    if (imageFile) {
-      const imagePath = `/api/uploads/contact/${imageFile.filename}`;
-      console.log('📎 Image file details:', {
-        filename: imageFile.filename,
-        originalname: imageFile.originalname,
-        path: imageFile.path,
-        imagePath: imagePath,
-        size: imageFile.size,
-        mimetype: imageFile.mimetype
-      });
-      console.log('✅ Image will be accessible at:', imagePath);
+
+    // Upload image to Supabase Storage if provided
+    let imageUrl = null;
+    if (imageFile && supabase) {
+      try {
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = path.extname(imageFile.originalname);
+        const nameWithoutExt = path.basename(imageFile.originalname, extension);
+        const filename = `${nameWithoutExt}-${uniqueSuffix}${extension}`;
+        const filePath = `contact/${filename}`;
+
+        console.log('📤 Uploading image to Supabase Storage:', filePath);
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('contact-uploads')
+          .upload(filePath, imageFile.buffer, {
+            contentType: imageFile.mimetype,
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('❌ Error uploading to Supabase Storage:', uploadError);
+          throw uploadError;
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('contact-uploads')
+          .getPublicUrl(filePath);
+
+        imageUrl = urlData.publicUrl;
+
+        console.log('✅ Image uploaded to Supabase Storage:', imageUrl);
+        console.log('📎 Image file details:', {
+          filename: filename,
+          originalname: imageFile.originalname,
+          size: imageFile.size,
+          mimetype: imageFile.mimetype,
+          publicUrl: imageUrl
+        });
+      } catch (uploadError) {
+        console.error('❌ Failed to upload image to Supabase:', uploadError);
+        // Continue without image
+      }
+    } else if (imageFile && !supabase) {
+      console.warn('⚠️ Image provided but Supabase not configured - skipping upload');
     }
 
     // STEP 1: Find or create user by email
@@ -14859,7 +14881,7 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
                              `📧 Email: ${email}\n` +
                              `📌 Subject: ${subject}\n\n` +
                              `💬 Message:\n${message}` +
-                             (imageFile ? `\n\n📎 Attachment: ${imageFile.originalname}\n🔗 File: /api/uploads/contact/${imageFile.filename}` : '');
+                             (imageUrl ? `\n\n📎 Attachment: ${imageFile.originalname}\n🔗 File: ${imageUrl}` : '');
 
           const { data: chatMessage, error: msgError } = await supabase
             .from('chat_messages')
@@ -14893,10 +14915,10 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
           email,
           subject,
           message,
-          has_image: !!imageFile,
-          image_filename: imageFile ? imageFile.filename : null, // Save server filename for access
+          has_image: !!imageUrl,
+          image_filename: imageFile?.originalname || null, // Save original filename for display
           image_original_name: imageFile?.originalname || null, // Save original filename for display
-          image_path: imageFile ? `/api/uploads/contact/${imageFile.filename}` : null, // Full path for access
+          image_path: imageUrl, // Supabase Storage public URL
           status: 'pending',
           conversation_id: conversationId, // Link to chat conversation
           created_at: new Date().toISOString()

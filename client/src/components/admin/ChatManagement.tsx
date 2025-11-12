@@ -409,9 +409,16 @@ export default function ChatManagement() {
   // Helper function to extract image path from message
   const extractImagePath = (message: string): string | null => {
     // Match all formats:
+    // - Supabase Storage URL: https://...supabase.co/storage/v1/object/public/...
     // - New format: /api/uploads/contact/...
     // - Old format with subfolder: /uploads/contact/...
     // - Very old format (root): /uploads/...
+    const supabaseMatch = message.match(/🔗 File: (https:\/\/[^\s\n]+supabase\.co\/storage\/[^\s\n]+)/);
+    if (supabaseMatch) {
+      // Direct Supabase Storage URL - use as is
+      return supabaseMatch[1];
+    }
+
     const match = message.match(/🔗 File: (\/api\/uploads\/contact\/[^\s\n]+|\/uploads\/contact\/[^\s\n]+|\/uploads\/[^\s\n]+)/);
     if (match) {
       // Convert relative path to absolute URL
