@@ -1112,7 +1112,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                 disabled={!buyAmount || buyAmount === '0' || !user}
                 className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
               >
-                {!user ? 'Login to Trade' : `Buy BTC`}
+                {!user ? 'Login to Trade' : `Buy ${selectedCryptoSymbol}`}
               </Button>
             </div>
           ) : (
@@ -1163,6 +1163,11 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                     <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
                       💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
                     </div>
+                    {selectedCryptoBalance === 0 && (
+                      <div className="text-yellow-400 text-xs pt-1 border-t border-yellow-500/30 bg-yellow-500/10 p-2 rounded">
+                        ⚠️ You need to BUY {selectedCryptoSymbol} first before you can SELL
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-center text-yellow-400">
@@ -1173,10 +1178,10 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
               <Button
                 onClick={handleSellSubmit}
-                disabled={!sellAmount || sellAmount === '0' || !user}
+                disabled={!sellAmount || sellAmount === '0' || !user || selectedCryptoBalance === 0}
                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
               >
-                {!user ? 'Login to Trade' : `Sell BTC`}
+                {!user ? 'Login to Trade' : selectedCryptoBalance === 0 ? `No ${selectedCryptoSymbol} to Sell` : `Sell ${selectedCryptoSymbol}`}
               </Button>
             </div>
           )}
@@ -1634,7 +1639,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                       disabled
                       className="w-full bg-gray-600 cursor-not-allowed text-white py-3 rounded font-medium"
                     >
-                      Buy(BTC)
+                      Buy({selectedCryptoSymbol})
                     </button>
                     <p className="text-center text-yellow-400 text-sm">
                       <a href="/login" className="underline hover:text-yellow-300">
@@ -1648,7 +1653,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                     disabled={placeBuyOrderMutation.isPending}
                     className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium"
                   >
-                    {placeBuyOrderMutation.isPending ? 'Placing...' : 'Buy(BTC)'}
+                    {placeBuyOrderMutation.isPending ? 'Placing...' : `Buy(${selectedCryptoSymbol})`}
                   </button>
                 )}
               </div>
@@ -1777,6 +1782,11 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                       <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
                         💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
                       </div>
+                      {selectedCryptoBalance === 0 && (
+                        <div className="text-yellow-400 text-xs pt-1 border-t border-yellow-500/30 bg-yellow-500/10 p-2 rounded">
+                          ⚠️ You need to BUY {selectedCryptoSymbol} first before you can SELL
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="text-center text-yellow-400">
@@ -1791,7 +1801,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                       disabled
                       className="w-full bg-gray-600 cursor-not-allowed text-white py-3 rounded font-medium"
                     >
-                      Sell (BTC)
+                      Sell ({selectedCryptoSymbol})
                     </button>
                     <p className="text-center text-yellow-400 text-sm">
                       <a href="/login" className="underline hover:text-yellow-300">
@@ -1802,10 +1812,10 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                 ) : (
                   <button
                     onClick={handleSellSubmit}
-                    disabled={placeSellOrderMutation.isPending}
+                    disabled={placeSellOrderMutation.isPending || selectedCryptoBalance === 0}
                     className="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 rounded font-medium"
                   >
-                    {placeSellOrderMutation.isPending ? 'Placing...' : 'Sell (BTC)'}
+                    {placeSellOrderMutation.isPending ? 'Placing...' : selectedCryptoBalance === 0 ? `No ${selectedCryptoSymbol} to Sell` : `Sell (${selectedCryptoSymbol})`}
                   </button>
                 )}
               </div>
