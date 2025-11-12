@@ -2,7 +2,7 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'rgb(13 11 31 / 98%)' }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Privacy Policy – Metachrome</h1>
+        <h1 className="font-bold text-white mb-4" style={{ fontSize: 'calc(1.875rem - 4px)' }}>Privacy Policy – Metachrome</h1>
         <p className="text-gray-400 mb-8">
           <strong>Effective date:</strong> October 26, 2024 &nbsp;•&nbsp; <strong>Last updated:</strong> October 26, 2024
         </p>

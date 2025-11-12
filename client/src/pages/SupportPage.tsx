@@ -91,10 +91,34 @@ export default function SupportPage() {
   ];
 
   const faqs = [
-    { question: "What products does METACHROME Ecosystem include?", answer: "Our ecosystem includes spot trading, futures, options, and advanced trading tools with MetaMask integration." },
-    { question: "Why is it better to trade cryptocurrencies on METACHROME?", answer: "Advanced trading features with competitive fees, superior execution, and admin-controlled outcomes." },
-    { question: "How to buy cryptocurrency on METACHROME?", answer: "Connect your MetaMask wallet and start trading with our intuitive interface." },
-    { question: "How to Complete Identity Verification?", answer: "Upload required documents through our secure verification system for enhanced features." }
+    {
+      question: "What is METACHROME?",
+      answer: "METACHROME is a next-generation option trading platform designed to make crypto trading secure, simple, and accessible for everyone."
+    },
+    {
+      question: "Why use METACHROME?",
+      answer: "Because it's legit, easy to use, and fully integrated with Google and MetaMask. Our platform combines transparency, simplicity, and trust."
+    },
+    {
+      question: "How to make a deposit on METACHROME?",
+      answer: "You'll need a crypto wallet or exchange account. Buy USDT/BTC/ETH/SOL on your preferred exchange/wallet. Send it to your designated METACHROME wallet address. Your balance will appear automatically after confirmation."
+    },
+    {
+      question: "How to start trading on METACHROME?",
+      answer: "Once your deposit is confirmed, open the Trading Dashboard, choose your pair and duration, then place your trade."
+    },
+    {
+      question: "Is METACHROME safe?",
+      answer: "Yes. We use blockchain-based transactions, SSL encryption, and non-custodial wallet connections to keep your funds secure."
+    },
+    {
+      question: "What assets are supported on METACHROME?",
+      answer: "Currently, we only provide USDT (TRC20, ERC20, and BEP20). More assets will be added soon."
+    },
+    {
+      question: "Do I need KYC?",
+      answer: "Yes. All users are required to complete KYC verification before trading or withdrawing. This process ensures security, prevents fraud, and complies with global financial regulations."
+    }
   ];
 
   return (
@@ -143,8 +167,11 @@ export default function SupportPage() {
                 {option.title !== "Email Us" && (
                   <Button
                     onClick={() => setIsChatBotOpen(true)}
-                    className={`w-full text-white rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
-                    style={{ backgroundColor: '#AB00FF' }}
+                    className={`w-full text-white rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2' : 'py-3'}`}
+                    style={{
+                      backgroundColor: '#AB00FF',
+                      fontSize: isMobile ? 'calc(0.875rem + 4px)' : '1rem'
+                    }}
                   >
                     Live Chat
                   </Button>

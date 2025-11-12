@@ -326,7 +326,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
             </div>
 
             {/* Input - Fixed for mobile with bottom navigation padding */}
-            <div className="p-4 pb-20 md:pb-4 bg-[#1a1f2e] border-t border-gray-700">
+            <div className="p-4 pb-24 md:pb-4 bg-[#1a1f2e] border-t border-gray-700">
               <div className="flex gap-2 mb-3">
                 <input
                   type="text"
@@ -345,7 +345,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
               </div>
               <Button
                 onClick={onContactSupport}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium"
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium mb-4 md:mb-0"
               >
                 Contact Support
               </Button>

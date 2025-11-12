@@ -238,23 +238,24 @@ export function MobileBottomNav() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '6px 4px', // Reduced padding for smaller screens
-                flex: '1', // Make buttons equally distribute space
-                maxWidth: '20%', // Ensure 5 buttons fit (100% / 5 = 20%)
-                minWidth: '0', // Allow buttons to shrink if needed
+                padding: '6px 4px',
+                flex: '1',
+                maxWidth: '20%',
+                minWidth: '0',
                 backgroundColor: active ? 'rgba(79, 70, 229, 0.2)' : isHovered ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
-                borderRadius: '6px', // Slightly smaller border radius
+                borderRadius: '6px',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                transform: isHovered ? 'scale(1.02)' : 'scale(1)' // Reduced scale to prevent overflow
+                transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+                gap: '4px'
               }}
             >
               <div
                 className="nav-icon"
                 style={{
-                  width: '32px', // Reduced from 40px to 32px for smaller screens
-                  height: '32px', // Reduced from 40px to 32px for smaller screens
+                  width: '41.6px', // 32px * 1.3 = 41.6px (30% increase)
+                  height: '41.6px', // 32px * 1.3 = 41.6px (30% increase)
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -276,11 +277,25 @@ export function MobileBottomNav() {
                     const parent = target.parentElement;
                     if (parent) {
                       parent.innerHTML = getEmojiIcon(item.path);
-                      parent.style.fontSize = '24px';
+                      parent.style.fontSize = '31.2px'; // 24px * 1.3 = 31.2px
                     }
                   }}
                 />
               </div>
+              <span
+                style={{
+                  fontSize: '11.7px', // 9px * 1.3 = 11.7px (30% increase from base small size)
+                  color: shouldShowActive ? '#A78BFA' : '#9CA3AF',
+                  fontWeight: shouldShowActive ? '600' : '400',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%'
+                }}
+              >
+                {item.label}
+              </span>
             </button>
           );
         })}
