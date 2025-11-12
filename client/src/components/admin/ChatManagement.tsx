@@ -416,8 +416,15 @@ export default function ChatManagement() {
     if (match) {
       // Convert relative path to absolute URL
       const relativePath = match[1];
-      // Use window.location.origin to get the base URL (works for both localhost and production)
-      return `${window.location.origin}${relativePath}`;
+
+      // For production (custom domain), use Railway backend URL for file uploads
+      // For localhost, use local origin
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const baseUrl = isLocalhost
+        ? window.location.origin
+        : 'https://metachrome-v4-production.up.railway.app';
+
+      return `${baseUrl}${relativePath}`;
     }
     return null;
   };
