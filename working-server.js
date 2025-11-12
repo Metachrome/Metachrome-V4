@@ -14762,13 +14762,16 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
 
     console.log('📧 Contact form data:', { name, email, subject, message, hasImage: !!imageFile });
     if (imageFile) {
+      const imagePath = `/api/uploads/contact/${imageFile.filename}`;
       console.log('📎 Image file details:', {
         filename: imageFile.filename,
         originalname: imageFile.originalname,
         path: imageFile.path,
+        imagePath: imagePath,
         size: imageFile.size,
         mimetype: imageFile.mimetype
       });
+      console.log('✅ Image will be accessible at:', imagePath);
     }
 
     // STEP 1: Find or create user by email
