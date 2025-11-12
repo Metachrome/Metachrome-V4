@@ -295,10 +295,10 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                           </div>
                         ) : (
-                          <p className="text-xs whitespace-pre-line">{renderTextWithBold(message.text)}</p>
+                          <p className="whitespace-pre-line" style={{ fontSize: 'calc(0.75rem + 4px)' }}>{renderTextWithBold(message.text)}</p>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1 px-1">
+                      <p className="text-gray-500 mt-1 px-1" style={{ fontSize: 'calc(0.75rem + 4px)' }}>
                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -313,7 +313,8 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
                     <button
                       key={faq.id}
                       onClick={() => handleFAQClick(faq)}
-                      className="w-full text-left bg-gray-700/50 hover:bg-gray-700 text-gray-200 text-sm p-3 rounded-lg transition-colors border border-gray-600/30"
+                      className="w-full text-left bg-gray-700/50 hover:bg-gray-700 text-gray-200 p-3 rounded-lg transition-colors border border-gray-600/30"
+                      style={{ fontSize: 'calc(0.875rem + 4px)' }}
                     >
                       {faq.question}
                     </button>
@@ -334,7 +335,8 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Type your message..."
-                  className="flex-1 bg-gray-700 text-white px-4 py-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  className="flex-1 bg-gray-700 text-white px-4 py-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  style={{ fontSize: 'calc(0.875rem + 4px)' }}
                 />
                 <Button
                   onClick={handleSendMessage}
@@ -345,7 +347,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
               </div>
               <Button
                 onClick={onContactSupport}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium mb-4 md:mb-0"
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium mb-8 md:mb-0"
               >
                 Contact Support
               </Button>
