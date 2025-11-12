@@ -2356,10 +2356,10 @@ function OptionsPageContent({
               </div>
 
               {/* Order Book Headers - Reduced spacing */}
-              <div className="grid grid-cols-3 gap-1 p-1.5 text-xs text-gray-400 border-b border-gray-700">
-                <span>Price</span>
-                <span>Volume</span>
-                <span>Total</span>
+              <div className="grid grid-cols-3 gap-1 p-1.5 text-[10px] text-gray-400 border-b border-gray-700">
+                <span className="truncate">Price</span>
+                <span className="truncate text-center">Volume</span>
+                <span className="truncate text-right">Total</span>
               </div>
 
               {/* Order Book Data */}
@@ -2367,10 +2367,10 @@ function OptionsPageContent({
                 {/* Sell Orders (Red) */}
                 <div className="space-y-0">
                   {orderBookData.sellOrders.slice(0, 8).map((order, index) => (
-                    <div key={index} className="grid grid-cols-3 gap-1 px-2 py-1 text-xs hover:bg-gray-800">
-                      <span className="text-red-400 font-mono">{order.price}</span>
-                      <span className="text-gray-300 font-mono">{order.volume}</span>
-                      <span className="text-gray-400 font-mono">{order.turnover}</span>
+                    <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-[10px] hover:bg-gray-800">
+                      <span className="text-red-400 font-mono truncate">{order.price}</span>
+                      <span className="text-gray-300 font-mono truncate text-center">{order.volume}</span>
+                      <span className="text-gray-400 font-mono truncate text-right">{order.turnover}</span>
                     </div>
                   ))}
                 </div>
@@ -2387,10 +2387,10 @@ function OptionsPageContent({
                 {/* Buy Orders (Green) */}
                 <div className="space-y-0">
                   {orderBookData.buyOrders.slice(0, 8).map((order, index) => (
-                    <div key={index} className="grid grid-cols-3 gap-1 px-2 py-1 text-xs hover:bg-gray-800">
-                      <span className="text-green-400 font-mono">{order.price}</span>
-                      <span className="text-gray-300 font-mono">{order.volume}</span>
-                      <span className="text-gray-400 font-mono">{order.turnover}</span>
+                    <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-[10px] hover:bg-gray-800">
+                      <span className="text-green-400 font-mono truncate">{order.price}</span>
+                      <span className="text-gray-300 font-mono truncate text-center">{order.volume}</span>
+                      <span className="text-gray-400 font-mono truncate text-right">{order.turnover}</span>
                     </div>
                   ))}
                 </div>

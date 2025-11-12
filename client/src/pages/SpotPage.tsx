@@ -1307,10 +1307,10 @@ function SpotPageContent() {
           </div>
 
           {/* Column Headers - Dynamic based on selected symbol */}
-          <div className="grid grid-cols-3 gap-2 p-2 text-xs text-gray-400 border-b border-gray-700">
-            <span>Price (USDT)</span>
-            <span>Volume ({selectedSymbol.replace('USDT', '')})</span>
-            <span>Turnover</span>
+          <div className="grid grid-cols-3 gap-1 p-2 text-[10px] text-gray-400 border-b border-gray-700">
+            <span className="truncate">Price</span>
+            <span className="truncate text-center">Volume</span>
+            <span className="truncate text-right">Total</span>
           </div>
 
           {/* Order Book Data */}
@@ -1318,10 +1318,10 @@ function SpotPageContent() {
             {/* Sell Orders (Red) - Using TradingView Price */}
             <div className="space-y-0">
               {generateOrderBookData(currentPrice).sellOrders.map((order, index) => (
-                <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
-                  <span className="text-red-400">{order.price}</span>
-                  <span className="text-gray-300">{order.volume}</span>
-                  <span className="text-gray-300">{order.turnover}</span>
+                <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-[10px] hover:bg-[#3a3d57]">
+                  <span className="text-red-400 truncate font-mono">{order.price}</span>
+                  <span className="text-gray-300 truncate text-center font-mono">{order.volume}</span>
+                  <span className="text-gray-300 truncate text-right font-mono">{order.turnover}</span>
                 </div>
               ))}
             </div>
@@ -1342,10 +1342,10 @@ function SpotPageContent() {
             {/* Buy Orders (Green) - Using TradingView Price */}
             <div className="space-y-0">
               {generateOrderBookData(currentPrice).buyOrders.map((order, index) => (
-                <div key={index} className="grid grid-cols-3 gap-2 px-2 py-1 text-xs hover:bg-[#3a3d57]">
-                  <span className="text-green-400">{order.price}</span>
-                  <span className="text-gray-300">{order.volume}</span>
-                  <span className="text-gray-300">{order.turnover}</span>
+                <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-[10px] hover:bg-[#3a3d57]">
+                  <span className="text-green-400 truncate font-mono">{order.price}</span>
+                  <span className="text-gray-300 truncate text-center font-mono">{order.volume}</span>
+                  <span className="text-gray-300 truncate text-right font-mono">{order.turnover}</span>
                 </div>
               ))}
             </div>

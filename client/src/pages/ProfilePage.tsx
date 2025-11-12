@@ -1890,16 +1890,6 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm text-gray-400">Member Since</p>
-                      <p className="text-white">
-                        {user?.createdAt ? formatDate(user.createdAt) : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
                     <Shield className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm text-gray-400">Account Status</p>
