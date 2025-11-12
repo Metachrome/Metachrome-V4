@@ -178,7 +178,7 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
         <form onSubmit={handleSubmit} className="p-6 pb-8 md:pb-6 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
+            <label className="block text-white text-xs font-medium mb-1.5">
               Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -186,13 +186,13 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter your name"
-              className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
             />
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
+            <label className="block text-white text-xs font-medium mb-1.5">
               Email <span className="text-red-500">*</span>
             </label>
             <input
@@ -200,13 +200,13 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="Enter your email"
-              className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
             />
           </div>
 
           {/* Subject */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
+            <label className="block text-white text-xs font-medium mb-1.5">
               Subject <span className="text-red-500">*</span>
             </label>
             <input
@@ -214,27 +214,27 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
               value={formData.subject}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               placeholder="Enter the subject"
-              className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
             />
           </div>
 
           {/* Message */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
+            <label className="block text-white text-xs font-medium mb-1.5">
               Message <span className="text-red-500">*</span>
             </label>
             <textarea
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               placeholder="Type your message..."
-              rows={5}
-              className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              rows={4}
+              className="w-full bg-gray-700 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none text-sm"
             />
           </div>
 
           {/* Image Upload */}
           <div>
-            <label className="block text-white text-sm font-medium mb-2">
+            <label className="block text-white text-xs font-medium mb-1.5">
               Upload image (optional)
             </label>
             <div className="relative">
@@ -247,9 +247,9 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
               />
               <label
                 htmlFor="image-upload"
-                className="flex items-center justify-center gap-2 w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-lg cursor-pointer transition-colors"
+                className="flex items-center justify-center gap-2 w-full bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm"
               >
-                <Upload className="w-5 h-5" />
+                <Upload className="w-4 h-4" />
                 <span>{selectedImage ? selectedImage.name : 'Upload image (optional)'}</span>
               </label>
             </div>
@@ -274,7 +274,7 @@ export default function ContactAgentForm({ isOpen, onClose, userEmail, userName 
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-2.5 text-sm font-medium disabled:opacity-50"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
