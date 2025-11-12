@@ -2,6 +2,54 @@ import type { Express } from "express";
 import { db } from "../db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { requireAuth, requireSessionAdmin } from "./auth";
+import path from "path";
+import fs from "fs";
+
+// Import multer for file uploads
+let multer: any = null;
+try {
+  multer = require("multer");
+} catch (e) {
+  console.log("⚠️ Multer not installed - contact form file uploads disabled");
+}
+
+// Configure multer for contact form uploads
+let contactUpload: any = null;
+if (multer) {
+  const uploadStorage = multer.diskStorage({
+    destination: (req: any, file: any, cb: any) => {
+      const uploadDir = path.join(process.cwd(), 'uploads', 'contact');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req: any, file: any, cb: any) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const extension = path.extname(file.originalname);
+      const nameWithoutExt = path.basename(file.originalname, extension);
+      cb(null, `${nameWithoutExt}-${uniqueSuffix}${extension}`);
+    }
+  });
+
+  contactUpload = multer({
+    storage: uploadStorage,
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req: any, file: any, cb: any) => {
+      const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|zip/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      const mimetype = allowedTypes.test(file.mimetype);
+
+      if (mimetype && extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only images, PDFs, and documents are allowed!'));
+      }
+    }
+  });
+}
 
 export function registerChatRoutes(app: Express) {
 
@@ -419,6 +467,105 @@ export function registerChatRoutes(app: Express) {
     } catch (error) {
       console.error("❌ Error deleting message:", error);
       res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  // Contact Agent Form Submission with File Upload
+  const contactHandler = contactUpload ? contactUpload.single('image') : (req: any, res: any, next: any) => next();
+
+  app.post("/api/contact-agent", contactHandler, async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+      const imageFile = req.file;
+
+      console.log('📧 Contact form submission:', { name, email, subject, hasImage: !!imageFile });
+
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      // Create conversation first
+      const conversationResult = await db.execute(sql`
+        INSERT INTO chat_conversations (
+          id, user_id, status, priority, category, created_at, updated_at, last_message_at
+        ) VALUES (
+          gen_random_uuid(),
+          'guest',
+          'waiting',
+          'normal',
+          'general',
+          NOW(),
+          NOW(),
+          NOW()
+        )
+        RETURNING *
+      `);
+
+      const conversation = conversationResult.rows[0];
+      console.log('✅ Conversation created:', conversation.id);
+
+      // Prepare message with image info if uploaded
+      let finalMessage = `📧 Email: ${email}\n📝 Subject: ${subject}\n\n${message}`;
+      let imagePath = null;
+      let imageFilename = null;
+      let imageOriginalName = null;
+
+      if (imageFile) {
+        imageFilename = imageFile.filename;
+        imageOriginalName = imageFile.originalname;
+        imagePath = `/api/uploads/contact/${imageFilename}`;
+        finalMessage += `\n\n🔗 File: ${imagePath}`;
+        console.log('📎 Image uploaded:', { filename: imageFilename, path: imagePath });
+      }
+
+      // Insert initial message
+      await db.execute(sql`
+        INSERT INTO chat_messages (
+          id, conversation_id, sender_id, sender_type, message, is_read, created_at
+        ) VALUES (
+          gen_random_uuid(),
+          ${conversation.id},
+          'guest',
+          'user',
+          ${finalMessage},
+          false,
+          NOW()
+        )
+      `);
+
+      console.log('✅ Message created');
+
+      // Create contact request record
+      await db.execute(sql`
+        INSERT INTO contact_requests (
+          id, name, email, subject, message, has_image, image_filename, image_original_name, image_path, conversation_id, status, created_at, updated_at
+        ) VALUES (
+          gen_random_uuid(),
+          ${name},
+          ${email},
+          ${subject},
+          ${message},
+          ${!!imageFile},
+          ${imageFilename},
+          ${imageOriginalName},
+          ${imagePath},
+          ${conversation.id},
+          'pending',
+          NOW(),
+          NOW()
+        )
+      `);
+
+      console.log('✅ Contact request created');
+
+      res.json({
+        success: true,
+        message: "Your message has been sent successfully. We'll get back to you soon!",
+        conversationId: conversation.id
+      });
+    } catch (error) {
+      console.error("❌ Error submitting contact form:", error);
+      res.status(500).json({ error: "Failed to submit contact form" });
     }
   });
 }
