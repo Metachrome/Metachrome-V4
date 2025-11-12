@@ -3906,7 +3906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve contact form uploaded files
+  // Serve contact form uploaded files (new format)
   app.get('/api/uploads/contact/:filename', (req, res) => {
     try {
       const filename = req.params.filename;
@@ -3941,7 +3941,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
 
-      console.log('✅ Served contact file:', filename);
+      console.log('✅ Served contact file (new format):', filename);
+    } catch (error) {
+      console.error('Error serving contact file:', error);
+      res.status(500).json({ message: 'Error serving file' });
+    }
+  });
+
+  // Serve contact form uploaded files (old format - backward compatibility)
+  app.get('/uploads/contact/:filename', (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const filePath = path.join(process.cwd(), 'uploads', 'contact', filename);
+
+      // Security check: ensure file exists and is within uploads/contact directory
+      if (!fs.existsSync(filePath) || !filePath.startsWith(path.join(process.cwd(), 'uploads', 'contact'))) {
+        console.error('File not found or security violation:', filePath);
+        return res.status(404).json({ message: 'File not found' });
+      }
+
+      // Set appropriate headers for file download
+      const extension = path.extname(filename).toLowerCase();
+      const contentTypes: { [key: string]: string } = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.pdf': 'application/pdf',
+        '.doc': 'application/msword',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.txt': 'text/plain',
+        '.zip': 'application/zip'
+      };
+
+      const contentType = contentTypes[extension] || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+
+      console.log('✅ Served contact file (old format):', filename);
     } catch (error) {
       console.error('Error serving contact file:', error);
       res.status(500).json({ message: 'Error serving file' });
