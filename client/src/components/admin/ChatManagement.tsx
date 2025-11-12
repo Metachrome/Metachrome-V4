@@ -409,7 +409,13 @@ export default function ChatManagement() {
   // Helper function to extract image path from message
   const extractImagePath = (message: string): string | null => {
     const match = message.match(/🔗 File: (\/uploads\/[^\s\n]+)/);
-    return match ? match[1] : null;
+    if (match) {
+      // Convert relative path to absolute URL
+      const relativePath = match[1];
+      // Use window.location.origin to get the base URL (works for both localhost and production)
+      return `${window.location.origin}${relativePath}`;
+    }
+    return null;
   };
 
   // Helper function to render message with image preview
@@ -428,6 +434,10 @@ export default function ChatManagement() {
                 alt="Attachment"
                 className="max-w-full h-auto rounded-lg border border-gray-600 cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => window.open(imagePath, '_blank')}
+                onError={(e) => {
+                  console.error('Failed to load image:', imagePath);
+                  e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="50%" y="50%" text-anchor="middle" fill="gray">Image not found</text></svg>';
+                }}
               />
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
