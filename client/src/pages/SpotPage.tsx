@@ -541,7 +541,7 @@ function SpotPageContent() {
 
       toast({
         title: "Buy order completed!",
-        description: `Bought ${amount.toFixed(6)} BTC at $${executionPrice.toFixed(2)}. New balance: ${(usdtBalance - total).toFixed(2)} USDT`,
+        description: `Bought ${amount.toFixed(6)} BTC at ${executionPrice.toFixed(2)} USDT. New balance: ${(usdtBalance - total).toFixed(2)} USDT`,
         duration: 5000
       });
 
@@ -625,7 +625,7 @@ function SpotPageContent() {
 
       toast({
         title: "Sell order completed!",
-        description: `Sold ${amount.toFixed(6)} BTC at $${executionPrice.toFixed(2)}. New balance: ${(usdtBalance + total).toFixed(2)} USDT`,
+        description: `Sold ${amount.toFixed(6)} BTC at ${executionPrice.toFixed(2)} USDT. New balance: ${(usdtBalance + total).toFixed(2)} USDT`,
         duration: 5000
       });
 
@@ -867,7 +867,7 @@ function SpotPageContent() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
-              <div className="text-white text-xl font-bold">${currentPairData.price}</div>
+              <div className="text-white text-xl font-bold">{currentPairData.price} USDT</div>
               <div className={`text-sm font-semibold`} style={{ color: currentPairData.isPositive ? '#10b981' : '#ef4444' }}>
                 {currentPairData.change}
               </div>
@@ -950,7 +950,7 @@ function SpotPageContent() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <div className="text-gray-400">Current Price</div>
-              <div className="text-white font-bold text-lg">${formattedPrice}</div>
+              <div className="text-white font-bold text-lg">{formattedPrice} USDT</div>
             </div>
             <div>
               <div className="text-gray-400">24h Change</div>
@@ -964,7 +964,7 @@ function SpotPageContent() {
             </div>
             <div>
               <div className="text-gray-400">Market Cap</div>
-              <div className="text-white font-semibold">$1.2T</div>
+              <div className="text-white font-semibold">1.2T USDT</div>
             </div>
           </div>
         </div>
@@ -1013,7 +1013,7 @@ function SpotPageContent() {
             ].map((market, index) => (
               <div key={index} className="bg-gray-800 rounded-lg p-3">
                 <div className="text-white text-sm font-medium">{market.symbol}</div>
-                <div className="text-white text-lg font-bold">${market.price}</div>
+                <div className="text-white text-lg font-bold">{market.price} USDT</div>
                 <div className={`text-xs font-medium ${market.change.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {market.change}
                 </div>
@@ -1199,7 +1199,7 @@ function SpotPageContent() {
                     <span className={`text-sm font-medium ${order.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
                       {order.type.toUpperCase()} {order.symbol}
                     </span>
-                    <div className="text-xs text-gray-400">{order.amount} @ ${order.price}</div>
+                    <div className="text-xs text-gray-400">{order.amount} @ {order.price} USDT</div>
                   </div>
                   <div className="text-right">
                     <div className={`text-sm font-medium ${
@@ -1243,8 +1243,8 @@ function SpotPageContent() {
               <div className="flex items-center space-x-6">
                 <div>
                   <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
-                  <div className="text-white text-2xl font-bold">${currentPairData.price}</div>
-                  <div className="text-gray-400 text-sm">$ {currentPairData.price}</div>
+                  <div className="text-white text-2xl font-bold">{currentPairData.price} USDT</div>
+                  <div className="text-gray-400 text-sm">{currentPairData.price} USDT</div>
                 </div>
                 <div className="text-lg font-semibold" style={{ color: currentPairData.isPositive ? '#10b981' : '#ef4444' }}>
                   {currentPairData.change}
@@ -1286,7 +1286,7 @@ function SpotPageContent() {
                 {selectedSymbol.replace('USDT', '/USDT')}
               </div>
               <div className="text-right">
-                <div className="font-bold" style={{ color: changeColor }}>${formattedPrice}</div>
+                <div className="font-bold" style={{ color: changeColor }}>{formattedPrice} USDT</div>
                 <div className="text-gray-400 text-sm">Change 24h</div>
                 <div className="text-sm" style={{ color: changeColor }}>{changeText}</div>
               </div>
@@ -1335,7 +1335,7 @@ function SpotPageContent() {
                 <span style={{ color: changeColor }}>
                   {isPositive ? '↑' : '↓'}
                 </span>
-                <span className="text-gray-400 text-sm">${formattedPrice}</span>
+                <span className="text-gray-400 text-sm">{formattedPrice} USDT</span>
               </div>
             </div>
 
@@ -2015,9 +2015,9 @@ function SpotPageContent() {
                     <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'} truncate text-center`}>
                       {order.type.toUpperCase()} / {order.orderType.toUpperCase()}
                     </div>
-                    <div className="text-white truncate text-center">${order.price}</div>
+                    <div className="text-white truncate text-center">{order.price} USDT</div>
                     <div className="text-white truncate text-center">{order.amount}</div>
-                    <div className="text-white truncate text-center">${order.total}</div>
+                    <div className="text-white truncate text-center">{order.total} USDT</div>
                     <div className="text-green-400 truncate text-center">Filled</div>
                     <div className="text-gray-400 truncate text-center">{order.time}</div>
                   </div>
