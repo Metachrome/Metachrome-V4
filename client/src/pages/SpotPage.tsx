@@ -1983,9 +1983,9 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
           {activeTab === 'open' ? (
             // Open Orders Tab
             openOrders.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-0.5">
                 {openOrders.map((order) => (
-                  <div key={order.id} className="grid grid-cols-7 gap-2 px-4 py-3 text-sm hover:bg-gray-800/50 max-w-full overflow-hidden">
+                  <div key={order.id} className="grid grid-cols-7 gap-2 px-4 py-2 text-xs hover:bg-gray-800/50 max-w-full overflow-hidden">
                     <div className="text-white truncate">{order.symbol}</div>
                     <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'} truncate text-center`}>
                       {order.type.toUpperCase()} / {order.orderType.toUpperCase()}
@@ -2012,9 +2012,9 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
           ) : (
             // Order History Tab
             orderHistory.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-0.5">
                 {orderHistory.map((order) => (
-                  <div key={order.id} className="grid grid-cols-7 gap-2 px-4 py-3 text-sm hover:bg-gray-800/50 max-w-full overflow-hidden">
+                  <div key={order.id} className="grid grid-cols-7 gap-2 px-4 py-2 text-xs hover:bg-gray-800/50 max-w-full overflow-hidden">
                     <div className="text-white truncate">{order.symbol}</div>
                     <div className={`${order.type === 'buy' ? 'text-green-400' : 'text-red-400'} truncate text-center`}>
                       {order.type.toUpperCase()} / {order.orderType.toUpperCase()}
