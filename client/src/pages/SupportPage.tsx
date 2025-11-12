@@ -9,6 +9,7 @@ import supportBannerDesktop from "../assets/support_banner_desktop.jpg";
 import supportBannerMobile from "../assets/support_banner_mobile.jpg";
 import ChatBot from "../components/chat/ChatBot";
 import ContactAgentForm from "../components/chat/ContactAgentForm";
+import LiveChat from "../components/chat/LiveChat";
 
 
 export default function SupportPage() {
@@ -16,6 +17,7 @@ export default function SupportPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isChatBotOpen, setIsChatBotOpen] = useState(false);
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const isMobile = useIsMobile();
@@ -315,9 +317,9 @@ export default function SupportPage() {
               return;
             }
 
-            console.log('Opening contact form for user:', user.id, user.username || user.email);
-            // First open contact form, then close chatbot with delay
-            setIsContactFormOpen(true);
+            console.log('Opening live chat for user:', user.id, user.username || user.email);
+            // First open live chat, then close chatbot with delay
+            setIsLiveChatOpen(true);
             setTimeout(() => {
               setIsChatBotOpen(false);
             }, 100);
@@ -333,6 +335,15 @@ export default function SupportPage() {
           userName={currentUser?.firstName && currentUser?.lastName
             ? `${currentUser.firstName} ${currentUser.lastName}`
             : currentUser?.username || currentUser?.email}
+        />
+      )}
+
+      {isLiveChatOpen && currentUser && (
+        <LiveChat
+          userId={currentUser.id}
+          username={currentUser.username || currentUser.email}
+          isOpen={isLiveChatOpen}
+          onClose={() => setIsLiveChatOpen(false)}
         />
       )}
     </div>
