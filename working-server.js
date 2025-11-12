@@ -15000,6 +15000,58 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
   }
 });
 
+// ===== SERVE CONTACT FORM UPLOADED FILES =====
+// Route to serve uploaded contact form images
+app.get('/api/uploads/contact/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'uploads', 'contact', filename);
+
+    console.log('📂 Attempting to serve file:', filename);
+    console.log('📂 Full path:', filePath);
+    console.log('📂 File exists:', fs.existsSync(filePath));
+
+    // Security check: ensure file exists and is within uploads/contact directory
+    const uploadsContactDir = path.join(__dirname, 'uploads', 'contact');
+    if (!fs.existsSync(filePath) || !filePath.startsWith(uploadsContactDir)) {
+      console.error('❌ File not found or security violation:', filePath);
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    // Set appropriate headers for file download
+    const extension = path.extname(filename).toLowerCase();
+    const contentTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.txt': 'text/plain',
+      '.zip': 'application/zip'
+    };
+
+    const contentType = contentTypes[extension] || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.on('error', (error) => {
+      console.error('❌ Error streaming file:', error);
+      res.status(500).json({ message: 'Error serving file' });
+    });
+    fileStream.pipe(res);
+
+    console.log('✅ Successfully served file:', filename);
+  } catch (error) {
+    console.error('❌ Error serving contact file:', error);
+    res.status(500).json({ message: 'Error serving file' });
+  }
+});
+
 // ===== SPA ROUTING =====
 // Only catch GET requests that don't start with /api, /assets, or /sse
 // This ensures static files (CSS, JS, images) and SSE endpoints are served correctly
