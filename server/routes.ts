@@ -901,6 +901,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Binance real-time price endpoint
+  app.get("/api/binance/price", async (req, res) => {
+    try {
+      const symbol = (req.query.symbol as string) || 'BTCUSDT';
+      console.log('💰 [Binance Price] Request for:', symbol);
+
+      // Fetch from Binance 24hr Ticker API
+      const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`;
+
+      const response = await fetch(binanceUrl);
+
+      if (!response.ok) {
+        console.error('❌ [Binance Price] Binance API error:', response.status, response.statusText);
+        return res.status(response.status).json({ error: 'Binance API error' });
+      }
+
+      const data: any = await response.json();
+
+      // Transform to our format
+      const priceData = {
+        symbol: data.symbol,
+        price: parseFloat(data.lastPrice),
+        priceChange24h: parseFloat(data.priceChange),
+        priceChangePercent24h: parseFloat(data.priceChangePercent),
+        high24h: parseFloat(data.highPrice),
+        low24h: parseFloat(data.lowPrice),
+        volume24h: parseFloat(data.volume),
+        quoteVolume24h: parseFloat(data.quoteVolume),
+        openPrice: parseFloat(data.openPrice),
+        timestamp: Date.now()
+      };
+
+      console.log('✅ [Binance Price] Current price:', priceData.price, 'Change:', priceData.priceChangePercent24h + '%');
+
+      return res.json({
+        success: true,
+        data: priceData
+      });
+
+    } catch (error) {
+      console.error('❌ [Binance Price] Error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // User endpoints
   app.post("/api/users", async (req, res) => {
     try {
