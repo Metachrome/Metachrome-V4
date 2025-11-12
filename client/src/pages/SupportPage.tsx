@@ -142,13 +142,64 @@ export default function SupportPage() {
                   <p className={`text-white font-medium ${isMobile ? 'mb-4 text-sm' : 'mb-6'}`}>{option.contact}</p>
                 )}
                 {option.title !== "Email Us" && (
-                  <Button
-                    onClick={() => setIsChatBotOpen(true)}
-                    className={`text-white w-full rounded-lg font-medium mt-auto hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
-                    style={{ backgroundColor: '#AB00FF' }}
-                  >
-                    {option.action}
-                  </Button>
+                  <div className="flex gap-3 mt-auto">
+                    <Button
+                      onClick={() => setIsChatBotOpen(true)}
+                      className={`text-white flex-1 rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
+                      style={{ backgroundColor: '#AB00FF' }}
+                    >
+                      FAQ Bot
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        // Get current user
+                        let user = currentUser;
+                        if (!user || !user.id) {
+                          const storedUser = localStorage.getItem('user');
+                          if (storedUser) {
+                            try {
+                              user = JSON.parse(storedUser);
+                              if (user && user.id) {
+                                setCurrentUser(user);
+                              } else {
+                                user = null;
+                              }
+                            } catch (e) {
+                              user = null;
+                            }
+                          }
+
+                          if (!user || !user.id) {
+                            try {
+                              const res = await fetch('/api/auth');
+                              if (res.ok) {
+                                user = await res.json();
+                                if (user && user.id) {
+                                  setCurrentUser(user);
+                                  localStorage.setItem('user', JSON.stringify(user));
+                                } else {
+                                  user = null;
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Error fetching user:', err);
+                            }
+                          }
+                        }
+
+                        if (!user || !user.id) {
+                          alert('Please login first to use live chat');
+                          return;
+                        }
+
+                        setIsLiveChatOpen(true);
+                      }}
+                      className={`text-white flex-1 rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
+                      style={{ backgroundColor: '#7C3AED' }}
+                    >
+                      Live Chat
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -317,9 +368,9 @@ export default function SupportPage() {
               return;
             }
 
-            console.log('Opening live chat for user:', user.id, user.username || user.email);
-            // First open live chat, then close chatbot with delay
-            setIsLiveChatOpen(true);
+            console.log('Opening contact form for user:', user.id, user.username || user.email);
+            // First open contact form, then close chatbot with delay
+            setIsContactFormOpen(true);
             setTimeout(() => {
               setIsChatBotOpen(false);
             }, 100);
