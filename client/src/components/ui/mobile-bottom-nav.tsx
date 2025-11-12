@@ -254,8 +254,8 @@ export function MobileBottomNav() {
               <div
                 className="nav-icon"
                 style={{
-                  width: '41.6px', // 32px * 1.3 = 41.6px (30% increase)
-                  height: '41.6px', // 32px * 1.3 = 41.6px (30% increase)
+                  width: '58.24px', // 41.6px * 1.4 = 58.24px (40% increase)
+                  height: '58.24px', // 41.6px * 1.4 = 58.24px (40% increase)
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -277,25 +277,11 @@ export function MobileBottomNav() {
                     const parent = target.parentElement;
                     if (parent) {
                       parent.innerHTML = getEmojiIcon(item.path);
-                      parent.style.fontSize = '31.2px'; // 24px * 1.3 = 31.2px
+                      parent.style.fontSize = '43.68px'; // 31.2px * 1.4 = 43.68px
                     }
                   }}
                 />
               </div>
-              <span
-                style={{
-                  fontSize: '11.7px', // 9px * 1.3 = 11.7px (30% increase from base small size)
-                  color: shouldShowActive ? '#A78BFA' : '#9CA3AF',
-                  fontWeight: shouldShowActive ? '600' : '400',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: '100%'
-                }}
-              >
-                {item.label}
-              </span>
             </button>
           );
         })}
