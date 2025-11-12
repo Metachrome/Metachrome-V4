@@ -254,8 +254,8 @@ export function MobileBottomNav() {
               <div
                 className="nav-icon"
                 style={{
-                  width: '58.24px', // 41.6px * 1.4 = 58.24px (40% increase)
-                  height: '58.24px', // 41.6px * 1.4 = 58.24px (40% increase)
+                  width: '52.416px', // 58.24px * 0.9 = 52.416px (10% decrease)
+                  height: '52.416px', // 58.24px * 0.9 = 52.416px (10% decrease)
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -277,7 +277,7 @@ export function MobileBottomNav() {
                     const parent = target.parentElement;
                     if (parent) {
                       parent.innerHTML = getEmojiIcon(item.path);
-                      parent.style.fontSize = '43.68px'; // 31.2px * 1.4 = 43.68px
+                      parent.style.fontSize = '39.312px'; // 43.68px * 0.9 = 39.312px
                     }
                   }}
                 />
