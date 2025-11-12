@@ -14717,7 +14717,7 @@ app.delete('/api/admin/chat/conversation/:conversationId', async (req, res) => {
 // Configure multer for contact form image uploads
 const contactStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'uploads');
+    const uploadDir = path.join(__dirname, 'uploads', 'contact');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -14725,7 +14725,9 @@ const contactStorage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'contact-' + uniqueSuffix + path.extname(file.originalname));
+    const extension = path.extname(file.originalname);
+    const nameWithoutExt = path.basename(file.originalname, extension);
+    cb(null, `${nameWithoutExt}-${uniqueSuffix}${extension}`);
   }
 });
 
@@ -14854,7 +14856,7 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
                              `📧 Email: ${email}\n` +
                              `📌 Subject: ${subject}\n\n` +
                              `💬 Message:\n${message}` +
-                             (imageFile ? `\n\n📎 Attachment: ${imageFile.originalname}\n🔗 File: /uploads/${imageFile.filename}` : '');
+                             (imageFile ? `\n\n📎 Attachment: ${imageFile.originalname}\n🔗 File: /api/uploads/contact/${imageFile.filename}` : '');
 
           const { data: chatMessage, error: msgError } = await supabase
             .from('chat_messages')
@@ -14891,7 +14893,7 @@ app.post('/api/contact-agent', contactUpload.single('image'), async (req, res) =
           has_image: !!imageFile,
           image_filename: imageFile ? imageFile.filename : null, // Save server filename for access
           image_original_name: imageFile?.originalname || null, // Save original filename for display
-          image_path: imageFile ? `/uploads/${imageFile.filename}` : null, // Full path for access
+          image_path: imageFile ? `/api/uploads/contact/${imageFile.filename}` : null, // Full path for access
           status: 'pending',
           conversation_id: conversationId, // Link to chat conversation
           created_at: new Date().toISOString()
