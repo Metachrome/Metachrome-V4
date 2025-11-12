@@ -347,7 +347,7 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
               </div>
               <Button
                 onClick={onContactSupport}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium mb-8 md:mb-0"
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 text-base font-medium mb-6 md:mb-0"
               >
                 Contact Support
               </Button>
