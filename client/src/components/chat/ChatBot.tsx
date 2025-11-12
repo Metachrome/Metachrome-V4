@@ -176,10 +176,9 @@ export default function ChatBot({ onContactSupport, isOpen, onClose }: ChatBotPr
     setTimeout(() => {
       setMessages(prev => prev.filter(m => m.id !== 'typing'));
       addBotMessage(faq.answer);
-      
-      // Offer more help
+
+      // Show FAQs again after answer
       setTimeout(() => {
-        addBotMessage("Is there anything else I can help you with? You can ask another question or contact our support team.");
         setShowFAQs(true);
       }, 1000);
     }, 1500);
