@@ -1322,7 +1322,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
             {/* Sell Orders (Red) - Using TradingView Price */}
             <div className="space-y-0">
               {generateOrderBookData(currentPrice).sellOrders.map((order, index) => (
-                <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-[10px] hover:bg-[#3a3d57]">
+                <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-xs hover:bg-[#3a3d57]">
                   <span className="text-red-400 truncate font-mono">{order.price}</span>
                   <span className="text-gray-300 truncate text-center font-mono">{order.volume}</span>
                   <span className="text-gray-300 truncate text-right font-mono">{order.turnover}</span>
@@ -1346,7 +1346,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
             {/* Buy Orders (Green) - Using TradingView Price */}
             <div className="space-y-0">
               {generateOrderBookData(currentPrice).buyOrders.map((order, index) => (
-                <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-[10px] hover:bg-[#3a3d57]">
+                <div key={index} className="grid grid-cols-3 gap-1 px-1.5 py-0.5 text-xs hover:bg-[#3a3d57]">
                   <span className="text-green-400 truncate font-mono">{order.price}</span>
                   <span className="text-gray-300 truncate text-center font-mono">{order.volume}</span>
                   <span className="text-gray-300 truncate text-right font-mono">{order.turnover}</span>
