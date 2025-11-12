@@ -30,7 +30,12 @@ interface SpotOrder {
 }
 
 // Inner component that uses price context
-function SpotPageContent() {
+interface SpotPageContentProps {
+  selectedSymbol: string;
+  setSelectedSymbol: (symbol: string) => void;
+}
+
+function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -42,7 +47,6 @@ function SpotPageContent() {
   const [activeTab, setActiveTab] = useState("open"); // "open" or "history"
   const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
   const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
-  const [selectedSymbol, setSelectedSymbol] = useState('LTCUSDT'); // Default to LTC to match chart
   // Chart view state - Default to TradingView to match options page
   const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
@@ -2044,9 +2048,14 @@ function SpotPageContent() {
 
 // Wrapper component with PriceProvider for synchronized price data
 export default function SpotPage() {
+  const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT'); // Default to BTC
+
   return (
-    <PriceProvider symbol="BTCUSDT" updateInterval={2000}>
-      <SpotPageContent />
+    <PriceProvider symbol={selectedSymbol} updateInterval={2000}>
+      <SpotPageContent
+        selectedSymbol={selectedSymbol}
+        setSelectedSymbol={setSelectedSymbol}
+      />
     </PriceProvider>
   );
 }
