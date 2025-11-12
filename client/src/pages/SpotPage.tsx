@@ -62,12 +62,22 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
   const { high, low, volume } = use24hStats();
 
   // Multi-symbol price data for all trading pairs
-  const { priceData: multiSymbolPriceData, getPriceForSymbol } = useMultiSymbolPrice();
+  const { priceData: multiSymbolPriceData, getPriceForSymbol, isLoading: isPriceLoading } = useMultiSymbolPrice();
 
   // Get current price for selected symbol (now selectedSymbol is defined)
   const selectedSymbolPriceData = getPriceForSymbol(selectedSymbol);
   const currentPrice = selectedSymbolPriceData?.price || priceData?.price || 0;
   const formattedPrice = currentPrice.toFixed(2);
+
+  // Debug price data
+  console.log('💰 Price Debug:', {
+    selectedSymbol,
+    selectedSymbolPriceData,
+    currentPrice,
+    formattedPrice,
+    priceData,
+    isPriceLoading
+  });
 
   // Helper function to get real price data for any symbol
   const getRealPriceData = (rawSymbol: string) => {
@@ -808,22 +818,30 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
   // Initialize price fields when current price is available from PriceContext
   useEffect(() => {
-    if (currentPrice > 0) {
-      if (!buyPrice) setBuyPrice(formattedPrice);
-      if (!sellPrice) setSellPrice(formattedPrice);
+    console.log('🔄 Initialize Price Effect:', { currentPrice, buyPrice, sellPrice, formattedPrice, isPriceLoading });
+    // Only set price when data is loaded and price is valid
+    if (!isPriceLoading && currentPrice > 0) {
+      if (!buyPrice) {
+        console.log('✅ Setting initial buyPrice:', formattedPrice);
+        setBuyPrice(formattedPrice);
+      }
+      if (!sellPrice) {
+        console.log('✅ Setting initial sellPrice:', formattedPrice);
+        setSellPrice(formattedPrice);
+      }
     }
-  }, [currentPrice, buyPrice, sellPrice, formattedPrice]);
+  }, [currentPrice, buyPrice, sellPrice, formattedPrice, isPriceLoading]);
 
   // Auto-update price fields when selected symbol changes
   useEffect(() => {
-    // Only update if symbol actually changed and we have a valid price
-    if (previousSymbol.current !== selectedSymbol && currentPrice > 0 && formattedPrice !== '0.00') {
+    // Only update if symbol actually changed, data is loaded, and we have a valid price
+    if (!isPriceLoading && previousSymbol.current !== selectedSymbol && currentPrice > 0 && formattedPrice !== '0.00') {
       console.log('💱 Symbol changed from', previousSymbol.current, 'to', selectedSymbol, '- New price:', formattedPrice);
       setBuyPrice(formattedPrice);
       setSellPrice(formattedPrice);
       previousSymbol.current = selectedSymbol;
     }
-  }, [selectedSymbol, currentPrice, formattedPrice]);
+  }, [selectedSymbol, currentPrice, formattedPrice, isPriceLoading]);
 
   // Generate dynamic order book data based on current price
   const generateOrderBookData = (basePrice: number) => {
