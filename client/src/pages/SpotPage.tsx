@@ -54,6 +54,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
   const [openOrders, setOpenOrders] = useState<any[]>([]);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
   const hasLoadedInitialData = useRef(false);
+  const previousSymbol = useRef(selectedSymbol);
 
   // Use price context for synchronized price data - SINGLE SOURCE OF TRUTH
   const { priceData } = usePrice();
@@ -812,6 +813,17 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
       if (!sellPrice) setSellPrice(formattedPrice);
     }
   }, [currentPrice, buyPrice, sellPrice, formattedPrice]);
+
+  // Auto-update price fields when selected symbol changes
+  useEffect(() => {
+    // Only update if symbol actually changed and we have a valid price
+    if (previousSymbol.current !== selectedSymbol && currentPrice > 0 && formattedPrice !== '0.00') {
+      console.log('💱 Symbol changed from', previousSymbol.current, 'to', selectedSymbol, '- New price:', formattedPrice);
+      setBuyPrice(formattedPrice);
+      setSellPrice(formattedPrice);
+      previousSymbol.current = selectedSymbol;
+    }
+  }, [selectedSymbol, currentPrice, formattedPrice]);
 
   // Generate dynamic order book data based on current price
   const generateOrderBookData = (basePrice: number) => {
