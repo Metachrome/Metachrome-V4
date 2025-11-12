@@ -408,8 +408,11 @@ export default function ChatManagement() {
 
   // Helper function to extract image path from message
   const extractImagePath = (message: string): string | null => {
-    // Match both old format (/uploads/...) and new format (/api/uploads/contact/...)
-    const match = message.match(/🔗 File: (\/api\/uploads\/contact\/[^\s\n]+|\/uploads\/[^\s\n]+)/);
+    // Match all formats:
+    // - New format: /api/uploads/contact/...
+    // - Old format with subfolder: /uploads/contact/...
+    // - Very old format (root): /uploads/...
+    const match = message.match(/🔗 File: (\/api\/uploads\/contact\/[^\s\n]+|\/uploads\/contact\/[^\s\n]+|\/uploads\/[^\s\n]+)/);
     if (match) {
       // Convert relative path to absolute URL
       const relativePath = match[1];
