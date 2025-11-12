@@ -9,7 +9,7 @@ import supportBannerDesktop from "../assets/support_banner_desktop.jpg";
 import supportBannerMobile from "../assets/support_banner_mobile.jpg";
 import ChatBot from "../components/chat/ChatBot";
 import ContactAgentForm from "../components/chat/ContactAgentForm";
-import LiveChat from "../components/chat/LiveChat";
+
 
 
 export default function SupportPage() {
@@ -17,7 +17,6 @@ export default function SupportPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isChatBotOpen, setIsChatBotOpen] = useState(false);
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
-  const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
   const isMobile = useIsMobile();
@@ -142,64 +141,13 @@ export default function SupportPage() {
                   <p className={`text-white font-medium ${isMobile ? 'mb-4 text-sm' : 'mb-6'}`}>{option.contact}</p>
                 )}
                 {option.title !== "Email Us" && (
-                  <div className="flex gap-3 mt-auto">
-                    <Button
-                      onClick={() => setIsChatBotOpen(true)}
-                      className={`text-white flex-1 rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
-                      style={{ backgroundColor: '#AB00FF' }}
-                    >
-                      Contact Support
-                    </Button>
-                    <Button
-                      onClick={async () => {
-                        // Get current user
-                        let user = currentUser;
-                        if (!user || !user.id) {
-                          const storedUser = localStorage.getItem('user');
-                          if (storedUser) {
-                            try {
-                              user = JSON.parse(storedUser);
-                              if (user && user.id) {
-                                setCurrentUser(user);
-                              } else {
-                                user = null;
-                              }
-                            } catch (e) {
-                              user = null;
-                            }
-                          }
-
-                          if (!user || !user.id) {
-                            try {
-                              const res = await fetch('/api/auth');
-                              if (res.ok) {
-                                user = await res.json();
-                                if (user && user.id) {
-                                  setCurrentUser(user);
-                                  localStorage.setItem('user', JSON.stringify(user));
-                                } else {
-                                  user = null;
-                                }
-                              }
-                            } catch (err) {
-                              console.error('Error fetching user:', err);
-                            }
-                          }
-                        }
-
-                        if (!user || !user.id) {
-                          alert('Please login first to use live chat');
-                          return;
-                        }
-
-                        setIsLiveChatOpen(true);
-                      }}
-                      className={`text-white flex-1 rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
-                      style={{ backgroundColor: '#7C3AED' }}
-                    >
-                      Live Chat
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => setIsChatBotOpen(true)}
+                    className={`w-full text-white rounded-lg font-medium hover:opacity-90 ${isMobile ? 'py-2 text-sm' : 'py-3'}`}
+                    style={{ backgroundColor: '#AB00FF' }}
+                  >
+                    Live Chat
+                  </Button>
                 )}
               </CardContent>
             </Card>
@@ -389,14 +337,7 @@ export default function SupportPage() {
         />
       )}
 
-      {isLiveChatOpen && currentUser && (
-        <LiveChat
-          userId={currentUser.id}
-          username={currentUser.username || currentUser.email}
-          isOpen={isLiveChatOpen}
-          onClose={() => setIsLiveChatOpen(false)}
-        />
-      )}
+
     </div>
   );
 }
