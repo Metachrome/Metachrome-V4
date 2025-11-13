@@ -35,6 +35,12 @@ export default function WalletPage() {
   const [showStripeModal, setShowStripeModal] = useState(false);
   const [txHash, setTxHash] = useState('');
   const [bankRef, setBankRef] = useState('');
+
+  // Convert to USDT state
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertingSymbol, setConvertingSymbol] = useState<string | null>(null);
+  const [convertAmount, setConvertAmount] = useState<string>('');
+  const [isConverting, setIsConverting] = useState(false);
   const [pendingDepositData, setPendingDepositData] = useState<any>(null);
 
   const { toast } = useToast();
@@ -413,6 +419,86 @@ export default function WalletPage() {
     return total + usdtValue;
   }, 0) || usdtBalance;
 
+  // Handle Convert to USDT
+  const handleConvertToUSDT = async (symbol: string, amount: string) => {
+    if (!user) {
+      toast.error('Please login first');
+      return;
+    }
+
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    const cryptoBalance = userBalances?.find(b => b.symbol === symbol);
+    if (!cryptoBalance || parseFloat(cryptoBalance.available) < parseFloat(amount)) {
+      toast.error(`Insufficient ${symbol} balance`);
+      return;
+    }
+
+    setIsConverting(true);
+
+    try {
+      console.log(`🔄 Converting ${amount} ${symbol} to USDT...`);
+
+      // Get current market price
+      const currentPrice = getMarketPrice(symbol);
+      console.log(`💰 Current ${symbol} price:`, currentPrice);
+
+      // Call SELL API (same as Spot Trading SELL)
+      const response = await fetch('/api/spot/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user.id,
+          symbol: `${symbol}USDT`,
+          side: 'sell',
+          amount: parseFloat(amount),
+          price: currentPrice,
+          type: 'market'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Convert failed');
+      }
+
+      const data = await response.json();
+      console.log('✅ Convert successful:', data);
+
+      // Show success notification
+      const usdtReceived = (parseFloat(amount) * currentPrice).toFixed(2);
+      toast.success(`Successfully converted ${amount} ${symbol} to ${usdtReceived} USDT`);
+
+      // Close modal and reset state
+      setShowConvertModal(false);
+      setConvertingSymbol(null);
+      setConvertAmount('');
+
+      // Refetch balances
+      queryClient.invalidateQueries({ queryKey: ['/api/balances'] });
+
+    } catch (error: any) {
+      console.error('❌ Convert error:', error);
+      toast.error(error.message || 'Failed to convert');
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  // Open convert modal
+  const openConvertModal = (symbol: string, maxAmount: string) => {
+    setConvertingSymbol(symbol);
+    setConvertAmount(maxAmount); // Default to max amount
+    setShowConvertModal(true);
+  };
+
   // Debug balance data
   console.log('🔍 WALLET PAGE - Balance data:', {
     userId: user?.id,
@@ -631,11 +717,12 @@ export default function WalletPage() {
                 ) : userBalances && userBalances.some(balance => parseFloat(balance.available) > 0) ? (
                   <div className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden">
                     {/* Assets Table Header - Desktop */}
-                    <div className="hidden md:grid grid-cols-4 gap-4 p-4 bg-gray-700/30 border-b border-gray-600">
+                    <div className="hidden md:grid grid-cols-5 gap-4 p-4 bg-gray-700/30 border-b border-gray-600">
                       <div className="text-sm font-medium text-gray-300">Name</div>
                       <div className="text-sm font-medium text-gray-300">Available assets</div>
                       <div className="text-sm font-medium text-gray-300">Occupy</div>
-                      <div className="text-sm font-medium text-gray-300 text-right">Amount in USDT</div>
+                      <div className="text-sm font-medium text-gray-300">Amount in USDT</div>
+                      <div className="text-sm font-medium text-gray-300 text-right">Action</div>
                     </div>
 
                     {/* Assets Table Body */}
@@ -675,7 +762,7 @@ export default function WalletPage() {
                           return (
                             <div key={balance.symbol}>
                               {/* Desktop Layout */}
-                              <div className="hidden md:grid grid-cols-4 gap-4 p-4 hover:bg-gray-700/20 transition-colors">
+                              <div className="hidden md:grid grid-cols-5 gap-4 p-4 hover:bg-gray-700/20 transition-colors">
                                 {/* Name */}
                                 <div className="flex items-center space-x-3">
                                   <div className={`w-8 h-8 ${cryptoColors[balance.symbol] || 'bg-gray-500'} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
@@ -686,17 +773,31 @@ export default function WalletPage() {
 
                                 {/* Available assets */}
                                 <div className="text-white">
-                                  {available.toFixed(4)}
+                                  {available.toFixed(8)}
                                 </div>
 
                                 {/* Occupy (locked) */}
                                 <div className="text-white">
-                                  {locked.toFixed(4)}
+                                  {locked.toFixed(8)}
                                 </div>
 
                                 {/* Amount in USDT */}
-                                <div className="text-white text-right">
+                                <div className="text-white">
                                   {usdtValue.toFixed(2)}
+                                </div>
+
+                                {/* Action - Convert to USDT button (only for non-USDT assets) */}
+                                <div className="text-right">
+                                  {balance.symbol !== 'USDT' ? (
+                                    <button
+                                      onClick={() => openConvertModal(balance.symbol, available.toString())}
+                                      className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                    >
+                                      Convert to USDT
+                                    </button>
+                                  ) : (
+                                    <span className="text-gray-500 text-sm">-</span>
+                                  )}
                                 </div>
                               </div>
 
@@ -713,16 +814,26 @@ export default function WalletPage() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                                   <div>
                                     <div className="text-gray-400 mb-1">Available</div>
-                                    <div className="text-white">{available.toFixed(4)}</div>
+                                    <div className="text-white">{available.toFixed(8)}</div>
                                   </div>
                                   <div>
                                     <div className="text-gray-400 mb-1">Occupy</div>
-                                    <div className="text-white">{locked.toFixed(4)}</div>
+                                    <div className="text-white">{locked.toFixed(8)}</div>
                                   </div>
                                 </div>
+
+                                {/* Convert button for mobile (only for non-USDT assets) */}
+                                {balance.symbol !== 'USDT' && (
+                                  <button
+                                    onClick={() => openConvertModal(balance.symbol, available.toString())}
+                                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                  >
+                                    Convert to USDT
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -1401,6 +1512,91 @@ export default function WalletPage() {
               className="w-full border-gray-600 text-gray-300 hover:bg-gray-700"
             >
               Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Convert to USDT Modal */}
+      <Dialog open={showConvertModal} onOpenChange={setShowConvertModal}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Convert {convertingSymbol} to USDT</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {convertingSymbol && (
+              <>
+                <div className="bg-gray-700/50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Available {convertingSymbol}:</span>
+                    <span className="text-white font-medium">
+                      {userBalances?.find(b => b.symbol === convertingSymbol)?.available || '0'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Current Price:</span>
+                    <span className="text-white font-medium">
+                      ${getMarketPrice(convertingSymbol).toLocaleString()} USDT
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">You will receive:</span>
+                    <span className="text-green-400 font-bold">
+                      ~${(parseFloat(convertAmount || '0') * getMarketPrice(convertingSymbol)).toFixed(2)} USDT
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-400">Amount to convert:</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={convertAmount}
+                      onChange={(e) => setConvertAmount(e.target.value)}
+                      placeholder="0.00"
+                      step="0.00000001"
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    />
+                    <button
+                      onClick={() => {
+                        const maxAmount = userBalances?.find(b => b.symbol === convertingSymbol)?.available || '0';
+                        setConvertAmount(maxAmount);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                    >
+                      MAX
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                  <p className="text-yellow-400 text-xs">
+                    ⚠️ This will instantly sell your {convertingSymbol} at market price and convert to USDT. This action cannot be undone.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowConvertModal(false);
+                setConvertingSymbol(null);
+                setConvertAmount('');
+              }}
+              className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+              disabled={isConverting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => convertingSymbol && handleConvertToUSDT(convertingSymbol, convertAmount)}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              disabled={isConverting || !convertAmount || parseFloat(convertAmount) <= 0}
+            >
+              {isConverting ? 'Converting...' : 'Convert Now'}
             </Button>
           </div>
         </DialogContent>
