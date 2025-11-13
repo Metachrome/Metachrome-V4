@@ -366,15 +366,25 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
   // Get cryptocurrency balance for selected symbol
   const getCryptoBalance = (symbol: string): number => {
-    if (!balances || !Array.isArray(balances)) return 0;
+    if (!balances || !Array.isArray(balances)) {
+      console.log('⚠️ SPOT: No balances data available');
+      return 0;
+    }
     const cryptoSymbol = symbol.replace('USDT', ''); // BTCUSDT -> BTC
     const cryptoData = balances.find((b: any) => b.symbol === cryptoSymbol);
+    console.log('🔍 SPOT: Getting crypto balance for', cryptoSymbol, ':', {
+      allBalances: balances,
+      cryptoData,
+      available: cryptoData?.available,
+      parsed: parseFloat(cryptoData?.available || '0')
+    });
     return parseFloat(cryptoData?.available || '0');
   };
 
   // Get balance for currently selected cryptocurrency
   const selectedCryptoSymbol = selectedSymbol.replace('USDT', ''); // BTCUSDT -> BTC
   const selectedCryptoBalance = getCryptoBalance(selectedSymbol);
+  console.log('💰 SPOT: Selected crypto balance:', selectedCryptoSymbol, '=', selectedCryptoBalance);
 
   // Calculate USDT equivalent of selected crypto balance (real-time conversion)
   const selectedCryptoValueInUSDT = selectedCryptoBalance * currentPrice;
