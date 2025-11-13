@@ -91,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .from('balances')
           .select('*')
           .eq('user_id', userId)
-          .eq('currency', cryptoSymbol)  // FIXED: Use 'currency' column, not 'symbol'
+          .eq('symbol', cryptoSymbol)  // Use 'symbol' column (database schema)
           .single();
 
         if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
@@ -100,15 +100,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (existingBalance) {
           // Update existing balance
-          const newCryptoAmount = parseFloat(existingBalance.balance || '0') + tradeAmount;  // FIXED: Use 'balance' column
+          const newCryptoAmount = parseFloat(existingBalance.available || '0') + tradeAmount;  // Use 'available' column
           const { error: updateError } = await supabaseAdmin
             .from('balances')
             .update({
-              balance: newCryptoAmount.toFixed(8),  // FIXED: Use 'balance' column, not 'available'
-              updated_at: new Date().toISOString()  // FIXED: Use 'updated_at' (snake_case)
+              available: newCryptoAmount.toFixed(8),  // Use 'available' column (database schema)
+              updated_at: new Date().toISOString()
             })
             .eq('user_id', userId)
-            .eq('currency', cryptoSymbol);  // FIXED: Use 'currency' column
+            .eq('symbol', cryptoSymbol);  // Use 'symbol' column
 
           if (updateError) {
             console.error('❌ Error updating crypto balance:', updateError);
@@ -121,8 +121,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             .from('balances')
             .insert({
               user_id: userId,
-              currency: cryptoSymbol,  // FIXED: Use 'currency' column, not 'symbol'
-              balance: tradeAmount.toFixed(8)  // FIXED: Use 'balance' column, not 'available'
+              symbol: cryptoSymbol,  // Use 'symbol' column (database schema)
+              available: tradeAmount.toFixed(8)  // Use 'available' column (database schema)
             });
 
           if (insertError) {
@@ -148,7 +148,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .from('balances')
           .select('*')
           .eq('user_id', userId)
-          .eq('currency', cryptoSymbol)  // FIXED: Use 'currency' column, not 'symbol'
+          .eq('symbol', cryptoSymbol)  // Use 'symbol' column (database schema)
           .single();
 
         if (fetchError || !cryptoBalance) {
@@ -158,7 +158,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         }
 
-        const availableCrypto = parseFloat(cryptoBalance.balance || '0');  // FIXED: Use 'balance' column
+        const availableCrypto = parseFloat(cryptoBalance.available || '0');  // Use 'available' column
         if (availableCrypto < tradeAmount) {
           return res.status(400).json({
             success: false,
@@ -171,11 +171,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { error: updateError } = await supabaseAdmin
           .from('balances')
           .update({
-            balance: newCryptoAmount.toFixed(8),  // FIXED: Use 'balance' column, not 'available'
-            updated_at: new Date().toISOString()  // FIXED: Use 'updated_at' (snake_case)
+            available: newCryptoAmount.toFixed(8),  // Use 'available' column (database schema)
+            updated_at: new Date().toISOString()
           })
           .eq('user_id', userId)
-          .eq('currency', cryptoSymbol);  // FIXED: Use 'currency' column
+          .eq('symbol', cryptoSymbol);  // Use 'symbol' column
 
         if (updateError) {
           console.error('❌ Error updating crypto balance:', updateError);
