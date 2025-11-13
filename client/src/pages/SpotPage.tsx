@@ -519,7 +519,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
       toast({
         title: "Buy order completed!",
-        description: `Bought ${amount.toFixed(6)} BTC at ${executionPrice.toFixed(2)} USDT. New balance: ${(usdtBalance - total).toFixed(2)} USDT`,
+        description: `Bought ${amount.toFixed(6)} ${selectedCryptoSymbol} at ${executionPrice.toFixed(2)} USDT. New balance: ${(usdtBalance - total).toFixed(2)} USDT`,
         duration: 5000
       });
 
@@ -604,7 +604,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
       toast({
         title: "Sell order completed!",
-        description: `Sold ${amount.toFixed(6)} BTC at ${executionPrice.toFixed(2)} USDT. New balance: ${(usdtBalance + total).toFixed(2)} USDT`,
+        description: `Sold ${amount.toFixed(6)} ${selectedCryptoSymbol} at ${executionPrice.toFixed(2)} USDT. New balance: ${(usdtBalance + total).toFixed(2)} USDT`,
         duration: 5000
       });
 
@@ -1046,7 +1046,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
             <div className="space-y-4">
               {/* REMOVED: Price input (only market orders now) */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Amount ({selectedCryptoSymbol})</label>
                 <input
                   type="number"
                   value={buyAmount}
@@ -1099,7 +1099,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
             <div className="space-y-4">
               {/* REMOVED: Price input (only market orders now) */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Amount ({selectedCryptoSymbol})</label>
                 <input
                   type="number"
                   value={sellAmount}
@@ -1472,7 +1472,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                       placeholder="0.00000000"
                       step="0.000001"
                     />
-                    <span className="absolute right-3 top-2 text-gray-400 text-sm">BTC</span>
+                    <span className="absolute right-3 top-2 text-gray-400 text-sm">{selectedCryptoSymbol}</span>
                   </div>
                 </div>
 
@@ -1615,7 +1615,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                       placeholder="0.00000000"
                       step="0.000001"
                     />
-                    <span className="absolute right-3 top-2 text-gray-400 text-sm">BTC</span>
+                    <span className="absolute right-3 top-2 text-gray-400 text-sm">{selectedCryptoSymbol}</span>
                   </div>
                 </div>
 
