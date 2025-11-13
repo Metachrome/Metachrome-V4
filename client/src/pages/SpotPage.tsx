@@ -46,7 +46,8 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("open"); // "open" or "history"
   const [mobileTradeTab, setMobileTradeTab] = useState("buy"); // "buy" or "sell" for mobile
-  const [orderType, setOrderType] = useState<'limit' | 'market'>('limit');
+  // REMOVED: Limit order feature - only Market order now
+  // const [orderType, setOrderType] = useState<'limit' | 'market'>('market');
   // Chart view state - Default to TradingView to match options page
   const [chartView, setChartView] = useState<'basic' | 'tradingview' | 'depth'>('tradingview');
 
@@ -458,7 +459,8 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
         throw new Error('User not authenticated');
       }
 
-      const executionPrice = orderData.type === 'limit' ? parseFloat(orderData.price) : currentPrice;
+      // FIXED: Always use market price (no limit orders)
+      const executionPrice = currentPrice;
       const amount = parseFloat(orderData.amount);
       const total = executionPrice * amount;
 
@@ -542,7 +544,8 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
         throw new Error('User not authenticated');
       }
 
-      const executionPrice = orderData.type === 'limit' ? parseFloat(orderData.price) : currentPrice;
+      // FIXED: Always use market price (no limit orders)
+      const executionPrice = currentPrice;
       const amount = parseFloat(orderData.amount);
       const total = executionPrice * amount;
 
@@ -714,12 +717,9 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
       return;
     }
 
-    if (orderType === 'limit' && (!price || price <= 0)) {
-      toast({ title: "Please enter a valid price", variant: "destructive" });
-      return;
-    }
-
-    const total = orderType === 'limit' ? price * amount : currentPrice * amount;
+    // REMOVED: Limit order validation (only market orders now)
+    // Always use current market price
+    const total = currentPrice * amount;
     console.log('Calculated total:', total);
 
     if (total > usdtBalance) {
@@ -729,9 +729,9 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
     console.log('✅ All validations passed, placing order...');
     placeBuyOrderMutation.mutate({
-      type: orderType,
+      type: 'market', // Always market order
       amount: amount.toString(),
-      price: orderType === 'limit' ? price.toString() : undefined,
+      price: undefined, // No price for market orders
       total: total.toString(),
     });
   };
@@ -751,24 +751,22 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
       return;
     }
 
-    if (orderType === 'limit' && (!price || price <= 0)) {
-      toast({ title: "Please enter a valid price", variant: "destructive" });
-      return;
-    }
+    // REMOVED: Limit order validation (only market orders now)
 
     if (amount > selectedCryptoBalance) {
       toast({ title: `Insufficient ${selectedCryptoSymbol} balance. Need ${amount.toFixed(8)} but have ${selectedCryptoBalance.toFixed(8)}`, variant: "destructive" });
       return;
     }
 
-    const total = orderType === 'limit' ? price * amount : currentPrice * amount;
+    // Always use current market price
+    const total = currentPrice * amount;
     console.log('Calculated total:', total);
 
     console.log('✅ All validations passed, placing sell order...');
     placeSellOrderMutation.mutate({
-      type: orderType,
+      type: 'market', // Always market order
       amount: amount.toString(),
-      price: orderType === 'limit' ? price.toString() : undefined,
+      price: undefined, // No price for market orders
       total: total.toString(),
     });
   };
@@ -1036,45 +1034,17 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
             </button>
           </div>
 
-          {/* Order Type Tabs - Mobile */}
-          <div className="flex space-x-6 mb-4">
-            <button
-              onClick={() => setOrderType('limit')}
-              className={`pb-2 text-sm font-medium ${
-                orderType === 'limit'
-                  ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Limit order
-            </button>
-            <button
-              onClick={() => setOrderType('market')}
-              className={`pb-2 text-sm font-medium ${
-                orderType === 'market'
-                  ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              Market order
-            </button>
+          {/* REMOVED: Order Type Tabs - Only Market Order now */}
+          <div className="mb-4">
+            <div className="text-sm font-medium text-blue-400 pb-2 border-b-2 border-blue-400 inline-block">
+              Market Order
+            </div>
           </div>
 
           {/* Trading Form */}
           {mobileTradeTab === 'buy' ? (
             <div className="space-y-4">
-              {orderType === 'limit' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
-                  <input
-                    type="number"
-                    value={buyPrice}
-                    onChange={(e) => setBuyPrice(e.target.value)}
-                    placeholder={formattedPrice}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
-                  />
-                </div>
-              )}
+              {/* REMOVED: Price input (only market orders now) */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
                 <input
@@ -1127,18 +1097,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
             </div>
           ) : (
             <div className="space-y-4">
-              {orderType === 'limit' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Price (USDT)</label>
-                  <input
-                    type="number"
-                    value={sellPrice}
-                    onChange={(e) => setSellPrice(e.target.value)}
-                    placeholder={formattedPrice}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-red-500 focus:outline-none"
-                  />
-                </div>
-              )}
+              {/* REMOVED: Price input (only market orders now) */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Amount (BTC)</label>
                 <input
@@ -1485,49 +1444,18 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
           {/* Bottom Trading Section */}
           <div className="bg-[#10121E] p-4 min-h-[450px] flex-shrink-0">
-            {/* Order Type Tabs */}
-            <div className="flex space-x-6 mb-6">
-              <button
-                onClick={() => setOrderType('limit')}
-                className={`pb-2 text-sm font-medium ${
-                  orderType === 'limit'
-                    ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Limit order
-              </button>
-              <button
-                onClick={() => setOrderType('market')}
-                className={`pb-2 text-sm font-medium ${
-                  orderType === 'market'
-                    ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Market order
-              </button>
+            {/* REMOVED: Order Type Tabs - Only Market Order now */}
+            <div className="mb-6">
+              <div className="text-sm font-medium text-blue-400 pb-2 border-b-2 border-blue-400 inline-block">
+                Market Order
+              </div>
             </div>
 
             {/* Side-by-side Buy/Sell Forms */}
             <div className="grid grid-cols-2 gap-6">
               {/* Buy Section */}
               <div className="space-y-4">
-                {orderType === 'limit' && (
-                  <div>
-                    <label className="block text-gray-400 text-sm mb-2">Price</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        className="w-full bg-[#1a1b2e] text-white px-3 py-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none pr-12"
-                        value={buyPrice}
-                        onChange={(e) => setBuyPrice(e.target.value)}
-                        placeholder={formattedPrice}
-                      />
-                      <span className="absolute right-3 top-2 text-gray-400 text-sm">USDT</span>
-                    </div>
-                  </div>
-                )}
+                {/* REMOVED: Price input (only market orders now) */}
 
                 <div>
                   <label className="block text-gray-400 text-sm mb-2">Amount</label>
@@ -1670,21 +1598,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
 
               {/* Sell Section */}
               <div className="space-y-4">
-                {orderType === 'limit' && (
-                  <div>
-                    <label className="block text-gray-400 text-sm mb-2">Price</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        className="w-full bg-[#1a1b2e] text-white px-3 py-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none pr-12"
-                        value={sellPrice}
-                        onChange={(e) => setSellPrice(e.target.value)}
-                        placeholder={formattedPrice}
-                      />
-                      <span className="absolute right-3 top-2 text-gray-400 text-sm">USDT</span>
-                    </div>
-                  </div>
-                )}
+                {/* REMOVED: Price input (only market orders now) */}
 
                 <div>
                   <label className="block text-gray-400 text-sm mb-2">Amount</label>
