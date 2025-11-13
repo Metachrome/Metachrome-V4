@@ -218,7 +218,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`💰 USDT Balance: ${userBalance} → ${newUsdtBalance}`);
     }
 
-    // Create order record
+    // Create order record and save to database
     const orderId = `spot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const order = {
       id: orderId,
@@ -232,6 +232,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+
+    // Save spot order to trades table
+    try {
+      const { error: tradeError } = await supabaseAdmin
+        .from('trades')
+        .insert({
+          id: orderId,
+          user_id: userId,
+          symbol: symbol,
+          amount: tradeAmount.toString(),
+          direction: side,
+          duration: 0,  // Spot trades have no duration (0 = instant)
+          entry_price: tradePrice.toString(),
+          exit_price: tradePrice.toString(),
+          status: 'completed',
+          result: 'completed',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          expires_at: new Date().toISOString()
+        });
+
+      if (tradeError) {
+        console.error('❌ Error saving spot order to Supabase:', tradeError);
+      } else {
+        console.log('✅ Spot order saved to database:', orderId);
+      }
+    } catch (dbError) {
+      console.error('❌ Database error:', dbError);
+    }
 
     console.log('✅ Spot order completed successfully:', orderId);
 
