@@ -6074,10 +6074,10 @@ app.get('/api/balances', async (req, res) => {
       }
     }
 
-    console.log('💰 [/api/balances] Final balance:', userBalance);
+    console.log('💰 [/api/balances] Final USDT balance:', userBalance);
 
-    // Return only USDT balance (real cryptocurrency balances come from actual trading)
-    const balances = [
+    // FIXED: Query ALL balances (USDT + cryptocurrencies) from Supabase
+    let allBalances = [
       {
         symbol: 'USDT',
         available: userBalance.toString(),
@@ -6085,8 +6085,34 @@ app.get('/api/balances', async (req, res) => {
       }
     ];
 
-    console.log('💰 [/api/balances] Response:', JSON.stringify(balances, null, 2));
-    res.json(balances);
+    // Fetch cryptocurrency balances from Supabase balances table
+    if (isSupabaseConfigured && supabase) {
+      try {
+        console.log('💰 [/api/balances] Querying cryptocurrency balances for user:', userId);
+        const { data: cryptoBalances, error: balancesError } = await supabase
+          .from('balances')
+          .select('symbol, available, locked')
+          .eq('user_id', userId);
+
+        if (balancesError) {
+          console.error('❌ [/api/balances] Error fetching crypto balances:', balancesError);
+        } else if (cryptoBalances && cryptoBalances.length > 0) {
+          console.log('✅ [/api/balances] Found crypto balances:', cryptoBalances);
+          // Add cryptocurrency balances to the response
+          allBalances = [
+            ...allBalances,
+            ...cryptoBalances
+          ];
+        } else {
+          console.log('ℹ️ [/api/balances] No cryptocurrency balances found for user');
+        }
+      } catch (error) {
+        console.error('❌ [/api/balances] Exception fetching crypto balances:', error);
+      }
+    }
+
+    console.log('💰 [/api/balances] Response:', JSON.stringify(allBalances, null, 2));
+    res.json(allBalances);
   } catch (error) {
     console.error('❌ Error getting balances:', error);
     res.status(500).json({ error: 'Failed to get balances' });
