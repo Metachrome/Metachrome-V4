@@ -1104,10 +1104,10 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                       <span className="text-gray-400">≈</span>
                     </div>
                     <div className="text-green-400 font-medium">
-                      Can buy ≈ {(usdtBalance / currentPrice).toFixed(8)} {selectedCryptoSymbol}
+                      Can buy ≈ {currentPrice > 0 ? (usdtBalance / currentPrice).toFixed(8) : '0.00000000'} {selectedCryptoSymbol}
                     </div>
                     <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
-                      💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
+                      💱 1 {selectedCryptoSymbol} = {currentPrice > 0 ? currentPrice.toFixed(2) : '0.00'} USDT
                     </div>
                   </>
                 ) : (
@@ -1630,10 +1630,10 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                         <span className="text-gray-400">≈</span>
                       </div>
                       <div className="text-green-400 font-medium">
-                        Can buy ≈ {(usdtBalance / currentPrice).toFixed(8)} {selectedCryptoSymbol}
+                        Can buy ≈ {currentPrice > 0 ? (usdtBalance / currentPrice).toFixed(8) : '0.00000000'} {selectedCryptoSymbol}
                       </div>
                       <div className="text-xs text-gray-400 pt-1 border-t border-gray-700">
-                        💱 1 {selectedCryptoSymbol} = {currentPrice.toFixed(2)} USDT
+                        💱 1 {selectedCryptoSymbol} = {currentPrice > 0 ? currentPrice.toFixed(2) : '0.00'} USDT
                       </div>
                     </>
                   ) : (
