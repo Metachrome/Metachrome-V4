@@ -86,6 +86,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Add cryptocurrency to user's balance
       try {
+        console.log(`🔍 [CRYPTO BALANCE] Checking balance for user: ${userId}, symbol: ${cryptoSymbol}`);
+
         // Check if user already has this cryptocurrency balance
         const { data: existingBalance, error: fetchError } = await supabaseAdmin
           .from('balances')
@@ -95,11 +97,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .single();
 
         if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
-          console.error('❌ Error fetching crypto balance:', fetchError);
+          console.error('❌ [CRYPTO BALANCE] Error fetching crypto balance:', JSON.stringify(fetchError, null, 2));
+        } else if (fetchError && fetchError.code === 'PGRST116') {
+          console.log(`ℹ️ [CRYPTO BALANCE] No existing balance found for ${cryptoSymbol}, will create new`);
         }
 
         if (existingBalance) {
           // Update existing balance
+          console.log(`🔄 [CRYPTO BALANCE] Existing balance found:`, existingBalance);
           const newCryptoAmount = parseFloat(existingBalance.available || '0') + tradeAmount;  // Use 'available' column
           const { error: updateError } = await supabaseAdmin
             .from('balances')
@@ -111,28 +116,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             .eq('symbol', cryptoSymbol);  // Use 'symbol' column
 
           if (updateError) {
-            console.error('❌ Error updating crypto balance:', updateError);
+            console.error('❌ [CRYPTO BALANCE] Error updating crypto balance:', JSON.stringify(updateError, null, 2));
           } else {
-            console.log(`✅ Updated ${cryptoSymbol} balance: +${tradeAmount} (total: ${newCryptoAmount.toFixed(8)})`);
+            console.log(`✅ [CRYPTO BALANCE] Updated ${cryptoSymbol} balance: +${tradeAmount} (total: ${newCryptoAmount.toFixed(8)})`);
           }
         } else {
           // Create new balance
-          const { error: insertError } = await supabaseAdmin
+          console.log(`➕ [CRYPTO BALANCE] Creating new balance for ${cryptoSymbol}: ${tradeAmount.toFixed(8)}`);
+          const insertData = {
+            user_id: userId,
+            symbol: cryptoSymbol,  // Use 'symbol' column (database schema)
+            available: tradeAmount.toFixed(8),  // Use 'available' column (database schema)
+            locked: '0.00000000'
+          };
+          console.log(`📝 [CRYPTO BALANCE] Insert data:`, insertData);
+
+          const { data: insertResult, error: insertError } = await supabaseAdmin
             .from('balances')
-            .insert({
-              user_id: userId,
-              symbol: cryptoSymbol,  // Use 'symbol' column (database schema)
-              available: tradeAmount.toFixed(8)  // Use 'available' column (database schema)
-            });
+            .insert(insertData)
+            .select();
 
           if (insertError) {
-            console.error('❌ Error creating crypto balance:', insertError);
+            console.error('❌ [CRYPTO BALANCE] Error creating crypto balance:', JSON.stringify(insertError, null, 2));
+            console.error('❌ [CRYPTO BALANCE] Insert data was:', JSON.stringify(insertData, null, 2));
           } else {
-            console.log(`✅ Created ${cryptoSymbol} balance: ${tradeAmount.toFixed(8)}`);
+            console.log(`✅ [CRYPTO BALANCE] Created ${cryptoSymbol} balance: ${tradeAmount.toFixed(8)}`);
+            console.log(`✅ [CRYPTO BALANCE] Insert result:`, insertResult);
           }
         }
       } catch (cryptoError) {
-        console.error('❌ Error managing crypto balance:', cryptoError);
+        console.error('❌ [CRYPTO BALANCE] Exception managing crypto balance:', cryptoError);
+        console.error('❌ [CRYPTO BALANCE] Stack trace:', (cryptoError as Error).stack);
       }
 
       console.log(`💰 BUY ORDER: ${tradeAmount} ${cryptoSymbol} at ${tradePrice} = ${totalCost} USDT`);
