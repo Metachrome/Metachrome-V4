@@ -121,7 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const actualUserId = user.id;
               const { data: userBalances, error: balancesError } = await supabaseAdmin
                 .from('balances')
-                .select('currency, balance')
+                .select('symbol, available, locked')  // FIXED: Use correct column names (symbol, available, locked)
                 .eq('user_id', actualUserId);
 
               console.log('🔍 [/api/balances] Database query result:', {
@@ -143,11 +143,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   }
                 ];
               } else if (userBalances && userBalances.length > 0) {
-                // Use real balances from database (convert currency -> symbol, balance -> available)
+                // Use real balances from database (already in correct format: symbol, available, locked)
                 balanceData = userBalances.map(balance => ({
-                  symbol: balance.currency,
-                  available: balance.balance?.toString() || '0',
-                  locked: '0' // No locked balance in new schema
+                  symbol: balance.symbol,  // FIXED: Use 'symbol' column (not 'currency')
+                  available: balance.available?.toString() || '0',  // FIXED: Use 'available' column (not 'balance')
+                  locked: balance.locked?.toString() || '0'  // FIXED: Use 'locked' column from database
                 }));
 
                 // Ensure USDT balance exists and matches user.balance
