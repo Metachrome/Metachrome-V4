@@ -358,6 +358,7 @@ class DatabaseStorage implements IStorage {
       amount: spotOrder.amount,
       entryPrice: spotOrder.price || '0',
       status: spotOrder.status,
+      duration: 0, // FIXED: Add duration=0 for spot trades (required by database)
       createdAt: spotOrder.createdAt,
       updatedAt: spotOrder.updatedAt,
       // Store spot-specific data in metadata
