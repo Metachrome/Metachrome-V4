@@ -6979,7 +6979,7 @@ app.post('/api/spot/orders', async (req, res) => {
           const { data: existingBalance, error: fetchError } = await supabase
             .from('balances')
             .select('*')
-            .eq('userId', finalUserId)
+            .eq('user_id', finalUserId)  // FIXED: Use snake_case (database schema)
             .eq('symbol', cryptoSymbol)
             .single();
 
@@ -6994,9 +6994,9 @@ app.post('/api/spot/orders', async (req, res) => {
               .from('balances')
               .update({
                 available: newCryptoAmount.toFixed(8),
-                updatedAt: new Date().toISOString()
+                updated_at: new Date().toISOString()  // FIXED: Use snake_case
               })
-              .eq('userId', finalUserId)
+              .eq('user_id', finalUserId)  // FIXED: Use snake_case
               .eq('symbol', cryptoSymbol);
 
             if (updateError) {
@@ -7009,7 +7009,7 @@ app.post('/api/spot/orders', async (req, res) => {
             const { error: insertError } = await supabase
               .from('balances')
               .insert({
-                userId: finalUserId,
+                user_id: finalUserId,  // FIXED: Use snake_case (database schema)
                 symbol: cryptoSymbol,
                 available: tradeAmount.toFixed(8),
                 locked: '0'
@@ -7039,7 +7039,7 @@ app.post('/api/spot/orders', async (req, res) => {
           const { data: cryptoBalance, error: fetchError } = await supabase
             .from('balances')
             .select('*')
-            .eq('userId', finalUserId)
+            .eq('user_id', finalUserId)  // FIXED: Use snake_case (database schema)
             .eq('symbol', cryptoSymbol)
             .single();
 
@@ -7064,9 +7064,9 @@ app.post('/api/spot/orders', async (req, res) => {
             .from('balances')
             .update({
               available: newCryptoAmount.toFixed(8),
-              updatedAt: new Date().toISOString()
+              updated_at: new Date().toISOString()  // FIXED: Use snake_case
             })
-            .eq('userId', finalUserId)
+            .eq('user_id', finalUserId)  // FIXED: Use snake_case (database schema)
             .eq('symbol', cryptoSymbol);
 
           if (updateError) {
@@ -7149,6 +7149,7 @@ app.post('/api/spot/orders', async (req, res) => {
             symbol: order.symbol,
             direction: order.side, // Map 'side' to 'direction' for consistency
             amount: parseFloat(order.amount),
+            duration: 0,  // CRITICAL FIX: Spot trades have duration=0 (required by database NOT NULL constraint)
             entry_price: parseFloat(order.price),
             exit_price: parseFloat(order.price), // Same as entry for spot
             result: 'completed', // Spot orders are immediately filled
