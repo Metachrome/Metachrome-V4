@@ -28,6 +28,7 @@ import ProfilePage from "./pages/ProfilePage";
 import TransactionHistory from "./pages/TransactionHistory";
 import AdminTransactionsPage from "./pages/AdminTransactionsPage";
 import SuperAdminTestPage from "./pages/SuperAdminTestPage";
+import AdminActivityLogsPage from "./pages/AdminActivityLogsPage";
 import TestPriceSyncPage from "./pages/TestPriceSyncPage";
 import NotFound from "./pages/not-found";
 import { ProtectedAdminRoute } from "./components/ProtectedAdminRoute";
@@ -112,6 +113,11 @@ function Router() {
         <Route path="/admin/test">
           <ProtectedAdminRoute>
             <SuperAdminTestPage />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/activity-logs">
+          <ProtectedAdminRoute>
+            <AdminActivityLogsPage />
           </ProtectedAdminRoute>
         </Route>
         <Route component={NotFound} />

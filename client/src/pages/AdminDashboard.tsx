@@ -1664,6 +1664,14 @@ export default function WorkingAdminDashboard() {
               Support
               <ChatNotificationBadge />
             </TabsTrigger>
+            <TabsTrigger
+              value="activity-logs"
+              className="flex-shrink-0 px-4 py-2"
+              onClick={() => window.location.href = '/admin/activity-logs'}
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Activity Logs
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
