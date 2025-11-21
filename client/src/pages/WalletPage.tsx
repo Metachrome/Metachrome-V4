@@ -1252,7 +1252,7 @@ export default function WalletPage() {
                         </div>
 
                         {/* Minimum Trade Requirement Warning */}
-                        {completedTradesCount < 3 && (
+                        {completedTradesCount < 2 && (
                           <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-4 mb-4">
                             <div className="flex items-start space-x-3">
                               <div className="flex-shrink-0">
@@ -1263,11 +1263,11 @@ export default function WalletPage() {
                               <div className="flex-1">
                                 <h4 className="text-yellow-500 font-semibold text-sm mb-1">Minimum Trade Requirement</h4>
                                 <p className="text-yellow-200/80 text-sm">
-                                  You need to complete at least <strong>3 trades</strong> before you can withdraw.
-                                  Current completed trades: <strong>{completedTradesCount}/3</strong>
+                                  You need to complete at least <strong>2 trades</strong> before you can withdraw.
+                                  Current completed trades: <strong>{completedTradesCount}/2</strong>
                                 </p>
                                 <p className="text-yellow-200/60 text-xs mt-2">
-                                  Please complete {3 - completedTradesCount} more trade{3 - completedTradesCount > 1 ? 's' : ''} to unlock withdrawal.
+                                  Please complete {2 - completedTradesCount} more trade{2 - completedTradesCount > 1 ? 's' : ''} to unlock withdrawal.
                                 </p>
                               </div>
                             </div>
@@ -1278,10 +1278,10 @@ export default function WalletPage() {
                         <Button
                           onClick={() => {
                             // Check minimum trade requirement first
-                            if (completedTradesCount < 3) {
+                            if (completedTradesCount < 2) {
                               toast({
                                 title: 'Withdrawal Not Available',
-                                description: `You need to complete at least 3 trades before withdrawing. Current: ${completedTradesCount}/3 trades completed.`,
+                                description: `You need to complete at least 2 trades before withdrawing. Current: ${completedTradesCount}/2 trades completed.`,
                                 variant: 'destructive',
                               });
                               return;
@@ -1302,11 +1302,11 @@ export default function WalletPage() {
                               password: fundPassword
                             });
                           }}
-                          disabled={completedTradesCount < 3 || !withdrawAddress || !withdrawAmount || !fundPassword || withdrawMutation.isPending}
+                          disabled={completedTradesCount < 2 || !withdrawAddress || !withdrawAmount || !fundPassword || withdrawMutation.isPending}
                           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {withdrawMutation.isPending ? 'Processing Withdrawal...' :
-                           completedTradesCount < 3 ? `Complete ${3 - completedTradesCount} More Trade${3 - completedTradesCount > 1 ? 's' : ''} to Withdraw` :
+                           completedTradesCount < 2 ? `Complete ${2 - completedTradesCount} More Trade${2 - completedTradesCount > 1 ? 's' : ''} to Withdraw` :
                            `Confirm Withdrawal`}
                         </Button>
                       </div>
