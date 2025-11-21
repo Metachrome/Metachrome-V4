@@ -19,14 +19,14 @@ INSERT INTO admin_activity_logs (
   user_agent,
   is_deleted
 )
-SELECT 
-  ac.adminId as admin_id,
+SELECT
+  ac.admin_id,
   admin_user.username as admin_username,
   admin_user.email as admin_email,
   'TRADING_CONTROL_SET' as action_type,
   'TRADING' as action_category,
   CONCAT('Set trading mode to ', UPPER(ac.control_type), ' for user ', target_user.username) as action_description,
-  ac.userId as target_user_id,
+  ac.user_id as target_user_id,
   target_user.username as target_username,
   target_user.email as target_email,
   jsonb_build_object(
@@ -39,8 +39,8 @@ SELECT
   NULL as user_agent,
   false as is_deleted
 FROM admin_controls ac
-LEFT JOIN users admin_user ON ac.adminId = admin_user.id
-LEFT JOIN users target_user ON ac.userId = target_user.id
+LEFT JOIN users admin_user ON ac.admin_id = admin_user.id
+LEFT JOIN users target_user ON ac.user_id = target_user.id
 WHERE ac.created_at IS NOT NULL;
 
 -- 2. Insert historical deposit approvals from deposits table
