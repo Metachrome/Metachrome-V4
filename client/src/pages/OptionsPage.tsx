@@ -2740,7 +2740,7 @@ function OptionsPageContent({
           </div>
 
           {/* Mobile Trading History Section */}
-          <div className="bg-[#10121E] border-t border-gray-700 min-h-[200px]">
+          <div className="bg-[#10121E] border-t border-gray-700 min-h-[600px]">
             {/* Tabs Header */}
             <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
               <div className="flex items-center space-x-6">
@@ -2784,7 +2784,7 @@ function OptionsPageContent({
             </div>
 
             {/* Mobile Trade Content - Simplified for smaller screens */}
-            <div className="px-4 py-2 max-h-[400px] overflow-y-auto">
+            <div className="px-4 py-2 max-h-[550px] overflow-y-auto">
               {activeTab === "open" && (
                 <>
                   {activeTrades.length === 0 ? (
@@ -2873,14 +2873,14 @@ function OptionsPageContent({
                         const formattedTime = tradeDate.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                         return (
-                          <div key={trade.id} className="bg-gray-800 rounded p-3">
-                            <div className="flex justify-between items-center mb-2">
+                          <div key={trade.id} className="bg-gray-800 rounded p-2.5 mb-2">
+                            <div className="flex justify-between items-center mb-1.5">
                               <span className="text-gray-400 text-xs font-medium">{marketPair}</span>
                               <span className={`font-bold text-sm ${trade.status === 'won' ? 'text-green-400' : 'text-red-400'}`}>
                                 {trade.status === 'won' ? '✅ WON' : '❌ LOST'}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center mb-2">
+                            <div className="flex justify-between items-center mb-1.5">
                               <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                                 {trade.direction === 'up' ? 'BUY' : 'SELL'} • {trade.amount} USDT
                               </span>
