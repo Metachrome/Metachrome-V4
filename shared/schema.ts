@@ -271,3 +271,44 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+// Admin Activity Logs - Audit trail for all admin actions
+export const adminActivityLogs = pgTable("admin_activity_logs", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
+  // Admin who performed the action
+  adminId: uuid("admin_id").notNull(),
+  adminUsername: varchar("admin_username", { length: 255 }).notNull(),
+  adminEmail: varchar("admin_email", { length: 255 }),
+
+  // Action details
+  actionType: varchar("action_type", { length: 100 }).notNull(), // TRADING_CONTROL_CHANGE, BALANCE_UPDATE, etc.
+  actionCategory: varchar("action_category", { length: 50 }).notNull(), // TRADING, BALANCE, VERIFICATION, etc.
+  actionDescription: text("action_description").notNull(), // Human-readable description
+
+  // Target user (if applicable)
+  targetUserId: uuid("target_user_id"),
+  targetUsername: varchar("target_username", { length: 255 }),
+  targetEmail: varchar("target_email", { length: 255 }),
+
+  // Action metadata (flexible JSON storage)
+  metadata: jsonb("metadata").default({}),
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+
+  // Security tracking
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+
+  // Soft delete flag (but should never be used - logs are permanent)
+  isDeleted: boolean("is_deleted").default(false),
+});
+
+export const insertAdminActivityLogSchema = createInsertSchema(adminActivityLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AdminActivityLog = typeof adminActivityLogs.$inferSelect;
+export type InsertAdminActivityLog = z.infer<typeof insertAdminActivityLogSchema>;

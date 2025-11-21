@@ -28,6 +28,7 @@ import { z } from "zod";
 import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdminControlSchema } from "@shared/schema";
 import { sql } from "drizzle-orm";
 import { transactions } from "@shared/schema";
+import { logAdminActivityFromRequest, ActionTypes, ActionCategories } from "./activityLogger";
 
 // Notification system for real-time admin alerts
 interface AdminNotification {
@@ -1991,6 +1992,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const adminId = req.session?.user?.id || 'superadmin-1';
       const control = await storage.createTradingControl(userId, controlType, notes, adminId);
+
+      // Log activity
+      await logAdminActivityFromRequest(
+        req,
+        ActionTypes.TRADING_CONTROL_SET,
+        ActionCategories.TRADING,
+        `Set trading mode to ${controlType.toUpperCase()} for user ${user.username || user.email}`,
+        { id: userId, username: user.username, email: user.email },
+        { controlType, notes, previousMode: user.tradingMode || 'normal' }
+      );
+
       res.json(control);
     } catch (error) {
       console.error("Error creating trading control:", error);
@@ -2276,9 +2288,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid available balance is required" });
       }
 
+      // Get user and current balance for logging
+      const user = await storage.getUserById(userId);
+      const currentBalance = await storage.getBalance(userId, symbol.toUpperCase());
+      const previousBalance = currentBalance?.available || '0';
+
       // Ensure symbol is uppercase and exists
       const normalizedSymbol = (symbol || '').toUpperCase();
       const balance = await storage.updateBalance(userId, normalizedSymbol, available, '0');
+
+      // Log activity
+      if (user) {
+        await logAdminActivityFromRequest(
+          req,
+          ActionTypes.BALANCE_UPDATED,
+          ActionCategories.BALANCE,
+          `Updated ${normalizedSymbol} balance for user ${user.username || user.email} from ${previousBalance} to ${available}`,
+          { id: userId, username: user.username, email: user.email },
+          { symbol: normalizedSymbol, previousBalance, newBalance: available, change: (parseFloat(available) - parseFloat(previousBalance)).toString() }
+        );
+      }
+
       res.json(balance);
     } catch (error) {
       console.error("Error updating balance:", error);
@@ -2354,7 +2384,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid role is required (user, admin, super_admin)" });
       }
 
+      // Get user before update for logging
+      const userBefore = await storage.getUserById(id);
+      const previousRole = userBefore?.role || 'unknown';
+
       const user = await storage.updateUser(id, { role });
+
+      // Log activity
+      if (user) {
+        await logAdminActivityFromRequest(
+          req,
+          ActionTypes.USER_ROLE_CHANGED,
+          ActionCategories.USER_MANAGEMENT,
+          `Changed role for user ${user.username || user.email} from ${previousRole} to ${role}`,
+          { id: user.id, username: user.username, email: user.email },
+          { previousRole, newRole: role }
+        );
+      }
+
       res.json(user);
     } catch (error) {
       console.error("Error updating user role:", error);
@@ -2429,6 +2476,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteUser(id);
+
+      // Log activity
+      await logAdminActivityFromRequest(
+        req,
+        ActionTypes.USER_DELETED,
+        ActionCategories.USER_MANAGEMENT,
+        `Deleted user ${user.username || user.email} (ID: ${id})`,
+        { id: user.id, username: user.username, email: user.email },
+        { role: user.role, walletAddress: user.walletAddress }
+      );
+
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       console.error("Error deleting user:", error);
@@ -3231,6 +3289,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Deposit is not pending approval" });
       }
 
+      // Get user info for logging
+      const user = await storage.getUserById(transaction.userId);
+
       if (action === 'approve') {
         await storage.updateTransaction(id, {
           status: 'completed',
@@ -3249,6 +3310,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         await storage.updateBalance(transaction.userId, transaction.symbol, newAvailable, currentBalance?.locked || '0');
 
+        // Log activity
+        if (user) {
+          await logAdminActivityFromRequest(
+            req,
+            ActionTypes.DEPOSIT_APPROVED,
+            ActionCategories.TRANSACTIONS,
+            `Approved deposit of ${transaction.amount} ${transaction.symbol} for user ${user.username || user.email}`,
+            { id: transaction.userId, username: user.username, email: user.email },
+            { transactionId: id, amount: transaction.amount, symbol: transaction.symbol, txHash: transaction.txHash }
+          );
+        }
+
         console.log(`✅ Deposit approved: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
         res.json({ message: "Deposit approved and processed", transaction });
       } else {
@@ -3261,6 +3334,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             rejectionReason: reason || 'No reason provided'
           })
         });
+
+        // Log activity
+        if (user) {
+          await logAdminActivityFromRequest(
+            req,
+            ActionTypes.DEPOSIT_REJECTED,
+            ActionCategories.TRANSACTIONS,
+            `Rejected deposit of ${transaction.amount} ${transaction.symbol} for user ${user.username || user.email}`,
+            { id: transaction.userId, username: user.username, email: user.email },
+            { transactionId: id, amount: transaction.amount, symbol: transaction.symbol, reason: reason || 'No reason provided' }
+          );
+        }
 
         console.log(`❌ Deposit rejected: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
         res.json({ message: "Deposit rejected", transaction });
@@ -3294,6 +3379,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Withdrawal is not pending approval" });
       }
 
+      // Get user info for logging
+      const user = await storage.getUserById(transaction.userId);
+
       if (action === 'approve') {
         // Mark as completed (balance was already deducted when request was created)
         await storage.updateTransaction(id, {
@@ -3304,6 +3392,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             approvedAt: new Date().toISOString()
           })
         });
+
+        // Log activity
+        if (user) {
+          await logAdminActivityFromRequest(
+            req,
+            ActionTypes.WITHDRAWAL_APPROVED,
+            ActionCategories.TRANSACTIONS,
+            `Approved withdrawal of ${transaction.amount} ${transaction.symbol} for user ${user.username || user.email}`,
+            { id: transaction.userId, username: user.username, email: user.email },
+            { transactionId: id, amount: transaction.amount, symbol: transaction.symbol, walletAddress: JSON.parse(transaction.metadata || '{}').walletAddress }
+          );
+        }
 
         console.log(`✅ Withdrawal approved: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
         res.json({ message: "Withdrawal approved and processed", transaction });
@@ -3326,6 +3426,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : transaction.amount;
 
         await storage.updateBalance(transaction.userId, transaction.symbol, newAvailable, currentBalance?.locked || '0');
+
+        // Log activity
+        if (user) {
+          await logAdminActivityFromRequest(
+            req,
+            ActionTypes.WITHDRAWAL_REJECTED,
+            ActionCategories.TRANSACTIONS,
+            `Rejected withdrawal of ${transaction.amount} ${transaction.symbol} for user ${user.username || user.email}`,
+            { id: transaction.userId, username: user.username, email: user.email },
+            { transactionId: id, amount: transaction.amount, symbol: transaction.symbol, reason: reason || 'No reason provided', refunded: true }
+          );
+        }
 
         console.log(`❌ Withdrawal rejected and refunded: ${transaction.amount} ${transaction.symbol} for user ${transaction.userId}`);
         res.json({ message: "Withdrawal rejected and balance refunded", transaction });
@@ -4511,6 +4623,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: 'Failed to check OAuth status'
       });
+    }
+  });
+
+  // ============================================================================
+  // ADMIN ACTIVITY LOGS - Audit trail for all admin actions
+  // ============================================================================
+
+  // Get all activity logs (Super Admin only)
+  app.get("/api/admin/activity-logs", requireSessionSuperAdmin, async (req, res) => {
+    try {
+      const { supabaseAdmin } = await import('../lib/supabase');
+
+      if (!supabaseAdmin) {
+        return res.status(503).json({ message: "Database not available" });
+      }
+
+      const {
+        limit = 100,
+        offset = 0,
+        actionType,
+        actionCategory,
+        adminId,
+        targetUserId,
+        startDate,
+        endDate
+      } = req.query;
+
+      let query = supabaseAdmin
+        .from('admin_activity_logs')
+        .select('*', { count: 'exact' })
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+
+      // Apply filters
+      if (actionType) {
+        query = query.eq('action_type', actionType);
+      }
+      if (actionCategory) {
+        query = query.eq('action_category', actionCategory);
+      }
+      if (adminId) {
+        query = query.eq('admin_id', adminId);
+      }
+      if (targetUserId) {
+        query = query.eq('target_user_id', targetUserId);
+      }
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate);
+      }
+
+      // Apply pagination
+      query = query.range(
+        parseInt(offset as string),
+        parseInt(offset as string) + parseInt(limit as string) - 1
+      );
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("Error fetching activity logs:", error);
+        return res.status(500).json({ message: "Failed to fetch activity logs" });
+      }
+
+      res.json({
+        logs: data || [],
+        total: count || 0,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+      });
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
+  // Get activity log statistics (Super Admin only)
+  app.get("/api/admin/activity-logs/stats", requireSessionSuperAdmin, async (req, res) => {
+    try {
+      const { supabaseAdmin } = await import('../lib/supabase');
+
+      if (!supabaseAdmin) {
+        return res.status(503).json({ message: "Database not available" });
+      }
+
+      // Get total count
+      const { count: totalCount } = await supabaseAdmin
+        .from('admin_activity_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_deleted', false);
+
+      // Get count by category
+      const { data: categoryData } = await supabaseAdmin
+        .from('admin_activity_logs')
+        .select('action_category')
+        .eq('is_deleted', false);
+
+      const categoryCounts = (categoryData || []).reduce((acc: Record<string, number>, log: any) => {
+        acc[log.action_category] = (acc[log.action_category] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Get recent activity (last 24 hours)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const { count: recentCount } = await supabaseAdmin
+        .from('admin_activity_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_deleted', false)
+        .gte('created_at', yesterday.toISOString());
+
+      res.json({
+        total: totalCount || 0,
+        recent24h: recentCount || 0,
+        byCategory: categoryCounts,
+      });
+    } catch (error) {
+      console.error("Error fetching activity log stats:", error);
+      res.status(500).json({ message: "Failed to fetch activity log statistics" });
     }
   });
 
