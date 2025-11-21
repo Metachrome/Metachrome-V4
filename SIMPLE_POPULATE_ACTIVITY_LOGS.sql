@@ -95,7 +95,7 @@ WHERE d.status = 'approved'
     SELECT 1 FROM admin_activity_logs aal
     WHERE aal.action_category = 'DEPOSIT'
       AND aal.action_type = 'APPROVE_DEPOSIT'
-      AND (aal.metadata->>'deposit_id')::uuid = d.id
+      AND aal.metadata->>'deposit_id' = d.id::text
   );
 
 -- Populate from deposits (Rejected)
@@ -137,7 +137,7 @@ WHERE d.status = 'rejected'
     SELECT 1 FROM admin_activity_logs aal
     WHERE aal.action_category = 'DEPOSIT'
       AND aal.action_type = 'REJECT_DEPOSIT'
-      AND (aal.metadata->>'deposit_id')::uuid = d.id
+      AND aal.metadata->>'deposit_id' = d.id::text
   );
 
 -- Show results
