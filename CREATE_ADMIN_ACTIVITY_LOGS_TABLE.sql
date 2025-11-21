@@ -3,19 +3,19 @@
 
 CREATE TABLE IF NOT EXISTS admin_activity_logs (
   id SERIAL PRIMARY KEY,
-  
+
   -- Admin who performed the action
-  admin_id INTEGER NOT NULL,
+  admin_id TEXT NOT NULL,
   admin_username VARCHAR(255) NOT NULL,
   admin_email VARCHAR(255),
-  
+
   -- Action details
   action_type VARCHAR(100) NOT NULL, -- e.g., 'TRADING_CONTROL_CHANGE', 'BALANCE_UPDATE', 'VERIFICATION_APPROVAL'
   action_category VARCHAR(50) NOT NULL, -- e.g., 'TRADING', 'BALANCE', 'VERIFICATION', 'USER_MANAGEMENT'
   action_description TEXT NOT NULL, -- Human-readable description
-  
+
   -- Target user (if applicable)
-  target_user_id INTEGER,
+  target_user_id TEXT,
   target_username VARCHAR(255),
   target_email VARCHAR(255),
   
