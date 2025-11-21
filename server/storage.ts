@@ -959,6 +959,7 @@ class DatabaseStorage implements IStorage {
 
   async disableRedeemCode(codeId: string): Promise<any> {
     try {
+      console.log('💾 DatabaseStorage: Disabling redeem code:', codeId);
       const result = await db.execute(sql`
         UPDATE redeem_codes
         SET is_active = false, updated_at = NOW()
@@ -966,28 +967,48 @@ class DatabaseStorage implements IStorage {
         RETURNING *
       `);
 
+      console.log('✅ DatabaseStorage: Redeem code disabled, result:', result.rows?.[0]);
       return result.rows?.[0];
-    } catch (error) {
-      console.error('Error disabling redeem code:', error);
+    } catch (error: any) {
+      console.error('❌ DatabaseStorage: Error disabling redeem code:', {
+        codeId,
+        error: error.message,
+        code: error.code,
+        detail: error.detail
+      });
       throw error;
     }
   }
 
   async deleteRedeemCode(codeId: string): Promise<void> {
     try {
+      console.log('💾 DatabaseStorage: Deleting redeem code:', codeId);
+
       // First, set redeem_code_id to NULL in user_redeem_history for this code
-      await db.execute(sql`
+      console.log('Step 1: Nullifying redeem_code_id in user_redeem_history...');
+      const updateResult = await db.execute(sql`
         UPDATE user_redeem_history
         SET redeem_code_id = NULL
         WHERE redeem_code_id = ${codeId}
       `);
+      console.log('✅ Step 1 complete. Rows affected:', updateResult.rowCount);
 
       // Then delete the redeem code
-      await db.execute(sql`
+      console.log('Step 2: Deleting redeem code from redeem_codes table...');
+      const deleteResult = await db.execute(sql`
         DELETE FROM redeem_codes WHERE id = ${codeId}
       `);
-    } catch (error) {
-      console.error('Error deleting redeem code:', error);
+      console.log('✅ Step 2 complete. Rows deleted:', deleteResult.rowCount);
+
+      console.log('✅ DatabaseStorage: Redeem code deleted successfully');
+    } catch (error: any) {
+      console.error('❌ DatabaseStorage: Error deleting redeem code:', {
+        codeId,
+        error: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint
+      });
       throw error;
     }
   }

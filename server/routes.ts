@@ -2031,7 +2031,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🎁 Redeem code action:', { id, action, newAmount, newDescription, newMaxUses });
 
       if (!action) {
-        return res.status(400).json({ error: "Missing action parameter" });
+        return res.status(400).json({
+          success: false,
+          error: "Missing action parameter"
+        });
       }
 
       if (action === 'edit') {
@@ -2049,7 +2052,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else if (action === 'disable') {
         // Disable redeem code
+        console.log('🔴 Disabling redeem code:', id);
         const updated = await storage.disableRedeemCode(id);
+        console.log('✅ Redeem code disabled:', updated);
         return res.json({
           success: true,
           message: "Redeem code disabled successfully",
@@ -2057,17 +2062,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else if (action === 'delete') {
         // Delete redeem code
+        console.log('🗑️ Deleting redeem code:', id);
         await storage.deleteRedeemCode(id);
+        console.log('✅ Redeem code deleted successfully');
         return res.json({
           success: true,
           message: "Redeem code deleted successfully"
         });
       } else {
-        return res.status(400).json({ error: "Invalid action. Must be 'edit', 'disable', or 'delete'" });
+        return res.status(400).json({
+          success: false,
+          error: "Invalid action. Must be 'edit', 'disable', or 'delete'"
+        });
       }
     } catch (error: any) {
-      console.error("Error performing redeem code action:", error);
-      res.status(500).json({ error: error.message || "Failed to perform redeem code action" });
+      console.error("❌ Error performing redeem code action:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        stack: error.stack?.split('\n').slice(0, 5)
+      });
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: error.message || "Failed to perform redeem code action",
+        details: `Failed to ${action} redeem code ${id}`
+      });
     }
   });
 
