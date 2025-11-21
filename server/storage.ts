@@ -159,94 +159,95 @@ class DatabaseStorage implements IStorage {
     try {
       console.log('🗑️ DatabaseStorage: Deleting user and all related data:', id);
 
-      // Use raw SQL to delete all related records in the correct order
-      // This handles all foreign key constraints properly
+      // Helper function to safely execute SQL and ignore table not found errors
+      const safeDelete = async (stepName: string, query: any) => {
+        try {
+          console.log(`${stepName}...`);
+          await query;
+          console.log(`✅ ${stepName} complete`);
+        } catch (error: any) {
+          // Ignore "table does not exist" errors, but log other errors
+          if (error.code === '42P01' || error.message?.includes('does not exist')) {
+            console.log(`⚠️ ${stepName} skipped (table doesn't exist)`);
+          } else {
+            console.error(`❌ ${stepName} failed:`, error.message);
+            throw error;
+          }
+        }
+      };
 
-      // Step 1: Delete chat messages where user is sender
-      console.log('Step 1: Deleting chat messages...');
-      await db.execute(sql`
-        DELETE FROM chat_messages WHERE sender_id = ${id}
-      `);
+      // Delete all related records in the correct order
+      // Using safeDelete to handle tables that might not exist
 
-      // Step 2: Delete chat conversations
-      console.log('Step 2: Deleting chat conversations...');
-      await db.execute(sql`
-        DELETE FROM chat_conversations WHERE user_id = ${id} OR assigned_admin_id = ${id}
-      `);
+      await safeDelete('Step 1: Deleting chat messages',
+        db.execute(sql`DELETE FROM chat_messages WHERE sender_id = ${id}`)
+      );
 
-      // Step 3: Nullify contact_requests conversation references
-      console.log('Step 3: Nullifying contact request references...');
-      await db.execute(sql`
-        UPDATE contact_requests SET conversation_id = NULL WHERE conversation_id IN (
-          SELECT id FROM chat_conversations WHERE user_id = ${id}
-        )
-      `);
+      await safeDelete('Step 2: Deleting chat conversations',
+        db.execute(sql`DELETE FROM chat_conversations WHERE user_id = ${id} OR assigned_admin_id = ${id}`)
+      );
 
-      // Step 4: Delete user verification documents
-      console.log('Step 4: Deleting verification documents...');
-      await db.execute(sql`
-        DELETE FROM user_verification_documents WHERE user_id = ${id}
-      `);
+      await safeDelete('Step 3: Nullifying contact request references',
+        db.execute(sql`UPDATE contact_requests SET conversation_id = NULL WHERE conversation_id IN (SELECT id FROM chat_conversations WHERE user_id = ${id})`)
+      );
 
-      // Step 5: Nullify user_redeem_history user references
-      console.log('Step 5: Nullifying redeem history references...');
-      await db.execute(sql`
-        UPDATE user_redeem_history SET user_id = NULL WHERE user_id = ${id}
-      `);
+      await safeDelete('Step 4: Deleting verification documents',
+        db.execute(sql`DELETE FROM user_verification_documents WHERE user_id = ${id}`)
+      );
 
-      // Step 6: Delete deposit requests
-      console.log('Step 6: Deleting deposit requests...');
-      await db.execute(sql`
-        DELETE FROM deposit_requests WHERE user_id = ${id}
-      `);
+      await safeDelete('Step 5: Nullifying redeem history references',
+        db.execute(sql`UPDATE user_redeem_history SET user_id = NULL WHERE user_id = ${id}`)
+      );
 
-      // Step 7: Delete withdrawal requests
-      console.log('Step 7: Deleting withdrawal requests...');
-      await db.execute(sql`
-        DELETE FROM withdrawal_requests WHERE user_id = ${id}
-      `);
+      await safeDelete('Step 6: Deleting deposit requests',
+        db.execute(sql`DELETE FROM deposit_requests WHERE user_id = ${id}`)
+      );
 
-      // Step 8: Delete trading controls
-      console.log('Step 8: Deleting trading controls...');
-      await db.execute(sql`
-        DELETE FROM trading_controls WHERE user_id = ${id}
-      `);
+      await safeDelete('Step 7: Deleting withdrawal requests',
+        db.execute(sql`DELETE FROM withdrawal_requests WHERE user_id = ${id}`)
+      );
 
-      // Step 9: Delete transactions
-      console.log('Step 9: Deleting transactions...');
-      await db.delete(transactions).where(eq(transactions.userId, id));
+      await safeDelete('Step 8: Deleting trading controls',
+        db.execute(sql`DELETE FROM trading_controls WHERE user_id = ${id}`)
+      );
 
-      // Step 10: Delete trades
-      console.log('Step 10: Deleting trades...');
-      await db.delete(trades).where(eq(trades.userId, id));
+      await safeDelete('Step 9: Deleting transactions',
+        db.delete(transactions).where(eq(transactions.userId, id))
+      );
 
-      // Step 11: Delete balances
-      console.log('Step 11: Deleting balances...');
-      await db.delete(balances).where(eq(balances.userId, id));
+      await safeDelete('Step 10: Deleting trades',
+        db.delete(trades).where(eq(trades.userId, id))
+      );
 
-      // Step 12: Delete admin controls where user is the target
-      console.log('Step 12: Deleting admin controls...');
-      await db.delete(adminControls).where(eq(adminControls.userId, id));
+      await safeDelete('Step 11: Deleting balances',
+        db.delete(balances).where(eq(balances.userId, id))
+      );
 
-      // Step 13: Update admin controls where user was the creator (set to null)
-      console.log('Step 13: Nullifying admin control creator references...');
-      await db.update(adminControls)
-        .set({ createdBy: null })
-        .where(eq(adminControls.createdBy, id));
+      await safeDelete('Step 12: Deleting admin controls',
+        db.delete(adminControls).where(eq(adminControls.userId, id))
+      );
 
-      // Step 14: Delete messages where user is sender or recipient
-      console.log('Step 14: Deleting messages...');
-      await db.execute(sql`
-        DELETE FROM messages WHERE from_user_id = ${id} OR to_user_id = ${id}
-      `);
+      await safeDelete('Step 13: Nullifying admin control creator references',
+        db.update(adminControls).set({ createdBy: null }).where(eq(adminControls.createdBy, id))
+      );
 
-      // Step 15: Finally delete the user
+      await safeDelete('Step 14: Deleting messages',
+        db.execute(sql`DELETE FROM messages WHERE from_user_id = ${id} OR to_user_id = ${id}`)
+      );
+
+      // Finally delete the user - this must succeed
       console.log('Step 15: Deleting user record...');
       await db.delete(users).where(eq(users.id, id));
-      
+
       console.log(`✅ Successfully deleted user ${id} and all related data`);
-    } catch (error) {
-      console.error(`❌ Error deleting user ${id}:`, error);
+    } catch (error: any) {
+      console.error(`❌ Error deleting user ${id}:`, {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint,
+        table: error.table
+      });
       throw error;
     }
   }
