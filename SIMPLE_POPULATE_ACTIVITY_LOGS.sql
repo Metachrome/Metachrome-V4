@@ -2,13 +2,13 @@
 -- Run this in Supabase SQL Editor
 
 -- First, ensure SYSTEM user exists
-INSERT INTO users (id, username, email, password, role, balance, created_at)
+INSERT INTO users (id, username, email, role, status, balance, created_at)
 VALUES (
   'SYSTEM',
   'System',
   'system@metachrome.io',
-  'SYSTEM_NO_LOGIN',
   'super_admin',
+  'active',
   0,
   NOW()
 )

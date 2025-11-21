@@ -3,8 +3,8 @@
 -- This will backfill activity logs from past admin actions
 
 -- Step 0: Create SYSTEM user if it doesn't exist (for historical logs without admin info)
-INSERT INTO users (id, username, email, role, status, created_at)
-VALUES ('SYSTEM', 'System', 'system@metachrome.io', 'super_admin', 'active', NOW())
+INSERT INTO users (id, username, email, role, status, balance, created_at)
+VALUES ('SYSTEM', 'System', 'system@metachrome.io', 'super_admin', 'active', 0, NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- 1. Insert historical trading mode changes from admin_controls table
