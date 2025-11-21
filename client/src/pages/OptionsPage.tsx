@@ -2784,7 +2784,7 @@ function OptionsPageContent({
             </div>
 
             {/* Mobile Trade Content - Simplified for smaller screens */}
-            <div className="px-4 py-2 max-h-[300px] overflow-y-auto">
+            <div className="px-4 py-2 max-h-[400px] overflow-y-auto">
               {activeTab === "open" && (
                 <>
                   {activeTrades.length === 0 ? (
