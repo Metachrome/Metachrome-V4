@@ -2022,6 +2022,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Redeem code management routes
+  app.post("/api/admin/redeem-codes/:id/action", requireSessionAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { action, newAmount, newDescription, newMaxUses } = req.body;
+
+      console.log('🎁 Redeem code action:', { id, action, newAmount, newDescription, newMaxUses });
+
+      if (!action) {
+        return res.status(400).json({ error: "Missing action parameter" });
+      }
+
+      if (action === 'edit') {
+        // Update redeem code
+        const updates: any = {};
+        if (newAmount !== undefined) updates.bonusAmount = newAmount;
+        if (newDescription !== undefined) updates.description = newDescription;
+        if (newMaxUses !== undefined) updates.maxUses = newMaxUses;
+
+        const updated = await storage.updateRedeemCode(id, updates);
+        return res.json({
+          success: true,
+          message: "Redeem code updated successfully",
+          code: updated
+        });
+      } else if (action === 'disable') {
+        // Disable redeem code
+        const updated = await storage.disableRedeemCode(id);
+        return res.json({
+          success: true,
+          message: "Redeem code disabled successfully",
+          code: updated
+        });
+      } else if (action === 'delete') {
+        // Delete redeem code
+        await storage.deleteRedeemCode(id);
+        return res.json({
+          success: true,
+          message: "Redeem code deleted successfully"
+        });
+      } else {
+        return res.status(400).json({ error: "Invalid action. Must be 'edit', 'disable', or 'delete'" });
+      }
+    } catch (error: any) {
+      console.error("Error performing redeem code action:", error);
+      res.status(500).json({ error: error.message || "Failed to perform redeem code action" });
+    }
+  });
+
   // Enhanced user management routes for superadmin
   app.put("/api/admin/users/update-password", requireSessionSuperAdmin, async (req, res) => {
     try {

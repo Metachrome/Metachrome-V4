@@ -96,6 +96,11 @@ export interface IStorage {
   createOptionsSettings(settings: InsertOptionsSettings): Promise<OptionsSettings>;
   updateOptionsSettings(id: string, updates: Partial<InsertOptionsSettings>): Promise<OptionsSettings>;
 
+  // Redeem code operations
+  updateRedeemCode(codeId: string, updates: { bonusAmount?: number; description?: string; maxUses?: number | null }): Promise<any>;
+  disableRedeemCode(codeId: string): Promise<any>;
+  deleteRedeemCode(codeId: string): Promise<void>;
+
   // Admin-only operations
   getAllUsers(): Promise<User[]>;
   getAllBalances(): Promise<Balance[]>;
@@ -919,6 +924,72 @@ class DatabaseStorage implements IStorage {
       .update(users)
       .set({ walletAddress, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  // Redeem code operations
+  async updateRedeemCode(codeId: string, updates: { bonusAmount?: number; description?: string; maxUses?: number | null }): Promise<any> {
+    try {
+      const setParts: string[] = [];
+
+      if (updates.bonusAmount !== undefined) {
+        setParts.push(`bonus_amount = ${updates.bonusAmount}`);
+      }
+      if (updates.description !== undefined) {
+        setParts.push(`description = '${updates.description.replace(/'/g, "''")}'`);
+      }
+      if (updates.maxUses !== undefined) {
+        setParts.push(`max_uses = ${updates.maxUses === null ? 'NULL' : updates.maxUses}`);
+      }
+
+      setParts.push(`updated_at = NOW()`);
+
+      const result = await db.execute(sql`
+        UPDATE redeem_codes
+        SET ${sql.raw(setParts.join(', '))}
+        WHERE id = ${codeId}
+        RETURNING *
+      `);
+
+      return result.rows?.[0];
+    } catch (error) {
+      console.error('Error updating redeem code:', error);
+      throw error;
+    }
+  }
+
+  async disableRedeemCode(codeId: string): Promise<any> {
+    try {
+      const result = await db.execute(sql`
+        UPDATE redeem_codes
+        SET is_active = false, updated_at = NOW()
+        WHERE id = ${codeId}
+        RETURNING *
+      `);
+
+      return result.rows?.[0];
+    } catch (error) {
+      console.error('Error disabling redeem code:', error);
+      throw error;
+    }
+  }
+
+  async deleteRedeemCode(codeId: string): Promise<void> {
+    try {
+      // First, set redeem_code_id to NULL in user_redeem_history for this code
+      await db.execute(sql`
+        UPDATE user_redeem_history
+        SET redeem_code_id = NULL
+        WHERE redeem_code_id = ${codeId}
+      `);
+
+      // Then delete the redeem code
+      await db.execute(sql`
+        DELETE FROM redeem_codes WHERE id = ${codeId}
+      `);
+    } catch (error) {
+      console.error('Error deleting redeem code:', error);
+      throw error;
+    }
   }
 }
 
@@ -1910,6 +1981,34 @@ export class SafeStorage implements IStorage {
     } catch {
       // Fallback to demo mode
       console.log(`Demo mode: Updated wallet for user ${userId} to ${walletAddress}`);
+    }
+  }
+
+  // Redeem code operations
+  async updateRedeemCode(codeId: string, updates: { bonusAmount?: number; description?: string; maxUses?: number | null }): Promise<any> {
+    try {
+      return await this.tryDatabase(() => this.dbStorage.updateRedeemCode(codeId, updates));
+    } catch (error) {
+      console.error('Error updating redeem code:', error);
+      throw error;
+    }
+  }
+
+  async disableRedeemCode(codeId: string): Promise<any> {
+    try {
+      return await this.tryDatabase(() => this.dbStorage.disableRedeemCode(codeId));
+    } catch (error) {
+      console.error('Error disabling redeem code:', error);
+      throw error;
+    }
+  }
+
+  async deleteRedeemCode(codeId: string): Promise<void> {
+    try {
+      await this.tryDatabase(() => this.dbStorage.deleteRedeemCode(codeId));
+    } catch (error) {
+      console.error('Error deleting redeem code:', error);
+      throw error;
     }
   }
 }
