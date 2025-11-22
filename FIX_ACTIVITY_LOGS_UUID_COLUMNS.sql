@@ -15,44 +15,49 @@ ORDER BY ordinal_position;
 DO $$
 DECLARE
   system_uuid UUID := '00000000-0000-0000-0000-000000000000';
-  old_system_exists BOOLEAN;
+  existing_system_id TEXT;
 BEGIN
-  -- Check if old SYSTEM user exists (with text ID)
-  SELECT EXISTS (
-    SELECT 1 FROM users
-    WHERE username = 'System'
-      AND email = 'system@metachrome.io'
-      AND id::text = 'SYSTEM'
-  ) INTO old_system_exists;
+  -- Check if any SYSTEM user exists
+  SELECT id::text INTO existing_system_id
+  FROM users
+  WHERE username = 'System'
+    AND email = 'system@metachrome.io'
+  LIMIT 1;
 
-  -- Create new SYSTEM user with proper UUID (if not exists)
-  INSERT INTO users (id, username, email, role, status, balance, created_at)
-  VALUES (system_uuid, 'System', 'system@metachrome.io', 'super_admin', 'active', 0, NOW())
-  ON CONFLICT (id) DO NOTHING;
+  -- Temporarily disable the foreign key constraint
+  ALTER TABLE admin_activity_logs DROP CONSTRAINT IF EXISTS fk_admin;
 
-  RAISE NOTICE 'Ensured SYSTEM user exists with UUID: %', system_uuid;
+  IF existing_system_id IS NOT NULL THEN
+    RAISE NOTICE 'Found existing SYSTEM user with ID: %', existing_system_id;
 
-  -- If old SYSTEM user exists, we need to update references
-  IF old_system_exists THEN
-    -- Temporarily disable the foreign key constraint
-    ALTER TABLE admin_activity_logs DROP CONSTRAINT IF EXISTS fk_admin;
+    -- If existing SYSTEM user has different ID, we need to migrate
+    IF existing_system_id != system_uuid::text THEN
+      -- Update all activity logs to use the new UUID
+      UPDATE admin_activity_logs
+      SET admin_id = system_uuid::text
+      WHERE admin_id = existing_system_id;
 
-    -- Update all activity logs that reference 'SYSTEM' text to use UUID text
-    UPDATE admin_activity_logs
-    SET admin_id = system_uuid::text
-    WHERE admin_id = 'SYSTEM';
+      RAISE NOTICE 'Updated activity logs from old ID % to new UUID %', existing_system_id, system_uuid;
 
-    RAISE NOTICE 'Updated % activity logs to use SYSTEM UUID', (SELECT COUNT(*) FROM admin_activity_logs WHERE admin_id = system_uuid::text);
+      -- Delete the old SYSTEM user
+      DELETE FROM users WHERE id::text = existing_system_id;
 
-    -- Delete old SYSTEM user (now safe because we removed FK constraint)
-    DELETE FROM users WHERE id::text = 'SYSTEM' AND id != system_uuid;
+      RAISE NOTICE 'Deleted old SYSTEM user';
 
-    RAISE NOTICE 'Deleted old SYSTEM user with text ID';
+      -- Create new SYSTEM user with proper UUID
+      INSERT INTO users (id, username, email, role, status, balance, created_at)
+      VALUES (system_uuid, 'System', 'system@metachrome.io', 'super_admin', 'active', 0, NOW());
 
-    -- Re-add foreign key constraint (will be added again later in the script)
-    -- We'll add it back after converting to UUID
+      RAISE NOTICE 'Created new SYSTEM user with UUID: %', system_uuid;
+    ELSE
+      RAISE NOTICE 'SYSTEM user already has correct UUID';
+    END IF;
   ELSE
-    RAISE NOTICE 'No old SYSTEM user found, skipping cleanup';
+    -- No SYSTEM user exists, create it
+    INSERT INTO users (id, username, email, role, status, balance, created_at)
+    VALUES (system_uuid, 'System', 'system@metachrome.io', 'super_admin', 'active', 0, NOW());
+
+    RAISE NOTICE 'Created SYSTEM user with UUID: %', system_uuid;
   END IF;
 END $$;
 
