@@ -31,20 +31,24 @@ INSERT INTO admin_activity_logs (
   is_deleted,
   created_at
 )
-SELECT 
+SELECT
   '00000000-0000-0000-0000-000000000000'::uuid as admin_id,
   'SYSTEM' as admin_username,
   NULL as admin_email,
   'TRADE_CREATED' as action_type,
   'TRADING' as action_category,
   CONCAT(
-    'User ', COALESCE(u.username, 'Unknown'), 
-    ' created ', UPPER(t.direction), 
-    ' trade for ', COALESCE(t.symbol, 'UNKNOWN'), 
+    'User ', COALESCE(u.username, 'Unknown'),
+    ' created ', UPPER(t.direction),
+    ' trade for ', COALESCE(t.symbol, 'UNKNOWN'),
     ' with ', COALESCE(t.amount::text, '0'), ' USDT',
     ' (', COALESCE(t.duration::text, '0'), 's)'
   ) as action_description,
-  t.user_id as target_user_id,
+  CASE
+    WHEN t.user_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    THEN t.user_id::uuid
+    ELSE '00000000-0000-0000-0000-000000000000'::uuid
+  END as target_user_id,
   u.username as target_username,
   u.email as target_email,
   jsonb_build_object(
@@ -61,7 +65,7 @@ SELECT
   false as is_deleted,
   t.created_at as created_at
 FROM trades t
-LEFT JOIN users u ON t.user_id = u.id
+LEFT JOIN users u ON t.user_id = u.id::text
 WHERE NOT EXISTS (
   -- Don't create duplicates
   SELECT 1 FROM admin_activity_logs aal
@@ -89,19 +93,23 @@ INSERT INTO admin_activity_logs (
   is_deleted,
   created_at
 )
-SELECT 
+SELECT
   '00000000-0000-0000-0000-000000000000'::uuid as admin_id,
   'SYSTEM' as admin_username,
   NULL as admin_email,
   'TRADE_WON' as action_type,
   'TRADING' as action_category,
   CONCAT(
-    'User ', COALESCE(u.username, 'Unknown'), 
-    ' WON ', UPPER(t.direction), 
+    'User ', COALESCE(u.username, 'Unknown'),
+    ' WON ', UPPER(t.direction),
     ' trade for ', COALESCE(t.symbol, 'UNKNOWN'),
     ' - +', COALESCE(ABS(t.profit_loss)::text, '0'), ' USDT'
   ) as action_description,
-  t.user_id as target_user_id,
+  CASE
+    WHEN t.user_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    THEN t.user_id::uuid
+    ELSE '00000000-0000-0000-0000-000000000000'::uuid
+  END as target_user_id,
   u.username as target_username,
   u.email as target_email,
   jsonb_build_object(
@@ -121,7 +129,7 @@ SELECT
   false as is_deleted,
   COALESCE(t.updated_at, t.created_at + (t.duration || ' seconds')::interval) as created_at
 FROM trades t
-LEFT JOIN users u ON t.user_id = u.id
+LEFT JOIN users u ON t.user_id = u.id::text
 WHERE t.result = 'win'
   AND NOT EXISTS (
     -- Don't create duplicates
@@ -162,7 +170,11 @@ SELECT
     ' trade for ', COALESCE(t.symbol, 'UNKNOWN'),
     ' - -', COALESCE(ABS(t.profit_loss)::text, '0'), ' USDT'
   ) as action_description,
-  t.user_id as target_user_id,
+  CASE
+    WHEN t.user_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    THEN t.user_id::uuid
+    ELSE '00000000-0000-0000-0000-000000000000'::uuid
+  END as target_user_id,
   u.username as target_username,
   u.email as target_email,
   jsonb_build_object(
@@ -182,7 +194,7 @@ SELECT
   false as is_deleted,
   COALESCE(t.updated_at, t.created_at + (t.duration || ' seconds')::interval) as created_at
 FROM trades t
-LEFT JOIN users u ON t.user_id = u.id
+LEFT JOIN users u ON t.user_id = u.id::text
 WHERE t.result = 'lose'
   AND NOT EXISTS (
     -- Don't create duplicates
