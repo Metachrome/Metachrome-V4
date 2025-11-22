@@ -1884,8 +1884,13 @@ export default function WorkingAdminDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                      {/* Only superadmin can create admin or super_admin users */}
+                      {currentUser?.role === 'super_admin' && (
+                        <>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="super_admin">Super Admin</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                   <Button
@@ -3305,19 +3310,21 @@ export default function WorkingAdminDashboard() {
                 />
               </div>
 
-              {/* Wallet Address Section */}
-              <div>
-                <label className="text-gray-400 text-sm block mb-1">Wallet Address</label>
-                <Input
-                  value={editFormData.wallet_address || ''}
-                  onChange={(e) => {
-                    console.log('🔄 Wallet address changed:', e.target.value);
-                    setEditFormData({ ...editFormData, wallet_address: e.target.value });
-                  }}
-                  placeholder="Enter wallet address (0x...)"
-                  className="bg-gray-700 border-gray-600 text-white"
-                />
-              </div>
+              {/* Wallet Address Section - Only for superadmin */}
+              {currentUser?.role === 'super_admin' && (
+                <div>
+                  <label className="text-gray-400 text-sm block mb-1">Wallet Address</label>
+                  <Input
+                    value={editFormData.wallet_address || ''}
+                    onChange={(e) => {
+                      console.log('🔄 Wallet address changed:', e.target.value);
+                      setEditFormData({ ...editFormData, wallet_address: e.target.value });
+                    }}
+                    placeholder="Enter wallet address (0x...)"
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-gray-400 text-sm block mb-1">Trading Mode</label>
@@ -3352,8 +3359,13 @@ export default function WorkingAdminDashboard() {
                   </SelectTrigger>
                   <SelectContent className="bg-gray-700 border-gray-600">
                     <SelectItem value="user" className="text-white hover:bg-gray-600">User</SelectItem>
-                    <SelectItem value="admin" className="text-white hover:bg-gray-600">Admin</SelectItem>
-                    <SelectItem value="superadmin" className="text-white hover:bg-gray-600">Super Admin</SelectItem>
+                    {/* Only superadmin can set admin or super_admin roles */}
+                    {currentUser?.role === 'super_admin' && (
+                      <>
+                        <SelectItem value="admin" className="text-white hover:bg-gray-600">Admin</SelectItem>
+                        <SelectItem value="superadmin" className="text-white hover:bg-gray-600">Super Admin</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>

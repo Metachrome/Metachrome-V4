@@ -3315,9 +3315,17 @@ app.post('/api/admin/users', async (req, res) => {
 app.put('/api/admin/users/:id', async (req, res) => {
   console.log('✏️ Updating user:', req.params.id, req.body);
   const userId = req.params.id;
-  const { username, email, balance, role, status, trading_mode } = req.body;
+  const { username, email, balance, role, status, trading_mode, wallet_address } = req.body;
 
   try {
+    // Check if current user is admin (not superadmin)
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let currentUser = null;
+    if (authToken) {
+      const users = await getUsers();
+      currentUser = users.find(u => authToken.includes(u.id));
+    }
+
     const users = await getUsers();
     const user = users.find(u => u.id === userId);
     if (!user) {
@@ -3334,11 +3342,19 @@ app.put('/api/admin/users/:id', async (req, res) => {
       ...(username && { username }),
       ...(email && { email }),
       ...(balance !== undefined && { balance: Number(balance) }),
-      ...(role && { role }),
       ...(status && { status }),
       ...(trading_mode && { trading_mode }),
       updated_at: new Date().toISOString()
     };
+
+    // Only superadmin can update role and wallet_address
+    if (currentUser && currentUser.role === 'super_admin') {
+      if (role) updateData.role = role;
+      if (wallet_address !== undefined) updateData.wallet_address = wallet_address;
+    } else {
+      // Admin cannot change role or wallet
+      console.log('🔒 Admin user detected - role and wallet changes blocked');
+    }
 
     if (isSupabaseConfigured && supabase) {
       // Production: Update in Supabase
