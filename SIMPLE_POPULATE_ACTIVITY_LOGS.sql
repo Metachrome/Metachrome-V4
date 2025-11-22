@@ -1,10 +1,11 @@
 -- Simple script to populate activity logs with historical data
 -- Run this in Supabase SQL Editor
 
--- First, ensure SYSTEM user exists
+-- First, ensure SYSTEM user exists with proper UUID
+-- Using all-zeros UUID as a special identifier for SYSTEM
 INSERT INTO users (id, username, email, role, status, balance, created_at)
 VALUES (
-  'SYSTEM',
+  '00000000-0000-0000-0000-000000000000'::uuid,
   'System',
   'system@metachrome.io',
   'super_admin',
@@ -29,11 +30,11 @@ INSERT INTO admin_activity_logs (
   created_at
 )
 SELECT
-  COALESCE(ac."adminId", 'SYSTEM'),
+  COALESCE(ac."adminId", '00000000-0000-0000-0000-000000000000'::uuid),
   COALESCE(admin.username, 'System'),
   'TRADING',
   'TRADING_CONTROL_SET',
-  'Set trading mode to ' || UPPER(ac."controlType") || ' for user ' || COALESCE(u.username, ac."userId"),
+  'Set trading mode to ' || UPPER(ac."controlType") || ' for user ' || COALESCE(u.username, ac."userId"::text),
   ac."userId",
   u.username,
   jsonb_build_object(
@@ -70,12 +71,12 @@ INSERT INTO admin_activity_logs (
   user_agent,
   created_at
 )
-SELECT 
-  'SYSTEM',
+SELECT
+  '00000000-0000-0000-0000-000000000000'::uuid,
   'System',
   'DEPOSIT',
   'APPROVE_DEPOSIT',
-  'Approved deposit of $' || d.amount || ' for user ' || COALESCE(u.username, d.user_id),
+  'Approved deposit of $' || d.amount || ' for user ' || COALESCE(u.username, d.user_id::text),
   d.user_id,
   u.username,
   jsonb_build_object(
@@ -112,12 +113,12 @@ INSERT INTO admin_activity_logs (
   user_agent,
   created_at
 )
-SELECT 
-  'SYSTEM',
+SELECT
+  '00000000-0000-0000-0000-000000000000'::uuid,
   'System',
   'DEPOSIT',
   'REJECT_DEPOSIT',
-  'Rejected deposit of $' || d.amount || ' for user ' || COALESCE(u.username, d.user_id),
+  'Rejected deposit of $' || d.amount || ' for user ' || COALESCE(u.username, d.user_id::text),
   d.user_id,
   u.username,
   jsonb_build_object(

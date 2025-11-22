@@ -11,6 +11,33 @@ WHERE table_name = 'admin_activity_logs'
   AND column_name IN ('admin_id', 'target_user_id')
 ORDER BY ordinal_position;
 
+-- Step 0: Create a proper UUID for SYSTEM user if it doesn't exist
+DO $$
+DECLARE
+  system_uuid UUID := '00000000-0000-0000-0000-000000000000';
+BEGIN
+  -- Check if SYSTEM user exists with text ID
+  IF EXISTS (SELECT 1 FROM users WHERE id::text = 'SYSTEM') THEN
+    -- Delete the old SYSTEM user (it will be recreated with proper UUID)
+    DELETE FROM users WHERE id::text = 'SYSTEM';
+    RAISE NOTICE 'Deleted old SYSTEM user with text ID';
+  END IF;
+
+  -- Create SYSTEM user with proper UUID
+  INSERT INTO users (id, username, email, role, status, balance, created_at)
+  VALUES (system_uuid, 'System', 'system@metachrome.io', 'super_admin', 'active', 0, NOW())
+  ON CONFLICT (id) DO NOTHING;
+
+  RAISE NOTICE 'Created SYSTEM user with UUID: %', system_uuid;
+
+  -- Update all activity logs that reference 'SYSTEM' as admin_id
+  UPDATE admin_activity_logs
+  SET admin_id = system_uuid::text
+  WHERE admin_id = 'SYSTEM';
+
+  RAISE NOTICE 'Updated activity logs to use SYSTEM UUID';
+END $$;
+
 -- Step 1: Drop the view that depends on these columns
 DROP VIEW IF EXISTS admin_activity_logs_view;
 
