@@ -34,23 +34,17 @@ INSERT INTO admin_activity_logs (
   user_agent
 )
 SELECT
-  -- Admin ID: Use SuperAdmin if user has trading control, otherwise SYSTEM
-  CASE 
-    WHEN u.trading_mode IN ('win', 'lose') THEN 
-      CASE 
-        WHEN 'superadmin-001' ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-        THEN 'superadmin-001'::uuid
-        ELSE '00000000-0000-0000-0000-000000000000'::uuid
-      END
-    ELSE '00000000-0000-0000-0000-000000000000'::uuid
-  END as admin_id,
-  
-  CASE 
+  -- Admin ID: Always use SYSTEM UUID for historical backfill
+  '00000000-0000-0000-0000-000000000000'::uuid as admin_id,
+
+  -- Admin username: Use SuperAdmin if user has trading control, otherwise SYSTEM
+  CASE
     WHEN u.trading_mode IN ('win', 'lose') THEN 'SuperAdmin'
     ELSE 'SYSTEM'
   END as admin_username,
-  
-  CASE 
+
+  -- Admin email
+  CASE
     WHEN u.trading_mode IN ('win', 'lose') THEN 'superadmin@metachrome.io'
     ELSE 'system@metachrome.io'
   END as admin_email,
