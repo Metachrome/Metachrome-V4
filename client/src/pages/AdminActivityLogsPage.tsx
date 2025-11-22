@@ -88,10 +88,21 @@ export default function AdminActivityLogsPage() {
       const response = await fetch('/api/admin/activity-logs/stats');
       if (response.ok) {
         const data = await response.json();
-        setStats(data);
+        // Map API response to expected format
+        setStats({
+          totalCount: data.total || 0,
+          last24Hours: data.recent24h || 0,
+          byCategory: data.byCategory || {}
+        });
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      // Set default stats on error
+      setStats({
+        totalCount: 0,
+        last24Hours: 0,
+        byCategory: {}
+      });
     }
   };
 
