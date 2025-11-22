@@ -11,31 +11,49 @@ WHERE table_name = 'admin_activity_logs'
   AND column_name IN ('admin_id', 'target_user_id')
 ORDER BY ordinal_position;
 
--- Step 0: Create a proper UUID for SYSTEM user if it doesn't exist
+-- Step 0: Prepare SYSTEM user with proper UUID
 DO $$
 DECLARE
   system_uuid UUID := '00000000-0000-0000-0000-000000000000';
+  old_system_exists BOOLEAN;
 BEGIN
-  -- Check if SYSTEM user exists with text ID
-  IF EXISTS (SELECT 1 FROM users WHERE id::text = 'SYSTEM') THEN
-    -- Delete the old SYSTEM user (it will be recreated with proper UUID)
-    DELETE FROM users WHERE id::text = 'SYSTEM';
-    RAISE NOTICE 'Deleted old SYSTEM user with text ID';
-  END IF;
+  -- Check if old SYSTEM user exists (with text ID)
+  SELECT EXISTS (
+    SELECT 1 FROM users
+    WHERE username = 'System'
+      AND email = 'system@metachrome.io'
+      AND id::text = 'SYSTEM'
+  ) INTO old_system_exists;
 
-  -- Create SYSTEM user with proper UUID
+  -- Create new SYSTEM user with proper UUID (if not exists)
   INSERT INTO users (id, username, email, role, status, balance, created_at)
   VALUES (system_uuid, 'System', 'system@metachrome.io', 'super_admin', 'active', 0, NOW())
   ON CONFLICT (id) DO NOTHING;
 
-  RAISE NOTICE 'Created SYSTEM user with UUID: %', system_uuid;
+  RAISE NOTICE 'Ensured SYSTEM user exists with UUID: %', system_uuid;
 
-  -- Update all activity logs that reference 'SYSTEM' as admin_id
-  UPDATE admin_activity_logs
-  SET admin_id = system_uuid::text
-  WHERE admin_id = 'SYSTEM';
+  -- If old SYSTEM user exists, we need to update references
+  IF old_system_exists THEN
+    -- Temporarily disable the foreign key constraint
+    ALTER TABLE admin_activity_logs DROP CONSTRAINT IF EXISTS fk_admin;
 
-  RAISE NOTICE 'Updated activity logs to use SYSTEM UUID';
+    -- Update all activity logs that reference 'SYSTEM' text to use UUID text
+    UPDATE admin_activity_logs
+    SET admin_id = system_uuid::text
+    WHERE admin_id = 'SYSTEM';
+
+    RAISE NOTICE 'Updated % activity logs to use SYSTEM UUID', (SELECT COUNT(*) FROM admin_activity_logs WHERE admin_id = system_uuid::text);
+
+    -- Delete old SYSTEM user (now safe because we removed FK constraint)
+    DELETE FROM users WHERE id::text = 'SYSTEM' AND id != system_uuid;
+
+    RAISE NOTICE 'Deleted old SYSTEM user with text ID';
+
+    -- Re-add foreign key constraint (will be added again later in the script)
+    -- We'll add it back after converting to UUID
+  ELSE
+    RAISE NOTICE 'No old SYSTEM user found, skipping cleanup';
+  END IF;
 END $$;
 
 -- Step 1: Drop the view that depends on these columns
