@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { NotificationBell } from '../components/admin/NotificationBell';
 import ChatManagement from '../components/admin/ChatManagement';
 import ChatNotificationBadge from '../components/admin/ChatNotificationBadge';
+import ActivityLogsContent from '../components/admin/ActivityLogsContent';
 import {
   Users,
   TrendingUp,
@@ -1664,11 +1665,7 @@ export default function WorkingAdminDashboard() {
               Support
               <ChatNotificationBadge />
             </TabsTrigger>
-            <TabsTrigger
-              value="activity-logs"
-              className="flex-shrink-0 px-4 py-2"
-              onClick={() => window.location.href = '/admin/activity-logs'}
-            >
+            <TabsTrigger value="activity-logs" className="flex-shrink-0 px-4 py-2">
               <Activity className="w-4 h-4 mr-2" />
               Activity Logs
             </TabsTrigger>
@@ -3025,6 +3022,11 @@ export default function WorkingAdminDashboard() {
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-6">
             <ChatManagement />
+          </TabsContent>
+
+          {/* Activity Logs Tab */}
+          <TabsContent value="activity-logs" className="space-y-6">
+            <ActivityLogsContent />
           </TabsContent>
         </Tabs>
       </div>
