@@ -2052,8 +2052,8 @@ export default function WorkingAdminDashboard() {
                                 <Edit className="w-4 h-4" />
                               </Button>
 
-                              {/* Super Admin Only Buttons */}
-                              {isSuperAdmin && (
+                              {/* Admin and Super Admin Buttons */}
+                              {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
                                 <>
                                   {/* Deposit and Withdrawal buttons - available for both superadmin and admin */}
                                   <Button
@@ -3429,8 +3429,8 @@ export default function WorkingAdminDashboard() {
         </div>
       )}
 
-      {/* Super Admin Modals */}
-      {isSuperAdmin && (
+      {/* Admin and Super Admin Modals */}
+      {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
         <>
           {/* Deposit Modal */}
           {showDepositModal && selectedUserForAction && (
@@ -3549,8 +3549,8 @@ export default function WorkingAdminDashboard() {
             </div>
           )}
 
-          {/* Wallet Address Modal */}
-          {showWalletModal && selectedUserForAction && (
+          {/* Wallet Address Modal - Only for superadmin */}
+          {currentUser?.role === 'super_admin' && showWalletModal && selectedUserForAction && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4 border border-gray-700 max-h-[80vh] overflow-y-auto">
                 <div className="mb-4">
