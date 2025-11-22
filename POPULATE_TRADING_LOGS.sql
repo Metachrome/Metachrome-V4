@@ -132,7 +132,7 @@ WHERE t.status = 'completed'
   AND NOT EXISTS (
     SELECT 1 FROM admin_activity_logs aal
     WHERE aal.action_category = 'TRADING'
-      AND aal.metadata->>'tradeId' = t.id
+      AND aal.metadata->>'tradeId' = t.id::text
   )
 ORDER BY t.created_at ASC;
 
