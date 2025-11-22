@@ -2,37 +2,13 @@
 -- Run this in Supabase SQL Editor to populate historical logs
 
 -- =====================================================
--- STEP 1: Ensure SYSTEM user exists
--- =====================================================
--- Skip this step if SYSTEM user already exists
--- The ON CONFLICT clause handles both id and username conflicts
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM users WHERE id::text = '00000000-0000-0000-0000-000000000000') THEN
-    INSERT INTO users (id, username, email, role, status, balance, created_at)
-    VALUES (
-      '00000000-0000-0000-0000-000000000000'::uuid,
-      'System',
-      'system@metachrome.io',
-      'super_admin',
-      'active',
-      0,
-      NOW()
-    );
-    RAISE NOTICE 'SYSTEM user created';
-  ELSE
-    RAISE NOTICE 'SYSTEM user already exists, skipping creation';
-  END IF;
-END $$;
-
--- =====================================================
--- STEP 2: Count existing logs before backfill
+-- STEP 1: Count existing logs before backfill
 -- =====================================================
 SELECT 'Existing logs before backfill' as status, COUNT(*) as count
 FROM admin_activity_logs;
 
 -- =====================================================
--- STEP 3: Backfill REDEEM_CODES logs from user_redeem_history
+-- STEP 2: Backfill REDEEM_CODES logs from user_redeem_history
 -- =====================================================
 INSERT INTO admin_activity_logs (
   admin_id,
@@ -90,7 +66,7 @@ WHERE NOT EXISTS (
 );
 
 -- =====================================================
--- STEP 4: Backfill SYSTEM logs for user registrations
+-- STEP 3: Backfill SYSTEM logs for user registrations
 -- =====================================================
 INSERT INTO admin_activity_logs (
   admin_id,
@@ -138,7 +114,7 @@ WHERE u.role IN ('user', 'admin', 'super_admin')
   );
 
 -- =====================================================
--- STEP 5: Count logs after backfill
+-- STEP 4: Count logs after backfill
 -- =====================================================
 SELECT 'Logs after backfill' as status, COUNT(*) as count
 FROM admin_activity_logs;
@@ -149,7 +125,7 @@ GROUP BY action_category
 ORDER BY count DESC;
 
 -- =====================================================
--- STEP 6: Show sample logs
+-- STEP 5: Show sample logs
 -- =====================================================
 SELECT 
   id,
