@@ -1936,6 +1936,11 @@ export default function WorkingAdminDashboard() {
                           {console.log('📊 Rendering users table with', users.length, 'users')}
                           {users
                             .filter((user) => {
+                              // Hide superadmin users if current user is admin (not superadmin)
+                              if (currentUser?.role === 'admin' && (user.role === 'super_admin' || user.role === 'superadmin')) {
+                                return false;
+                              }
+
                               if (!userSearchTerm) return true;
                               const searchLower = userSearchTerm.toLowerCase();
                               return (
@@ -2069,24 +2074,29 @@ export default function WorkingAdminDashboard() {
                                   >
                                     <Minus className="w-4 h-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openSuperAdminModal(user, 'password')}
-                                    className="text-blue-400 hover:text-blue-300"
-                                    title="Change Password"
-                                  >
-                                    <Key className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openSuperAdminModal(user, 'wallet')}
-                                    className="text-purple-400 hover:text-purple-300"
-                                    title="Update Wallet Address"
-                                  >
-                                    <Wallet className="w-4 h-4" />
-                                  </Button>
+                                  {/* Password and Wallet buttons - only for superadmin */}
+                                  {currentUser?.role === 'super_admin' && (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => openSuperAdminModal(user, 'password')}
+                                        className="text-blue-400 hover:text-blue-300"
+                                        title="Change Password"
+                                      >
+                                        <Key className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => openSuperAdminModal(user, 'wallet')}
+                                        className="text-purple-400 hover:text-purple-300"
+                                        title="Update Wallet Address"
+                                      >
+                                        <Wallet className="w-4 h-4" />
+                                      </Button>
+                                    </>
+                                  )}
                                   {/* Delete button - only for regular users, not current user */}
                                   {user.role === 'user' && user.id !== currentUser.id ? (
                                     <Button

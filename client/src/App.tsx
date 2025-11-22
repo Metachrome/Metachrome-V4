@@ -19,6 +19,7 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
+import AdminStaffLogin from "./pages/AdminStaffLogin";
 import AdminRedirect from "./pages/AdminRedirect";
 import UserLogin from "./pages/UserLogin";
 import SignupPage from "./pages/SignupPage";
@@ -95,6 +96,7 @@ function Router() {
         <Route path="/signup" component={SignupPage} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/redirect" component={AdminRedirect} />
+        <Route path="/admin-staff/login" component={AdminStaffLogin} />
         <Route path="/admin">
           <ProtectedAdminRoute>
             <AdminDashboard />
@@ -118,6 +120,11 @@ function Router() {
         <Route path="/admin/activity-logs">
           <ProtectedAdminRoute>
             <AdminActivityLogsPage />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin-staff/dashboard">
+          <ProtectedAdminRoute>
+            <AdminDashboard />
           </ProtectedAdminRoute>
         </Route>
         <Route component={NotFound} />

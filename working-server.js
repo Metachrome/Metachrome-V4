@@ -2767,12 +2767,23 @@ app.get('/api/admin/users', async (req, res) => {
 
     const users = await getUsers();
 
+    // Check if current user is admin (not superadmin)
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let currentUser = null;
+    if (authToken) {
+      currentUser = users.find(u => authToken.includes(u.id));
+    }
+
     // FIXED: Superadmin sees ALL users regardless of verification status
-    // This ensures newly registered users appear in the admin dashboard immediately
-    // REMOVED: Excessive logging that was hitting Railway's 500 logs/sec rate limit
+    // Admin (not superadmin) cannot see superadmin users
+    let filteredUsers = users;
+    if (currentUser && currentUser.role === 'admin') {
+      console.log('🔒 Admin user detected - filtering out superadmin users');
+      filteredUsers = users.filter(u => u.role !== 'super_admin' && u.role !== 'superadmin');
+    }
 
     // BALANCE SYNC FIX: Ensure all users have consistent balance format
-    const usersWithSyncedBalances = users.map(user => ({
+    const usersWithSyncedBalances = filteredUsers.map(user => ({
       ...user,
       balance: parseFloat(user.balance || 0) // Ensure balance is a number
     }));
@@ -9863,12 +9874,24 @@ app.post('/api/superadmin/withdrawal', async (req, res) => {
   }
 });
 
-// Superadmin change password endpoint
+// Superadmin change password endpoint (SUPERADMIN ONLY - not for regular admin)
 app.post('/api/superadmin/change-password', async (req, res) => {
   console.log('🔐 Superadmin password change request:', req.body);
   const { userId, newPassword } = req.body;
 
   try {
+    // Check if user is superadmin (not regular admin)
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (authToken) {
+      const users = await getUsers();
+      const currentUser = users.find(u => authToken.includes(u.id));
+
+      if (!currentUser || currentUser.role !== 'super_admin') {
+        console.log('❌ Access denied: Only superadmin can change passwords');
+        return res.status(403).json({ error: 'Access denied: Superadmin privileges required' });
+      }
+    }
+
     if (!userId || !newPassword || newPassword.length < 6) {
       return res.status(400).json({ error: 'Valid userId and password (min 6 chars) required' });
     }
@@ -9918,12 +9941,24 @@ app.post('/api/superadmin/change-password', async (req, res) => {
   }
 });
 
-// Superadmin update wallet endpoint
+// Superadmin update wallet endpoint (SUPERADMIN ONLY - not for regular admin)
 app.post('/api/superadmin/update-wallet', async (req, res) => {
   console.log('🏦 Superadmin wallet update request:', req.body);
   const { userId, walletAddress } = req.body;
 
   try {
+    // Check if user is superadmin (not regular admin)
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    if (authToken) {
+      const users = await getUsers();
+      const currentUser = users.find(u => authToken.includes(u.id));
+
+      if (!currentUser || currentUser.role !== 'super_admin') {
+        console.log('❌ Access denied: Only superadmin can update wallets');
+        return res.status(403).json({ error: 'Access denied: Superadmin privileges required' });
+      }
+    }
+
     if (!userId || !walletAddress) {
       return res.status(400).json({ error: 'Valid userId and walletAddress required' });
     }
