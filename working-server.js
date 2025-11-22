@@ -7162,26 +7162,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
     console.log(`🏁 ✅ DIRECT COMPLETION SUCCESS: Trade ${tradeId} completed as ${finalWon ? 'WIN' : 'LOSE'}`);
 
-    // Log trade completion activity
-    await logTradingActivity(
-      userId,
-      user.username,
-      finalWon ? 'TRADE_WON' : 'TRADE_LOST',
-      `User ${user.username} ${finalWon ? 'WON' : 'LOST'} ${direction.toUpperCase()} trade for ${symbol} - ${finalWon ? '+' : ''}${balanceChange.toFixed(2)} USDT`,
-      {
-        tradeId,
-        symbol,
-        direction,
-        amount: parseFloat(amount),
-        duration: parseInt(duration),
-        entryPrice: parseFloat(entryPrice),
-        exitPrice: wsExitPrice,
-        result: finalWon ? 'win' : 'lose',
-        balanceChange,
-        oldBalance: currentBalance,
-        newBalance
-      }
-    );
+    // Note: Trading activity already logged above (line 6821-6845) with full details including trading control
 
     return {
       success: true,
