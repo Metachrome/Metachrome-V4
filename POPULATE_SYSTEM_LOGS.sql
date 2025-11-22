@@ -4,17 +4,26 @@
 -- =====================================================
 -- STEP 1: Ensure SYSTEM user exists
 -- =====================================================
-INSERT INTO users (id, username, email, role, status, balance, created_at)
-VALUES (
-  '00000000-0000-0000-0000-000000000000'::uuid,
-  'System',
-  'system@metachrome.io',
-  'super_admin',
-  'active',
-  0,
-  NOW()
-)
-ON CONFLICT (id) DO NOTHING;
+-- Skip this step if SYSTEM user already exists
+-- The ON CONFLICT clause handles both id and username conflicts
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM users WHERE id = '00000000-0000-0000-0000-000000000000'::uuid) THEN
+    INSERT INTO users (id, username, email, role, status, balance, created_at)
+    VALUES (
+      '00000000-0000-0000-0000-000000000000'::uuid,
+      'System',
+      'system@metachrome.io',
+      'super_admin',
+      'active',
+      0,
+      NOW()
+    );
+    RAISE NOTICE 'SYSTEM user created';
+  ELSE
+    RAISE NOTICE 'SYSTEM user already exists, skipping creation';
+  END IF;
+END $$;
 
 -- =====================================================
 -- STEP 2: Count existing logs before backfill
