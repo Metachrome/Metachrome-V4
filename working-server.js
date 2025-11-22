@@ -9890,21 +9890,22 @@ app.post('/api/superadmin/withdrawal', async (req, res) => {
   }
 });
 
-// Superadmin change password endpoint (SUPERADMIN ONLY - not for regular admin)
+// Admin/Superadmin change password endpoint (both admin and superadmin can access)
 app.post('/api/superadmin/change-password', async (req, res) => {
-  console.log('🔐 Superadmin password change request:', req.body);
+  console.log('🔐 Admin password change request:', req.body);
   const { userId, newPassword } = req.body;
 
   try {
-    // Check if user is superadmin (not regular admin)
+    // Check if user is admin or superadmin
     const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let currentUser = null;
     if (authToken) {
       const users = await getUsers();
-      const currentUser = users.find(u => authToken.includes(u.id));
+      currentUser = users.find(u => authToken.includes(u.id));
 
-      if (!currentUser || currentUser.role !== 'super_admin') {
-        console.log('❌ Access denied: Only superadmin can change passwords');
-        return res.status(403).json({ error: 'Access denied: Superadmin privileges required' });
+      if (!currentUser || (currentUser.role !== 'super_admin' && currentUser.role !== 'admin')) {
+        console.log('❌ Access denied: Admin or Superadmin privileges required');
+        return res.status(403).json({ error: 'Access denied: Admin privileges required' });
       }
     }
 
@@ -9915,6 +9916,12 @@ app.post('/api/superadmin/change-password', async (req, res) => {
     // Get current user data
     const users = await getUsers();
     const user = users.find(u => u.id === userId);
+
+    // Admin cannot change password of superadmin users
+    if (currentUser && currentUser.role === 'admin' && (user.role === 'super_admin' || user.role === 'superadmin')) {
+      console.log('❌ Access denied: Admin cannot change superadmin password');
+      return res.status(403).json({ error: 'Access denied: Cannot change superadmin password' });
+    }
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

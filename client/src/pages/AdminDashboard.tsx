@@ -2055,6 +2055,7 @@ export default function WorkingAdminDashboard() {
                               {/* Super Admin Only Buttons */}
                               {isSuperAdmin && (
                                 <>
+                                  {/* Deposit and Withdrawal buttons - available for both superadmin and admin */}
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -2079,28 +2080,29 @@ export default function WorkingAdminDashboard() {
                                   >
                                     <Minus className="w-4 h-4" />
                                   </Button>
-                                  {/* Password and Wallet buttons - only for superadmin */}
+
+                                  {/* Password button - available for both superadmin and admin */}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openSuperAdminModal(user, 'password')}
+                                    className="text-blue-400 hover:text-blue-300"
+                                    title="Change Password"
+                                  >
+                                    <Key className="w-4 h-4" />
+                                  </Button>
+
+                                  {/* Wallet button - only for superadmin */}
                                   {currentUser?.role === 'super_admin' && (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => openSuperAdminModal(user, 'password')}
-                                        className="text-blue-400 hover:text-blue-300"
-                                        title="Change Password"
-                                      >
-                                        <Key className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => openSuperAdminModal(user, 'wallet')}
-                                        className="text-purple-400 hover:text-purple-300"
-                                        title="Update Wallet Address"
-                                      >
-                                        <Wallet className="w-4 h-4" />
-                                      </Button>
-                                    </>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => openSuperAdminModal(user, 'wallet')}
+                                      className="text-purple-400 hover:text-purple-300"
+                                      title="Update Wallet Address"
+                                    >
+                                      <Wallet className="w-4 h-4" />
+                                    </Button>
                                   )}
                                   {/* Delete button - admin can delete users, but not superadmin or themselves */}
                                   {(() => {
