@@ -2102,18 +2102,40 @@ export default function WorkingAdminDashboard() {
                                       </Button>
                                     </>
                                   )}
-                                  {/* Delete button - only for regular users, not current user */}
-                                  {user.role === 'user' && user.id !== currentUser.id ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteUser(user)}
-                                      className="text-red-500 hover:text-red-400 border border-red-500"
-                                      title="Delete User"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  ) : null}
+                                  {/* Delete button - admin can delete users, but not superadmin or themselves */}
+                                  {(() => {
+                                    // Superadmin can delete any user except themselves
+                                    if (currentUser?.role === 'super_admin') {
+                                      return user.id !== currentUser.id ? (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteUser(user)}
+                                          className="text-red-500 hover:text-red-400 border border-red-500"
+                                          title="Delete User"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      ) : null;
+                                    }
+
+                                    // Admin can delete regular users only (not superadmin, not themselves)
+                                    if (currentUser?.role === 'admin') {
+                                      return user.role === 'user' && user.id !== currentUser.id ? (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteUser(user)}
+                                          className="text-red-500 hover:text-red-400 border border-red-500"
+                                          title="Delete User"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      ) : null;
+                                    }
+
+                                    return null;
+                                  })()}
                                 </>
                               )}
                             </div>
