@@ -32,10 +32,15 @@ BEGIN
 
     -- If existing SYSTEM user has different ID, we need to migrate
     IF existing_system_id != system_uuid::text THEN
-      -- Update all activity logs to use the new UUID
+      -- Update all activity logs admin_id to use the new UUID
       UPDATE admin_activity_logs
       SET admin_id = system_uuid::text
       WHERE admin_id = existing_system_id;
+
+      -- Also update target_user_id if it references SYSTEM
+      UPDATE admin_activity_logs
+      SET target_user_id = system_uuid::text
+      WHERE target_user_id = existing_system_id;
 
       RAISE NOTICE 'Updated activity logs from old ID % to new UUID %', existing_system_id, system_uuid;
 
@@ -111,6 +116,9 @@ END $$;
 
 -- Step 3: Convert target_user_id from TEXT to UUID (if needed)
 DO $$
+DECLARE
+  system_uuid UUID := '00000000-0000-0000-0000-000000000000';
+  invalid_count INTEGER;
 BEGIN
   -- Check if target_user_id is TEXT
   IF EXISTS (
@@ -120,7 +128,30 @@ BEGIN
       AND column_name = 'target_user_id'
       AND data_type = 'text'
   ) THEN
-    -- Convert target_user_id from TEXT to UUID (allow NULL)
+    -- First, check for any non-UUID values in target_user_id
+    SELECT COUNT(*) INTO invalid_count
+    FROM admin_activity_logs
+    WHERE target_user_id IS NOT NULL
+      AND target_user_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+
+    IF invalid_count > 0 THEN
+      RAISE NOTICE 'Found % rows with non-UUID target_user_id values', invalid_count;
+
+      -- Update 'SYSTEM' to proper UUID
+      UPDATE admin_activity_logs
+      SET target_user_id = system_uuid::text
+      WHERE target_user_id = 'SYSTEM';
+
+      -- Set any other invalid UUIDs to NULL (or you could set them to SYSTEM UUID)
+      UPDATE admin_activity_logs
+      SET target_user_id = NULL
+      WHERE target_user_id IS NOT NULL
+        AND target_user_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+
+      RAISE NOTICE 'Cleaned up non-UUID target_user_id values';
+    END IF;
+
+    -- Now safe to convert target_user_id from TEXT to UUID
     ALTER TABLE admin_activity_logs
     ALTER COLUMN target_user_id TYPE UUID USING
       CASE
