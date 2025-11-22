@@ -6817,9 +6817,9 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       }
     }
 
-    // Log trading activity
+    // Log trading activity with detailed metadata
     await logAdminActivity(
-      user.trading_mode === 'win' || user.trading_mode === 'lose' ? 'superadmin-001' : '00000000-0000-0000-0000-000000000000',
+      '00000000-0000-0000-0000-000000000000', // Always use SYSTEM UUID
       user.trading_mode === 'win' || user.trading_mode === 'lose' ? 'SuperAdmin' : 'SYSTEM',
       'TRADING',
       finalWon ? 'TRADE_WIN' : 'TRADE_LOSS',
@@ -6833,6 +6833,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         amount: Number(amount),
         duration: Number(duration),
         entryPrice: Number(entryPrice),
+        exitPrice: Number(wsExitPrice || entryPrice),
         profitLoss: Number(profitAmount),
         profitPercentage: Number((profitRate * 100).toFixed(0)),
         oldBalance: Number(currentBalance),
@@ -6840,7 +6841,9 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
         tradingControl: user.trading_mode || 'normal',
         wasOverridden: won !== finalWon,
         originalOutcome: won ? 'win' : 'lose',
-        finalOutcome: finalWon ? 'win' : 'lose'
+        finalOutcome: finalWon ? 'win' : 'lose',
+        result: finalWon ? 'win' : 'lose',
+        status: 'completed'
       }
     );
 
