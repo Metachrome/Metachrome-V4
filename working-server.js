@@ -2827,6 +2827,45 @@ async function logTradingActivity(userId, username, actionType, description, met
   }
 }
 
+// Helper function to log admin activity (generic)
+async function logAdminActivity(adminId, adminUsername, actionCategory, actionType, description, targetUserId = null, targetUsername = null, metadata = {}) {
+  if (!isSupabaseConfigured || !supabase) {
+    console.log('⚠️ Supabase not configured, skipping activity log');
+    return;
+  }
+
+  try {
+    const log = {
+      admin_id: adminId || '00000000-0000-0000-0000-000000000000',
+      admin_username: adminUsername || 'SYSTEM',
+      admin_email: null,
+      action_type: actionType,
+      action_category: actionCategory,
+      action_description: description,
+      target_user_id: targetUserId,
+      target_username: targetUsername,
+      target_email: null,
+      metadata: metadata,
+      ip_address: null,
+      user_agent: null,
+      is_deleted: false,
+      created_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('admin_activity_logs')
+      .insert(log);
+
+    if (error) {
+      console.error(`❌ Failed to log ${actionCategory} activity:`, error);
+    } else {
+      console.log(`✅ ${actionCategory} activity logged: ${actionType}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error logging ${actionCategory} activity:`, error);
+  }
+}
+
 // Get all activity logs (Super Admin only)
 app.get('/api/admin/activity-logs', async (req, res) => {
   try {
@@ -3379,6 +3418,24 @@ app.put('/api/admin/balances/:userId', async (req, res) => {
         console.error('❌ [BALANCE UPDATE] Supabase sync exception:', supabaseError.message);
       }
     }
+
+    // Log balance update activity
+    await logAdminActivity(
+      'superadmin-001', // Admin ID (you can get this from req.user if auth is implemented)
+      'SuperAdmin',
+      'BALANCE',
+      'BALANCE_UPDATED',
+      `Admin updated balance for ${user.username}: ${oldBalance} → ${user.balance} (${action === 'add' ? '+' : action === 'subtract' ? '-' : '='} ${balance} USDT)`,
+      userId,
+      user.username,
+      {
+        action,
+        amount: Number(balance),
+        oldBalance: Number(oldBalance),
+        newBalance: Number(user.balance),
+        changeAmount: Number(user.balance) - Number(oldBalance)
+      }
+    );
 
     // Create transaction record
     const transaction = {
@@ -13088,6 +13145,25 @@ app.post('/api/user/redeem-code', async (req, res) => {
         }
 
         console.log('✅ Code redeemed successfully (fallback):', code, 'Amount:', mockBonus);
+
+        // Log redeem code activity (fallback)
+        await logAdminActivity(
+          '00000000-0000-0000-0000-000000000000',
+          'SYSTEM',
+          'REDEEM_CODES',
+          'CODE_REDEEMED',
+          `User ${user.username} redeemed code "${code.toUpperCase()}" - +${mockBonus} USDT bonus`,
+          user.id,
+          user.username,
+          {
+            code: code.toUpperCase(),
+            bonus_amount: mockBonus,
+            trades_required: 10,
+            old_balance: currentBalance,
+            new_balance: newBalance
+          }
+        );
+
         return res.json({
           success: true,
           bonusAmount: mockBonus,
@@ -13253,6 +13329,24 @@ app.post('/api/user/redeem-code', async (req, res) => {
 
       console.log('✅ Code redeemed successfully:', code, 'Amount:', redeemCode.bonus_amount);
       console.log('💰 Final balance should be:', newBalance);
+
+      // Log redeem code activity
+      await logAdminActivity(
+        '00000000-0000-0000-0000-000000000000',
+        'SYSTEM',
+        'REDEEM_CODES',
+        'CODE_REDEEMED',
+        `User ${user.username} redeemed code "${code.toUpperCase()}" - +${redeemCode.bonus_amount} USDT bonus`,
+        user.id,
+        user.username,
+        {
+          code: code.toUpperCase(),
+          bonus_amount: redeemCode.bonus_amount,
+          trades_required: 10,
+          old_balance: currentBalance,
+          new_balance: newBalance
+        }
+      );
 
       res.json({
         success: true,
