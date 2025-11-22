@@ -2788,6 +2788,45 @@ app.get('/api/admin/users', async (req, res) => {
 // ADMIN ACTIVITY LOGS - Audit trail for all admin actions
 // ============================================================================
 
+// Helper function to log trading activity
+async function logTradingActivity(userId, username, actionType, description, metadata = {}) {
+  if (!isSupabaseConfigured || !supabase) {
+    console.log('⚠️ Supabase not configured, skipping activity log');
+    return;
+  }
+
+  try {
+    const log = {
+      admin_id: '00000000-0000-0000-0000-000000000000', // SYSTEM user for automated trading logs
+      admin_username: 'SYSTEM',
+      admin_email: null,
+      action_type: actionType,
+      action_category: 'TRADING',
+      action_description: description,
+      target_user_id: userId,
+      target_username: username,
+      target_email: null,
+      metadata: metadata,
+      ip_address: null,
+      user_agent: null,
+      is_deleted: false,
+      created_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('admin_activity_logs')
+      .insert(log);
+
+    if (error) {
+      console.error('❌ Failed to log trading activity:', error);
+    } else {
+      console.log('✅ Trading activity logged:', actionType);
+    }
+  } catch (error) {
+    console.error('❌ Error logging trading activity:', error);
+  }
+}
+
 // Get all activity logs (Super Admin only)
 app.get('/api/admin/activity-logs', async (req, res) => {
   try {
@@ -7038,6 +7077,28 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     }
 
     console.log(`🏁 ✅ DIRECT COMPLETION SUCCESS: Trade ${tradeId} completed as ${finalWon ? 'WIN' : 'LOSE'}`);
+
+    // Log trade completion activity
+    await logTradingActivity(
+      userId,
+      user.username,
+      finalWon ? 'TRADE_WON' : 'TRADE_LOST',
+      `User ${user.username} ${finalWon ? 'WON' : 'LOST'} ${direction.toUpperCase()} trade for ${symbol} - ${finalWon ? '+' : ''}${balanceChange.toFixed(2)} USDT`,
+      {
+        tradeId,
+        symbol,
+        direction,
+        amount: parseFloat(amount),
+        duration: parseInt(duration),
+        entryPrice: parseFloat(entryPrice),
+        exitPrice: wsExitPrice,
+        result: finalWon ? 'win' : 'lose',
+        balanceChange,
+        oldBalance: currentBalance,
+        newBalance
+      }
+    );
+
     return {
       success: true,
       won: finalWon,
@@ -7906,6 +7967,22 @@ app.post('/api/trades/options', async (req, res) => {
 
         // Update the local trade object with the database-generated ID
         trade.id = savedTradeId;
+
+        // Log trade creation activity
+        await logTradingActivity(
+          finalUserId,
+          user.username,
+          'TRADE_CREATED',
+          `User ${user.username} created ${direction.toUpperCase()} trade for ${symbol} with ${amount} USDT (${duration}s)`,
+          {
+            tradeId: savedTradeId,
+            symbol,
+            direction,
+            amount: parseFloat(amount),
+            duration: parseInt(duration),
+            entryPrice: parseFloat(currentPrice)
+          }
+        );
       } else {
         // Fallback: Save to local file
         trade.id = tradeId; // Use generated ID
@@ -7913,6 +7990,22 @@ app.post('/api/trades/options', async (req, res) => {
         allTrades.unshift(trade); // Add to beginning of array
         await saveTrades(allTrades);
         console.log('✅ Trade saved to local storage:', trade.id);
+
+        // Log trade creation activity
+        await logTradingActivity(
+          finalUserId,
+          user.username,
+          'TRADE_CREATED',
+          `User ${user.username} created ${direction.toUpperCase()} trade for ${symbol} with ${amount} USDT (${duration}s)`,
+          {
+            tradeId,
+            symbol,
+            direction,
+            amount: parseFloat(amount),
+            duration: parseInt(duration),
+            entryPrice: parseFloat(currentPrice)
+          }
+        );
       }
     } catch (saveError) {
       console.error('❌ Error saving trade:', saveError);
