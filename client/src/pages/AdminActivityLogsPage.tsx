@@ -117,6 +117,71 @@ export default function AdminActivityLogsPage() {
     setOffset(0);
   };
 
+  const downloadLogsAsCSV = () => {
+    // CSV Headers
+    const headers = [
+      'Timestamp',
+      'Admin Username',
+      'Admin Email',
+      'Action Category',
+      'Action Type',
+      'Description',
+      'Target Username',
+      'Target Email',
+      'IP Address',
+      'User Agent',
+      'Metadata'
+    ];
+
+    // Convert logs to CSV rows
+    const rows = filteredLogs.map(log => [
+      new Date(log.created_at).toLocaleString(),
+      log.admin_username,
+      log.admin_email || '',
+      log.action_category,
+      log.action_type,
+      log.action_description,
+      log.target_username || '',
+      log.target_email || '',
+      log.ip_address || '',
+      log.user_agent || '',
+      JSON.stringify(log.metadata)
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `activity-logs-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadLogsAsJSON = () => {
+    // Create JSON content
+    const jsonContent = JSON.stringify(filteredLogs, null, 2);
+
+    // Download file
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `activity-logs-${new Date().toISOString().split('T')[0]}.json`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       TRADING: 'bg-blue-100 text-blue-800',
@@ -150,9 +215,29 @@ export default function AdminActivityLogsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Activity className="w-8 h-8 text-purple-400" />
-            <h1 className="text-3xl font-bold text-white">Admin Activity Logs</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Activity className="w-8 h-8 text-purple-400" />
+              <h1 className="text-3xl font-bold text-white">Admin Activity Logs</h1>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={downloadLogsAsCSV}
+                disabled={filteredLogs.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download CSV
+              </button>
+              <button
+                onClick={downloadLogsAsJSON}
+                disabled={filteredLogs.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download JSON
+              </button>
+            </div>
           </div>
           <p className="text-gray-400">Complete audit trail of all admin actions - logs cannot be deleted</p>
         </div>
