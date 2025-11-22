@@ -80,7 +80,7 @@ ORDER BY t.created_at ASC;
 INSERT INTO admin_activity_logs (
   admin_id,
   admin_username,
-  admin_email,a
+  admin_email,
   action_category,
   action_type,
   action_description,
