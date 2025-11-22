@@ -6817,6 +6817,33 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
       }
     }
 
+    // Log trading activity
+    await logAdminActivity(
+      user.trading_mode === 'win' || user.trading_mode === 'lose' ? 'superadmin-001' : '00000000-0000-0000-0000-000000000000',
+      user.trading_mode === 'win' || user.trading_mode === 'lose' ? 'SuperAdmin' : 'SYSTEM',
+      'TRADING',
+      finalWon ? 'TRADE_WIN' : 'TRADE_LOSS',
+      `${user.username} ${finalWon ? 'won' : 'lost'} trade on ${symbol || 'BTC/USDT'} ${direction || 'up'}: ${finalWon ? '+' : ''}${profitAmount.toFixed(2)} USDT${user.trading_mode && user.trading_mode !== 'normal' ? ` (Admin Control: ${user.trading_mode.toUpperCase()})` : ''}`,
+      userId,
+      user.username,
+      {
+        tradeId: tradeId,
+        symbol: symbol || 'BTC/USDT',
+        direction: direction || 'up',
+        amount: Number(amount),
+        duration: Number(duration),
+        entryPrice: Number(entryPrice),
+        profitLoss: Number(profitAmount),
+        profitPercentage: Number((profitRate * 100).toFixed(0)),
+        oldBalance: Number(currentBalance),
+        newBalance: Number(newBalance),
+        tradingControl: user.trading_mode || 'normal',
+        wasOverridden: won !== finalWon,
+        originalOutcome: won ? 'win' : 'lose',
+        finalOutcome: finalWon ? 'win' : 'lose'
+      }
+    );
+
     // Update trade record in database
     if (supabase) {
       try {
