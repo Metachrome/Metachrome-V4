@@ -99,13 +99,24 @@ BEGIN
 
     -- Only re-add foreign key constraint if users.id is also UUID
     IF users_id_type = 'uuid' THEN
-      ALTER TABLE admin_activity_logs
-      ADD CONSTRAINT fk_admin
-        FOREIGN KEY(admin_id)
-        REFERENCES users(id)
-        ON DELETE SET NULL;
+      -- Double check before adding FK constraint
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'users'
+          AND column_name = 'id'
+          AND data_type = 'uuid'
+      ) THEN
+        ALTER TABLE admin_activity_logs
+        ADD CONSTRAINT fk_admin
+          FOREIGN KEY(admin_id)
+          REFERENCES users(id)
+          ON DELETE SET NULL;
 
-      RAISE NOTICE 'admin_id converted from TEXT to UUID and FK constraint added';
+        RAISE NOTICE 'admin_id converted from TEXT to UUID and FK constraint added';
+      ELSE
+        RAISE NOTICE 'admin_id converted from TEXT to UUID (FK constraint NOT added - users.id is not UUID)';
+      END IF;
     ELSE
       RAISE NOTICE 'admin_id converted from TEXT to UUID (FK constraint NOT added - users.id is %)', users_id_type;
     END IF;
