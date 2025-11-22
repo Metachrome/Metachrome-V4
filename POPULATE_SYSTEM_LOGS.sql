@@ -90,7 +90,11 @@ SELECT
   'SYSTEM' as action_category,
   'USER_REGISTERED' as action_type,
   CONCAT('New user registered: ', u.username) as action_description,
-  u.id as target_user_id,
+  CASE
+    WHEN u.id::text ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    THEN u.id::text::uuid
+    ELSE '00000000-0000-0000-0000-000000000000'::uuid
+  END as target_user_id,
   u.username as target_username,
   u.email as target_email,
   jsonb_build_object(
@@ -104,13 +108,13 @@ SELECT
   NULL as user_agent
 FROM users u
 WHERE u.role IN ('user', 'admin', 'super_admin')
-  AND u.id != '00000000-0000-0000-0000-000000000000'::uuid
+  AND u.id::text != '00000000-0000-0000-0000-000000000000'
   AND NOT EXISTS (
     -- Avoid duplicates
     SELECT 1 FROM admin_activity_logs aal
     WHERE aal.action_category = 'SYSTEM'
       AND aal.action_type = 'USER_REGISTERED'
-      AND aal.target_user_id = u.id
+      AND aal.target_user_id::text = u.id::text
   );
 
 -- =====================================================
