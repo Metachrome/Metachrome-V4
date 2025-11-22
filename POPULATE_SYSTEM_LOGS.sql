@@ -8,7 +8,7 @@
 -- The ON CONFLICT clause handles both id and username conflicts
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM users WHERE id = '00000000-0000-0000-0000-000000000000'::uuid) THEN
+  IF NOT EXISTS (SELECT 1 FROM users WHERE id::text = '00000000-0000-0000-0000-000000000000') THEN
     INSERT INTO users (id, username, email, role, status, balance, created_at)
     VALUES (
       '00000000-0000-0000-0000-000000000000'::uuid,
