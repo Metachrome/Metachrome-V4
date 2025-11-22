@@ -66,7 +66,17 @@ DROP VIEW IF EXISTS admin_activity_logs_view;
 
 -- Step 2: Convert admin_id from TEXT to UUID (if needed)
 DO $$
+DECLARE
+  users_id_type TEXT;
 BEGIN
+  -- Check what type users.id is
+  SELECT data_type INTO users_id_type
+  FROM information_schema.columns
+  WHERE table_name = 'users'
+    AND column_name = 'id';
+
+  RAISE NOTICE 'users.id column type: %', users_id_type;
+
   -- Check if admin_id is TEXT
   IF EXISTS (
     SELECT 1
@@ -75,21 +85,25 @@ BEGIN
       AND column_name = 'admin_id'
       AND data_type = 'text'
   ) THEN
-    -- Drop foreign key constraint first
+    -- Drop foreign key constraint first (already dropped in Step 0)
     ALTER TABLE admin_activity_logs DROP CONSTRAINT IF EXISTS fk_admin;
 
     -- Convert admin_id from TEXT to UUID
     ALTER TABLE admin_activity_logs
     ALTER COLUMN admin_id TYPE UUID USING admin_id::uuid;
 
-    -- Re-add foreign key constraint
-    ALTER TABLE admin_activity_logs
-    ADD CONSTRAINT fk_admin
-      FOREIGN KEY(admin_id)
-      REFERENCES users(id)
-      ON DELETE SET NULL;
+    -- Only re-add foreign key constraint if users.id is also UUID
+    IF users_id_type = 'uuid' THEN
+      ALTER TABLE admin_activity_logs
+      ADD CONSTRAINT fk_admin
+        FOREIGN KEY(admin_id)
+        REFERENCES users(id)
+        ON DELETE SET NULL;
 
-    RAISE NOTICE 'admin_id converted from TEXT to UUID';
+      RAISE NOTICE 'admin_id converted from TEXT to UUID and FK constraint added';
+    ELSE
+      RAISE NOTICE 'admin_id converted from TEXT to UUID (FK constraint NOT added - users.id is %)', users_id_type;
+    END IF;
   ELSE
     RAISE NOTICE 'admin_id is already UUID';
   END IF;
