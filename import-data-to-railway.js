@@ -6,15 +6,23 @@ const { Pool } = pg;
 
 // Helper function to validate and convert UUID
 function ensureValidUUID(id) {
+  // Handle null/undefined
+  if (!id && id !== 0) {
+    return null;
+  }
+
+  // Convert to string if it's a number
+  const idStr = String(id);
+
   // Check if it's already a valid UUID format
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  if (uuidRegex.test(id)) {
-    return id;
+  if (uuidRegex.test(idStr)) {
+    return idStr;
   }
 
   // Generate deterministic UUID from string (so same ID always gets same UUID)
-  const hash = crypto.createHash('md5').update(id).digest('hex');
+  const hash = crypto.createHash('md5').update(idStr).digest('hex');
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
 }
 
