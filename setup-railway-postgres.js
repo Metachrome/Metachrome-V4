@@ -89,7 +89,7 @@ async function setupDatabase() {
         amount DECIMAL(20, 2) NOT NULL,
         currency VARCHAR(50) NOT NULL,
         network VARCHAR(50),
-        wallet_address TEXT NOT NULL,
+        wallet_address TEXT,
         status VARCHAR(50) DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
