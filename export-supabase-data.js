@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 // Supabase credentials (from your current .env)
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+
+console.log('🔗 Connecting to Supabase:', supabaseUrl);
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -99,16 +105,20 @@ async function exportData() {
     exportData.user_redeem_history = history || [];
     console.log(`✅ Exported ${exportData.user_redeem_history.length} redeem history records`);
 
-    // Export wallet addresses
+    // Export wallet addresses (optional - may not exist in Supabase)
     console.log('📥 Exporting wallet addresses...');
     const { data: wallets, error: walletsError } = await supabase
       .from('wallet_addresses')
       .select('*')
       .order('created_at', { ascending: true });
-    
-    if (walletsError) throw walletsError;
-    exportData.wallet_addresses = wallets || [];
-    console.log(`✅ Exported ${exportData.wallet_addresses.length} wallet addresses`);
+
+    if (walletsError) {
+      console.log(`⚠️  Wallet addresses table not found (will be created in Railway)`);
+      exportData.wallet_addresses = [];
+    } else {
+      exportData.wallet_addresses = wallets || [];
+      console.log(`✅ Exported ${exportData.wallet_addresses.length} wallet addresses`);
+    }
 
     // Save to file
     const filename = `supabase-export-${Date.now()}.json`;
