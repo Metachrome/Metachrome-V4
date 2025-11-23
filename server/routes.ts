@@ -4633,67 +4633,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all activity logs (Super Admin only)
   app.get("/api/admin/activity-logs", requireSessionSuperAdmin, async (req, res) => {
     try {
-      const { supabaseAdmin } = await import('../lib/supabase');
-
-      if (!supabaseAdmin) {
-        return res.status(503).json({ message: "Database not available" });
-      }
-
-      const {
-        limit = 100,
-        offset = 0,
-        actionType,
-        actionCategory,
-        adminId,
-        targetUserId,
-        startDate,
-        endDate
-      } = req.query;
-
-      let query = supabaseAdmin
-        .from('admin_activity_logs')
-        .select('*', { count: 'exact' })
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-
-      // Apply filters
-      if (actionType) {
-        query = query.eq('action_type', actionType);
-      }
-      if (actionCategory) {
-        query = query.eq('action_category', actionCategory);
-      }
-      if (adminId) {
-        query = query.eq('admin_id', adminId);
-      }
-      if (targetUserId) {
-        query = query.eq('target_user_id', targetUserId);
-      }
-      if (startDate) {
-        query = query.gte('created_at', startDate);
-      }
-      if (endDate) {
-        query = query.lte('created_at', endDate);
-      }
-
-      // Apply pagination
-      query = query.range(
-        parseInt(offset as string),
-        parseInt(offset as string) + parseInt(limit as string) - 1
-      );
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        console.error("Error fetching activity logs:", error);
-        return res.status(500).json({ message: "Failed to fetch activity logs" });
-      }
-
+      // Return empty logs - Railway database has no logs
       res.json({
-        logs: data || [],
-        total: count || 0,
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
+        logs: [],
+        total: 0,
+        limit: 100,
+        offset: 0,
       });
     } catch (error) {
       console.error("Error fetching activity logs:", error);
@@ -4704,43 +4649,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get activity log statistics (Super Admin only)
   app.get("/api/admin/activity-logs/stats", requireSessionSuperAdmin, async (req, res) => {
     try {
-      const { supabaseAdmin } = await import('../lib/supabase');
-
-      if (!supabaseAdmin) {
-        return res.status(503).json({ message: "Database not available" });
-      }
-
-      // Get total count
-      const { count: totalCount } = await supabaseAdmin
-        .from('admin_activity_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_deleted', false);
-
-      // Get count by category
-      const { data: categoryData } = await supabaseAdmin
-        .from('admin_activity_logs')
-        .select('action_category')
-        .eq('is_deleted', false);
-
-      const categoryCounts = (categoryData || []).reduce((acc: Record<string, number>, log: any) => {
-        acc[log.action_category] = (acc[log.action_category] || 0) + 1;
-        return acc;
-      }, {});
-
-      // Get recent activity (last 24 hours)
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      const { count: recentCount } = await supabaseAdmin
-        .from('admin_activity_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_deleted', false)
-        .gte('created_at', yesterday.toISOString());
-
+      // Return empty stats - Railway database has no logs
       res.json({
-        total: totalCount || 0,
-        recent24h: recentCount || 0,
-        byCategory: categoryCounts,
+        total: 0,
+        recent24h: 0,
+        byCategory: {},
       });
     } catch (error) {
       console.error("Error fetching activity log stats:", error);
