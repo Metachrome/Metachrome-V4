@@ -30,12 +30,16 @@ async function importData(filename) {
     // Import users
     console.log('\n📥 Importing users...');
     for (const user of data.users) {
+      // Set default password for users without password (from Supabase Auth)
+      const password = user.password || 'ChangeMe123!';
+
       await pool.query(`
         INSERT INTO users (id, username, email, password, balance, role, status, trading_mode, wallet_address, phone, address, created_at, updated_at, last_login)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         ON CONFLICT (id) DO UPDATE SET
           username = EXCLUDED.username,
           email = EXCLUDED.email,
+          password = EXCLUDED.password,
           balance = EXCLUDED.balance,
           role = EXCLUDED.role,
           status = EXCLUDED.status,
@@ -43,7 +47,7 @@ async function importData(filename) {
           wallet_address = EXCLUDED.wallet_address,
           updated_at = EXCLUDED.updated_at
       `, [
-        user.id, user.username, user.email, user.password, user.balance || 0,
+        user.id, user.username, user.email, password, user.balance || 0,
         user.role || 'user', user.status || 'active', user.trading_mode || 'normal',
         user.wallet_address, user.phone, user.address,
         user.created_at, user.updated_at, user.last_login
