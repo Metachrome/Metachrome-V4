@@ -802,7 +802,28 @@ class DatabaseStorage implements IStorage {
 
   // Admin-only operations
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(desc(users.createdAt));
+    // Explicitly select all columns including password for admin access
+    return await db.select({
+      id: users.id,
+      email: users.email,
+      username: users.username,
+      password: users.password, // Explicitly include password for superadmin access
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImageUrl: users.profileImageUrl,
+      walletAddress: users.walletAddress,
+      role: users.role,
+      isActive: users.isActive,
+      status: users.status,
+      adminNotes: users.adminNotes,
+      verificationStatus: users.verificationStatus,
+      hasUploadedDocuments: users.hasUploadedDocuments,
+      tradingMode: users.tradingMode,
+      balance: users.balance,
+      lastLogin: users.lastLogin,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    }).from(users).orderBy(desc(users.createdAt));
   }
 
   async getAllBalances(): Promise<any[]> {
