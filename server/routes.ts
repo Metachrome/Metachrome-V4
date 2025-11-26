@@ -1854,6 +1854,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
 
+      // Debug: Log raw user data from database
+      if (users.length > 0) {
+        console.log('🔍 RAW user data from database (first user):', {
+          id: users[0].id,
+          username: users[0].username,
+          email: users[0].email,
+          hasPassword: !!users[0].password,
+          passwordValue: users[0].password,
+          passwordLength: users[0].password?.length || 0,
+          allKeys: Object.keys(users[0])
+        });
+      }
+
       // Enrich users with their USDT balance information
       const usersWithBalances = await Promise.all(
         users.map(async (user) => {

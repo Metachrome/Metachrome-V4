@@ -803,7 +803,7 @@ class DatabaseStorage implements IStorage {
   // Admin-only operations
   async getAllUsers(): Promise<User[]> {
     // Explicitly select all columns including password for admin access
-    return await db.select({
+    const result = await db.select({
       id: users.id,
       email: users.email,
       username: users.username,
@@ -824,6 +824,20 @@ class DatabaseStorage implements IStorage {
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     }).from(users).orderBy(desc(users.createdAt));
+
+    // Debug: Log what we got from database
+    if (result.length > 0) {
+      console.log('💾 Storage.getAllUsers() - First user from DB:', {
+        id: result[0].id,
+        username: result[0].username,
+        hasPassword: !!result[0].password,
+        passwordLength: result[0].password?.length || 0,
+        passwordPreview: result[0].password ? result[0].password.substring(0, 10) + '...' : 'NULL',
+        allKeys: Object.keys(result[0])
+      });
+    }
+
+    return result;
   }
 
   async getAllBalances(): Promise<any[]> {
