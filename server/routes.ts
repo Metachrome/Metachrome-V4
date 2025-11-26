@@ -1891,6 +1891,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
+      // Debug: Log first user to verify password field is included
+      if (usersWithBalances.length > 0) {
+        console.log('📊 Sample user data (first user):', {
+          id: usersWithBalances[0].id,
+          username: usersWithBalances[0].username,
+          hasPassword: !!usersWithBalances[0].password,
+          passwordLength: usersWithBalances[0].password?.length || 0
+        });
+      }
+
       res.json(usersWithBalances);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -4710,12 +4720,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all activity logs (Super Admin only)
   app.get("/api/admin/activity-logs", requireSessionSuperAdmin, async (req, res) => {
     try {
-      // Return empty logs - Railway database has no logs
+      const {
+        actionType,
+        actionCategory,
+        startDate,
+        endDate,
+        limit = 100,
+        offset = 0
+      } = req.query;
+
+      if (!supabaseAdmin) {
+        console.warn('⚠️ Supabase admin client not available');
+        return res.json({
+          logs: [],
+          total: 0,
+          limit: Number(limit),
+          offset: Number(offset),
+        });
+      }
+
+      // Build query
+      let query = supabaseAdmin
+        .from('admin_activity_logs')
+        .select('*', { count: 'exact' })
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+
+      // Apply filters
+      if (actionType) {
+        query = query.eq('action_type', actionType);
+      }
+      if (actionCategory) {
+        query = query.eq('action_category', actionCategory);
+      }
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+      if (endDate) {
+        query = query.lte('created_at', endDate);
+      }
+
+      // Apply pagination
+      query = query.range(Number(offset), Number(offset) + Number(limit) - 1);
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error('❌ Error fetching activity logs:', error);
+        return res.status(500).json({ message: "Failed to fetch activity logs" });
+      }
+
+      console.log(`✅ Fetched ${data?.length || 0} activity logs (total: ${count || 0})`);
+
       res.json({
-        logs: [],
-        total: 0,
-        limit: 100,
-        offset: 0,
+        logs: data || [],
+        total: count || 0,
+        limit: Number(limit),
+        offset: Number(offset),
       });
     } catch (error) {
       console.error("Error fetching activity logs:", error);
@@ -4726,11 +4787,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get activity log statistics (Super Admin only)
   app.get("/api/admin/activity-logs/stats", requireSessionSuperAdmin, async (req, res) => {
     try {
-      // Return empty stats - Railway database has no logs
+      if (!supabaseAdmin) {
+        console.warn('⚠️ Supabase admin client not available');
+        return res.json({
+          total: 0,
+          recent24h: 0,
+          byCategory: {},
+        });
+      }
+
+      // Get total count
+      const { count: total } = await supabaseAdmin
+        .from('admin_activity_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_deleted', false);
+
+      // Get recent 24h count
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const { count: recent24h } = await supabaseAdmin
+        .from('admin_activity_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_deleted', false)
+        .gte('created_at', yesterday.toISOString());
+
+      // Get counts by category
+      const { data: categoryData } = await supabaseAdmin
+        .from('admin_activity_logs')
+        .select('action_category')
+        .eq('is_deleted', false);
+
+      const byCategory: Record<string, number> = {};
+      categoryData?.forEach((log: any) => {
+        const category = log.action_category;
+        byCategory[category] = (byCategory[category] || 0) + 1;
+      });
+
       res.json({
-        total: 0,
-        recent24h: 0,
-        byCategory: {},
+        total: total || 0,
+        recent24h: recent24h || 0,
+        byCategory,
       });
     } catch (error) {
       console.error("Error fetching activity log stats:", error);
