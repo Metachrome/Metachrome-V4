@@ -5,13 +5,15 @@ import type { User as BaseUser } from "@shared/schema-sqlite";
 import { useWebSocket } from "./useWebSocket";
 
 // Extended User type for frontend with additional API response fields
-export interface User extends Omit<BaseUser, 'password'> {
+// NOTE: Include password field for superadmin access (will be hashed)
+export interface User extends BaseUser {
   walletAddress?: string;
   hasPassword?: boolean;
   verificationStatus?: string;
   hasUploadedDocuments?: boolean;
   firstName?: string;
   lastName?: string;
+  password?: string; // Include password for superadmin visibility (hashed)
 }
 
 export function useAuth() {
