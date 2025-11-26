@@ -109,6 +109,7 @@ async function setupDatabase() {
         target_user_id UUID,
         target_username VARCHAR(255),
         metadata JSONB,
+        is_deleted BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);

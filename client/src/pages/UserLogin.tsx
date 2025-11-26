@@ -167,11 +167,19 @@ export default function UserLogin() {
       return;
     }
 
+    // Show security info before connecting
+    toast({
+      title: "🔒 Secure Connection",
+      description: "METACHROME will never ask for your private keys or seed phrase. We only request your wallet address for authentication.",
+      duration: 5000,
+    });
+
     setIsMetaMaskConnecting(true);
     try {
       console.log('🔄 Requesting account access...');
 
-      // Request account access
+      // Request account access - This is the SAFE way recommended by MetaMask
+      // Only triggered by user action (button click)
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts'
       });
@@ -197,8 +205,8 @@ export default function UserLogin() {
       }
 
       toast({
-        title: "MetaMask Connected",
-        description: `Wallet ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)} authenticated successfully!`,
+        title: "✅ MetaMask Connected",
+        description: `Welcome back! Wallet ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)} authenticated successfully!`,
       });
 
       // Navigate to dashboard - the auth state is updated automatically by the mutation
@@ -208,11 +216,21 @@ export default function UserLogin() {
       }, 500);
     } catch (error: any) {
       console.error('❌ MetaMask connection error:', error);
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect MetaMask",
-        variant: "destructive",
-      });
+
+      // User rejected the connection
+      if (error.code === 4001) {
+        toast({
+          title: "Connection Cancelled",
+          description: "You cancelled the MetaMask connection request.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Connection Failed",
+          description: error.message || "Failed to connect MetaMask. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsMetaMaskConnecting(false);
     }

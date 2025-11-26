@@ -34,6 +34,13 @@ A comprehensive cryptocurrency trading platform with MetaMask integration, admin
 - Helmet security headers
 - Input validation
 - SQL injection prevention
+- **MetaMask Security**:
+  - ✅ Only requests wallet address (never private keys)
+  - ✅ User-initiated connections only (no auto-connect)
+  - ✅ Follows MetaMask best practices
+  - ✅ Security headers for Web3 trust
+  - ✅ PWA manifest for legitimacy
+  - ✅ `.well-known/security.txt` for responsible disclosure
 
 ## 🛠️ **Installation & Setup**
 

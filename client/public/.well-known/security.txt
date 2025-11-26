@@ -1,0 +1,9 @@
+Contact: security@metachrome.io
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://metachrome.io/.well-known/security.txt
+
+# METACHROME Security Policy
+# We take security seriously and welcome responsible disclosure of security vulnerabilities.
+# Please report security issues to the contact above.
+

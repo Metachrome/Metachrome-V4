@@ -1,0 +1,28 @@
+{
+  "name": "METACHROME",
+  "description": "Secure cryptocurrency trading platform with advanced features",
+  "url": "https://metachrome.io",
+  "version": "2.0.0",
+  "chains": ["ethereum", "bsc", "polygon"],
+  "wallets": ["metamask", "walletconnect"],
+  "features": [
+    "spot-trading",
+    "options-trading",
+    "wallet-integration",
+    "real-time-charts"
+  ],
+  "security": {
+    "audited": true,
+    "ssl": true,
+    "twoFactorAuth": false
+  },
+  "contact": {
+    "email": "support@metachrome.io",
+    "website": "https://metachrome.io"
+  },
+  "social": {
+    "twitter": "https://twitter.com/metachrome",
+    "telegram": "https://t.me/metachrome"
+  }
+}
+

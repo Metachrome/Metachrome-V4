@@ -3285,7 +3285,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Transaction is not a deposit" });
       }
 
-      if (transaction.status !== 'pending') {
+      // Allow both 'pending' and 'verifying' status to be processed
+      if (transaction.status !== 'pending' && transaction.status !== 'verifying') {
         return res.status(400).json({ message: "Deposit is not pending approval" });
       }
 
@@ -3375,7 +3376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Transaction is not a withdrawal" });
       }
 
-      if (transaction.status !== 'pending') {
+      // Allow both 'pending' and 'verifying' status to be processed
+      if (transaction.status !== 'pending' && transaction.status !== 'verifying') {
         return res.status(400).json({ message: "Withdrawal is not pending approval" });
       }
 
@@ -3456,6 +3458,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching pending transactions:", error);
       res.status(500).json({ message: "Failed to fetch pending transactions" });
+    }
+  });
+
+  // Admin endpoint to verify/reject user documents
+  app.post("/api/admin/verify-document/:id", requireSessionAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNotes } = req.body;
+
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status. Must be 'approved' or 'rejected'" });
+      }
+
+      // Get the document from Supabase
+      const { data: document, error: fetchError } = await supabaseAdmin
+        .from('user_verification_documents')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError || !document) {
+        console.error('Error fetching document:', fetchError);
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Get user info for logging
+      const user = await storage.getUserById(document.user_id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Update document status
+      const { error: updateError } = await supabaseAdmin
+        .from('user_verification_documents')
+        .update({
+          verification_status: status,
+          admin_notes: adminNotes || `Document ${status} by admin`,
+          verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (updateError) {
+        console.error('Error updating document:', updateError);
+        return res.status(500).json({ message: "Failed to update document" });
+      }
+
+      // Log activity
+      await logAdminActivityFromRequest(
+        req,
+        status === 'approved' ? ActionTypes.VERIFICATION_APPROVED : ActionTypes.VERIFICATION_REJECTED,
+        ActionCategories.VERIFICATION,
+        `${status === 'approved' ? 'Approved' : 'Rejected'} ${document.document_type} verification for user ${user.username || user.email}`,
+        { id: user.id, username: user.username, email: user.email },
+        {
+          documentId: id,
+          documentType: document.document_type,
+          verificationStatus: status,
+          adminNotes: adminNotes || `Document ${status} by admin`
+        }
+      );
+
+      console.log(`✅ Document ${status}: ${document.document_type} for user ${user.username || user.email}`);
+      res.json({
+        message: `Document ${status} successfully`,
+        document: {
+          ...document,
+          verification_status: status,
+          admin_notes: adminNotes || `Document ${status} by admin`,
+          verified_at: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error("Error verifying document:", error);
+      res.status(500).json({ message: "Failed to verify document" });
     }
   });
 

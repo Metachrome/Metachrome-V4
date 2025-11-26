@@ -1,0 +1,12 @@
+# METACHROME - Cryptocurrency Trading Platform
+# https://metachrome.io
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /superadmin/
+
+# Sitemap
+Sitemap: https://metachrome.io/sitemap.xml
+

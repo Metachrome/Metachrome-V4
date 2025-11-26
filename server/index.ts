@@ -68,6 +68,23 @@ app.use(requestIdMiddleware);
 // Apply comprehensive security middleware
 app.use(securityMiddleware);
 
+// MetaMask Trust Headers - Add security headers to increase trust score
+app.use((req, res, next) => {
+  // Security headers that MetaMask checks
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Permissions Policy (formerly Feature-Policy)
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+  // Web3 Platform Indicator
+  res.setHeader('X-Web3-Platform', 'METACHROME');
+
+  next();
+});
+
 // CORS configuration - temporarily allow all origins for debugging
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4000', 'http://127.0.0.1:4000'];
 console.log('🔧 CORS allowed origins:', allowedOrigins);

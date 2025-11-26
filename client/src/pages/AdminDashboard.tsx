@@ -21,6 +21,7 @@ import {
   Settings,
   Shield,
   Eye,
+  EyeOff,
   Edit,
   Plus,
   RefreshCw,
@@ -218,6 +219,9 @@ export default function WorkingAdminDashboard() {
   // Search and filter states
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Password visibility state - track which user passwords are visible
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
 
   // Real-time polling states
   const [isPolling, setIsPolling] = useState(true);
@@ -1480,6 +1484,19 @@ export default function WorkingAdminDashboard() {
 
 
 
+  // Toggle password visibility for a specific user
+  const togglePasswordVisibility = (userId: string) => {
+    setVisiblePasswords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
+
   const openSuperAdminModal = (user: User, action: string) => {
     console.log('🔧 Opening super admin modal:', action, 'for user:', user.username);
     setSelectedUserForAction(user);
@@ -1923,11 +1940,12 @@ export default function WorkingAdminDashboard() {
                 </div>
 
                 <div className="border border-gray-700 rounded-lg overflow-x-auto admin-table-container" style={{ maxWidth: '100%' }}>
-                  <Table className="w-full" style={{ minWidth: '1200px' }}>
+                  <Table className="w-full" style={{ minWidth: '1400px' }}>
                     <TableHeader>
                       <TableRow className="bg-gray-700">
                         <TableHead className="text-gray-300 min-w-[200px]">User</TableHead>
                         <TableHead className="text-gray-300 min-w-[250px]">Email</TableHead>
+                        {isSuperAdmin && <TableHead className="text-gray-300 min-w-[150px]">Password</TableHead>}
                         <TableHead className="text-gray-300 min-w-[120px]">Balance</TableHead>
                         <TableHead className="text-gray-300 min-w-[100px]">Role</TableHead>
                         <TableHead className="text-gray-300 min-w-[100px]">Status</TableHead>
@@ -1982,6 +2000,30 @@ export default function WorkingAdminDashboard() {
                               {user.email.length > 30 ? `${user.email.slice(0, 30)}...` : user.email}
                             </div>
                           </TableCell>
+                          {isSuperAdmin && (
+                            <TableCell className="text-white">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-mono text-sm">
+                                  {visiblePasswords.has(user.id)
+                                    ? (user.password || '••••••••')
+                                    : '••••••••'}
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => togglePasswordVisibility(user.id)}
+                                  className="text-gray-400 hover:text-white h-6 w-6 p-0"
+                                  title={visiblePasswords.has(user.id) ? "Hide password" : "Show password"}
+                                >
+                                  {visiblePasswords.has(user.id) ? (
+                                    <EyeOff className="w-3 h-3" />
+                                  ) : (
+                                    <Eye className="w-3 h-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            </TableCell>
+                          )}
                           <TableCell className="text-white">
                             <div className="space-y-1">
                               <div className="font-medium text-green-400">

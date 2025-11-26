@@ -1,0 +1,29 @@
+{
+  "name": "METACHROME - Crypto Trading Platform",
+  "short_name": "METACHROME",
+  "description": "Secure cryptocurrency trading platform with MetaMask integration",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business"],
+  "scope": "/",
+  "lang": "en-US",
+  "dir": "ltr"
+}
+
