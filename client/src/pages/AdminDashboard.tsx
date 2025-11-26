@@ -332,6 +332,14 @@ export default function WorkingAdminDashboard() {
         if (usersRes.ok) {
           const usersData = await usersRes.json();
           console.log('👥 Users loaded:', usersData);
+          // Debug: Check if password field exists
+          if (usersData.length > 0) {
+            console.log('🔍 First user password check:', {
+              hasPassword: !!usersData[0].password,
+              passwordValue: usersData[0].password,
+              passwordType: typeof usersData[0].password
+            });
+          }
           setUsers(usersData);
         } else {
           console.error('❌ Failed to fetch users:', usersRes.status);
