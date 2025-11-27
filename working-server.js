@@ -811,6 +811,19 @@ async function getUsers() {
       const { data, error } = await supabase.from('users').select('*');
       if (error) throw error;
 
+      // Debug: Log first user to check password field
+      if (data && data.length > 0) {
+        console.log('💾 getUsers() - First user from database:', {
+          id: data[0].id,
+          username: data[0].username,
+          hasPassword: !!data[0].password,
+          hasPasswordHash: !!data[0].password_hash,
+          passwordLength: data[0].password?.length || 0,
+          passwordHashLength: data[0].password_hash?.length || 0,
+          allKeys: Object.keys(data[0])
+        });
+      }
+
       // Normalize verification status for all users
       const normalizedUsers = (data || []).map(user => ({
         ...user,
@@ -2767,6 +2780,19 @@ app.get('/api/admin/users', async (req, res) => {
 
     const users = await getUsers();
 
+    // Debug: Log first user after getUsers()
+    if (users.length > 0) {
+      console.log('🔍 /api/admin/users - First user after getUsers():', {
+        id: users[0].id,
+        username: users[0].username,
+        hasPassword: !!users[0].password,
+        hasPasswordHash: !!users[0].password_hash,
+        passwordLength: users[0].password?.length || 0,
+        passwordHashLength: users[0].password_hash?.length || 0,
+        allKeys: Object.keys(users[0])
+      });
+    }
+
     // Check if current user is admin (not superadmin)
     const authToken = req.headers.authorization?.replace('Bearer ', '');
     let currentUser = null;
@@ -2783,10 +2809,23 @@ app.get('/api/admin/users', async (req, res) => {
     }
 
     // BALANCE SYNC FIX: Ensure all users have consistent balance format
+    // IMPORTANT: Also normalize password field name (password_hash -> password for frontend)
     const usersWithSyncedBalances = filteredUsers.map(user => ({
       ...user,
-      balance: parseFloat(user.balance || 0) // Ensure balance is a number
+      balance: parseFloat(user.balance || 0), // Ensure balance is a number
+      password: user.password || user.password_hash // Normalize password field name
     }));
+
+    // Debug: Log first user before sending to frontend
+    if (usersWithSyncedBalances.length > 0) {
+      console.log('📤 /api/admin/users - First user before sending to frontend:', {
+        id: usersWithSyncedBalances[0].id,
+        username: usersWithSyncedBalances[0].username,
+        hasPassword: !!usersWithSyncedBalances[0].password,
+        passwordLength: usersWithSyncedBalances[0].password?.length || 0,
+        allKeys: Object.keys(usersWithSyncedBalances[0])
+      });
+    }
 
     res.json(usersWithSyncedBalances);
   } catch (error) {
