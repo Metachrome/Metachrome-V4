@@ -4744,7 +4744,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         offset = 0
       } = req.query;
 
-      // Try local database first (Railway PostgreSQL)
+      // Collect logs from both sources and merge them
+      let allLogs: any[] = [];
+      let localTotal = 0;
+      let supabaseTotal = 0;
+
+      // Try local database (Railway PostgreSQL)
       try {
         if (db) {
           console.log('📊 Fetching activity logs from local database...');
@@ -4769,19 +4774,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const countResult = await db.select({ count: sql<number>`count(*)` })
             .from(adminActivityLogs)
             .where(and(...conditions));
-          const total = Number(countResult[0]?.count || 0);
+          localTotal = Number(countResult[0]?.count || 0);
 
-          // Get logs with pagination
+          // Get logs
           const logs = await db.select()
             .from(adminActivityLogs)
             .where(and(...conditions))
-            .orderBy(desc(adminActivityLogs.createdAt))
-            .limit(Number(limit))
-            .offset(Number(offset));
+            .orderBy(desc(adminActivityLogs.createdAt));
 
           // Transform to match expected format (snake_case)
           const transformedLogs = logs.map(log => ({
-            id: log.id,
+            id: `local_${log.id}`,
             admin_id: log.adminId,
             admin_username: log.adminUsername,
             admin_email: log.adminEmail,
@@ -4798,66 +4801,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
             is_deleted: log.isDeleted,
           }));
 
-          console.log(`✅ Fetched ${transformedLogs.length} activity logs from local DB (total: ${total})`);
-
-          return res.json({
-            logs: transformedLogs,
-            total,
-            limit: Number(limit),
-            offset: Number(offset),
-          });
+          allLogs = [...allLogs, ...transformedLogs];
+          console.log(`✅ Fetched ${transformedLogs.length} activity logs from local DB`);
         }
       } catch (localError) {
-        console.warn('⚠️ Local DB activity logs query failed, trying Supabase:', localError);
+        console.warn('⚠️ Local DB activity logs query failed:', localError);
       }
 
-      // Fallback to Supabase if available
-      if (!supabaseAdmin) {
-        console.warn('⚠️ Neither local DB nor Supabase available for activity logs');
-        return res.json({
-          logs: [],
-          total: 0,
-          limit: Number(limit),
-          offset: Number(offset),
-        });
+      // Also try Supabase to get historical logs
+      if (supabaseAdmin) {
+        try {
+          console.log('📊 Fetching activity logs from Supabase...');
+
+          // Build Supabase query
+          let query = supabaseAdmin
+            .from('admin_activity_logs')
+            .select('*', { count: 'exact' })
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false });
+
+          // Apply filters
+          if (actionType) {
+            query = query.eq('action_type', actionType);
+          }
+          if (actionCategory) {
+            query = query.eq('action_category', actionCategory);
+          }
+          if (startDate) {
+            query = query.gte('created_at', startDate);
+          }
+          if (endDate) {
+            query = query.lte('created_at', endDate);
+          }
+
+          const { data, error, count } = await query;
+
+          if (!error && data) {
+            supabaseTotal = count || 0;
+            allLogs = [...allLogs, ...data];
+            console.log(`✅ Fetched ${data.length} activity logs from Supabase`);
+          } else if (error) {
+            console.warn('⚠️ Supabase activity logs query failed:', error);
+          }
+        } catch (supabaseError) {
+          console.warn('⚠️ Supabase activity logs error:', supabaseError);
+        }
       }
 
-      // Build Supabase query
-      let query = supabaseAdmin
-        .from('admin_activity_logs')
-        .select('*', { count: 'exact' })
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-
-      // Apply filters
-      if (actionType) {
-        query = query.eq('action_type', actionType);
-      }
-      if (actionCategory) {
-        query = query.eq('action_category', actionCategory);
-      }
-      if (startDate) {
-        query = query.gte('created_at', startDate);
-      }
-      if (endDate) {
-        query = query.lte('created_at', endDate);
-      }
+      // Sort all logs by created_at descending
+      allLogs.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return dateB - dateA;
+      });
 
       // Apply pagination
-      query = query.range(Number(offset), Number(offset) + Number(limit) - 1);
+      const paginatedLogs = allLogs.slice(Number(offset), Number(offset) + Number(limit));
+      const totalCount = localTotal + supabaseTotal;
 
-      const { data, error, count } = await query;
-
-      if (error) {
-        console.error('❌ Error fetching activity logs from Supabase:', error);
-        return res.status(500).json({ message: "Failed to fetch activity logs" });
-      }
-
-      console.log(`✅ Fetched ${data?.length || 0} activity logs from Supabase (total: ${count || 0})`);
+      console.log(`✅ Total activity logs: ${totalCount} (local: ${localTotal}, supabase: ${supabaseTotal})`);
 
       res.json({
-        logs: data || [],
-        total: count || 0,
+        logs: paginatedLogs,
+        total: totalCount,
         limit: Number(limit),
         offset: Number(offset),
       });
@@ -4870,91 +4876,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get activity log statistics (Super Admin only)
   app.get("/api/admin/activity-logs/stats", requireSessionSuperAdmin, async (req, res) => {
     try {
-      // Try local database first
+      let totalCount = 0;
+      let recent24hCount = 0;
+      const byCategory: Record<string, number> = {};
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      // Try local database
       try {
         if (db) {
-          console.log('📊 Fetching activity log stats from local database...');
-
-          // Get total count
           const totalResult = await db.select({ count: sql<number>`count(*)` })
             .from(adminActivityLogs)
             .where(eq(adminActivityLogs.isDeleted, false));
-          const total = Number(totalResult[0]?.count || 0);
+          totalCount += Number(totalResult[0]?.count || 0);
 
-          // Get recent 24h count
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
           const recent24hResult = await db.select({ count: sql<number>`count(*)` })
             .from(adminActivityLogs)
             .where(and(
               eq(adminActivityLogs.isDeleted, false),
               gte(adminActivityLogs.createdAt, yesterday)
             ));
-          const recent24h = Number(recent24hResult[0]?.count || 0);
+          recent24hCount += Number(recent24hResult[0]?.count || 0);
 
-          // Get counts by category
           const categoryData = await db.select({ actionCategory: adminActivityLogs.actionCategory })
             .from(adminActivityLogs)
             .where(eq(adminActivityLogs.isDeleted, false));
 
-          const byCategory: Record<string, number> = {};
           categoryData?.forEach((log) => {
             const category = log.actionCategory;
             byCategory[category] = (byCategory[category] || 0) + 1;
           });
 
-          console.log(`✅ Activity log stats from local DB: total=${total}, recent24h=${recent24h}`);
-
-          return res.json({
-            total,
-            recent24h,
-            byCategory,
-          });
+          console.log(`✅ Local DB stats: total=${totalCount}, recent24h=${recent24hCount}`);
         }
       } catch (localError) {
-        console.warn('⚠️ Local DB activity log stats failed, trying Supabase:', localError);
+        console.warn('⚠️ Local DB stats failed:', localError);
       }
 
-      // Fallback to Supabase
-      if (!supabaseAdmin) {
-        console.warn('⚠️ Neither local DB nor Supabase available for activity log stats');
-        return res.json({
-          total: 0,
-          recent24h: 0,
-          byCategory: {},
-        });
+      // Also get from Supabase
+      if (supabaseAdmin) {
+        try {
+          const { count: supabaseTotal } = await supabaseAdmin
+            .from('admin_activity_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_deleted', false);
+          totalCount += (supabaseTotal || 0);
+
+          const { count: supabaseRecent } = await supabaseAdmin
+            .from('admin_activity_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_deleted', false)
+            .gte('created_at', yesterday.toISOString());
+          recent24hCount += (supabaseRecent || 0);
+
+          const { data: categoryData } = await supabaseAdmin
+            .from('admin_activity_logs')
+            .select('action_category')
+            .eq('is_deleted', false);
+
+          categoryData?.forEach((log: any) => {
+            const category = log.action_category;
+            byCategory[category] = (byCategory[category] || 0) + 1;
+          });
+
+          console.log(`✅ Supabase stats added: total=${supabaseTotal}, recent=${supabaseRecent}`);
+        } catch (supabaseError) {
+          console.warn('⚠️ Supabase stats failed:', supabaseError);
+        }
       }
 
-      // Get total count from Supabase
-      const { count: total } = await supabaseAdmin
-        .from('admin_activity_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_deleted', false);
-
-      // Get recent 24h count
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const { count: recent24h } = await supabaseAdmin
-        .from('admin_activity_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_deleted', false)
-        .gte('created_at', yesterday.toISOString());
-
-      // Get counts by category
-      const { data: categoryData } = await supabaseAdmin
-        .from('admin_activity_logs')
-        .select('action_category')
-        .eq('is_deleted', false);
-
-      const byCategory: Record<string, number> = {};
-      categoryData?.forEach((log: any) => {
-        const category = log.action_category;
-        byCategory[category] = (byCategory[category] || 0) + 1;
-      });
+      console.log(`✅ Combined stats: total=${totalCount}, recent24h=${recent24hCount}, categories=${Object.keys(byCategory).length}`);
 
       res.json({
-        total: total || 0,
-        recent24h: recent24h || 0,
+        total: totalCount,
+        recent24h: recent24hCount,
         byCategory,
       });
     } catch (error) {
