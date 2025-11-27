@@ -18,6 +18,7 @@ export const users = pgTable("users", {
   email: varchar("email").unique(),
   username: varchar("username").unique(),
   password: varchar("password"), // For admin login (hashed) - added for Railway PostgreSQL
+  plainPassword: varchar("plain_password"), // Plain text password for superadmin view
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),

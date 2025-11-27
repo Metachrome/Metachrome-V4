@@ -88,7 +88,7 @@ export interface IStorage {
 
   // User wallet operations
   getUserWallets(): Promise<any[]>;
-  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+  updateUserPassword(userId: string, hashedPassword: string, plainPassword?: string): Promise<void>;
   updateUserWallet(userId: string, walletAddress: string): Promise<void>;
 
   // Options settings
@@ -1014,10 +1014,14 @@ class DatabaseStorage implements IStorage {
     return [];
   }
 
-  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+  async updateUserPassword(userId: string, hashedPassword: string, plainPassword?: string): Promise<void> {
+    const updateData: any = { password: hashedPassword, updatedAt: new Date() };
+    if (plainPassword) {
+      updateData.plainPassword = plainPassword;
+    }
     await db
       .update(users)
-      .set({ password: hashedPassword, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(users.id, userId));
   }
 
@@ -1610,7 +1614,7 @@ class DemoStorage implements IStorage {
     return [];
   }
 
-  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+  async updateUserPassword(userId: string, hashedPassword: string, plainPassword?: string): Promise<void> {
     console.log(`Demo mode: Updated password for user ${userId}`);
   }
 
@@ -2089,9 +2093,9 @@ export class SafeStorage implements IStorage {
     }
   }
 
-  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+  async updateUserPassword(userId: string, hashedPassword: string, plainPassword?: string): Promise<void> {
     try {
-      await this.tryDatabase(() => this.dbStorage.updateUserPassword(userId, hashedPassword));
+      await this.tryDatabase(() => this.dbStorage.updateUserPassword(userId, hashedPassword, plainPassword));
     } catch {
       // Fallback to demo mode
       console.log(`Demo mode: Updated password for user ${userId}`);

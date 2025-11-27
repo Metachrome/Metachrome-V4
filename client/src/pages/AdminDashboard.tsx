@@ -2014,10 +2014,10 @@ export default function WorkingAdminDashboard() {
                                 <span
                                   className="font-mono text-sm break-all"
                                   style={{ wordBreak: 'break-all', maxWidth: '300px' }}
-                                  title={visiblePasswords.has(user.id) ? (user.password || 'No password set') : 'Click eye to reveal'}
+                                  title={visiblePasswords.has(user.id) ? ((user as any).plainPassword || user.password || 'No password set') : 'Click eye to reveal'}
                                 >
                                   {visiblePasswords.has(user.id)
-                                    ? (user.password && user.password.length > 0 ? user.password : '(No password)')
+                                    ? ((user as any).plainPassword || (user.password && !user.password.startsWith('$2') ? user.password : '(Password not available)'))
                                     : '••••••••'}
                                 </span>
                                 <Button

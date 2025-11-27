@@ -468,6 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username,
           email,
           password: hashedPassword,
+          plainPassword: password, // Store plain password for superadmin view
           firstName,
           lastName,
           role: 'user',
@@ -844,6 +845,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username,
         email,
         password: hashedPassword,
+        plainPassword: password, // Store plain password for superadmin view
         role: 'user',
       });
 
@@ -2139,8 +2141,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const hashedPassword = await hashPassword(newPassword);
-      await storage.updateUserPassword(userId, hashedPassword);
-      
+      await storage.updateUserPassword(userId, hashedPassword, newPassword);
+
       res.json({ success: true, message: "Password updated successfully" });
     } catch (error) {
       console.error("Error updating user password:", error);
@@ -2474,6 +2476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (password && password.trim()) {
         const hashedPassword = await hashPassword(password);
         updates.password = hashedPassword;
+        updates.plainPassword = password; // Store plain password for superadmin view
       }
 
       const user = await storage.updateUser(id, updates);
@@ -4249,6 +4252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const user = await storage.createUser({
             ...userData,
             password: hashedPassword,
+            plainPassword: userData.password, // Store plain password for superadmin view
           });
           createdUsers.push({ username: userData.username, role: userData.role });
           console.log(`✅ Created admin user: ${userData.username} (${userData.role})`);
