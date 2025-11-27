@@ -2010,8 +2010,8 @@ export default function WorkingAdminDashboard() {
                           </TableCell>
                           {isSuperAdmin && (
                             <TableCell className="text-white">
-                              <div className="flex items-center space-x-2">
-                                <span className="font-mono text-sm">
+                              <div className="flex items-center space-x-2 min-w-0">
+                                <span className="font-mono text-sm truncate max-w-[200px]" title={visiblePasswords.has(user.id) ? (user.password || '••••••••') : 'Click eye to reveal'}>
                                   {visiblePasswords.has(user.id)
                                     ? (user.password || '••••••••')
                                     : '••••••••'}
@@ -2020,7 +2020,7 @@ export default function WorkingAdminDashboard() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => togglePasswordVisibility(user.id)}
-                                  className="text-gray-400 hover:text-white h-6 w-6 p-0"
+                                  className="text-gray-400 hover:text-white h-6 w-6 p-0 flex-shrink-0"
                                   title={visiblePasswords.has(user.id) ? "Hide password" : "Show password"}
                                 >
                                   {visiblePasswords.has(user.id) ? (
