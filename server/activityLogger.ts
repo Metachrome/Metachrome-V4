@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '../lib/supabase';
 import type { Request } from 'express';
+import { db } from './db';
+import { adminActivityLogs } from '@shared/schema';
 
 export interface ActivityLogData {
   adminId: string;
@@ -17,14 +19,50 @@ export interface ActivityLogData {
 }
 
 /**
- * Log admin activity to the database
- * This creates an immutable audit trail of all admin actions
+ * Log admin activity to the local database (Drizzle/PostgreSQL)
  */
-export async function logAdminActivity(data: ActivityLogData): Promise<void> {
+async function logToLocalDatabase(data: ActivityLogData): Promise<boolean> {
+  try {
+    if (!db) {
+      console.warn('⚠️ Local database not available');
+      return false;
+    }
+
+    await db.insert(adminActivityLogs).values({
+      adminId: data.adminId,
+      adminUsername: data.adminUsername,
+      adminEmail: data.adminEmail || null,
+      actionType: data.actionType,
+      actionCategory: data.actionCategory,
+      actionDescription: data.actionDescription,
+      targetUserId: data.targetUserId || null,
+      targetUsername: data.targetUsername || null,
+      targetEmail: data.targetEmail || null,
+      metadata: data.metadata || {},
+      ipAddress: data.ipAddress || null,
+      userAgent: data.userAgent || null,
+      isDeleted: false,
+    });
+
+    console.log('✅ Activity logged to local DB:', {
+      admin: data.adminUsername,
+      action: data.actionType,
+      target: data.targetUsername || 'N/A',
+    });
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to log to local database:', error);
+    return false;
+  }
+}
+
+/**
+ * Log admin activity to Supabase
+ */
+async function logToSupabase(data: ActivityLogData): Promise<boolean> {
   try {
     if (!supabaseAdmin) {
-      console.warn('⚠️ Supabase admin client not available, skipping activity log');
-      return;
+      return false;
     }
 
     const { error } = await supabaseAdmin
@@ -46,15 +84,36 @@ export async function logAdminActivity(data: ActivityLogData): Promise<void> {
       });
 
     if (error) {
-      console.error('❌ Failed to insert activity log:', error);
-      return;
+      console.error('❌ Supabase activity log error:', error);
+      return false;
     }
 
-    console.log('✅ Activity logged:', {
+    console.log('✅ Activity logged to Supabase:', {
       admin: data.adminUsername,
       action: data.actionType,
       target: data.targetUsername || 'N/A',
     });
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to log to Supabase:', error);
+    return false;
+  }
+}
+
+/**
+ * Log admin activity to the database
+ * This creates an immutable audit trail of all admin actions
+ * Tries local DB first, then Supabase as fallback
+ */
+export async function logAdminActivity(data: ActivityLogData): Promise<void> {
+  try {
+    // Try local database first (Railway PostgreSQL)
+    const localSuccess = await logToLocalDatabase(data);
+
+    // If local DB failed and Supabase is available, try Supabase
+    if (!localSuccess && supabaseAdmin) {
+      await logToSupabase(data);
+    }
   } catch (error) {
     // Log error but don't throw - we don't want logging failures to break the main operation
     console.error('❌ Failed to log activity:', error);

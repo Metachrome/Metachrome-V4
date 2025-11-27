@@ -2010,10 +2010,14 @@ export default function WorkingAdminDashboard() {
                           </TableCell>
                           {isSuperAdmin && (
                             <TableCell className="text-white">
-                              <div className="flex items-center space-x-2 min-w-0">
-                                <span className="font-mono text-sm truncate max-w-[200px]" title={visiblePasswords.has(user.id) ? (user.password || '••••••••') : 'Click eye to reveal'}>
+                              <div className="flex items-center space-x-2">
+                                <span
+                                  className="font-mono text-sm break-all"
+                                  style={{ wordBreak: 'break-all', maxWidth: '300px' }}
+                                  title={visiblePasswords.has(user.id) ? (user.password || 'No password set') : 'Click eye to reveal'}
+                                >
                                   {visiblePasswords.has(user.id)
-                                    ? (user.password || '••••••••')
+                                    ? (user.password && user.password.length > 0 ? user.password : '(No password)')
                                     : '••••••••'}
                                 </span>
                                 <Button

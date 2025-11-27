@@ -25,10 +25,12 @@ import { registerChatRoutes } from "./chat-routes";
 import { setupChatTables } from "./setup-chat-tables";
 // import { paymentService } from "./paymentService";
 import { z } from "zod";
-import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdminControlSchema } from "@shared/schema";
-import { sql } from "drizzle-orm";
+import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdminControlSchema, adminActivityLogs } from "@shared/schema";
+import { sql, desc, eq, gte, lte, and } from "drizzle-orm";
 import { transactions } from "@shared/schema";
 import { logAdminActivityFromRequest, ActionTypes, ActionCategories } from "./activityLogger";
+import { db } from "./db";
+import { supabaseAdmin } from "../lib/supabase";
 
 // Notification system for real-time admin alerts
 interface AdminNotification {
@@ -4742,8 +4744,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         offset = 0
       } = req.query;
 
+      // Try local database first (Railway PostgreSQL)
+      try {
+        if (db) {
+          console.log('📊 Fetching activity logs from local database...');
+
+          // Build conditions array
+          const conditions: any[] = [eq(adminActivityLogs.isDeleted, false)];
+
+          if (actionType) {
+            conditions.push(eq(adminActivityLogs.actionType, String(actionType)));
+          }
+          if (actionCategory) {
+            conditions.push(eq(adminActivityLogs.actionCategory, String(actionCategory)));
+          }
+          if (startDate) {
+            conditions.push(gte(adminActivityLogs.createdAt, new Date(String(startDate))));
+          }
+          if (endDate) {
+            conditions.push(lte(adminActivityLogs.createdAt, new Date(String(endDate))));
+          }
+
+          // Get total count
+          const countResult = await db.select({ count: sql<number>`count(*)` })
+            .from(adminActivityLogs)
+            .where(and(...conditions));
+          const total = Number(countResult[0]?.count || 0);
+
+          // Get logs with pagination
+          const logs = await db.select()
+            .from(adminActivityLogs)
+            .where(and(...conditions))
+            .orderBy(desc(adminActivityLogs.createdAt))
+            .limit(Number(limit))
+            .offset(Number(offset));
+
+          // Transform to match expected format (snake_case)
+          const transformedLogs = logs.map(log => ({
+            id: log.id,
+            admin_id: log.adminId,
+            admin_username: log.adminUsername,
+            admin_email: log.adminEmail,
+            action_type: log.actionType,
+            action_category: log.actionCategory,
+            action_description: log.actionDescription,
+            target_user_id: log.targetUserId,
+            target_username: log.targetUsername,
+            target_email: log.targetEmail,
+            metadata: log.metadata,
+            created_at: log.createdAt,
+            ip_address: log.ipAddress,
+            user_agent: log.userAgent,
+            is_deleted: log.isDeleted,
+          }));
+
+          console.log(`✅ Fetched ${transformedLogs.length} activity logs from local DB (total: ${total})`);
+
+          return res.json({
+            logs: transformedLogs,
+            total,
+            limit: Number(limit),
+            offset: Number(offset),
+          });
+        }
+      } catch (localError) {
+        console.warn('⚠️ Local DB activity logs query failed, trying Supabase:', localError);
+      }
+
+      // Fallback to Supabase if available
       if (!supabaseAdmin) {
-        console.warn('⚠️ Supabase admin client not available');
+        console.warn('⚠️ Neither local DB nor Supabase available for activity logs');
         return res.json({
           logs: [],
           total: 0,
@@ -4752,7 +4822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Build query
+      // Build Supabase query
       let query = supabaseAdmin
         .from('admin_activity_logs')
         .select('*', { count: 'exact' })
@@ -4779,11 +4849,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data, error, count } = await query;
 
       if (error) {
-        console.error('❌ Error fetching activity logs:', error);
+        console.error('❌ Error fetching activity logs from Supabase:', error);
         return res.status(500).json({ message: "Failed to fetch activity logs" });
       }
 
-      console.log(`✅ Fetched ${data?.length || 0} activity logs (total: ${count || 0})`);
+      console.log(`✅ Fetched ${data?.length || 0} activity logs from Supabase (total: ${count || 0})`);
 
       res.json({
         logs: data || [],
@@ -4800,8 +4870,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get activity log statistics (Super Admin only)
   app.get("/api/admin/activity-logs/stats", requireSessionSuperAdmin, async (req, res) => {
     try {
+      // Try local database first
+      try {
+        if (db) {
+          console.log('📊 Fetching activity log stats from local database...');
+
+          // Get total count
+          const totalResult = await db.select({ count: sql<number>`count(*)` })
+            .from(adminActivityLogs)
+            .where(eq(adminActivityLogs.isDeleted, false));
+          const total = Number(totalResult[0]?.count || 0);
+
+          // Get recent 24h count
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const recent24hResult = await db.select({ count: sql<number>`count(*)` })
+            .from(adminActivityLogs)
+            .where(and(
+              eq(adminActivityLogs.isDeleted, false),
+              gte(adminActivityLogs.createdAt, yesterday)
+            ));
+          const recent24h = Number(recent24hResult[0]?.count || 0);
+
+          // Get counts by category
+          const categoryData = await db.select({ actionCategory: adminActivityLogs.actionCategory })
+            .from(adminActivityLogs)
+            .where(eq(adminActivityLogs.isDeleted, false));
+
+          const byCategory: Record<string, number> = {};
+          categoryData?.forEach((log) => {
+            const category = log.actionCategory;
+            byCategory[category] = (byCategory[category] || 0) + 1;
+          });
+
+          console.log(`✅ Activity log stats from local DB: total=${total}, recent24h=${recent24h}`);
+
+          return res.json({
+            total,
+            recent24h,
+            byCategory,
+          });
+        }
+      } catch (localError) {
+        console.warn('⚠️ Local DB activity log stats failed, trying Supabase:', localError);
+      }
+
+      // Fallback to Supabase
       if (!supabaseAdmin) {
-        console.warn('⚠️ Supabase admin client not available');
+        console.warn('⚠️ Neither local DB nor Supabase available for activity log stats');
         return res.json({
           total: 0,
           recent24h: 0,
@@ -4809,7 +4925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get total count
+      // Get total count from Supabase
       const { count: total } = await supabaseAdmin
         .from('admin_activity_logs')
         .select('*', { count: 'exact', head: true })
