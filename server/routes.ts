@@ -4063,6 +4063,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Migration endpoint - add plain_password column
+  app.post("/api/setup/migrate-plain-password", async (req, res) => {
+    try {
+      console.log('🔄 Running migration: Adding plain_password column...');
+
+      // Add plain_password column if not exists
+      await db.execute(sql`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS plain_password VARCHAR(255)
+      `);
+
+      console.log('✅ Migration completed: plain_password column added');
+      res.json({ success: true, message: 'Migration completed: plain_password column added' });
+    } catch (error: any) {
+      console.error('❌ Migration error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Admin setup endpoint - creates admin user for development
   app.post("/api/setup/admin", async (req, res) => {
     try {
