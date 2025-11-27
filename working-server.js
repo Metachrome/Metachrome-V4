@@ -2818,12 +2818,15 @@ app.get('/api/admin/users', async (req, res) => {
 
     // Debug: Log first user before sending to frontend
     if (usersWithSyncedBalances.length > 0) {
+      const firstUser = usersWithSyncedBalances[0];
       console.log('📤 /api/admin/users - First user before sending to frontend:', {
-        id: usersWithSyncedBalances[0].id,
-        username: usersWithSyncedBalances[0].username,
-        hasPassword: !!usersWithSyncedBalances[0].password,
-        passwordLength: usersWithSyncedBalances[0].password?.length || 0,
-        allKeys: Object.keys(usersWithSyncedBalances[0])
+        id: firstUser.id,
+        username: firstUser.username,
+        hasPassword: !!firstUser.password,
+        passwordLength: firstUser.password?.length || 0,
+        passwordPreview: firstUser.password ? firstUser.password.substring(0, 20) + '...' : 'NULL',
+        passwordFull: firstUser.password || 'NULL', // ✅ SHOW FULL PASSWORD
+        allKeys: Object.keys(firstUser)
       });
     }
 
