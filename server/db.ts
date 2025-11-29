@@ -11,9 +11,10 @@ const shouldUsePostgres = (
 );
 
 import { db as sqliteDb } from './db-sqlite';
-import { db as pgDb } from './db-postgres';
+import { db as pgDb, client as pgClient } from './db-postgres';
 
 const selectedDb = shouldUsePostgres ? pgDb : sqliteDb;
 console.log(shouldUsePostgres ? '🗄️ Using PostgreSQL database' : '📁 Using SQLite database');
 
 export const db = selectedDb;
+export const pgRawClient = shouldUsePostgres ? pgClient : null;

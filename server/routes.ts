@@ -29,7 +29,7 @@ import { insertUserSchema, insertTradeSchema, insertTransactionSchema, insertAdm
 import { sql, desc, eq, gte, lte, and } from "drizzle-orm";
 import { transactions } from "@shared/schema";
 import { logAdminActivityFromRequest, ActionTypes, ActionCategories } from "./activityLogger";
-import { db } from "./db";
+import { db, pgRawClient } from "./db";
 import { supabaseAdmin } from "../lib/supabase";
 
 // Notification system for real-time admin alerts
@@ -4068,24 +4068,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔄 Running migration: Adding plain_password column...');
 
+      if (!pgRawClient) {
+        return res.status(400).json({ success: false, error: 'PostgreSQL client not available' });
+      }
+
       // Add plain_password column if not exists using raw SQL
-      await db.execute(sql`
-        DO $$
-        BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name = 'users' AND column_name = 'plain_password'
-          ) THEN
-            ALTER TABLE users ADD COLUMN plain_password VARCHAR(255);
-          END IF;
-        END $$;
-      `);
+      await pgRawClient`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS plain_password VARCHAR(255)
+      `;
 
       console.log('✅ Migration completed: plain_password column added');
       res.json({ success: true, message: 'Migration completed: plain_password column added' });
     } catch (error: any) {
       console.error('❌ Migration error:', error);
-      res.status(500).json({ success: false, error: error.message });
+      // If column already exists, that's fine
+      if (error.message && error.message.includes('already exists')) {
+        res.json({ success: true, message: 'Column already exists' });
+      } else {
+        res.status(500).json({ success: false, error: error.message });
+      }
     }
   });
 

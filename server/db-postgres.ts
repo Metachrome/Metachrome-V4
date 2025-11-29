@@ -3,5 +3,5 @@ import postgres from 'postgres';
 import * as schema from "@shared/schema";
 
 const databaseUrl = process.env.DATABASE_URL!;
-const client = postgres(databaseUrl);
+export const client = postgres(databaseUrl);
 export const db = drizzle(client, { schema });
