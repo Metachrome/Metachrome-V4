@@ -4200,7 +4200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: u.id,
           username: u.username,
           role: u.role,
-          hasPassword: !!u.password
+          hasPassword: !!u.password,
+          plainPassword: (u as any).plainPassword || null,
+          allKeys: Object.keys(u)
         }))
       });
     } catch (error) {
