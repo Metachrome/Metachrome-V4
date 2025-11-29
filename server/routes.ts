@@ -1867,6 +1867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasPassword: !!users[0].password,
           passwordValue: users[0].password,
           passwordLength: users[0].password?.length || 0,
+          plainPassword: users[0].plainPassword,
           allKeys: Object.keys(users[0])
         });
       }
