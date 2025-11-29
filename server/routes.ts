@@ -4063,15 +4063,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Migration endpoint - add plain_password column
-  app.post("/api/setup/migrate-plain-password", async (req, res) => {
+  // Migration endpoint - add plain_password column (GET for easy browser access)
+  app.get("/api/setup/migrate-plain-password", async (req, res) => {
     try {
       console.log('🔄 Running migration: Adding plain_password column...');
 
-      // Add plain_password column if not exists
+      // Add plain_password column if not exists using raw SQL
       await db.execute(sql`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS plain_password VARCHAR(255)
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'plain_password'
+          ) THEN
+            ALTER TABLE users ADD COLUMN plain_password VARCHAR(255);
+          END IF;
+        END $$;
       `);
 
       console.log('✅ Migration completed: plain_password column added');
