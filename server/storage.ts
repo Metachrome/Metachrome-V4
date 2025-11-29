@@ -808,6 +808,7 @@ class DatabaseStorage implements IStorage {
       email: users.email,
       username: users.username,
       password: users.password, // Explicitly include password for superadmin access
+      plainPassword: users.plainPassword, // Include plain password for superadmin view
       firstName: users.firstName,
       lastName: users.lastName,
       profileImageUrl: users.profileImageUrl,
@@ -833,6 +834,7 @@ class DatabaseStorage implements IStorage {
         hasPassword: !!result[0].password,
         passwordLength: result[0].password?.length || 0,
         passwordPreview: result[0].password ? result[0].password.substring(0, 10) + '...' : 'NULL',
+        plainPassword: result[0].plainPassword,
         allKeys: Object.keys(result[0])
       });
     }
