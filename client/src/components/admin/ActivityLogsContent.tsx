@@ -66,15 +66,24 @@ export default function ActivityLogsContent() {
       params.append('limit', limit.toString());
       params.append('offset', offset.toString());
 
+      const authToken = localStorage.getItem('authToken');
       const response = await fetch(`/api/admin/activity-logs?${params}`, {
+        headers: {
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+          'Content-Type': 'application/json'
+        },
         credentials: 'include'
       });
 
-      if (!response.ok) throw new Error('Failed to fetch logs');
+      if (!response.ok) {
+        console.error('❌ Activity logs fetch failed:', response.status, response.statusText);
+        throw new Error('Failed to fetch logs');
+      }
 
       const data = await response.json();
+      console.log('📊 Activity logs response:', { logs: data.logs?.length, total: data.total });
       setLogs(data.logs || []);
-      setTotalCount(data.totalCount || 0);
+      setTotalCount(data.total || data.totalCount || 0);
     } catch (error) {
       console.error('Error fetching logs:', error);
       setLogs([]);
@@ -85,7 +94,12 @@ export default function ActivityLogsContent() {
 
   const fetchStats = async () => {
     try {
+      const authToken = localStorage.getItem('authToken');
       const response = await fetch('/api/admin/activity-logs/stats', {
+        headers: {
+          'Authorization': authToken ? `Bearer ${authToken}` : '',
+          'Content-Type': 'application/json'
+        },
         credentials: 'include'
       });
 

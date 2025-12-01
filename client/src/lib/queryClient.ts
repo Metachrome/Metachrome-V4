@@ -10,10 +10,10 @@ const getApiBaseUrl = () => {
   // Check if we're on Vercel (vercel.app domain)
   const isVercel = window.location.hostname.includes('vercel.app');
 
-  // Check if we're on Railway (railway.app domain)
+  // Check if we're on Railway (railway.app domain) - kept for compatibility
   const isRailway = window.location.hostname.includes('railway.app');
 
-  // Check if we're on metachrome.io (should use Railway backend)
+  // Check if we're on metachrome.io (production domain)
   const isMetachromeIO = window.location.hostname.includes('metachrome.io');
 
   console.log('🔧 API Base URL Detection:', {

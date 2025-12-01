@@ -1,6 +1,6 @@
 /**
- * Script to check password data in Railway PostgreSQL
- * Run this script: railway run node scripts/check-password-data.js
+ * Script to check password data in Supabase PostgreSQL
+ * Run this script: node scripts/check-password-data.js
  */
 
 const { Client } = require('pg');

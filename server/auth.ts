@@ -148,7 +148,8 @@ export function requireSessionSuperAdmin(req: any, res: Response, next: NextFunc
     return res.status(401).json({ message: 'No token provided' });
   }
 
-  if (user.role !== 'super_admin') {
+  // Accept both 'super_admin' and 'superadmin' roles
+  if (user.role !== 'super_admin' && user.role !== 'superadmin') {
     return res.status(403).json({ message: 'Super admin privileges required' });
   }
 
