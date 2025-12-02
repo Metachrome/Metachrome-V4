@@ -4766,23 +4766,27 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
         console.log('💾 User balance changes saved to file');
       }
 
-      // Add approved transaction record with conversion details
-      const transactionDescription = depositCurrency !== 'USDT' && !depositCurrency.includes('USDT')
-        ? `Deposit approved - ${depositAmountOriginal} ${depositCurrency} converted to ${depositAmountInUSDT.toFixed(2)} USDT (rate: $${conversionRate.toFixed(2)})`
-        : `Deposit approved - ${depositAmountInUSDT.toFixed(2)} USDT`;
+      // Add approved transaction record with conversion details - wrap in try/catch to not block deposit update
+      try {
+        const transactionDescription = depositCurrency !== 'USDT' && !depositCurrency.includes('USDT')
+          ? `Deposit approved - ${depositAmountOriginal} ${depositCurrency} converted to ${depositAmountInUSDT.toFixed(2)} USDT (rate: $${conversionRate.toFixed(2)})`
+          : `Deposit approved - ${depositAmountInUSDT.toFixed(2)} USDT`;
 
-      const transaction = {
-        id: `txn-${Date.now()}`,
-        user_id: user.id,
-        type: 'deposit',
-        amount: depositAmountInUSDT, // Store USDT amount in transaction
-        status: 'completed',
-        description: transactionDescription,
-        created_at: new Date().toISOString()
-      };
-      await createTransaction(transaction);
-      console.log('📝 Approved deposit transaction recorded');
-      console.log('📝 Transaction details:', transaction);
+        const transaction = {
+          id: `txn-${Date.now()}`,
+          user_id: user.id,
+          type: 'deposit',
+          amount: depositAmountInUSDT, // Store USDT amount in transaction
+          status: 'completed',
+          description: transactionDescription,
+          created_at: new Date().toISOString()
+        };
+        await createTransaction(transaction);
+        console.log('📝 Approved deposit transaction recorded');
+        console.log('📝 Transaction details:', transaction);
+      } catch (txnError) {
+        console.error('⚠️ Failed to create approval transaction (non-blocking):', txnError.message);
+      }
 
       // Update deposit status to 'approved' instead of deleting - KEEP HISTORY
       // Also store conversion details
@@ -4885,19 +4889,23 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
     // Find the user for transaction record
     const user = users.find(u => u.username === deposit.username);
 
-    // Add rejected transaction record
-    const transaction = {
-      id: `txn-${Date.now()}`,
-      user_id: user ? user.id : deposit.user_id,
-      type: 'deposit',
-      amount: deposit.amount,
-      status: 'failed', // Use 'failed' for deposit/withdraw rejections (database constraint)
-      description: `Deposit rejected by admin - Reason: ${reason || 'No reason provided'} - ${deposit.currency} via ${deposit.network}`,
-      created_at: new Date().toISOString()
-    };
-    await createTransaction(transaction);
-    console.log('📝 Rejected deposit transaction recorded');
-    console.log('📝 Transaction details:', transaction);
+    // Add rejected transaction record - wrap in try/catch to not block deposit update
+    try {
+      const transaction = {
+        id: `txn-${Date.now()}`,
+        user_id: user ? user.id : deposit.user_id,
+        type: 'deposit',
+        amount: deposit.amount,
+        status: 'failed', // Use 'failed' for deposit/withdraw rejections (database constraint)
+        description: `Deposit rejected by admin - Reason: ${reason || 'No reason provided'} - ${deposit.currency} via ${deposit.network}`,
+        created_at: new Date().toISOString()
+      };
+      await createTransaction(transaction);
+      console.log('📝 Rejected deposit transaction recorded');
+      console.log('📝 Transaction details:', transaction);
+    } catch (txnError) {
+      console.error('⚠️ Failed to create rejection transaction (non-blocking):', txnError.message);
+    }
 
     // Update deposit status to 'rejected' instead of deleting - KEEP HISTORY
     if (isFromSupabase) {
