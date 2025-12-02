@@ -4913,25 +4913,27 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       console.error('⚠️ Failed to create rejection transaction (non-blocking):', txnError.message);
     }
 
-    // Update deposit status to 'rejected' instead of deleting - KEEP HISTORY
+    // Update deposit status to 'failed' instead of deleting - KEEP HISTORY
+    // Using 'failed' instead of 'rejected' to satisfy database constraint
     if (isFromSupabase) {
       // Update in Supabase database
       if (supabase) {
         try {
-          const { error } = await supabase
+          const { data: updateData, error } = await supabase
             .from('deposits')
             .update({
-              status: 'rejected',
-              updated_at: new Date().toISOString(),
-              rejected_at: new Date().toISOString(),
-              rejection_reason: reason || 'No reason provided'
+              status: 'failed',
+              updated_at: new Date().toISOString()
             })
-            .eq('id', depositId);
+            .eq('id', depositId)
+            .select();
 
           if (error) {
             console.error('⚠️ Failed to update rejected deposit in Supabase:', error);
+            console.error('⚠️ Error details:', JSON.stringify(error));
           } else {
             console.log('✅ Rejected deposit status updated in Supabase database');
+            console.log('✅ Updated data:', JSON.stringify(updateData));
           }
         } catch (dbError) {
           console.error('⚠️ Supabase deposit update sync error:', dbError);
@@ -4940,30 +4942,30 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
     } else {
       // Update in local array
       if (depositIndex !== -1) {
-        pendingDeposits[depositIndex].status = 'rejected';
+        pendingDeposits[depositIndex].status = 'failed';
         pendingDeposits[depositIndex].updated_at = new Date().toISOString();
-        pendingDeposits[depositIndex].rejected_at = new Date().toISOString();
-        pendingDeposits[depositIndex].rejection_reason = reason || 'No reason provided';
         pendingData.deposits = pendingDeposits;
         savePendingData();
-        console.log('✅ Deposit status updated to rejected in local list');
+        console.log('✅ Deposit status updated to failed in local list');
       }
 
       // Also try to update in Supabase (in case it exists there too)
       if (supabase) {
         try {
-          const { error } = await supabase
+          const { data: updateData, error } = await supabase
             .from('deposits')
             .update({
-              status: 'rejected',
-              updated_at: new Date().toISOString(),
-              rejected_at: new Date().toISOString(),
-              rejection_reason: reason || 'No reason provided'
+              status: 'failed',
+              updated_at: new Date().toISOString()
             })
-            .eq('id', depositId);
+            .eq('id', depositId)
+            .select();
 
           if (!error) {
             console.log('✅ Deposit also updated in Supabase database');
+            console.log('✅ Updated data:', JSON.stringify(updateData));
+          } else {
+            console.error('⚠️ Supabase update error:', JSON.stringify(error));
           }
         } catch (dbError) {
           console.log('⚠️ Supabase update attempt failed:', dbError.message);
