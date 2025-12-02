@@ -2922,12 +2922,53 @@ async function logAdminActivity(adminId, adminUsername, actionCategory, actionTy
 // Get all activity logs (Super Admin only)
 app.get('/api/admin/activity-logs', async (req, res) => {
   try {
-    // Return empty logs - Railway PostgreSQL database has no logs
+    const { actionType, actionCategory, startDate, endDate, limit = 100, offset = 0 } = req.query;
+
+    if (!isSupabaseConfigured || !supabase) {
+      console.log('⚠️ Supabase not configured for activity logs');
+      return res.json({ logs: [], total: 0, limit: Number(limit), offset: Number(offset) });
+    }
+
+    console.log('📊 Fetching activity logs from Supabase...');
+
+    // Build Supabase query
+    let query = supabase
+      .from('admin_activity_logs')
+      .select('*', { count: 'exact' })
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (actionType) {
+      query = query.eq('action_type', actionType);
+    }
+    if (actionCategory) {
+      query = query.eq('action_category', actionCategory);
+    }
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+
+    // Apply pagination
+    query = query.range(Number(offset), Number(offset) + Number(limit) - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('❌ Supabase activity logs query failed:', error);
+      return res.json({ logs: [], total: 0, limit: Number(limit), offset: Number(offset) });
+    }
+
+    console.log(`✅ Fetched ${data?.length || 0} activity logs from Supabase (total: ${count || 0})`);
+
     res.json({
-      logs: [],
-      total: 0,
-      limit: 100,
-      offset: 0,
+      logs: data || [],
+      total: count || 0,
+      limit: Number(limit),
+      offset: Number(offset),
     });
   } catch (error) {
     console.error("Error fetching activity logs:", error);
@@ -2938,11 +2979,49 @@ app.get('/api/admin/activity-logs', async (req, res) => {
 // Get activity log statistics (Super Admin only)
 app.get('/api/admin/activity-logs/stats', async (req, res) => {
   try {
-    // Return empty stats - Railway PostgreSQL database has no logs
+    if (!isSupabaseConfigured || !supabase) {
+      console.log('⚠️ Supabase not configured for activity log stats');
+      return res.json({ total: 0, recent24h: 0, byCategory: {} });
+    }
+
+    console.log('📊 Fetching activity log stats from Supabase...');
+
+    // Get total count
+    const { count: totalCount } = await supabase
+      .from('admin_activity_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_deleted', false);
+
+    // Get last 24h count
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const { count: recent24hCount } = await supabase
+      .from('admin_activity_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_deleted', false)
+      .gte('created_at', yesterday.toISOString());
+
+    // Get counts by category
+    const { data: categoryData } = await supabase
+      .from('admin_activity_logs')
+      .select('action_category')
+      .eq('is_deleted', false);
+
+    const byCategory = {};
+    if (categoryData) {
+      categoryData.forEach(item => {
+        const cat = item.action_category || 'OTHER';
+        byCategory[cat] = (byCategory[cat] || 0) + 1;
+      });
+    }
+
+    console.log(`✅ Activity log stats: total=${totalCount}, recent24h=${recent24hCount}, categories=${Object.keys(byCategory).length}`);
+
     res.json({
-      total: 0,
-      recent24h: 0,
-      byCategory: {},
+      total: totalCount || 0,
+      recent24h: recent24hCount || 0,
+      byCategory,
     });
   } catch (error) {
     console.error("Error fetching activity log stats:", error);
