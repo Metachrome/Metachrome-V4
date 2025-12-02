@@ -1330,6 +1330,20 @@ async function getUserFromToken(token) {
       return null;
     } else if (token.startsWith('admin-session-')) {
       // Handle admin tokens
+      // Token format: admin-session-{userId}-{timestamp}
+      // For UUID format: admin-session-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-timestamp
+
+      const allUsers = await getUsers();
+
+      // First try: find user by checking if token contains their ID
+      let foundUser = allUsers.find(u => token.includes(u.id));
+
+      if (foundUser) {
+        console.log('✅ getUserFromToken (admin): Found by ID in token:', foundUser.username, 'role:', foundUser.role);
+        return foundUser;
+      }
+
+      // Second try: parse token manually
       const parts = token.split('-');
       if (parts.length >= 4) {
         // Similar logic for admin tokens
@@ -1337,21 +1351,30 @@ async function getUserFromToken(token) {
         const userId = userIdParts.join('-');
 
         if (isSupabaseConfigured && supabase) {
+          // Include 'superadmin' (without underscore) as well
           const { data, error } = await supabase
             .from('users')
             .select('*')
             .eq('id', userId)
-            .in('role', ['admin', 'super_admin'])
+            .in('role', ['admin', 'super_admin', 'superadmin'])
             .single();
 
           if (error && error.code !== 'PGRST116') throw error;
-          return data;
+          if (data) {
+            console.log('✅ getUserFromToken (admin): Found by parsed ID:', data.username, 'role:', data.role);
+            return data;
+          }
         } else {
           // Development fallback
-          const users = await getUsers();
-          return users.find(u => u.id === userId && ['admin', 'super_admin'].includes(u.role));
+          foundUser = allUsers.find(u => u.id === userId && ['admin', 'super_admin', 'superadmin'].includes(u.role));
+          if (foundUser) {
+            console.log('✅ getUserFromToken (admin): Found in local storage:', foundUser.username, 'role:', foundUser.role);
+            return foundUser;
+          }
         }
       }
+
+      console.log('⚠️ getUserFromToken (admin): Admin user not found in token');
     }
 
     return null;
@@ -3838,13 +3861,7 @@ app.post('/api/admin/trading-controls', async (req, res) => {
 
       // Log trading control activity
       const authToken = req.headers.authorization?.replace('Bearer ', '');
-      let adminUser = null;
-      if (authToken) {
-        try {
-          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-          adminUser = users.find(u => u.id === decoded.userId);
-        } catch (e) { }
-      }
+      const adminUser = await getUserFromToken(authToken);
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
@@ -4871,14 +4888,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
 
       // Log activity for deposit approval
       const authToken = req.headers.authorization?.replace('Bearer ', '');
-      let adminUser = null;
-      if (authToken) {
-        try {
-          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-          const allUsers = await getUsers();
-          adminUser = allUsers.find(u => u.id === decoded.userId);
-        } catch (e) { }
-      }
+      const adminUser = await getUserFromToken(authToken);
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
@@ -4982,21 +4992,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
 
     // Log activity for deposit rejection
     const authTokenReject = req.headers.authorization?.replace('Bearer ', '');
-    let adminUserReject = null;
-    if (authTokenReject) {
-      try {
-        const decoded = jwt.verify(authTokenReject, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-        const allUsers = await getUsers();
-        adminUserReject = allUsers.find(u => u.id === decoded.userId);
-        console.log('🔍 DEBUG: Admin user for logging:', {
-          userId: decoded.userId,
-          foundUser: !!adminUserReject,
-          username: adminUserReject?.username,
-          role: adminUserReject?.role,
-          displayName: getAdminDisplayName(adminUserReject)
-        });
-      } catch (e) { console.log('🔍 DEBUG: JWT decode error:', e.message); }
-    }
+    const adminUserReject = await getUserFromToken(authTokenReject);
 
     await logAdminActivity(
       adminUserReject?.id || '00000000-0000-0000-0000-000000000000',
@@ -5212,14 +5208,7 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
 
     // Log activity for withdrawal action
     const authToken = req.headers.authorization?.replace('Bearer ', '');
-    let adminUser = null;
-    if (authToken) {
-      try {
-        const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-        const allUsers = await getUsers();
-        adminUser = allUsers.find(u => u.id === decoded.userId);
-      } catch (e) { }
-    }
+    const adminUser = await getUserFromToken(authToken);
 
     const actionType = action === 'approve' ? 'WITHDRAWAL_APPROVED' : 'WITHDRAWAL_REJECTED';
     const description = action === 'approve'
@@ -10081,14 +10070,7 @@ app.post('/api/superadmin/deposit', async (req, res) => {
 
     // Log activity for superadmin deposit
     const authToken = req.headers.authorization?.replace('Bearer ', '');
-    let adminUser = null;
-    if (authToken) {
-      try {
-        const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-        const allUsers = await getUsers();
-        adminUser = allUsers.find(u => u.id === decoded.userId);
-      } catch (e) { }
-    }
+    const adminUser = await getUserFromToken(authToken);
 
     await logAdminActivity(
       adminUser?.id || '00000000-0000-0000-0000-000000000000',
@@ -10186,14 +10168,7 @@ app.post('/api/superadmin/withdrawal', async (req, res) => {
 
     // Log activity for superadmin withdrawal
     const authToken = req.headers.authorization?.replace('Bearer ', '');
-    let adminUser = null;
-    if (authToken) {
-      try {
-        const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-        const allUsers = await getUsers();
-        adminUser = allUsers.find(u => u.id === decoded.userId);
-      } catch (e) { }
-    }
+    const adminUser = await getUserFromToken(authToken);
 
     await logAdminActivity(
       adminUser?.id || '00000000-0000-0000-0000-000000000000',
@@ -10384,14 +10359,7 @@ app.post('/api/superadmin/update-wallet', async (req, res) => {
 
     // Log activity for wallet update
     const authTokenWallet = req.headers.authorization?.replace('Bearer ', '');
-    let adminUserWallet = null;
-    if (authTokenWallet) {
-      try {
-        const decoded = jwt.verify(authTokenWallet, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-        const allUsers = await getUsers();
-        adminUserWallet = allUsers.find(u => u.id === decoded.userId);
-      } catch (e) { }
-    }
+    const adminUserWallet = await getUserFromToken(authTokenWallet);
 
     await logAdminActivity(
       adminUserWallet?.id || '00000000-0000-0000-0000-000000000000',
@@ -12081,14 +12049,7 @@ app.post('/api/admin/redeem-codes', async (req, res) => {
 
       // Log redeem code creation
       const authToken = req.headers.authorization?.replace('Bearer ', '');
-      let adminUser = null;
-      if (authToken) {
-        try {
-          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
-          const allUsers = await getUsers();
-          adminUser = allUsers.find(u => u.id === decoded.userId);
-        } catch (e) { }
-      }
+      const adminUser = await getUserFromToken(authToken);
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
