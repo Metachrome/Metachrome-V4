@@ -4624,8 +4624,20 @@ app.get('/api/admin/pending-requests', async (req, res) => {
   }
 });
 
+// ===== TEST DEPOSIT ENDPOINT =====
+app.get('/api/admin/deposits/test-endpoint', (req, res) => {
+  console.log('🧪 TEST DEPOSIT ENDPOINT HIT!');
+  res.json({ success: true, message: 'Deposit endpoint is reachable', timestamp: Date.now() });
+});
+
 // ===== DEPOSIT ACTION ENDPOINT =====
 app.post('/api/admin/deposits/:id/action', async (req, res) => {
+  console.log('🚀🚀🚀 DEPOSIT ACTION ENDPOINT HIT! 🚀🚀🚀');
+  console.log('🚀 Full URL:', req.originalUrl);
+  console.log('🚀 Method:', req.method);
+  console.log('🚀 Params:', JSON.stringify(req.params));
+  console.log('🚀 Body:', JSON.stringify(req.body));
+
   try {
     const depositId = req.params.id;
     const { action, reason } = req.body;
