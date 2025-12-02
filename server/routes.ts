@@ -30,7 +30,8 @@ import { sql, desc, eq, gte, lte, and } from "drizzle-orm";
 import { transactions } from "@shared/schema";
 import { logAdminActivityFromRequest, ActionTypes, ActionCategories } from "./activityLogger";
 import { db, pgRawClient } from "./db";
-// SUPABASE REMOVED - Using Railway PostgreSQL only via Drizzle ORM
+// SUPABASE ENABLED - Import for activity logs and other features
+import { supabaseAdmin } from "../lib/supabase";
 
 // Notification system for real-time admin alerts
 interface AdminNotification {
