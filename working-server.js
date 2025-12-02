@@ -4728,6 +4728,16 @@ const handleDepositAction = async (req, res) => {
     const users = await getUsers();
     console.log('👥 Users loaded:', users.length);
 
+    // Find user early for both approve and reject actions (needed for activity logging)
+    let user = users.find(u => u.username === deposit.username);
+    if (!user && deposit.userId) {
+      user = users.find(u => u.id === deposit.userId);
+    }
+    if (!user && deposit.user_id) {
+      user = users.find(u => u.id === deposit.user_id);
+    }
+    console.log('🔍 User found for deposit:', user ? user.username : 'NOT FOUND');
+
     if (action === 'approve') {
       console.log('✅ Processing APPROVE action...');
 
