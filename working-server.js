@@ -12663,6 +12663,7 @@ app.post('/api/admin/verify-document/:docId', async (req, res) => {
   } catch (error) {
     console.error('❌ Error verifying document:', error);
     res.status(500).json({ error: 'Failed to verify document' });
+  }
 });
 
 // Test referral stats endpoint (no auth required for testing)
