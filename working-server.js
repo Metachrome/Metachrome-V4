@@ -2719,7 +2719,7 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
-        adminUser?.username || 'ADMIN',
+        getAdminDisplayName(adminUser),
         'USER_MANAGEMENT',
         'PASSWORD_CHANGED',
         `Changed password for user ${targetUser?.username || userId}`,
@@ -2756,7 +2756,7 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
-        adminUser?.username || 'ADMIN',
+        getAdminDisplayName(adminUser),
         'USER_MANAGEMENT',
         'PASSWORD_CHANGED',
         `Changed password for user ${users[userIndex].username}`,
@@ -2924,6 +2924,13 @@ async function logTradingActivity(userId, username, actionType, description, met
   } catch (error) {
     console.error('❌ Error logging trading activity:', error);
   }
+}
+
+// Helper function to get admin display name based on role
+function getAdminDisplayName(adminUser) {
+  if (!adminUser) return 'ADMIN';
+  const isSuperadmin = adminUser.role === 'super_admin' || adminUser.role === 'superadmin';
+  return isSuperadmin ? 'SUPERADMIN' : (adminUser.username || 'ADMIN');
 }
 
 // Helper function to log admin activity (generic)
@@ -3430,7 +3437,7 @@ app.post('/api/admin/users', async (req, res) => {
 
     await logAdminActivity(
       adminUser?.id || '00000000-0000-0000-0000-000000000000',
-      adminUser?.username || 'ADMIN',
+      getAdminDisplayName(adminUser),
       'USER_MANAGEMENT',
       'USER_CREATED',
       `Created new user: ${username} with role ${role || 'user'}`,
@@ -3511,7 +3518,7 @@ app.put('/api/admin/users/:id', async (req, res) => {
       // Log user update activity
       await logAdminActivity(
         currentUser?.id || '00000000-0000-0000-0000-000000000000',
-        currentUser?.username || 'ADMIN',
+        getAdminDisplayName(currentUser),
         'USER_MANAGEMENT',
         'USER_UPDATED',
         `Updated user ${user.username}: ${Object.keys(updateData).filter(k => k !== 'updated_at').join(', ')}`,
@@ -3533,7 +3540,7 @@ app.put('/api/admin/users/:id', async (req, res) => {
       // Log user update activity
       await logAdminActivity(
         currentUser?.id || '00000000-0000-0000-0000-000000000000',
-        currentUser?.username || 'ADMIN',
+        getAdminDisplayName(currentUser),
         'USER_MANAGEMENT',
         'USER_UPDATED',
         `Updated user ${user.username}: ${Object.keys(updateData).filter(k => k !== 'updated_at').join(', ')}`,
@@ -3841,7 +3848,7 @@ app.post('/api/admin/trading-controls', async (req, res) => {
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
-        adminUser?.username || 'ADMIN',
+        getAdminDisplayName(adminUser),
         'TRADING',
         'TRADING_CONTROL_CHANGED',
         `Changed trading mode for ${users[userIndex].username} to ${controlType.toUpperCase()}`,
@@ -4875,7 +4882,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
-        adminUser?.username || 'ADMIN',
+        getAdminDisplayName(adminUser),
         'TRANSACTIONS',
         'DEPOSIT_APPROVED',
         `Approved deposit of ${depositAmountInUSDT.toFixed(2)} USDT for user ${user.username}`,
@@ -4986,7 +4993,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
 
     await logAdminActivity(
       adminUserReject?.id || '00000000-0000-0000-0000-000000000000',
-      adminUserReject?.username || 'ADMIN',
+      getAdminDisplayName(adminUserReject),
       'TRANSACTIONS',
       'DEPOSIT_REJECTED',
       `Rejected deposit of ${deposit.amount} ${deposit.currency} for user ${deposit.username}. Reason: ${reason || 'No reason provided'}`,
@@ -5214,7 +5221,7 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
 
     await logAdminActivity(
       adminUser?.id || '00000000-0000-0000-0000-000000000000',
-      adminUser?.username || 'ADMIN',
+      getAdminDisplayName(adminUser),
       'TRANSACTIONS',
       actionType,
       description,
@@ -10078,7 +10085,7 @@ app.post('/api/superadmin/deposit', async (req, res) => {
 
     await logAdminActivity(
       adminUser?.id || '00000000-0000-0000-0000-000000000000',
-      adminUser?.username || 'SUPERADMIN',
+      getAdminDisplayName(adminUser),
       'BALANCE',
       'SUPERADMIN_DEPOSIT',
       `Superadmin deposited ${amount} USDT to user ${user.username}. Balance: ${oldBalance} → ${newBalance}`,
@@ -10183,7 +10190,7 @@ app.post('/api/superadmin/withdrawal', async (req, res) => {
 
     await logAdminActivity(
       adminUser?.id || '00000000-0000-0000-0000-000000000000',
-      adminUser?.username || 'SUPERADMIN',
+      getAdminDisplayName(adminUser),
       'BALANCE',
       'SUPERADMIN_WITHDRAWAL',
       `Superadmin withdrew ${amount} USDT from user ${user.username}. Balance: ${oldBalance} → ${newBalance}`,
@@ -10273,10 +10280,10 @@ app.post('/api/superadmin/change-password', async (req, res) => {
     // Log activity for password change
     await logAdminActivity(
       currentUser?.id || '00000000-0000-0000-0000-000000000000',
-      currentUser?.username || 'ADMIN',
+      getAdminDisplayName(currentUser),
       'USER_MANAGEMENT',
       'PASSWORD_CHANGED',
-      `${currentUser?.role === 'super_admin' ? 'Superadmin' : 'Admin'} changed password for user ${user.username}`,
+      `${getAdminDisplayName(currentUser)} changed password for user ${user.username}`,
       userId,
       user.username,
       { method: 'admin_panel', changedBy: currentUser?.username }
@@ -10381,10 +10388,10 @@ app.post('/api/superadmin/update-wallet', async (req, res) => {
 
     await logAdminActivity(
       adminUserWallet?.id || '00000000-0000-0000-0000-000000000000',
-      adminUserWallet?.username || 'SUPERADMIN',
+      getAdminDisplayName(adminUserWallet),
       'USER_MANAGEMENT',
       'WALLET_UPDATED',
-      `Superadmin updated wallet address for user ${user.username}`,
+      `${getAdminDisplayName(adminUserWallet)} updated wallet address for user ${user.username}`,
       userId,
       user.username,
       { oldWallet: currentWallet, newWallet: walletAddress }
@@ -12078,7 +12085,7 @@ app.post('/api/admin/redeem-codes', async (req, res) => {
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
-        adminUser?.username || 'ADMIN',
+        getAdminDisplayName(adminUser),
         'SYSTEM',
         'REDEEM_CODE_CREATED',
         `Created redeem code ${code.toUpperCase()} with bonus ${bonusAmount} USDT`,
@@ -12395,7 +12402,7 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
-        adminUser?.username || 'SUPERADMIN',
+        getAdminDisplayName(adminUser),
         'VERIFICATION',
         actionType,
         description,
@@ -12973,7 +12980,7 @@ app.post('/api/admin/verify-document/:docId', async (req, res) => {
 
       await logAdminActivity(
         adminUser?.id || '00000000-0000-0000-0000-000000000000',
-        adminUser?.username || 'SUPERADMIN',
+        getAdminDisplayName(adminUser),
         'VERIFICATION',
         actionType,
         description,
