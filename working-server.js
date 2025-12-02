@@ -3083,8 +3083,36 @@ app.get('/api/test/server-status', (req, res) => {
     message: 'Server modifications are active',
     balanceFixApplied: true,
     mobileNotificationFixApplied: true,
+    activityLoggingVersion: 'V2_FULL_LOGGING',
     deploymentCheck: 'LATEST_DEPLOYMENT_' + Date.now()
   });
+});
+
+// TEST ENDPOINT - Manually trigger activity log to test logging works
+app.post('/api/test/log-activity', async (req, res) => {
+  try {
+    const { category, actionType, description } = req.body;
+
+    await logAdminActivity(
+      'test-admin-001',
+      'TEST_ADMIN',
+      category || 'SYSTEM',
+      actionType || 'TEST_LOG',
+      description || 'Manual test log entry',
+      null,
+      null,
+      { test: true, timestamp: Date.now() }
+    );
+
+    res.json({
+      success: true,
+      message: 'Activity log created successfully',
+      category: category || 'SYSTEM',
+      actionType: actionType || 'TEST_LOG'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // DIAGNOSTIC ENDPOINT - Check what admin endpoint returns
