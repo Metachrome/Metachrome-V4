@@ -1332,8 +1332,11 @@ async function getUserFromToken(token) {
       // Handle admin tokens
       // Token format: admin-session-{userId}-{timestamp}
       // For UUID format: admin-session-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-timestamp
+      console.log('🔍 getUserFromToken: Processing admin-session token...');
+      console.log('🔍 Token:', token.substring(0, 60) + '...');
 
       const allUsers = await getUsers();
+      console.log('🔍 getUserFromToken: Total users fetched:', allUsers.length);
 
       // First try: find user by checking if token contains their ID
       let foundUser = allUsers.find(u => token.includes(u.id));
@@ -1345,28 +1348,33 @@ async function getUserFromToken(token) {
 
       // Second try: parse token manually
       const parts = token.split('-');
+      console.log('🔍 getUserFromToken: Token parts count:', parts.length);
+
       if (parts.length >= 4) {
         // Similar logic for admin tokens
         const userIdParts = parts.slice(2, -1); // Get all parts except first 2 and last 1
         const userId = userIdParts.join('-');
+        console.log('🔍 getUserFromToken: Parsed userId:', userId);
 
         if (isSupabaseConfigured && supabase) {
-          // Include 'superadmin' (without underscore) as well
+          // Query without role filter first to see if user exists
           const { data, error } = await supabase
             .from('users')
             .select('*')
             .eq('id', userId)
-            .in('role', ['admin', 'super_admin', 'superadmin'])
             .single();
 
-          if (error && error.code !== 'PGRST116') throw error;
+          if (error && error.code !== 'PGRST116') {
+            console.error('🔍 getUserFromToken: Supabase error:', error);
+            throw error;
+          }
           if (data) {
-            console.log('✅ getUserFromToken (admin): Found by parsed ID:', data.username, 'role:', data.role);
+            console.log('✅ getUserFromToken (admin): Found user:', data.username, 'role:', data.role);
             return data;
           }
         } else {
           // Development fallback
-          foundUser = allUsers.find(u => u.id === userId && ['admin', 'super_admin', 'superadmin'].includes(u.role));
+          foundUser = allUsers.find(u => u.id === userId);
           if (foundUser) {
             console.log('✅ getUserFromToken (admin): Found in local storage:', foundUser.username, 'role:', foundUser.role);
             return foundUser;
@@ -4992,18 +5000,29 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
 
     // Log activity for deposit rejection
     const authTokenReject = req.headers.authorization?.replace('Bearer ', '');
-    const adminUserReject = await getUserFromToken(authTokenReject);
+    console.log('📝 DEPOSIT REJECT - Auth Token:', authTokenReject?.substring(0, 50) + '...');
 
-    await logAdminActivity(
-      adminUserReject?.id || '00000000-0000-0000-0000-000000000000',
-      getAdminDisplayName(adminUserReject),
-      'TRANSACTIONS',
-      'DEPOSIT_REJECTED',
-      `Rejected deposit of ${deposit.amount} ${deposit.currency} for user ${deposit.username}. Reason: ${reason || 'No reason provided'}`,
-      user?.id || deposit.user_id,
-      deposit.username,
-      { depositId, amount: deposit.amount, currency: deposit.currency, reason }
-    );
+    const adminUserReject = await getUserFromToken(authTokenReject);
+    console.log('📝 DEPOSIT REJECT - Admin User Found:', adminUserReject ? `${adminUserReject.username} (${adminUserReject.role})` : 'NULL');
+
+    const adminDisplayName = getAdminDisplayName(adminUserReject);
+    console.log('📝 DEPOSIT REJECT - Admin Display Name:', adminDisplayName);
+
+    try {
+      await logAdminActivity(
+        adminUserReject?.id || '00000000-0000-0000-0000-000000000000',
+        adminDisplayName,
+        'TRANSACTIONS',
+        'DEPOSIT_REJECTED',
+        `Rejected deposit of ${deposit.amount} ${deposit.currency} for user ${deposit.username}. Reason: ${reason || 'No reason provided'}`,
+        user?.id || deposit.user_id,
+        deposit.username,
+        { depositId, amount: deposit.amount, currency: deposit.currency, reason }
+      );
+      console.log('✅ DEPOSIT REJECT - Activity logged successfully');
+    } catch (logError) {
+      console.error('❌ DEPOSIT REJECT - Failed to log activity:', logError.message);
+    }
 
     res.json({
       success: true,
