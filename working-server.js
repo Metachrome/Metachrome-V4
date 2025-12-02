@@ -12014,6 +12014,13 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid verification status' });
     }
 
+    // Get admin info from token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let adminUser = null;
+    if (authToken) {
+      adminUser = await getUserFromToken(authToken);
+    }
+
     if (isSupabaseConfigured && supabase) {
       // Update document status
       const { data: document, error: docError } = await supabase
@@ -12029,6 +12036,13 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
 
       if (docError) throw docError;
 
+      // Get target user info for logging
+      const { data: targetUser } = await supabase
+        .from('users')
+        .select('id, username, email')
+        .eq('id', document.user_id)
+        .single();
+
       // Update user verification status
       const userStatus = status === 'approved' ? 'verified' : 'rejected';
       const { error: userError } = await supabase
@@ -12037,6 +12051,23 @@ app.post('/api/admin/verify-document/:documentId', async (req, res) => {
         .eq('id', document.user_id);
 
       if (userError) throw userError;
+
+      // Log activity
+      const actionType = status === 'approved' ? 'VERIFICATION_APPROVED' : 'VERIFICATION_REJECTED';
+      const description = status === 'approved'
+        ? `Approved verification document for user ${targetUser?.username || document.user_id}`
+        : `Rejected verification document for user ${targetUser?.username || document.user_id}. Reason: ${adminNotes || 'No reason provided'}`;
+
+      await logAdminActivity(
+        adminUser?.id || '00000000-0000-0000-0000-000000000000',
+        adminUser?.username || 'SUPERADMIN',
+        'VERIFICATION',
+        actionType,
+        description,
+        document.user_id,
+        targetUser?.username,
+        { documentId, status, adminNotes }
+      );
 
       // Broadcast verification status update to user via WebSocket
       if (wss) {
@@ -12545,12 +12576,19 @@ app.get('/api/admin/verification/:docId/view', async (req, res) => {
   }
 });
 
-// Verify document (approve/reject)
+// Verify document (approve/reject) - Alternative endpoint
 app.post('/api/admin/verify-document/:docId', async (req, res) => {
   try {
     const { docId } = req.params;
     const { status, adminNotes } = req.body;
-    console.log('✅ Verifying document:', docId, 'Status:', status);
+    console.log('✅ Verifying document (alt):', docId, 'Status:', status);
+
+    // Get admin info from token
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let adminUser = null;
+    if (authToken) {
+      adminUser = await getUserFromToken(authToken);
+    }
 
     if (isSupabaseConfigured && supabase) {
       // Update document status
@@ -12574,6 +12612,13 @@ app.post('/api/admin/verify-document/:docId', async (req, res) => {
 
       if (getError || !document) throw new Error('Document not found');
 
+      // Get target user info for logging
+      const { data: targetUser } = await supabase
+        .from('users')
+        .select('id, username, email')
+        .eq('id', document.user_id)
+        .single();
+
       // Update user verification status
       const { error: userError } = await supabase
         .from('users')
@@ -12584,6 +12629,23 @@ app.post('/api/admin/verify-document/:docId', async (req, res) => {
         .eq('id', document.user_id);
 
       if (userError) throw userError;
+
+      // Log activity
+      const actionType = status === 'approved' ? 'VERIFICATION_APPROVED' : 'VERIFICATION_REJECTED';
+      const description = status === 'approved'
+        ? `Approved verification document for user ${targetUser?.username || document.user_id}`
+        : `Rejected verification document for user ${targetUser?.username || document.user_id}. Reason: ${adminNotes || 'No reason provided'}`;
+
+      await logAdminActivity(
+        adminUser?.id || '00000000-0000-0000-0000-000000000000',
+        adminUser?.username || 'SUPERADMIN',
+        'VERIFICATION',
+        actionType,
+        description,
+        document.user_id,
+        targetUser?.username,
+        { documentId: docId, status, adminNotes }
+      );
 
       res.json({
         success: true,
@@ -12601,7 +12663,6 @@ app.post('/api/admin/verify-document/:docId', async (req, res) => {
   } catch (error) {
     console.error('❌ Error verifying document:', error);
     res.status(500).json({ error: 'Failed to verify document' });
-  }
 });
 
 // Test referral stats endpoint (no auth required for testing)
