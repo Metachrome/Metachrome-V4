@@ -4891,7 +4891,7 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       user_id: user ? user.id : deposit.user_id,
       type: 'deposit',
       amount: deposit.amount,
-      status: 'rejected', // Use 'rejected' for deposit/withdraw rejections
+      status: 'failed', // Use 'failed' for deposit/withdraw rejections (database constraint)
       description: `Deposit rejected by admin - Reason: ${reason || 'No reason provided'} - ${deposit.currency} via ${deposit.network}`,
       created_at: new Date().toISOString()
     };
@@ -5280,7 +5280,7 @@ app.post('/api/admin/sync-old-withdrawals', async (req, res) => {
       type: 'withdraw',
       amount: parseFloat(w.amount),
       symbol: w.currency,
-      status: w.status === 'approved' ? 'completed' : w.status === 'rejected' ? 'rejected' : 'pending',
+      status: w.status === 'approved' ? 'completed' : w.status === 'rejected' ? 'failed' : 'pending',
       tx_hash: w.id,
       created_at: w.created_at || new Date().toISOString(),
       updated_at: w.updated_at || new Date().toISOString()
