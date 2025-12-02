@@ -2704,6 +2704,30 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
       }
 
       console.log('✅ Password updated in Supabase for user:', userId);
+
+      // Log password update activity
+      const authToken = req.headers.authorization?.replace('Bearer ', '');
+      let adminUser = null;
+      const allUsers = await getUsers();
+      const targetUser = allUsers.find(u => u.id === userId);
+      if (authToken) {
+        try {
+          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+          adminUser = allUsers.find(u => u.id === decoded.userId);
+        } catch (e) { }
+      }
+
+      await logAdminActivity(
+        adminUser?.id || '00000000-0000-0000-0000-000000000000',
+        adminUser?.username || 'ADMIN',
+        'USER_MANAGEMENT',
+        'PASSWORD_CHANGED',
+        `Changed password for user ${targetUser?.username || userId}`,
+        userId,
+        targetUser?.username,
+        {}
+      );
+
       res.json({ success: true, message: 'Password updated successfully' });
     } else {
       // Update password in local file
@@ -2719,6 +2743,28 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
 
       await saveUsers(users);
       console.log('✅ Password updated in local file for user:', userId);
+
+      // Log password update activity
+      const authToken = req.headers.authorization?.replace('Bearer ', '');
+      let adminUser = null;
+      if (authToken) {
+        try {
+          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+          adminUser = users.find(u => u.id === decoded.userId);
+        } catch (e) { }
+      }
+
+      await logAdminActivity(
+        adminUser?.id || '00000000-0000-0000-0000-000000000000',
+        adminUser?.username || 'ADMIN',
+        'USER_MANAGEMENT',
+        'PASSWORD_CHANGED',
+        `Changed password for user ${users[userIndex].username}`,
+        userId,
+        users[userIndex].username,
+        {}
+      );
+
       res.json({ success: true, message: 'Password updated successfully' });
     }
   } catch (error) {
@@ -3342,6 +3388,29 @@ app.post('/api/admin/users', async (req, res) => {
     });
 
     console.log('✅ User created successfully:', newUser.username, 'ID:', newUser.id);
+
+    // Log user creation activity
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let adminUser = null;
+    if (authToken) {
+      try {
+        const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+        const allUsers = await getUsers();
+        adminUser = allUsers.find(u => u.id === decoded.userId);
+      } catch (e) { }
+    }
+
+    await logAdminActivity(
+      adminUser?.id || '00000000-0000-0000-0000-000000000000',
+      adminUser?.username || 'ADMIN',
+      'USER_MANAGEMENT',
+      'USER_CREATED',
+      `Created new user: ${username} with role ${role || 'user'}`,
+      newUser.id,
+      username,
+      { email, role: role || 'user', balance: balance || 0 }
+    );
+
     res.json(newUser);
   } catch (error) {
     console.error('❌ Error creating user:', error);
@@ -3410,6 +3479,19 @@ app.put('/api/admin/users/:id', async (req, res) => {
       }
 
       console.log('✅ User updated in Supabase:', userId);
+
+      // Log user update activity
+      await logAdminActivity(
+        currentUser?.id || '00000000-0000-0000-0000-000000000000',
+        currentUser?.username || 'ADMIN',
+        'USER_MANAGEMENT',
+        'USER_UPDATED',
+        `Updated user ${user.username}: ${Object.keys(updateData).filter(k => k !== 'updated_at').join(', ')}`,
+        userId,
+        user.username,
+        { changes: updateData }
+      );
+
       res.json(data);
     } else {
       // Development: Update in local file
@@ -3419,6 +3501,19 @@ app.put('/api/admin/users/:id', async (req, res) => {
       await saveUsers(users);
 
       console.log('✅ User updated successfully:', updatedUser.username, 'ID:', updatedUser.id);
+
+      // Log user update activity
+      await logAdminActivity(
+        currentUser?.id || '00000000-0000-0000-0000-000000000000',
+        currentUser?.username || 'ADMIN',
+        'USER_MANAGEMENT',
+        'USER_UPDATED',
+        `Updated user ${user.username}: ${Object.keys(updateData).filter(k => k !== 'updated_at').join(', ')}`,
+        userId,
+        user.username,
+        { changes: updateData }
+      );
+
       res.json(updatedUser);
     }
   } catch (error) {
@@ -3705,6 +3800,27 @@ app.post('/api/admin/trading-controls', async (req, res) => {
       } else {
         console.log('⚠️ WebSocket server not available for broadcasting');
       }
+
+      // Log trading control activity
+      const authToken = req.headers.authorization?.replace('Bearer ', '');
+      let adminUser = null;
+      if (authToken) {
+        try {
+          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+          adminUser = users.find(u => u.id === decoded.userId);
+        } catch (e) { }
+      }
+
+      await logAdminActivity(
+        adminUser?.id || '00000000-0000-0000-0000-000000000000',
+        adminUser?.username || 'ADMIN',
+        'TRADING',
+        'TRADING_CONTROL_CHANGED',
+        `Changed trading mode for ${users[userIndex].username} to ${controlType.toUpperCase()}`,
+        userId,
+        users[userIndex].username,
+        { controlType, previousMode: users[userIndex].trading_mode }
+      );
 
       res.json({
         success: true,
@@ -4708,6 +4824,28 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
         }
       }
 
+      // Log activity for deposit approval
+      const authToken = req.headers.authorization?.replace('Bearer ', '');
+      let adminUser = null;
+      if (authToken) {
+        try {
+          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+          const allUsers = await getUsers();
+          adminUser = allUsers.find(u => u.id === decoded.userId);
+        } catch (e) { }
+      }
+
+      await logAdminActivity(
+        adminUser?.id || '00000000-0000-0000-0000-000000000000',
+        adminUser?.username || 'ADMIN',
+        'TRANSACTIONS',
+        'DEPOSIT_APPROVED',
+        `Approved deposit of ${depositAmountInUSDT.toFixed(2)} USDT for user ${user.username}`,
+        user.id,
+        user.username,
+        { depositId, amount: depositAmountInUSDT, currency: depositCurrency, originalAmount: depositAmountOriginal }
+      );
+
       res.json({
         success: true,
         message: 'Deposit approved successfully',
@@ -4790,6 +4928,28 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
         }
       }
     }
+
+    // Log activity for deposit rejection
+    const authTokenReject = req.headers.authorization?.replace('Bearer ', '');
+    let adminUserReject = null;
+    if (authTokenReject) {
+      try {
+        const decoded = jwt.verify(authTokenReject, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+        const allUsers = await getUsers();
+        adminUserReject = allUsers.find(u => u.id === decoded.userId);
+      } catch (e) { }
+    }
+
+    await logAdminActivity(
+      adminUserReject?.id || '00000000-0000-0000-0000-000000000000',
+      adminUserReject?.username || 'ADMIN',
+      'TRANSACTIONS',
+      'DEPOSIT_REJECTED',
+      `Rejected deposit of ${deposit.amount} ${deposit.currency} for user ${deposit.username}. Reason: ${reason || 'No reason provided'}`,
+      user?.id || deposit.user_id,
+      deposit.username,
+      { depositId, amount: deposit.amount, currency: deposit.currency, reason }
+    );
 
     res.json({
       success: true,
@@ -4991,6 +5151,33 @@ app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
     savePendingData();
 
     console.log(`✅ Withdrawal ${action}d successfully: ${withdrawalId}`);
+
+    // Log activity for withdrawal action
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let adminUser = null;
+    if (authToken) {
+      try {
+        const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+        const allUsers = await getUsers();
+        adminUser = allUsers.find(u => u.id === decoded.userId);
+      } catch (e) { }
+    }
+
+    const actionType = action === 'approve' ? 'WITHDRAWAL_APPROVED' : 'WITHDRAWAL_REJECTED';
+    const description = action === 'approve'
+      ? `Approved withdrawal of ${withdrawal.amount} ${withdrawal.currency || 'USDT'} for user ${withdrawal.username}`
+      : `Rejected withdrawal of ${withdrawal.amount} ${withdrawal.currency || 'USDT'} for user ${withdrawal.username}. Reason: ${reason || 'No reason provided'}`;
+
+    await logAdminActivity(
+      adminUser?.id || '00000000-0000-0000-0000-000000000000',
+      adminUser?.username || 'ADMIN',
+      'TRANSACTIONS',
+      actionType,
+      description,
+      withdrawal.user_id,
+      withdrawal.username,
+      { withdrawalId, amount: withdrawal.amount, currency: withdrawal.currency, reason, action }
+    );
 
     return res.json({
       success: true,
@@ -11752,6 +11939,29 @@ app.post('/api/admin/redeem-codes', async (req, res) => {
       }
 
       console.log('✅ Redeem code created:', newCode);
+
+      // Log redeem code creation
+      const authToken = req.headers.authorization?.replace('Bearer ', '');
+      let adminUser = null;
+      if (authToken) {
+        try {
+          const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+          const allUsers = await getUsers();
+          adminUser = allUsers.find(u => u.id === decoded.userId);
+        } catch (e) { }
+      }
+
+      await logAdminActivity(
+        adminUser?.id || '00000000-0000-0000-0000-000000000000',
+        adminUser?.username || 'ADMIN',
+        'SYSTEM',
+        'REDEEM_CODE_CREATED',
+        `Created redeem code ${code.toUpperCase()} with bonus ${bonusAmount} USDT`,
+        null,
+        null,
+        { code: code.toUpperCase(), bonusAmount, maxUses, description }
+      );
+
       res.json({ success: true, code: newCode, message: 'Redeem code created successfully' });
     } else {
       // Mock response for development
