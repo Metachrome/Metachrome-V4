@@ -10048,6 +10048,29 @@ app.post('/api/superadmin/deposit', async (req, res) => {
     }
 
     console.log('✅ Superadmin deposit successful:', { userId, oldBalance, newBalance, amount });
+
+    // Log activity for superadmin deposit
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let adminUser = null;
+    if (authToken) {
+      try {
+        const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+        const allUsers = await getUsers();
+        adminUser = allUsers.find(u => u.id === decoded.userId);
+      } catch (e) { }
+    }
+
+    await logAdminActivity(
+      adminUser?.id || '00000000-0000-0000-0000-000000000000',
+      adminUser?.username || 'SUPERADMIN',
+      'BALANCE',
+      'SUPERADMIN_DEPOSIT',
+      `Superadmin deposited ${amount} USDT to user ${user.username}. Balance: ${oldBalance} → ${newBalance}`,
+      userId,
+      user.username,
+      { amount, oldBalance, newBalance, method: 'superadmin_manual' }
+    );
+
     res.json({
       success: true,
       message: 'Deposit processed successfully',
@@ -10130,6 +10153,29 @@ app.post('/api/superadmin/withdrawal', async (req, res) => {
     }
 
     console.log('✅ Superadmin withdrawal successful:', { userId, oldBalance, newBalance, amount });
+
+    // Log activity for superadmin withdrawal
+    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    let adminUser = null;
+    if (authToken) {
+      try {
+        const decoded = jwt.verify(authToken, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+        const allUsers = await getUsers();
+        adminUser = allUsers.find(u => u.id === decoded.userId);
+      } catch (e) { }
+    }
+
+    await logAdminActivity(
+      adminUser?.id || '00000000-0000-0000-0000-000000000000',
+      adminUser?.username || 'SUPERADMIN',
+      'BALANCE',
+      'SUPERADMIN_WITHDRAWAL',
+      `Superadmin withdrew ${amount} USDT from user ${user.username}. Balance: ${oldBalance} → ${newBalance}`,
+      userId,
+      user.username,
+      { amount, oldBalance, newBalance, method: 'superadmin_manual' }
+    );
+
     res.json({
       success: true,
       message: 'Withdrawal processed successfully',
@@ -10207,6 +10253,19 @@ app.post('/api/superadmin/change-password', async (req, res) => {
     }
 
     console.log('✅ Superadmin password change successful for user:', userId);
+
+    // Log activity for password change
+    await logAdminActivity(
+      currentUser?.id || '00000000-0000-0000-0000-000000000000',
+      currentUser?.username || 'ADMIN',
+      'USER_MANAGEMENT',
+      'PASSWORD_CHANGED',
+      `${currentUser?.role === 'super_admin' ? 'Superadmin' : 'Admin'} changed password for user ${user.username}`,
+      userId,
+      user.username,
+      { method: 'admin_panel', changedBy: currentUser?.username }
+    );
+
     res.json({
       success: true,
       message: 'Password changed successfully'
@@ -10292,6 +10351,28 @@ app.post('/api/superadmin/update-wallet', async (req, res) => {
     console.log('✅ Superadmin wallet update successful for user:', userId);
     console.log('   Previous wallet moved to history:', currentWallet);
     console.log('   New wallet address:', walletAddress);
+
+    // Log activity for wallet update
+    const authTokenWallet = req.headers.authorization?.replace('Bearer ', '');
+    let adminUserWallet = null;
+    if (authTokenWallet) {
+      try {
+        const decoded = jwt.verify(authTokenWallet, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
+        const allUsers = await getUsers();
+        adminUserWallet = allUsers.find(u => u.id === decoded.userId);
+      } catch (e) { }
+    }
+
+    await logAdminActivity(
+      adminUserWallet?.id || '00000000-0000-0000-0000-000000000000',
+      adminUserWallet?.username || 'SUPERADMIN',
+      'USER_MANAGEMENT',
+      'WALLET_UPDATED',
+      `Superadmin updated wallet address for user ${user.username}`,
+      userId,
+      user.username,
+      { oldWallet: currentWallet, newWallet: walletAddress }
+    );
 
     res.json({
       success: true,
