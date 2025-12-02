@@ -101,15 +101,17 @@ const isProduction = process.env.NODE_ENV === 'production';
 let isSupabaseConfigured = false;
 
 // Redirect non-www to www (BEFORE any other middleware)
+// Using 307 for POST/PUT/DELETE to preserve method, 301 for GET
 app.use((req, res, next) => {
   const host = req.get('host') || req.hostname || '';
-  console.log(`🌐 Request host: ${host}, hostname: ${req.hostname}, path: ${req.path}`);
 
   // Check for non-www domain (metachrome.io without www)
   if (host === 'metachrome.io' || host.startsWith('metachrome.io:')) {
     const redirectUrl = `https://www.metachrome.io${req.originalUrl}`;
-    console.log(`🔄 Redirecting to: ${redirectUrl}`);
-    return res.redirect(301, redirectUrl);
+    console.log(`🔄 Redirecting ${req.method} to: ${redirectUrl}`);
+    // Use 307 for non-GET methods to preserve the HTTP method
+    const statusCode = req.method === 'GET' ? 301 : 307;
+    return res.redirect(statusCode, redirectUrl);
   }
   next();
 });
