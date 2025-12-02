@@ -4623,17 +4623,23 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
     // First, try to find in Supabase database
     if (supabase) {
       try {
-        const { data: supabaseDeposit, error } = await supabase
+        // Use maybeSingle() or array query to avoid PGRST116 error when no row found
+        const { data: supabaseDeposits, error } = await supabase
           .from('deposits')
           .select('*')
           .eq('id', depositId)
-          .in('status', ['pending', 'verifying'])
-          .single();
+          .in('status', ['pending', 'verifying']);
 
-        if (!error && supabaseDeposit) {
-          deposit = supabaseDeposit;
+        console.log('🔍 Supabase deposit query result:', { data: supabaseDeposits, error });
+
+        if (!error && supabaseDeposits && supabaseDeposits.length > 0) {
+          deposit = supabaseDeposits[0];
           isFromSupabase = true;
           console.log('✅ Deposit found in Supabase database');
+        } else if (error) {
+          console.log('⚠️ Supabase query error:', error.message);
+        } else {
+          console.log('⚠️ Deposit not found in Supabase with pending/verifying status');
         }
       } catch (dbError) {
         console.log('⚠️ Supabase lookup failed:', dbError.message);
