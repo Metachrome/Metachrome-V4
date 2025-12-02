@@ -4630,8 +4630,23 @@ app.get('/api/admin/deposits/test-endpoint', (req, res) => {
   res.json({ success: true, message: 'Deposit endpoint is reachable', timestamp: Date.now() });
 });
 
-// ===== DEPOSIT ACTION ENDPOINT =====
-app.post('/api/admin/deposits/:id/action', async (req, res) => {
+// ===== TEST POST ENDPOINT =====
+app.post('/api/admin/deposits/test-post', (req, res) => {
+  console.log('🧪 TEST POST ENDPOINT HIT!');
+  console.log('🧪 Body:', JSON.stringify(req.body));
+  res.json({ success: true, message: 'POST endpoint works', body: req.body, timestamp: Date.now() });
+});
+
+// ===== DEPOSIT ACTION ENDPOINT - ALTERNATIVE PATH =====
+app.post('/api/admin/deposit-action/:id', async (req, res) => {
+  console.log('🚀🚀🚀 DEPOSIT ACTION (ALT) ENDPOINT HIT! 🚀🚀🚀');
+  // Forward to the main handler
+  req.url = `/api/admin/deposits/${req.params.id}/action`;
+  handleDepositAction(req, res);
+});
+
+// ===== DEPOSIT ACTION HANDLER =====
+const handleDepositAction = async (req, res) => {
   console.log('🚀🚀🚀 DEPOSIT ACTION ENDPOINT HIT! 🚀🚀🚀');
   console.log('🚀 Full URL:', req.originalUrl);
   console.log('🚀 Method:', req.method);
@@ -5056,7 +5071,10 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
       details: error.message
     });
   }
-});
+};
+
+// Register the deposit action routes
+app.post('/api/admin/deposits/:id/action', handleDepositAction);
 
 // ===== WITHDRAWAL ACTION ENDPOINT (SIMPLIFIED) =====
 app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
