@@ -4988,7 +4988,14 @@ app.post('/api/admin/deposits/:id/action', async (req, res) => {
         const decoded = jwt.verify(authTokenReject, process.env.JWT_SECRET || 'metachrome-secret-key-2024');
         const allUsers = await getUsers();
         adminUserReject = allUsers.find(u => u.id === decoded.userId);
-      } catch (e) { }
+        console.log('🔍 DEBUG: Admin user for logging:', {
+          userId: decoded.userId,
+          foundUser: !!adminUserReject,
+          username: adminUserReject?.username,
+          role: adminUserReject?.role,
+          displayName: getAdminDisplayName(adminUserReject)
+        });
+      } catch (e) { console.log('🔍 DEBUG: JWT decode error:', e.message); }
     }
 
     await logAdminActivity(
