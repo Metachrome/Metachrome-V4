@@ -100,10 +100,16 @@ const isProduction = process.env.NODE_ENV === 'production';
 // Check if Supabase is configured (regardless of NODE_ENV)
 let isSupabaseConfigured = false;
 
-// Redirect non-www to www
+// Redirect non-www to www (BEFORE any other middleware)
 app.use((req, res, next) => {
-  if (req.hostname === 'metachrome.io') {
-    return res.redirect(301, `https://www.metachrome.io${req.originalUrl}`);
+  const host = req.get('host') || req.hostname || '';
+  console.log(`🌐 Request host: ${host}, hostname: ${req.hostname}, path: ${req.path}`);
+
+  // Check for non-www domain (metachrome.io without www)
+  if (host === 'metachrome.io' || host.startsWith('metachrome.io:')) {
+    const redirectUrl = `https://www.metachrome.io${req.originalUrl}`;
+    console.log(`🔄 Redirecting to: ${redirectUrl}`);
+    return res.redirect(301, redirectUrl);
   }
   next();
 });
