@@ -6282,36 +6282,43 @@ app.post('/api/withdrawals', async (req, res) => {
       });
     }
 
-    // Verify user's login password - check both possible column names
+    // Verify user's login password - check all possible column names (password, password_hash)
     const bcrypt = require('bcryptjs');
     let isValidPassword = false;
-    const passwordHash = user.password_hash || user.password;
 
-    // TEMPORARY FIX: Enhanced fallback for known users
-    if (user.username === 'angela.soenoko' && (password === 'newpass123' || password === 'password123')) {
-      isValidPassword = true;
-      console.log('✅ Using fallback password validation for angela.soenoko');
-    } else if (passwordHash) {
-      isValidPassword = await bcrypt.compare(password, passwordHash);
-      if (!isValidPassword) {
-        // Try fallback passwords if hash comparison fails
-        isValidPassword = (user.username === 'testuser' && password === 'testpass123') ||
-                         (user.username === 'angela.soenoko' && password === 'newpass123') ||
-                         (user.username === 'superadmin' && password === 'superadmin123') ||
-                         (user.username === 'admin' && password === 'admin123');
+    // CRITICAL FIX: Supabase uses 'password' column, not 'password_hash'
+    const passwordHash = user.password || user.password_hash;
+
+    console.log('🔐 Password verification for withdrawal:', {
+      username: user.username,
+      hasPassword: !!user.password,
+      hasPasswordHash: !!user.password_hash,
+      passwordHashLength: passwordHash?.length || 0
+    });
+
+    if (passwordHash && passwordHash.length > 0) {
+      try {
+        isValidPassword = await bcrypt.compare(password, passwordHash);
+        console.log('🔐 bcrypt.compare result:', isValidPassword);
+      } catch (bcryptError) {
+        console.error('❌ bcrypt.compare error:', bcryptError.message);
+        isValidPassword = false;
       }
     } else {
-      // Fallback for development - check if this is a known test user
-      isValidPassword = (user.username === 'testuser' && password === 'testpass123') ||
-                       (user.username === 'angela.soenoko' && password === 'newpass123') ||
-                       (user.username === 'superadmin' && password === 'superadmin123') ||
-                       (user.username === 'admin' && password === 'admin123');
+      console.log('⚠️ No password hash found for user:', user.username);
+      // If user has no password set (e.g., Google OAuth user), they cannot withdraw
+      return res.status(400).json({
+        error: 'Password not set',
+        message: 'Please set a login password in your profile settings before withdrawing'
+      });
     }
 
     if (!isValidPassword) {
-      console.log('❌ Invalid password for withdrawal:', user.username, 'tried password:', password);
+      console.log('❌ Invalid password for withdrawal:', user.username);
       return res.status(401).json({ error: 'Invalid password' });
     }
+
+    console.log('✅ Password verified successfully for withdrawal');
 
     // Check balance
     const userBalance = parseFloat(user.balance || 0);
