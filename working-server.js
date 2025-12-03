@@ -4961,9 +4961,9 @@ const handleDepositAction = async (req, res) => {
       });
     } else if (action === 'reject') {
     console.log('❌ Deposit rejected:', reason);
+    console.log('📝 User already found earlier:', user ? user.username : 'NOT FOUND');
 
-    // Find the user for transaction record
-    const user = users.find(u => u.username === deposit.username);
+    // Use the user already found earlier (line ~4740), no need to redefine
 
     // Add rejected transaction record - wrap in try/catch to not block deposit update
     try {
