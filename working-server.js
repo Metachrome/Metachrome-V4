@@ -5094,50 +5094,6 @@ const handleDepositAction = async (req, res) => {
 // Register the deposit action routes
 app.post('/api/admin/deposits/:id/action', handleDepositAction);
 
-// ===== TEST ACTIVITY LOG ENDPOINT =====
-app.post('/api/admin/test-activity-log', async (req, res) => {
-  console.log('🧪 TEST ACTIVITY LOG ENDPOINT HIT!');
-  console.log('🧪 Supabase configured:', isSupabaseConfigured);
-  console.log('🧪 Supabase client exists:', !!supabase);
-
-  try {
-    // Direct insert to test
-    const testLog = {
-      admin_id: '00000000-0000-0000-0000-000000000000',
-      admin_username: 'TEST_SUPERADMIN',
-      admin_email: null,
-      action_type: 'TEST_LOG',
-      action_category: 'SYSTEM',
-      action_description: 'Test activity log entry - ' + new Date().toISOString(),
-      target_user_id: null,
-      target_username: null,
-      target_email: null,
-      metadata: { test: true, timestamp: Date.now() },
-      ip_address: null,
-      user_agent: null,
-      is_deleted: false
-    };
-
-    console.log('🧪 Inserting log:', JSON.stringify(testLog));
-
-    const { data, error } = await supabase
-      .from('admin_activity_logs')
-      .insert(testLog)
-      .select();
-
-    if (error) {
-      console.error('🧪 INSERT ERROR:', JSON.stringify(error));
-      res.json({ success: false, error: error.message, details: error });
-    } else {
-      console.log('🧪 INSERT SUCCESS:', JSON.stringify(data));
-      res.json({ success: true, message: 'Activity log test completed', data: data });
-    }
-  } catch (error) {
-    console.error('❌ Activity log test failed:', error);
-    res.json({ success: false, error: error.message, stack: error.stack });
-  }
-});
-
 // ===== WITHDRAWAL ACTION ENDPOINT (SIMPLIFIED) =====
 app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
   try {
