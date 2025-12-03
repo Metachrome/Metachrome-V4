@@ -2980,34 +2980,67 @@ async function logAdminActivity(adminId, adminUsername, actionCategory, actionTy
   }
 
   try {
+    // Helper to validate UUID format
+    const isValidUUID = (id) => {
+      if (!id) return false;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(id);
+    };
+
+    // Validate and prepare admin_id - must be valid UUID
+    let validAdminId = adminId;
+    if (!isValidUUID(adminId)) {
+      console.log(`⚠️ Invalid admin_id: ${adminId}, will try to find valid admin`);
+      // Try to get a valid admin from the database
+      const { data: adminUser } = await supabase
+        .from('users')
+        .select('id')
+        .in('role', ['super_admin', 'admin'])
+        .limit(1)
+        .single();
+
+      validAdminId = adminUser?.id || null;
+
+      if (!validAdminId) {
+        console.error('❌ Cannot log activity: No valid admin_id and no admins in database');
+        return;
+      }
+    }
+
+    // Validate target_user_id - can be null
+    const validTargetUserId = isValidUUID(targetUserId) ? targetUserId : null;
+
     const log = {
-      admin_id: adminId || '00000000-0000-0000-0000-000000000000',
+      admin_id: validAdminId,
       admin_username: adminUsername || 'SYSTEM',
       admin_email: null,
       action_type: actionType,
       action_category: actionCategory,
       action_description: description,
-      target_user_id: targetUserId,
-      target_username: targetUsername,
+      target_user_id: validTargetUserId,
+      target_username: targetUsername || null,
       target_email: null,
-      metadata: metadata,
+      metadata: metadata || {},
       ip_address: null,
       user_agent: null,
       is_deleted: false,
       created_at: new Date().toISOString()
     };
 
-    const { error } = await supabase
+    console.log(`📝 Inserting activity log:`, { actionCategory, actionType, adminId: validAdminId, targetUserId: validTargetUserId });
+
+    const { data, error } = await supabase
       .from('admin_activity_logs')
-      .insert(log);
+      .insert(log)
+      .select();
 
     if (error) {
-      console.error(`❌ Failed to log ${actionCategory} activity:`, error);
+      console.error(`❌ Failed to log ${actionCategory} activity:`, JSON.stringify(error));
     } else {
-      console.log(`✅ ${actionCategory} activity logged: ${actionType}`);
+      console.log(`✅ ${actionCategory} activity logged: ${actionType}`, data?.[0]?.id ? `(ID: ${data[0].id})` : '');
     }
   } catch (error) {
-    console.error(`❌ Error logging ${actionCategory} activity:`, error);
+    console.error(`❌ Error logging ${actionCategory} activity:`, error.message);
   }
 }
 
@@ -5043,37 +5076,49 @@ const handleDepositAction = async (req, res) => {
       }
     }
 
-    // Log activity for deposit rejection
+    // Log activity for deposit rejection - use same pattern as deposit approval
+    console.log('📝 DEPOSIT REJECT - Starting activity log...');
+
     const authTokenReject = req.headers.authorization?.replace('Bearer ', '');
-    console.log('📝 DEPOSIT REJECT - Auth Token:', authTokenReject?.substring(0, 50) + '...');
-
     const adminUserReject = await getUserFromToken(authTokenReject);
-    console.log('📝 DEPOSIT REJECT - Admin User Found:', adminUserReject ? `${adminUserReject.username} (${adminUserReject.role})` : 'NULL');
-
     const adminDisplayName = getAdminDisplayName(adminUserReject);
-    console.log('📝 DEPOSIT REJECT - Admin Display Name:', adminDisplayName);
 
-    try {
-      await logAdminActivity(
-        adminUserReject?.id || '00000000-0000-0000-0000-000000000000',
-        adminDisplayName,
-        'TRANSACTIONS',
-        'DEPOSIT_REJECTED',
-        `Rejected deposit of ${deposit.amount} ${deposit.currency} for user ${deposit.username}. Reason: ${reason || 'No reason provided'}`,
-        user?.id || deposit.user_id,
-        deposit.username,
-        { depositId, amount: deposit.amount, currency: deposit.currency, reason }
-      );
-      console.log('✅ DEPOSIT REJECT - Activity logged successfully');
-    } catch (logError) {
-      console.error('❌ DEPOSIT REJECT - Failed to log activity:', logError.message);
-    }
+    // Build activity log data with safe fallbacks
+    const depositAmount = deposit.amount || 0;
+    const depositCurrency = deposit.currency || 'UNKNOWN';
+    const depositUsername = deposit.username || 'unknown_user';
+    const depositUserId = user?.id || deposit.user_id || deposit.userId || null;
+
+    console.log('📝 DEPOSIT REJECT - Logging activity:', {
+      adminId: adminUserReject?.id,
+      adminDisplayName,
+      depositAmount,
+      depositCurrency,
+      depositUsername,
+      depositUserId,
+      reason
+    });
+
+    // Use the same logAdminActivity function as deposit approval for consistency
+    await logAdminActivity(
+      adminUserReject?.id || '00000000-0000-0000-0000-000000000000',
+      adminDisplayName,
+      'TRANSACTIONS',
+      'DEPOSIT_REJECTED',
+      `Rejected deposit of ${depositAmount} ${depositCurrency} for user ${depositUsername}. Reason: ${reason || 'No reason provided'}`,
+      depositUserId,
+      depositUsername,
+      { depositId, amount: depositAmount, currency: depositCurrency, reason: reason || 'No reason provided' }
+    );
+
+    console.log('✅ DEPOSIT REJECT - Activity log completed');
 
     res.json({
       success: true,
       message: 'Deposit rejected',
       action: 'reject',
-      reason
+      reason,
+      debug: { depositAmount, depositCurrency, depositUsername, adminDisplayName }
     });
     } else {
       res.status(400).json({
