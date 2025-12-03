@@ -5094,6 +5094,27 @@ const handleDepositAction = async (req, res) => {
 // Register the deposit action routes
 app.post('/api/admin/deposits/:id/action', handleDepositAction);
 
+// ===== TEST ACTIVITY LOG ENDPOINT =====
+app.post('/api/admin/test-activity-log', async (req, res) => {
+  console.log('🧪 TEST ACTIVITY LOG ENDPOINT HIT!');
+  try {
+    await logAdminActivity(
+      'test-admin-id',
+      'TEST_SUPERADMIN',
+      'SYSTEM',
+      'TEST_LOG',
+      'Test activity log entry',
+      null,
+      null,
+      { test: true, timestamp: Date.now() }
+    );
+    res.json({ success: true, message: 'Activity log test completed' });
+  } catch (error) {
+    console.error('❌ Activity log test failed:', error);
+    res.json({ success: false, error: error.message });
+  }
+});
+
 // ===== WITHDRAWAL ACTION ENDPOINT (SIMPLIFIED) =====
 app.post('/api/admin/withdrawals/:id/action', async (req, res) => {
   try {
