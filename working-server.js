@@ -2989,37 +2989,76 @@ async function logAdminActivity(adminId, adminUsername, actionCategory, actionTy
 
     // Validate and prepare admin_id - must be valid UUID
     let validAdminId = adminId;
-    if (!isValidUUID(adminId)) {
+    let adminEmail = null;
+    let finalAdminUsername = adminUsername || 'SYSTEM';
+
+    if (isValidUUID(adminId)) {
+      // Fetch admin email from database
+      const { data: adminData } = await supabase
+        .from('users')
+        .select('id, username, email')
+        .eq('id', adminId)
+        .single();
+
+      if (adminData) {
+        adminEmail = adminData.email;
+        // Use database username if available
+        if (!adminUsername || adminUsername === 'SYSTEM') {
+          finalAdminUsername = adminData.username || adminUsername;
+        }
+      }
+    } else {
       console.log(`⚠️ Invalid admin_id: ${adminId}, will try to find valid admin`);
       // Try to get a valid admin from the database
       const { data: adminUser } = await supabase
         .from('users')
-        .select('id')
+        .select('id, username, email')
         .in('role', ['super_admin', 'admin'])
         .limit(1)
         .single();
 
-      validAdminId = adminUser?.id || null;
-
-      if (!validAdminId) {
+      if (adminUser) {
+        validAdminId = adminUser.id;
+        adminEmail = adminUser.email;
+        finalAdminUsername = adminUser.username || adminUsername;
+      } else {
         console.error('❌ Cannot log activity: No valid admin_id and no admins in database');
         return;
       }
     }
 
-    // Validate target_user_id - can be null
+    // Validate target_user_id and fetch target email
     const validTargetUserId = isValidUUID(targetUserId) ? targetUserId : null;
+    let targetEmail = null;
+    let finalTargetUsername = targetUsername || null;
+
+    if (validTargetUserId) {
+      // Fetch target user email from database
+      const { data: targetData } = await supabase
+        .from('users')
+        .select('id, username, email')
+        .eq('id', validTargetUserId)
+        .single();
+
+      if (targetData) {
+        targetEmail = targetData.email;
+        // Use database username if not provided
+        if (!targetUsername) {
+          finalTargetUsername = targetData.username;
+        }
+      }
+    }
 
     const log = {
       admin_id: validAdminId,
-      admin_username: adminUsername || 'SYSTEM',
-      admin_email: null,
+      admin_username: finalAdminUsername,
+      admin_email: adminEmail,
       action_type: actionType,
       action_category: actionCategory,
       action_description: description,
       target_user_id: validTargetUserId,
-      target_username: targetUsername || null,
-      target_email: null,
+      target_username: finalTargetUsername,
+      target_email: targetEmail,
       metadata: metadata || {},
       ip_address: null,
       user_agent: null,
@@ -3027,7 +3066,14 @@ async function logAdminActivity(adminId, adminUsername, actionCategory, actionTy
       created_at: new Date().toISOString()
     };
 
-    console.log(`📝 Inserting activity log:`, { actionCategory, actionType, adminId: validAdminId, targetUserId: validTargetUserId });
+    console.log(`📝 Inserting activity log:`, {
+      actionCategory,
+      actionType,
+      adminId: validAdminId,
+      adminEmail,
+      targetUserId: validTargetUserId,
+      targetEmail
+    });
 
     const { data, error } = await supabase
       .from('admin_activity_logs')
