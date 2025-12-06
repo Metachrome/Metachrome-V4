@@ -999,13 +999,13 @@ async function getUserByEmail(email) {
 async function createUser(userData) {
   if (isSupabaseConfigured && supabase) {
     try {
-      // IMPORTANT: Don't try to insert password into users table
-      // Supabase Auth manages passwords separately
-      // We only insert profile data into the users table
+      // CRITICAL FIX: Include password in Supabase insert
+      // The 'password' column stores the bcrypt hash for users who register with email/password
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        // DO NOT include password - Supabase Auth handles this
+        // INCLUDE password hash - stored in 'password' column (not password_hash)
+        password: userData.password_hash || userData.password || null,
         balance: userData.balance !== undefined ? userData.balance : 0,
         status: userData.status || 'active',
         trading_mode: userData.trading_mode || 'normal',
@@ -1014,6 +1014,8 @@ async function createUser(userData) {
         last_name: userData.lastName || '',
         role: userData.role || 'user'
       };
+
+      console.log('📝 [CREATE_USER] Creating user with password:', !!cleanUserData.password);
 
       const result = await supabase
         .from('users')
@@ -1028,7 +1030,7 @@ async function createUser(userData) {
         throw error;
       }
 
-      console.log('✅ [CREATE_USER] User created in Supabase:', data.username);
+      console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'hasPassword:', !!data.password);
       return data;
     } catch (error) {
       console.error('❌ [CREATE_USER] Supabase failed, falling back to file storage:', error.message);
