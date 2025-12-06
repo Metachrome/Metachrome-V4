@@ -1661,7 +1661,7 @@ app.get('/api/auth', async (req, res) => {
           verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
           hasUploadedDocuments: user.has_uploaded_documents || false,
           walletAddress: user.wallet_address || null,
-          hasPassword: !!(user.password_hash && user.password_hash.length > 0)
+          hasPassword: !!((user.password && user.password.length > 0) || (user.password_hash && user.password_hash.length > 0))
         };
 
         return res.json(responseData);
@@ -1950,7 +1950,7 @@ app.post('/api/auth', async (req, res) => {
           lastName: newUser.lastName,
           balance: newUser.balance,
           role: newUser.role,
-          hasPassword: !!(newUser.password_hash && newUser.password_hash.length > 0),
+          hasPassword: !!((newUser.password && newUser.password.length > 0) || (newUser.password_hash && newUser.password_hash.length > 0)),
           verificationStatus: newUser.verification_status || 'unverified',
           hasUploadedDocuments: newUser.has_uploaded_documents || false
         }
@@ -1993,7 +1993,7 @@ app.post('/api/auth', async (req, res) => {
             role: user.role,
             verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
             hasUploadedDocuments: user.has_uploaded_documents || false,
-            hasPassword: !!(user.password_hash && user.password_hash.length > 0),
+            hasPassword: !!((user.password && user.password.length > 0) || (user.password_hash && user.password_hash.length > 0)),
             firstName: user.firstName || '',
             lastName: user.lastName || ''
           }
@@ -2026,7 +2026,7 @@ app.get('/api/auth/user-hotfix', async (req, res) => {
     }
 
     console.log('🚨 HOTFIX User data request for:', currentUser.username, {
-      hasPasswordHash: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
+      hasPassword: !!((currentUser.password && currentUser.password.length > 0) || (currentUser.password_hash && currentUser.password_hash.length > 0)),
       verificationStatus: currentUser.verification_status
     });
 
@@ -2040,7 +2040,7 @@ app.get('/api/auth/user-hotfix', async (req, res) => {
       verificationStatus: currentUser.verification_status || 'unverified',
       hasUploadedDocuments: currentUser.has_uploaded_documents || false,
       walletAddress: currentUser.wallet_address || null,
-      hasPassword: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
+      hasPassword: !!((currentUser.password && currentUser.password.length > 0) || (currentUser.password_hash && currentUser.password_hash.length > 0)),
       hotfix: true
     });
   } catch (error) {
@@ -2095,10 +2095,12 @@ app.get('/api/auth/user', async (req, res) => {
     }
 
     // Debug logging for password and verification status
+    const userHasPassword = !!((currentUser.password && currentUser.password.length > 0) || (currentUser.password_hash && currentUser.password_hash.length > 0));
     console.log('🔍 Debug user data:', {
       username: currentUser.username,
-      hasPasswordHash: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
-      passwordHashLength: currentUser.password_hash?.length || 0,
+      hasPassword: userHasPassword,
+      hasPasswordField: !!currentUser.password,
+      hasPasswordHashField: !!currentUser.password_hash,
       verificationStatus: currentUser.verification_status,
       hasUploadedDocuments: currentUser.has_uploaded_documents,
       verifiedAt: currentUser.verified_at,
@@ -2120,7 +2122,7 @@ app.get('/api/auth/user', async (req, res) => {
       verificationStatus: currentUser.verification_status || 'unverified',
       hasUploadedDocuments: currentUser.has_uploaded_documents || false,
       walletAddress: currentUser.wallet_address || null,
-      hasPassword: !!(currentUser.password_hash && currentUser.password_hash.length > 0),
+      hasPassword: userHasPassword,
       verified_at: currentUser.verified_at,
       updated_at: currentUser.updated_at
     };
@@ -2302,7 +2304,7 @@ app.post('/api/auth/register', async (req, res) => {
         lastName: newUser.lastName,
         role: newUser.role,
         balance: newUser.balance,
-        hasPassword: !!(newUser.password_hash && newUser.password_hash.length > 0),
+        hasPassword: !!((newUser.password && newUser.password.length > 0) || (newUser.password_hash && newUser.password_hash.length > 0)),
         verificationStatus: newUser.verification_status || 'unverified',
         hasUploadedDocuments: newUser.has_uploaded_documents || false
       },
@@ -2402,7 +2404,7 @@ app.post('/api/auth/user/register', async (req, res) => {
         lastName: newUser.lastName,
         role: newUser.role,
         balance: newUser.balance,
-        hasPassword: !!(newUser.password_hash && newUser.password_hash.length > 0),
+        hasPassword: !!((newUser.password && newUser.password.length > 0) || (newUser.password_hash && newUser.password_hash.length > 0)),
         verificationStatus: newUser.verification_status || 'unverified',
         hasUploadedDocuments: newUser.has_uploaded_documents || false
       },
@@ -2470,7 +2472,7 @@ app.post('/api/auth/login', async (req, res) => {
           walletAddress: user.wallet_address || user.walletAddress,
           verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
           hasUploadedDocuments: user.has_uploaded_documents || false,
-          hasPassword: !!(user.password_hash && user.password_hash.length > 0),
+          hasPassword: !!((user.password && user.password.length > 0) || (user.password_hash && user.password_hash.length > 0)),
           firstName: user.firstName || '',
           lastName: user.lastName || ''
         }
@@ -2546,7 +2548,7 @@ app.post('/api/auth/user/login', async (req, res) => {
           walletAddress: user.wallet_address || user.walletAddress,
           verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
           hasUploadedDocuments: user.has_uploaded_documents || false,
-          hasPassword: !!(user.password_hash && user.password_hash.length > 0),
+          hasPassword: !!((user.password && user.password.length > 0) || (user.password_hash && user.password_hash.length > 0)),
           firstName: user.firstName || '',
           lastName: user.lastName || ''
         }
@@ -2703,7 +2705,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
       lastName: user.lastName || '',
       verificationStatus: normalizeVerificationStatus(user.verification_status || 'unverified'),
       hasUploadedDocuments: user.has_uploaded_documents || false,
-      hasPassword: !!user.password_hash
+      hasPassword: !!(user.password || user.password_hash)
     }))}`);
 
   } catch (error) {
