@@ -13055,6 +13055,77 @@ app.get('/api/debug/all-users', async (req, res) => {
   }
 });
 
+// ===== DEBUG: Test Registration Endpoint =====
+app.post('/api/debug/test-registration', async (req, res) => {
+  try {
+    const testUsername = `test_${Date.now()}`;
+    const testEmail = `test_${Date.now()}@test.com`;
+    const testPassword = 'testpassword123';
+
+    console.log('🧪 DEBUG: Testing registration with:', { testUsername, testEmail });
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(testPassword, 10);
+
+    // Create test user
+    const userData = {
+      username: testUsername,
+      email: testEmail,
+      password_hash: hashedPassword,
+      firstName: 'Test',
+      lastName: 'User',
+      balance: 0,
+      role: 'user',
+      status: 'active',
+      trading_mode: 'normal',
+      verification_status: 'unverified',
+      created_at: new Date().toISOString(),
+      last_login: new Date().toISOString()
+    };
+
+    const newUser = await createUser(userData);
+
+    if (!newUser || !newUser.id) {
+      return res.status(500).json({
+        success: false,
+        error: 'User creation failed - no user ID returned',
+        supabaseConfigured: isSupabaseConfigured,
+        supabaseConnected: !!supabase
+      });
+    }
+
+    // Generate token
+    const encodedUserId = Buffer.from(newUser.id).toString('base64');
+    const token = `user-session-${encodedUserId}-${Date.now()}`;
+
+    // Verify user can be retrieved
+    const retrievedUser = await getUserFromToken(token);
+
+    res.json({
+      success: true,
+      message: 'Test registration successful',
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        hasPassword: !!newUser.password
+      },
+      token: token,
+      tokenWorks: !!retrievedUser,
+      supabaseConfigured: isSupabaseConfigured,
+      supabaseConnected: !!supabase
+    });
+  } catch (error) {
+    console.error('❌ Debug test registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      supabaseConfigured: isSupabaseConfigured,
+      supabaseConnected: !!supabase
+    });
+  }
+});
+
 // ===== REFERRAL SYSTEM ENDPOINTS =====
 
 // Generate referral code for user
