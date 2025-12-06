@@ -13067,30 +13067,35 @@ app.post('/api/debug/test-registration', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(testPassword, 10);
 
-    // Create test user
-    const userData = {
+    // Create test user directly with Supabase to see exact error
+    const cleanUserData = {
       username: testUsername,
       email: testEmail,
-      password_hash: hashedPassword,
-      firstName: 'Test',
-      lastName: 'User',
+      password: hashedPassword,
       balance: 0,
-      role: 'user',
       status: 'active',
       trading_mode: 'normal',
       verification_status: 'unverified',
-      created_at: new Date().toISOString(),
-      last_login: new Date().toISOString()
+      first_name: 'Test',
+      last_name: 'User',
+      role: 'user'
     };
 
-    const newUser = await createUser(userData);
+    console.log('🧪 DEBUG: Insert data:', cleanUserData);
 
-    if (!newUser || !newUser.id) {
+    // Try direct Supabase insert
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert([cleanUserData])
+      .select()
+      .single();
+
+    if (insertError) {
       return res.status(500).json({
         success: false,
-        error: 'User creation failed - no user ID returned',
-        supabaseConfigured: isSupabaseConfigured,
-        supabaseConnected: !!supabase
+        error: 'Supabase insert failed',
+        supabaseError: insertError,
+        insertData: { ...cleanUserData, password: '[HIDDEN]' }
       });
     }
 
@@ -13100,6 +13105,13 @@ app.post('/api/debug/test-registration', async (req, res) => {
 
     // Verify user can be retrieved
     const retrievedUser = await getUserFromToken(token);
+
+    // Also try direct lookup
+    const { data: directLookup, error: lookupError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', newUser.id)
+      .single();
 
     res.json({
       success: true,
@@ -13112,6 +13124,8 @@ app.post('/api/debug/test-registration', async (req, res) => {
       },
       token: token,
       tokenWorks: !!retrievedUser,
+      directLookupWorks: !!directLookup,
+      directLookupError: lookupError,
       supabaseConfigured: isSupabaseConfigured,
       supabaseConnected: !!supabase
     });
@@ -13120,6 +13134,7 @@ app.post('/api/debug/test-registration', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
+      stack: error.stack,
       supabaseConfigured: isSupabaseConfigured,
       supabaseConnected: !!supabase
     });
