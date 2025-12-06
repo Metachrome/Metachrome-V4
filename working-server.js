@@ -12929,6 +12929,132 @@ app.post('/api/instant-verify-angela', async (req, res) => {
   }
 });
 
+// ===== FIX VERIFICATION STATUS FOR ANY USER =====
+app.post('/api/fix-verification/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { status = 'pending' } = req.body; // pending, verified, unverified
+
+    console.log(`🔧 Fixing verification status for user: ${username} to: ${status}`);
+
+    if (isSupabaseConfigured && supabase) {
+      // First check if user exists
+      const { data: existingUser, error: findError } = await supabase
+        .from('users')
+        .select('id, username, email, verification_status, has_uploaded_documents')
+        .ilike('username', username)
+        .single();
+
+      if (findError || !existingUser) {
+        // Try by email
+        const { data: userByEmail, error: emailError } = await supabase
+          .from('users')
+          .select('id, username, email, verification_status, has_uploaded_documents')
+          .ilike('email', `%${username}%`)
+          .single();
+
+        if (emailError || !userByEmail) {
+          return res.status(404).json({
+            success: false,
+            message: `User not found: ${username}`,
+            searchedBy: 'username and email'
+          });
+        }
+
+        // Found by email
+        const { data: updatedUser, error: updateError } = await supabase
+          .from('users')
+          .update({
+            verification_status: status,
+            has_uploaded_documents: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userByEmail.id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+
+        return res.json({
+          success: true,
+          message: `User ${userByEmail.username} verification status updated to: ${status}`,
+          before: userByEmail,
+          after: updatedUser
+        });
+      }
+
+      // Update user found by username
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({
+          verification_status: status,
+          has_uploaded_documents: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingUser.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      console.log(`✅ User ${existingUser.username} verification fixed:`, updatedUser);
+
+      res.json({
+        success: true,
+        message: `User ${existingUser.username} verification status updated to: ${status}`,
+        before: existingUser,
+        after: updatedUser
+      });
+    } else {
+      res.json({
+        success: false,
+        message: 'Only available in production with Supabase'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Fix verification error:', error);
+    res.status(500).json({ error: 'Failed to fix verification: ' + error.message });
+  }
+});
+
+// ===== LIST ALL USERS (DEBUG) =====
+app.get('/api/debug/all-users', async (req, res) => {
+  try {
+    if (isSupabaseConfigured && supabase) {
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('id, username, email, verification_status, has_uploaded_documents, role')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      res.json({
+        success: true,
+        count: users?.length || 0,
+        users: users || []
+      });
+    } else {
+      const users = await getUsers();
+      res.json({
+        success: true,
+        count: users.length,
+        users: users.map(u => ({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          verification_status: u.verification_status,
+          has_uploaded_documents: u.has_uploaded_documents,
+          role: u.role
+        }))
+      });
+    }
+  } catch (error) {
+    console.error('❌ Debug all users error:', error);
+    res.status(500).json({ error: 'Failed to get users: ' + error.message });
+  }
+});
+
 // ===== REFERRAL SYSTEM ENDPOINTS =====
 
 // Generate referral code for user
