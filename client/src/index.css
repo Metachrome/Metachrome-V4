@@ -2,16 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent Google Translate from translating prices and numbers */
-/* Add class 'notranslate' to any element containing financial data */
-.notranslate,
-.price-display,
-.balance-display,
-.amount-display,
-[data-notranslate],
-[translate="no"] {
-  translate: no;
-}
+/*
+ * Prevent Google Translate from corrupting prices and numbers
+ * The 'notranslate' class is recognized by Google Translate to skip translation
+ * This only affects elements with this class, allowing the rest of the page to be translated
+ */
 
 /* Prose Strong Tag Styling for Legal Pages */
 .prose :where(strong):not(:where([class~=not-prose],[class~=not-prose] *)) {
