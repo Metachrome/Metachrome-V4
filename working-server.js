@@ -13067,11 +13067,20 @@ app.post('/api/debug/test-registration', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(testPassword, 10);
 
-    // Create test user directly with Supabase to see exact error
+    // First, check which columns exist in the users table
+    const { data: sampleUser, error: sampleError } = await supabase
+      .from('users')
+      .select('*')
+      .limit(1)
+      .single();
+
+    const existingColumns = sampleUser ? Object.keys(sampleUser) : [];
+
+    // Create test user - try password_hash column instead of password
     const cleanUserData = {
       username: testUsername,
       email: testEmail,
-      password: hashedPassword,
+      password_hash: hashedPassword, // Try password_hash instead of password
       balance: 0,
       status: 'active',
       trading_mode: 'normal',
@@ -13082,6 +13091,7 @@ app.post('/api/debug/test-registration', async (req, res) => {
     };
 
     console.log('🧪 DEBUG: Insert data:', cleanUserData);
+    console.log('🧪 DEBUG: Existing columns in users table:', existingColumns);
 
     // Try direct Supabase insert
     const { data: newUser, error: insertError } = await supabase
@@ -13095,7 +13105,8 @@ app.post('/api/debug/test-registration', async (req, res) => {
         success: false,
         error: 'Supabase insert failed',
         supabaseError: insertError,
-        insertData: { ...cleanUserData, password: '[HIDDEN]' }
+        insertData: { ...cleanUserData, password_hash: '[HIDDEN]' },
+        existingColumns: existingColumns
       });
     }
 
@@ -13120,16 +13131,17 @@ app.post('/api/debug/test-registration', async (req, res) => {
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        hasPassword: !!newUser.password,
-        passwordLength: newUser.password?.length || 0,
+        hasPasswordHash: !!newUser.password_hash,
+        passwordHashLength: newUser.password_hash?.length || 0,
         allColumns: Object.keys(newUser)
       },
       token: token,
+      existingColumns: existingColumns,
       decodedUserId: Buffer.from(encodedUserId, 'base64').toString('utf-8'),
       tokenWorks: !!retrievedUser,
       directLookupWorks: !!directLookup,
-      directLookupHasPassword: !!directLookup?.password,
-      directLookupPasswordLength: directLookup?.password?.length || 0,
+      directLookupHasPasswordHash: !!directLookup?.password_hash,
+      directLookupPasswordHashLength: directLookup?.password_hash?.length || 0,
       directLookupError: lookupError,
       supabaseConfigured: isSupabaseConfigured,
       supabaseConnected: !!supabase
