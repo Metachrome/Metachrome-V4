@@ -365,30 +365,13 @@ export function useAuth() {
           }
 
           return result;
-        } catch (fallbackError) {
+        } catch (fallbackError: any) {
           console.error('Both registration endpoints failed:', fallbackError);
 
-          // If both endpoints fail, create a demo user locally
-          console.warn('Creating demo user locally due to server issues');
-          const demoUser = {
-            id: `demo-user-${Date.now()}`,
-            username: userData.username,
-            email: userData.email,
-            role: 'user',
-            firstName: userData.firstName,
-            lastName: userData.lastName
-          };
-
-          // Store demo user in localStorage
-          localStorage.setItem('demoUser', JSON.stringify(demoUser));
-          localStorage.setItem('authToken', `demo-token-${Date.now()}`);
-
-          return {
-            user: demoUser,
-            message: "Registration successful (Demo Mode - Local Storage)",
-            token: `demo-token-${Date.now()}`,
-            success: true
-          };
+          // CRITICAL FIX: Do NOT create demo user - this causes document upload to fail
+          // Instead, throw the actual error so user knows registration failed
+          const errorMessage = fallbackError?.message || fallbackError?.error || 'Registration failed. Please try again.';
+          throw new Error(errorMessage);
         }
       }
     },
