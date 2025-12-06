@@ -999,13 +999,13 @@ async function getUserByEmail(email) {
 async function createUser(userData) {
   if (isSupabaseConfigured && supabase) {
     try {
-      // CRITICAL FIX: Include password in Supabase insert
-      // The 'password' column stores the bcrypt hash for users who register with email/password
+      // CRITICAL FIX: Use password_hash column (not password) for Supabase
+      // Supabase schema uses 'password_hash' column for bcrypt hashed passwords
       const cleanUserData = {
         username: userData.username,
         email: userData.email,
-        // INCLUDE password hash - stored in 'password' column (not password_hash)
-        password: userData.password_hash || userData.password || null,
+        // Password hash - stored in 'password_hash' column
+        password_hash: userData.password_hash || userData.password || null,
         balance: userData.balance !== undefined ? userData.balance : 0,
         status: userData.status || 'active',
         trading_mode: userData.trading_mode || 'normal',
@@ -1015,7 +1015,7 @@ async function createUser(userData) {
         role: userData.role || 'user'
       };
 
-      console.log('📝 [CREATE_USER] Creating user with password:', !!cleanUserData.password);
+      console.log('📝 [CREATE_USER] Creating user with password_hash:', !!cleanUserData.password_hash);
 
       const result = await supabase
         .from('users')
@@ -1030,7 +1030,7 @@ async function createUser(userData) {
         throw error;
       }
 
-      console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'hasPassword:', !!data.password);
+      console.log('✅ [CREATE_USER] User created in Supabase:', data.username, 'hasPasswordHash:', !!data.password_hash);
       return data;
     } catch (error) {
       console.error('❌ [CREATE_USER] Supabase failed, falling back to file storage:', error.message);
