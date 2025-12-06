@@ -2220,42 +2220,42 @@ function OptionsPageContent({
           <MobileHeader />
 
           {/* Trading Pair Info Header - Below standard header */}
-          <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700">
+          <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700" translate="no">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-white font-bold text-base">{currentPairData.symbol}</div>
-                <div className="text-white text-lg font-bold">{displayPrice.toFixed(2)} USDT</div>
-                <div className={`text-xs font-semibold ${changeColor}`}>
+                <div className="text-white font-bold text-base notranslate">{currentPairData.symbol}</div>
+                <div className="text-white text-lg font-bold notranslate">{displayPrice.toFixed(2)} USDT</div>
+                <div className={`text-xs font-semibold notranslate ${changeColor}`}>
                   {changeText || btcMarketData?.priceChangePercent24h || '+0.00%'}
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-gray-400 text-xs">24h Vol</div>
-                <div className="text-white text-sm font-bold">
+                <div className="text-white text-sm font-bold notranslate">
                   {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(2) + 'M' : '0.00M'}
                 </div>
               </div>
             </div>
 
             {/* Mobile Market Stats - Reduced spacing */}
-            <div className="grid grid-cols-4 gap-2 mt-2 text-xs">
+            <div className="grid grid-cols-4 gap-2 mt-2 text-xs" translate="no">
               <div className="text-center">
                 <div className="text-gray-400">24h High</div>
-                <div className="text-white font-medium">{btcMarketData?.high24h || '119,558'}</div>
+                <div className="text-white font-medium notranslate">{btcMarketData?.high24h || '119,558'}</div>
               </div>
               <div className="text-center">
                 <div className="text-gray-400">24h Low</div>
-                <div className="text-white font-medium">{btcMarketData?.low24h || '117,205'}</div>
+                <div className="text-white font-medium notranslate">{btcMarketData?.low24h || '117,205'}</div>
               </div>
               <div className="text-center">
                 <div className="text-gray-400">Volume</div>
-                <div className="text-white font-medium">
+                <div className="text-white font-medium notranslate">
                   {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000).toFixed(0) + 'K' : '681K'}
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-gray-400">Turnover</div>
-                <div className="text-white font-medium">
+                <div className="text-white font-medium notranslate">
                   {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) * parseFloat(btcMarketData.price) / 1000000).toFixed(0) + 'M' : '80.5M'}
                 </div>
               </div>
@@ -2339,16 +2339,16 @@ function OptionsPageContent({
           {/* Mobile Content - Two Column Layout */}
           <div className="bg-[#10121E] min-h-screen flex">
             {/* Mobile Left Panel - Order Book & Price Data */}
-            <div className="w-1/2 border-r border-gray-700">
+            <div className="w-1/2 border-r border-gray-700" translate="no">
               {/* Price Header - Reduced spacing */}
               <div className="p-2 border-b border-gray-700">
                 <div className="flex items-center justify-between mb-1">
-                  <div className="text-white font-bold text-sm">{currentPairData.symbol}</div>
+                  <div className="text-white font-bold text-sm notranslate">{currentPairData.symbol}</div>
                   <div className="text-right">
-                    <div className="font-bold text-white text-sm">
+                    <div className="font-bold text-white text-sm notranslate">
                       {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
                     </div>
-                    <div className={`text-xs ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`text-xs notranslate ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                       {changeText} ({changeColor})
                     </div>
                   </div>
@@ -2363,7 +2363,7 @@ function OptionsPageContent({
               </div>
 
               {/* Order Book Data */}
-              <div className="h-[300px] overflow-y-auto">
+              <div className="h-[300px] overflow-y-auto notranslate">
                 {/* Sell Orders (Red) */}
                 <div className="space-y-0">
                   {orderBookData.sellOrders.slice(0, 8).map((order, index) => (
@@ -2378,7 +2378,7 @@ function OptionsPageContent({
                 {/* Current Price Separator */}
                 <div className="px-2 py-2 border-y border-gray-600">
                   <div className="text-center">
-                    <span className={`text-sm font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`text-sm font-bold notranslate ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                       {displayPrice.toFixed(2)} USDT
                     </span>
                   </div>
@@ -2398,11 +2398,11 @@ function OptionsPageContent({
             </div>
 
             {/* Mobile Right Panel - Market Stats & Trading Info */}
-            <div className="w-1/2">
+            <div className="w-1/2" translate="no">
               {/* Market Statistics */}
               <div className="px-3 py-2 border-b border-gray-700">
                 <h3 className="text-white font-bold mb-2 text-sm">Market Statistics</h3>
-                <div className="grid grid-cols-1 gap-2 text-xs">
+                <div className="grid grid-cols-1 gap-2 text-xs notranslate">
                   <div className="flex justify-between">
                     <span className="text-gray-400">24h Change</span>
                     <span className={`font-semibold ${btcMarketData?.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
@@ -2501,7 +2501,7 @@ function OptionsPageContent({
               {/* Trading Pairs */}
               <div className="px-3 py-2">
                 <h3 className="text-white font-bold mb-2 text-sm">Trading Pairs</h3>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+                <div className="space-y-1 max-h-40 overflow-y-auto notranslate">
                   {filteredTradingPairs.slice(0, 6).map((pair, index) => {
                     const isPositive = !pair.priceChangePercent24h?.startsWith('-');
                     const iconMap: { [key: string]: { icon: string, bg: string } } = {
@@ -2546,7 +2546,7 @@ function OptionsPageContent({
           </div>
 
           {/* Mobile Options Trading Interface - Reduced spacing */}
-          <div className="px-3 py-2 space-y-2 bg-[#10121E]">
+          <div className="px-3 py-2 space-y-2 bg-[#10121E]" translate="no">
             {/* Balance Display - Using TradingView Price - Compact */}
             <div className="bg-gray-800 rounded-lg p-2">
               <div className="flex items-center justify-between">
@@ -2559,14 +2559,14 @@ function OptionsPageContent({
                     </span>
                   </div>
                 </div>
-                <span className="text-white font-bold text-sm">
+                <span className="text-white font-bold text-sm notranslate">
                   {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
                 </span>
               </div>
               <div className="flex items-center justify-between mt-1">
                 <span className="text-gray-400 text-xs">Balance:</span>
                 {user ? (
-                  <span className="text-green-400 font-bold text-sm">{balance.toFixed(2)} USDT</span>
+                  <span className="text-green-400 font-bold text-sm notranslate">{balance.toFixed(2)} USDT</span>
                 ) : (
                   <span className="text-yellow-400 font-bold text-xs">Sign in required</span>
                 )}
@@ -2991,18 +2991,18 @@ function OptionsPageContent({
       </div>
 
       {/* Main Trading Layout */}
-      <div className="bg-[#10121E] flex">
+      <div className="bg-[#10121E] flex" translate="no">
         {/* Left Panel - Order Book */}
         <div className="w-64 border-r border-gray-700">
           {/* Order Book Header - Dynamic Trading Pair */}
           <div className="p-3 border-b border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-white font-bold">{currentPairData.symbol}</div>
+              <div className="text-white font-bold notranslate">{currentPairData.symbol}</div>
               <div className="text-right">
-                <div className="font-bold text-white text-lg">
+                <div className="font-bold text-white text-lg notranslate">
                   {parseFloat(currentPairData.price).toFixed(2)}
                 </div>
-                <div className={`text-sm font-semibold ${currentPairData.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
+                <div className={`text-sm font-semibold notranslate ${currentPairData.priceChangePercent24h?.startsWith('-') ? 'text-red-400' : 'text-green-400'}`}>
                   {currentPairData.priceChangePercent24h || '+0.00%'}
                 </div>
               </div>
@@ -3028,7 +3028,7 @@ function OptionsPageContent({
           </div>
 
           {/* Order Book Data */}
-          <div className="h-[400px] overflow-y-auto" data-orderbook="desktop">
+          <div className="h-[400px] overflow-y-auto notranslate" data-orderbook="desktop">
             {/* Sell Orders (Red) */}
             <div className="space-y-0">
               {orderBookData.sellOrders.length > 0 ? orderBookData.sellOrders.map((order, index) => (
@@ -3043,7 +3043,7 @@ function OptionsPageContent({
             </div>
 
             {/* Current Price */}
-            <div className={`p-2 my-1 ${isPositive ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
+            <div className={`p-2 my-1 notranslate ${isPositive ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
               <div className="flex items-center justify-between">
                 <span className="font-bold text-white text-lg">
                   {displayPrice.toFixed(2)}
@@ -3277,7 +3277,7 @@ function OptionsPageContent({
 
                 {/* Current Price Indicator */}
                 <div className="text-center mt-4">
-                  <div className="inline-flex items-center space-x-2 bg-gray-700/50 px-4 py-2 rounded-lg">
+                  <div className="inline-flex items-center space-x-2 bg-gray-700/50 px-4 py-2 rounded-lg notranslate">
                     <span className="text-gray-400 text-sm">Current Price:</span>
                     <span className="text-white font-bold text-lg">{displayPrice.toFixed(2)} USDT</span>
                     <span className={`text-sm ${priceData?.priceChangePercent24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -3290,7 +3290,7 @@ function OptionsPageContent({
           </div>
 
           {/* Options Trading Controls */}
-          <div className="p-4 border-t border-gray-700">
+          <div className="p-4 border-t border-gray-700" translate="no">
             {/* Current Price Display - Using TradingView Price */}
             <div className="mb-4 p-3 bg-gray-800 rounded">
               <div className="flex items-center justify-between">
@@ -3304,7 +3304,7 @@ function OptionsPageContent({
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-white font-bold text-lg">
+                  <span className="text-white font-bold text-lg notranslate">
                     {currentPrice > 0 ? currentPrice.toFixed(2) : (safeCurrentPrice > 0 ? safeCurrentPrice.toFixed(2) : 'Loading...')} USDT
                   </span>
                 </div>
@@ -3312,7 +3312,7 @@ function OptionsPageContent({
               <div className="flex items-center justify-between mt-1">
                 <span className="text-gray-400">Balance:</span>
                 {user ? (
-                  <span className="text-green-400 font-bold">{balance.toFixed(2)} USDT</span>
+                  <span className="text-green-400 font-bold notranslate">{balance.toFixed(2)} USDT</span>
                 ) : (
                   <span className="text-yellow-400 font-bold">Sign in required</span>
                 )}
@@ -3678,7 +3678,7 @@ function OptionsPageContent({
           </div>
 
           {/* Trading Pairs */}
-          <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto">
+          <div className="px-4 space-y-2 mb-6 max-h-[300px] overflow-y-auto notranslate">
             {filteredTradingPairs.length > 0 ? (
               filteredTradingPairs.map((pair, index) => {
                 const isPositive = !pair.priceChangePercent24h?.startsWith('-');
@@ -3747,7 +3747,7 @@ function OptionsPageContent({
             </div>
 
             {/* Transaction List - Using Real Trade History */}
-            <div className="h-[200px] overflow-y-auto px-4">
+            <div className="h-[200px] overflow-y-auto px-4 notranslate">
               <div className="space-y-1 py-2">
                 {tradeHistory.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8">

@@ -849,25 +849,25 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
         <MobileHeader />
 
         {/* Trading Pair Info Header - Below standard header */}
-        <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700">
+        <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700" translate="no">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
-              <div className="text-white text-xl font-bold">{currentPairData.price} USDT</div>
-              <div className={`text-sm font-semibold`} style={{ color: currentPairData.isPositive ? '#10b981' : '#ef4444' }}>
+              <div className="text-white font-bold text-lg notranslate">{currentPairData.symbol}</div>
+              <div className="text-white text-xl font-bold notranslate">{currentPairData.price} USDT</div>
+              <div className={`text-sm font-semibold notranslate`} style={{ color: currentPairData.isPositive ? '#10b981' : '#ef4444' }}>
                 {currentPairData.change}
               </div>
             </div>
             <div className="text-right">
               <div className="text-gray-400 text-xs">24h Vol</div>
-              <div className="text-white text-sm font-bold">
+              <div className="text-white text-sm font-bold notranslate">
                 {btcMarketData?.volume24h ? (parseFloat(btcMarketData.volume24h) / 1000000).toFixed(1) + 'M BTC' : '1.2M BTC'}
               </div>
             </div>
           </div>
 
           {/* Mobile Market Stats */}
-          <div className="grid grid-cols-4 gap-2 mt-3 text-xs">
+          <div className="grid grid-cols-4 gap-2 mt-3 text-xs notranslate">
             <div className="text-center">
               <div className="text-gray-400">24h High</div>
               <div className="text-white font-medium">{btcMarketData?.high24h || '119,558'}</div>
@@ -1201,14 +1201,14 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
   return (
     <div className="min-h-screen bg-gray-900">
         <Navigation />
-      <div className="bg-[#10121E] flex min-h-screen">
+      <div className="bg-[#10121E] flex min-h-screen" translate="no">
         {/* Left and Center Content */}
         <div className="flex-1">
           {/* Top Header with BTC/USDT and Controls */}
           <div className="bg-[#10121E] px-4 py-3 border-b border-gray-700">
             <div className="flex items-center justify-between">
               {/* Left - Dynamic Trading Pair Info - Using TradingView Price */}
-              <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-6 notranslate">
                 <div>
                   <div className="text-white font-bold text-lg">{currentPairData.symbol}</div>
                   <div className="text-white text-2xl font-bold">{currentPairData.price} USDT</div>
@@ -1246,7 +1246,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
           {/* Main Trading Interface */}
           <div className="flex min-h-[900px]">
         {/* Left Panel - Order Book */}
-        <div className="w-56 bg-[#10121E] border-r border-gray-700 min-h-[900px]">
+        <div className="w-56 bg-[#10121E] border-r border-gray-700 min-h-[900px] notranslate">
           {/* Header */}
           <div className="p-3 border-b border-gray-700">
             <div className="flex items-center justify-between mb-2">
@@ -1547,7 +1547,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                   </div>
                 </div>
 
-                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-blue-500/30">
+                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-blue-500/30 notranslate">
                   {user ? (
                     <>
                       <div className="flex items-center justify-between">
@@ -1690,7 +1690,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
                   </div>
                 </div>
 
-                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-red-500/30">
+                <div className="space-y-1 text-xs text-gray-300 bg-[#1a1b2e] p-2 rounded border border-red-500/30 notranslate">
                   {user ? (
                     <>
                       <div className="flex items-center justify-between">

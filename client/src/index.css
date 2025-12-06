@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent Google Translate from translating prices and numbers */
+/* Add class 'notranslate' to any element containing financial data */
+.notranslate,
+.price-display,
+.balance-display,
+.amount-display,
+[data-notranslate],
+[translate="no"] {
+  translate: no;
+}
+
 /* Prose Strong Tag Styling for Legal Pages */
 .prose :where(strong):not(:where([class~=not-prose],[class~=not-prose] *)) {
     color: #ededed;
