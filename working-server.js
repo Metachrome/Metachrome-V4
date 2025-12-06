@@ -13120,11 +13120,16 @@ app.post('/api/debug/test-registration', async (req, res) => {
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        hasPassword: !!newUser.password
+        hasPassword: !!newUser.password,
+        passwordLength: newUser.password?.length || 0,
+        allColumns: Object.keys(newUser)
       },
       token: token,
+      decodedUserId: Buffer.from(encodedUserId, 'base64').toString('utf-8'),
       tokenWorks: !!retrievedUser,
       directLookupWorks: !!directLookup,
+      directLookupHasPassword: !!directLookup?.password,
+      directLookupPasswordLength: directLookup?.password?.length || 0,
       directLookupError: lookupError,
       supabaseConfigured: isSupabaseConfigured,
       supabaseConnected: !!supabase
