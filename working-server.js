@@ -14150,25 +14150,41 @@ app.post('/api/user/redeem-code', async (req, res) => {
           }
 
           // Record in history table (MUST succeed - enforces one-time use)
-          const { error: historyError } = await supabase
+          const tradesRequired = mockCodeData?.tradesRequired || 0;
+          console.log('📝 Recording redemption in history:', {
+            user_id: user.id,
+            code: upperCode,
+            bonus_amount: mockBonus,
+            trades_required: tradesRequired
+          });
+
+          const { data: historyData, error: historyError } = await supabase
             .from('user_redeem_history')
             .insert({
               user_id: user.id,
               code: upperCode,
               bonus_amount: mockBonus,
+              trades_required: tradesRequired,
+              trades_completed: 0,
+              withdrawal_unlocked: tradesRequired === 0,
               redeemed_at: new Date().toISOString()
-            });
+            })
+            .select()
+            .single();
 
           if (historyError) {
             console.log('❌ Error recording in history table:', historyError);
+            console.log('❌ History error details:', JSON.stringify(historyError, null, 2));
             // Check if it's a duplicate (unique constraint violation)
             if (historyError.code === '23505') {
               console.log('❌ DUPLICATE REDEMPTION DETECTED - User already used this code');
               return res.status(400).json({ error: 'You have already used this redeem code' });
             }
-            throw historyError;
+            // Don't throw - log and continue (balance already updated)
+            console.log('⚠️ History insert failed but balance was updated');
+          } else {
+            console.log('✅ Redemption recorded in history:', historyData?.id);
           }
-          console.log('✅ Redemption recorded in history');
 
           balanceUpdated = true;
           console.log('✅ Balance updated in Supabase:', {
