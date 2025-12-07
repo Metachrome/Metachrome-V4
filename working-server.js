@@ -13758,11 +13758,15 @@ app.put('/api/user/password', async (req, res) => {
 async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
   console.log('🔍 Validating redeem code conditions for:', redeemCode.code);
   console.log('🔍 Code type:', redeemCode.code_type || 'standard');
+  console.log('🔍 User ID:', user.id);
+  console.log('🔍 User created_at:', user.created_at);
+  console.log('🔍 Redeem code full data:', JSON.stringify(redeemCode));
 
   const codeType = redeemCode.code_type || 'standard';
 
   // Standard codes have no special requirements
   if (codeType === 'standard') {
+    console.log('✅ Standard code - no conditions to check');
     return { eligible: true };
   }
 
@@ -13788,6 +13792,24 @@ async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
     // Use case-insensitive matching for type and status
     let totalDeposits = 0;
     if (supabaseClient) {
+      // First, get ALL transactions for this user to debug
+      const { data: allTx, error: allErr } = await supabaseClient
+        .from('transactions')
+        .select('amount, type, status, created_at')
+        .eq('user_id', user.id);
+
+      console.log('🔍 DEBUG - All transactions for user:', user.id);
+      console.log('🔍 DEBUG - Total transactions found:', allTx?.length || 0);
+      if (allTx && allTx.length > 0) {
+        allTx.forEach((t, i) => {
+          console.log(`🔍 Tx ${i+1}: type="${t.type}", status="${t.status}", amount=${t.amount}, date=${t.created_at}`);
+        });
+      }
+      if (allErr) {
+        console.log('❌ Error fetching transactions:', allErr.message);
+      }
+
+      // Now filter by timeframe
       const { data: deposits, error } = await supabaseClient
         .from('transactions')
         .select('amount, type, status')
@@ -13802,7 +13824,7 @@ async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
           d.status?.toLowerCase() === 'approved'
         );
         totalDeposits = approvedDeposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-        console.log('💰 Found', deposits.length, 'transactions, ', approvedDeposits.length, 'approved deposits');
+        console.log('💰 Found', deposits.length, 'transactions in timeframe, ', approvedDeposits.length, 'approved deposits');
       }
     }
 
