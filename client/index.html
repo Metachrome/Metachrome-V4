@@ -42,8 +42,8 @@
     <title>METACHROME - Advanced Crypto Trading Platform</title>
   </head>
   <body>
-    <div id="root" class="notranslate"></div>
-    <div id="mobile-modal-root" class="notranslate"></div>
+    <div id="root"></div>
+    <div id="mobile-modal-root"></div>
     <script>
       // Prevent Google Translate from breaking React
       // This script runs before React loads to protect the DOM
@@ -52,14 +52,18 @@
         var originalInsertBefore = Node.prototype.insertBefore;
         var originalRemoveChild = Node.prototype.removeChild;
         var originalAppendChild = Node.prototype.appendChild;
+        var originalReplaceChild = Node.prototype.replaceChild;
 
         // Wrap insertBefore to catch translation-related errors
         Node.prototype.insertBefore = function(newNode, referenceNode) {
           try {
+            // If referenceNode is null or not a child, use appendChild
+            if (!referenceNode || !this.contains(referenceNode)) {
+              return originalAppendChild.call(this, newNode);
+            }
             return originalInsertBefore.call(this, newNode, referenceNode);
           } catch (e) {
-            console.warn('insertBefore error (likely translation-related):', e.message);
-            // Try to recover by appending instead
+            console.warn('insertBefore error caught:', e.message);
             try {
               return originalAppendChild.call(this, newNode);
             } catch (e2) {
@@ -71,12 +75,44 @@
         // Wrap removeChild to catch translation-related errors
         Node.prototype.removeChild = function(child) {
           try {
-            return originalRemoveChild.call(this, child);
+            // Check if child is actually a child of this node
+            if (child && child.parentNode === this) {
+              return originalRemoveChild.call(this, child);
+            }
+            return child;
           } catch (e) {
-            console.warn('removeChild error (likely translation-related):', e.message);
+            console.warn('removeChild error caught:', e.message);
             return child;
           }
         };
+
+        // Wrap replaceChild to catch translation-related errors
+        Node.prototype.replaceChild = function(newChild, oldChild) {
+          try {
+            if (oldChild && oldChild.parentNode === this) {
+              return originalReplaceChild.call(this, newChild, oldChild);
+            }
+            return oldChild;
+          } catch (e) {
+            console.warn('replaceChild error caught:', e.message);
+            return oldChild;
+          }
+        };
+
+        // Prevent window.onerror from causing issues
+        window.addEventListener('error', function(e) {
+          if (e.message && (
+            e.message.includes('removeChild') ||
+            e.message.includes('insertBefore') ||
+            e.message.includes('replaceChild') ||
+            e.message.includes('appendChild')
+          )) {
+            console.warn('DOM error suppressed (likely translation-related):', e.message);
+            e.preventDefault();
+            e.stopPropagation();
+            return true;
+          }
+        }, true);
 
         console.log('✅ DOM protection for Google Translate initialized');
       })();
