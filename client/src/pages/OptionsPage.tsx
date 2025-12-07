@@ -2220,7 +2220,7 @@ function OptionsPageContent({
           <MobileHeader />
 
           {/* Trading Pair Info Header - Below standard header */}
-          <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700" translate="no">
+          <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-white font-bold text-base notranslate">{currentPairData.symbol}</div>
@@ -2238,7 +2238,7 @@ function OptionsPageContent({
             </div>
 
             {/* Mobile Market Stats - Reduced spacing */}
-            <div className="grid grid-cols-4 gap-2 mt-2 text-xs" translate="no">
+            <div className="grid grid-cols-4 gap-2 mt-2 text-xs">
               <div className="text-center">
                 <div className="text-gray-400">24h High</div>
                 <div className="text-white font-medium notranslate">{btcMarketData?.high24h || '119,558'}</div>
@@ -2339,7 +2339,7 @@ function OptionsPageContent({
           {/* Mobile Content - Two Column Layout */}
           <div className="bg-[#10121E] min-h-screen flex">
             {/* Mobile Left Panel - Order Book & Price Data */}
-            <div className="w-1/2 border-r border-gray-700" translate="no">
+            <div className="w-1/2 border-r border-gray-700">
               {/* Price Header - Reduced spacing */}
               <div className="p-2 border-b border-gray-700">
                 <div className="flex items-center justify-between mb-1">
@@ -2398,7 +2398,7 @@ function OptionsPageContent({
             </div>
 
             {/* Mobile Right Panel - Market Stats & Trading Info */}
-            <div className="w-1/2" translate="no">
+            <div className="w-1/2">
               {/* Market Statistics */}
               <div className="px-3 py-2 border-b border-gray-700">
                 <h3 className="text-white font-bold mb-2 text-sm">Market Statistics</h3>
@@ -2546,7 +2546,7 @@ function OptionsPageContent({
           </div>
 
           {/* Mobile Options Trading Interface - Reduced spacing */}
-          <div className="px-3 py-2 space-y-2 bg-[#10121E]" translate="no">
+          <div className="px-3 py-2 space-y-2 bg-[#10121E]">
             {/* Balance Display - Using TradingView Price - Compact */}
             <div className="bg-gray-800 rounded-lg p-2">
               <div className="flex items-center justify-between">
@@ -2991,7 +2991,7 @@ function OptionsPageContent({
       </div>
 
       {/* Main Trading Layout */}
-      <div className="bg-[#10121E] flex" translate="no">
+      <div className="bg-[#10121E] flex">
         {/* Left Panel - Order Book */}
         <div className="w-64 border-r border-gray-700">
           {/* Order Book Header - Dynamic Trading Pair */}
@@ -3290,7 +3290,7 @@ function OptionsPageContent({
           </div>
 
           {/* Options Trading Controls */}
-          <div className="p-4 border-t border-gray-700" translate="no">
+          <div className="p-4 border-t border-gray-700">
             {/* Current Price Display - Using TradingView Price */}
             <div className="mb-4 p-3 bg-gray-800 rounded">
               <div className="flex items-center justify-between">

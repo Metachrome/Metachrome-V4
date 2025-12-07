@@ -849,7 +849,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
         <MobileHeader />
 
         {/* Trading Pair Info Header - Below standard header */}
-        <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700" translate="no">
+        <div className="bg-[#10121E] px-4 py-2 border-b border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-white font-bold text-lg notranslate">{currentPairData.symbol}</div>
@@ -1201,7 +1201,7 @@ function SpotPageContent({ selectedSymbol, setSelectedSymbol }: SpotPageContentP
   return (
     <div className="min-h-screen bg-gray-900">
         <Navigation />
-      <div className="bg-[#10121E] flex min-h-screen" translate="no">
+      <div className="bg-[#10121E] flex min-h-screen">
         {/* Left and Center Content */}
         <div className="flex-1">
           {/* Top Header with BTC/USDT and Controls */}
