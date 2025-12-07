@@ -284,6 +284,10 @@ app.get('/api/user/profile', authenticateToken, (req: Request, res: Response) =>
     id: req.user.id,
     username: req.user.username,
     email: req.user.email,
+    firstName: req.user.first_name,
+    lastName: req.user.last_name,
+    phone: req.user.phone,
+    address: req.user.address,
     role: req.user.role,
     balance: req.user.balance,
     status: req.user.status,
@@ -294,9 +298,18 @@ app.get('/api/user/profile', authenticateToken, (req: Request, res: Response) =>
 
 app.put('/api/user/profile', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
-    
-    const updatedUser = await updateUser(req.user.id, { email });
+    const { username, email, firstName, lastName, phone, address } = req.body;
+
+    // Build update object only with provided fields
+    const updateData: any = {};
+    if (username !== undefined) updateData.username = username;
+    if (email !== undefined) updateData.email = email;
+    if (firstName !== undefined) updateData.first_name = firstName;
+    if (lastName !== undefined) updateData.last_name = lastName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (address !== undefined) updateData.address = address;
+
+    const updatedUser = await updateUser(req.user.id, updateData);
     if (!updatedUser) {
       return res.status(500).json({ message: 'Failed to update profile' });
     }
@@ -305,6 +318,10 @@ app.put('/api/user/profile', authenticateToken, async (req: Request, res: Respon
       id: updatedUser.id,
       username: updatedUser.username,
       email: updatedUser.email,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
       role: updatedUser.role,
       balance: updatedUser.balance,
       status: updatedUser.status,
