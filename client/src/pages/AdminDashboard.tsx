@@ -3057,52 +3057,47 @@ export default function WorkingAdminDashboard() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {redeemCodes.length === 0 ? (
-                            <TableRow className="border-gray-700">
-                              <TableCell colSpan={6} className="text-center py-8 text-gray-400">
-                                No redemptions yet
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            redeemCodes.map((code) => {
-                              // Get redemption history for this code
-                              const codeRedemptions = code.redemptions || [];
-                              if (codeRedemptions.length === 0) {
-                                return (
-                                  <TableRow key={`${code.id}-empty`} className="border-gray-700">
-                                    <TableCell className="text-white font-mono">{code.code}</TableCell>
-                                    <TableCell colSpan={5} className="text-center text-gray-400">
-                                      No users have redeemed this code yet
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              }
-                              return codeRedemptions.map((redemption, idx) => (
-                                <TableRow key={`${code.id}-${idx}`} className="border-gray-700">
-                                  <TableCell className="text-white font-mono">{code.code}</TableCell>
-                                  <TableCell className="text-blue-400">{redemption.user}</TableCell>
-                                  <TableCell className="text-green-400">{redemption.amount} USDT</TableCell>
-                                  <TableCell className="text-gray-300">
-                                    {new Date(redemption.date).toLocaleDateString()} {new Date(redemption.date).toLocaleTimeString()}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      className={
-                                        redemption.status === 'completed' ? 'bg-green-600' :
-                                        redemption.status === 'pending_trades' ? 'bg-yellow-600' :
-                                        'bg-gray-600'
-                                      }
-                                    >
-                                      {redemption.status === 'completed' ? 'Completed' : 'Pending Trades'}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-gray-300">
-                                    {redemption.tradesCompleted}/{redemption.tradesRequired}
+                          {(() => {
+                            // Collect all redemptions from all codes and sort by date (newest first)
+                            const allRedemptions = redeemCodes.flatMap(code =>
+                              (code.redemptions || []).map(r => ({ ...r, codeInfo: code }))
+                            ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                            if (allRedemptions.length === 0) {
+                              return (
+                                <TableRow className="border-gray-700">
+                                  <TableCell colSpan={6} className="text-center py-8 text-gray-400">
+                                    No redemptions yet
                                   </TableCell>
                                 </TableRow>
-                              ));
-                            })
-                          )}
+                              );
+                            }
+
+                            return allRedemptions.map((redemption, idx) => (
+                              <TableRow key={`redemption-${idx}`} className="border-gray-700">
+                                <TableCell className="text-white font-mono">{redemption.code}</TableCell>
+                                <TableCell className="text-blue-400">{redemption.user}</TableCell>
+                                <TableCell className="text-green-400">{redemption.amount} USDT</TableCell>
+                                <TableCell className="text-gray-300">
+                                  {new Date(redemption.date).toLocaleDateString()} {new Date(redemption.date).toLocaleTimeString()}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={
+                                      redemption.status === 'completed' ? 'bg-green-600' :
+                                      redemption.status === 'pending_trades' ? 'bg-yellow-600' :
+                                      'bg-gray-600'
+                                    }
+                                  >
+                                    {redemption.status === 'completed' ? 'Completed' : 'Pending Trades'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-gray-300">
+                                  {redemption.tradesCompleted}/{redemption.tradesRequired}
+                                </TableCell>
+                              </TableRow>
+                            ));
+                          })()}
                         </TableBody>
                       </Table>
                     </div>
