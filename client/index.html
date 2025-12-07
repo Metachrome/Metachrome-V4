@@ -42,8 +42,45 @@
     <title>METACHROME - Advanced Crypto Trading Platform</title>
   </head>
   <body>
-    <div id="root"></div>
-    <div id="mobile-modal-root"></div>
+    <div id="root" class="notranslate"></div>
+    <div id="mobile-modal-root" class="notranslate"></div>
+    <script>
+      // Prevent Google Translate from breaking React
+      // This script runs before React loads to protect the DOM
+      (function() {
+        // Save original DOM methods
+        var originalInsertBefore = Node.prototype.insertBefore;
+        var originalRemoveChild = Node.prototype.removeChild;
+        var originalAppendChild = Node.prototype.appendChild;
+
+        // Wrap insertBefore to catch translation-related errors
+        Node.prototype.insertBefore = function(newNode, referenceNode) {
+          try {
+            return originalInsertBefore.call(this, newNode, referenceNode);
+          } catch (e) {
+            console.warn('insertBefore error (likely translation-related):', e.message);
+            // Try to recover by appending instead
+            try {
+              return originalAppendChild.call(this, newNode);
+            } catch (e2) {
+              return newNode;
+            }
+          }
+        };
+
+        // Wrap removeChild to catch translation-related errors
+        Node.prototype.removeChild = function(child) {
+          try {
+            return originalRemoveChild.call(this, child);
+          } catch (e) {
+            console.warn('removeChild error (likely translation-related):', e.message);
+            return child;
+          }
+        };
+
+        console.log('✅ DOM protection for Google Translate initialized');
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
