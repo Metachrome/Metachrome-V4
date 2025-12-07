@@ -13754,6 +13754,159 @@ app.put('/api/user/password', async (req, res) => {
 
 // ===== REDEEM CODE ENDPOINTS =====
 
+// Helper function to validate redeem code eligibility conditions
+async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
+  console.log('🔍 Validating redeem code conditions for:', redeemCode.code);
+  console.log('🔍 Code type:', redeemCode.code_type || 'standard');
+
+  const codeType = redeemCode.code_type || 'standard';
+
+  // Standard codes have no special requirements
+  if (codeType === 'standard') {
+    return { eligible: true };
+  }
+
+  // WELCOME50: deposit_timeframe - Min deposit within X days of registration
+  if (codeType === 'deposit_timeframe') {
+    const minDeposit = parseFloat(redeemCode.min_deposit_amount || 0);
+    const timeframeDays = parseInt(redeemCode.min_deposit_timeframe_days || 30);
+
+    // Get user registration date
+    const userCreatedAt = new Date(user.created_at || Date.now());
+    const cutoffDate = new Date(userCreatedAt);
+    cutoffDate.setDate(cutoffDate.getDate() + timeframeDays);
+
+    // Check if still within timeframe
+    if (new Date() > cutoffDate) {
+      return {
+        eligible: false,
+        reason: `This code is only valid within ${timeframeDays} days of registration. Your registration period has expired.`
+      };
+    }
+
+    // Get user's total deposits within timeframe
+    let totalDeposits = 0;
+    if (supabaseClient) {
+      const { data: deposits, error } = await supabaseClient
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('type', 'deposit')
+        .eq('status', 'approved')
+        .gte('created_at', userCreatedAt.toISOString())
+        .lte('created_at', cutoffDate.toISOString());
+
+      if (!error && deposits) {
+        totalDeposits = deposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+      }
+    }
+
+    console.log('💰 Total deposits in timeframe:', totalDeposits, 'Required:', minDeposit);
+
+    if (totalDeposits < minDeposit) {
+      return {
+        eligible: false,
+        reason: `You need at least ${minDeposit} USDT in deposits within ${timeframeDays} days of registration. Current: ${totalDeposits.toFixed(2)} USDT`
+      };
+    }
+
+    return { eligible: true, tradesRequired: redeemCode.trades_for_withdrawal || 5 };
+  }
+
+  // FIRSTBONUS & LETSGO1000: accumulated_deposit - Total deposits accumulated
+  if (codeType === 'accumulated_deposit') {
+    const requiredDeposit = parseFloat(redeemCode.accumulated_deposit_required || 0);
+
+    // Get user's total approved deposits
+    let totalDeposits = 0;
+    if (supabaseClient) {
+      const { data: deposits, error } = await supabaseClient
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('type', 'deposit')
+        .eq('status', 'approved');
+
+      if (!error && deposits) {
+        totalDeposits = deposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+      }
+    }
+
+    console.log('💰 Total accumulated deposits:', totalDeposits, 'Required:', requiredDeposit);
+
+    if (totalDeposits < requiredDeposit) {
+      return {
+        eligible: false,
+        reason: `You need accumulated deposits of ${requiredDeposit.toLocaleString()} USDT. Current: ${totalDeposits.toFixed(2)} USDT`
+      };
+    }
+
+    return { eligible: true, tradesRequired: redeemCode.trades_for_withdrawal || 0 };
+  }
+
+  // BONUS500: referral - Invite X people
+  if (codeType === 'referral') {
+    const requiredReferrals = parseInt(redeemCode.referrals_required || 0);
+
+    // Get user's referral count
+    let referralCount = 0;
+    if (supabaseClient) {
+      const { data: referrals, error } = await supabaseClient
+        .from('user_referrals')
+        .select('id')
+        .eq('referrer_id', user.id);
+
+      if (!error && referrals) {
+        referralCount = referrals.length;
+      }
+    }
+
+    console.log('👥 Referral count:', referralCount, 'Required:', requiredReferrals);
+
+    if (referralCount < requiredReferrals) {
+      return {
+        eligible: false,
+        reason: `You need to invite ${requiredReferrals} friends using your referral code. Current referrals: ${referralCount}`
+      };
+    }
+
+    return { eligible: true, tradesRequired: redeemCode.trades_for_withdrawal || 3 };
+  }
+
+  // CASHBACK200: cashback_loss - Minimum trading loss
+  if (codeType === 'cashback_loss') {
+    const minLoss = parseFloat(redeemCode.min_loss_amount || 0);
+
+    // Calculate user's total trading losses
+    let totalLosses = 0;
+    if (supabaseClient) {
+      const { data: trades, error } = await supabaseClient
+        .from('trades')
+        .select('profit_loss')
+        .eq('user_id', user.id)
+        .lt('profit_loss', 0);
+
+      if (!error && trades) {
+        totalLosses = Math.abs(trades.reduce((sum, t) => sum + parseFloat(t.profit_loss || 0), 0));
+      }
+    }
+
+    console.log('📉 Total trading losses:', totalLosses, 'Required:', minLoss);
+
+    if (totalLosses < minLoss) {
+      return {
+        eligible: false,
+        reason: `Cashback requires minimum ${minLoss.toLocaleString()} USDT in trading losses. Current losses: ${totalLosses.toFixed(2)} USDT`
+      };
+    }
+
+    return { eligible: true, tradesRequired: redeemCode.trades_for_withdrawal || 0 };
+  }
+
+  // Unknown code type - allow by default
+  return { eligible: true };
+}
+
 // Test redeem code endpoint (no auth required for testing)
 app.post('/api/test/redeem-code', async (req, res) => {
   try {
@@ -13772,9 +13925,11 @@ app.post('/api/test/redeem-code', async (req, res) => {
 
     // Check if code exists and is valid
     const validCodes = {
-      'FIRSTBONUS': { amount: 100, description: 'First Bonus' },
-      'LETSGO1000': { amount: 1000, description: 'Lets Go 1000' },
-      'WELCOME50': { amount: 50, description: 'Welcome Bonus' }
+      'WELCOME50': { amount: 50, description: 'Welcome Bonus - Min 500 USDT deposit in 30 days', tradesRequired: 5 },
+      'FIRSTBONUS': { amount: 100, description: 'First Bonus - 2000 USDT accumulated deposits', tradesRequired: 5 },
+      'BONUS500': { amount: 500, description: 'Referral Bonus - 3 referrals required', tradesRequired: 3 },
+      'LETSGO1000': { amount: 1000, description: 'High Value Bonus - 10000 USDT deposits', tradesRequired: 0 },
+      'CASHBACK200': { amount: 200, description: 'Cashback - 3000 USDT trading losses', tradesRequired: 0 }
     };
 
     const redeemCode = validCodes[code?.toUpperCase()];
@@ -13894,14 +14049,16 @@ app.post('/api/user/redeem-code', async (req, res) => {
         // Fallback to mock data if code not found in Supabase
         console.log('🎁 Falling back to mock data...');
         const validCodes = {
-          'FIRSTBONUS': 100,
-          'LETSGO1000': 1000,
-          'WELCOME50': 50,
-          'BONUS500': 500
+          'WELCOME50': { amount: 50, tradesRequired: 5, description: 'Welcome bonus - min 500 USDT deposit in 30 days' },
+          'FIRSTBONUS': { amount: 100, tradesRequired: 5, description: 'First bonus - 2000 USDT accumulated deposits' },
+          'BONUS500': { amount: 500, tradesRequired: 3, description: 'Referral bonus - 3 referrals required' },
+          'LETSGO1000': { amount: 1000, tradesRequired: 0, description: 'High value bonus - 10000 USDT deposits' },
+          'CASHBACK200': { amount: 200, tradesRequired: 0, description: 'Cashback - 3000 USDT trading losses' }
         };
 
         const upperCode = code.toUpperCase();
-        const mockBonus = validCodes[upperCode];
+        const mockCodeData = validCodes[upperCode];
+        const mockBonus = mockCodeData?.amount;
 
         if (!mockBonus) {
           return res.status(400).json({ error: 'Invalid or expired redeem code' });
@@ -14056,6 +14213,33 @@ app.post('/api/user/redeem-code', async (req, res) => {
       // One-time use check already done at the beginning of this endpoint
       console.log('✅ One-time use check already passed, proceeding with redemption');
 
+      // ===== VALIDATE ELIGIBILITY CONDITIONS =====
+      console.log('🔍 Checking eligibility conditions for:', redeemCode.code);
+      const eligibility = await validateRedeemCodeConditions(user, redeemCode, supabase);
+
+      if (!eligibility.eligible) {
+        console.log('❌ User not eligible:', eligibility.reason);
+        return res.status(400).json({
+          error: eligibility.reason,
+          code: redeemCode.code,
+          requirements: {
+            codeType: redeemCode.code_type,
+            minDeposit: redeemCode.min_deposit_amount,
+            accumulatedDeposit: redeemCode.accumulated_deposit_required,
+            referralsRequired: redeemCode.referrals_required,
+            minLoss: redeemCode.min_loss_amount
+          }
+        });
+      }
+      console.log('✅ Eligibility check passed');
+
+      // Determine trades required for withdrawal based on code configuration
+      const tradesForWithdrawal = eligibility.tradesRequired !== undefined
+        ? eligibility.tradesRequired
+        : (redeemCode.trades_for_withdrawal || 0);
+
+      console.log('📊 Trades required for withdrawal:', tradesForWithdrawal);
+
       // Check usage limits
       if (redeemCode.max_uses && redeemCode.current_uses >= redeemCode.max_uses) {
         return res.status(400).json({ error: 'Redeem code usage limit reached' });
@@ -14065,7 +14249,8 @@ app.post('/api/user/redeem-code', async (req, res) => {
       console.log('📝 Inserting redemption history:', {
         user_id: user.id,
         code: code.toUpperCase(),
-        bonus_amount: redeemCode.bonus_amount
+        bonus_amount: redeemCode.bonus_amount,
+        trades_required: tradesForWithdrawal
       });
 
       const { data: redeemHistory, error: historyError } = await supabase
@@ -14075,9 +14260,9 @@ app.post('/api/user/redeem-code', async (req, res) => {
           redeem_code_id: redeemCode.id || redeemCode.code,
           code: code.toUpperCase(),
           bonus_amount: redeemCode.bonus_amount,
-          trades_required: 10,
+          trades_required: tradesForWithdrawal,
           trades_completed: 0,
-          withdrawal_unlocked: false
+          withdrawal_unlocked: tradesForWithdrawal === 0 // Auto-unlock if no trades required
         })
         .select()
         .single();
@@ -14196,6 +14381,34 @@ app.post('/api/user/redeem-code', async (req, res) => {
         bonusAdded: bonusAmount
       });
 
+      // ===== ADD BONUS TO DEPOSIT HISTORY =====
+      console.log('📝 Adding bonus to deposit history...');
+      try {
+        const { error: txError } = await supabase
+          .from('transactions')
+          .insert({
+            user_id: user.id,
+            type: 'bonus',
+            amount: bonusAmount,
+            status: 'approved',
+            description: `Redeem Code Bonus: ${code.toUpperCase()} - ${redeemCode.description || 'Bonus code redeemed'}`,
+            tx_hash: `BONUS-${code.toUpperCase()}-${Date.now()}`,
+            network: 'METACHROME',
+            currency: 'USDT',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (txError) {
+          console.log('⚠️ Could not add to transactions history:', txError.message);
+          // Don't fail the redemption if transaction logging fails
+        } else {
+          console.log('✅ Bonus added to deposit history');
+        }
+      } catch (txErr) {
+        console.log('⚠️ Exception adding to transactions:', txErr.message);
+      }
+
       // Update code usage count
       const { error: updateError } = await supabase
         .from('redeem_codes')
@@ -14223,35 +14436,47 @@ app.post('/api/user/redeem-code', async (req, res) => {
         {
           code: code.toUpperCase(),
           bonus_amount: redeemCode.bonus_amount,
-          trades_required: 10,
+          trades_required: tradesForWithdrawal,
           old_balance: currentBalance,
           new_balance: newBalance
         }
       );
 
+      // Create appropriate message based on trade requirement
+      let successMessage = `Bonus of ${redeemCode.bonus_amount} USDT added!`;
+      if (tradesForWithdrawal > 0) {
+        successMessage += ` Complete ${tradesForWithdrawal} trades to unlock withdrawals.`;
+      } else {
+        successMessage += ` No trade requirement for withdrawal.`;
+      }
+
       res.json({
         success: true,
         bonusAmount: redeemCode.bonus_amount,
-        tradesRequired: 10,
-        message: `Bonus of ${redeemCode.bonus_amount} USDT added! Complete 10 trades to unlock withdrawals.`,
+        tradesRequired: tradesForWithdrawal,
+        message: successMessage,
         newBalance: newBalance // Include new balance in response
       });
 
     } else {
       // Mock response for development - but actually update user balance
       const validCodes = {
-        'FIRSTBONUS': 100,
-        'LETSGO1000': 1000,
-        'WELCOME50': 50,
-        'BONUS500': 500
+        'WELCOME50': { amount: 50, tradesRequired: 5, description: 'Welcome bonus' },
+        'FIRSTBONUS': { amount: 100, tradesRequired: 5, description: 'First bonus' },
+        'BONUS500': { amount: 500, tradesRequired: 3, description: 'Referral bonus' },
+        'LETSGO1000': { amount: 1000, tradesRequired: 0, description: 'High value bonus' },
+        'CASHBACK200': { amount: 200, tradesRequired: 0, description: 'Cashback bonus' }
       };
 
       const upperCode = code.toUpperCase();
-      const mockBonus = validCodes[upperCode];
+      const mockCodeData = validCodes[upperCode];
 
-      if (!mockBonus) {
+      if (!mockCodeData) {
         return res.status(400).json({ error: 'Invalid redeem code' });
       }
+
+      const mockBonus = mockCodeData.amount;
+      const tradesReq = mockCodeData.tradesRequired;
 
       // Check for duplicate redemption and update user balance in development
       const users = await getUsers();
@@ -14278,8 +14503,9 @@ app.post('/api/user/redeem-code', async (req, res) => {
           code: upperCode,
           bonus_amount: mockBonus,
           redeemed_at: new Date().toISOString(),
-          trades_required: 10,
-          trades_completed: 0
+          trades_required: tradesReq,
+          trades_completed: 0,
+          withdrawal_unlocked: tradesReq === 0
         });
 
         await saveUsers(users);
@@ -14287,12 +14513,20 @@ app.post('/api/user/redeem-code', async (req, res) => {
         console.log('📝 Added to redeem history:', upperCode);
       }
 
+      // Create appropriate message
+      let devMessage = `Bonus of ${mockBonus} USDT added!`;
+      if (tradesReq > 0) {
+        devMessage += ` Complete ${tradesReq} trades to unlock withdrawals.`;
+      } else {
+        devMessage += ` No trade requirement for withdrawal.`;
+      }
+
       console.log('✅ Code redeemed successfully (mock):', code, 'Amount:', mockBonus);
       res.json({
         success: true,
         bonusAmount: mockBonus,
-        tradesRequired: 10,
-        message: `Bonus of ${mockBonus} USDT added! Complete 10 trades to unlock withdrawals.`
+        tradesRequired: tradesReq,
+        message: devMessage
       });
     }
 
@@ -14412,12 +14646,13 @@ app.get('/api/user/available-codes', async (req, res) => {
       console.log('✅ Returning available codes:', availableCodes.length);
       res.json(availableCodes);
     } else {
-      // Development mode - return mock codes
+      // Development mode - return mock codes with updated descriptions
       const mockCodes = [
-        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'First time user bonus', isLimited: false, isAvailable: true, isClaimed: false },
-        { code: 'LETSGO1000', amount: '1000 USDT', description: 'High value bonus code', isLimited: false, isAvailable: true, isClaimed: false },
-        { code: 'WELCOME50', amount: '50 USDT', description: 'Welcome bonus for new users', isLimited: true, isAvailable: true, isClaimed: false },
-        { code: 'BONUS500', amount: '500 USDT', description: 'Limited time bonus', isLimited: true, isAvailable: true, isClaimed: false }
+        { code: 'WELCOME50', amount: '50 USDT', description: 'Min 500 USDT deposit within 30 days of registration. 5 trades to withdraw.', isLimited: false, isAvailable: true, isClaimed: false, tradesRequired: 5 },
+        { code: 'FIRSTBONUS', amount: '100 USDT', description: 'Accumulated deposits of 2000 USDT required. 5 trades to withdraw.', isLimited: false, isAvailable: true, isClaimed: false, tradesRequired: 5 },
+        { code: 'BONUS500', amount: '500 USDT', description: 'Invite 3 friends using your referral code. 3 trades to withdraw.', isLimited: false, isAvailable: true, isClaimed: false, tradesRequired: 3 },
+        { code: 'LETSGO1000', amount: '1000 USDT', description: 'Accumulated deposits of 10,000 USDT required. No trade requirement.', isLimited: false, isAvailable: true, isClaimed: false, tradesRequired: 0 },
+        { code: 'CASHBACK200', amount: '200 USDT', description: 'Cashback after 3000 USDT in trading losses. No trade requirement.', isLimited: false, isAvailable: true, isClaimed: false, tradesRequired: 0 }
       ];
       res.json(mockCodes);
     }
