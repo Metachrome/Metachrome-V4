@@ -13818,13 +13818,14 @@ async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
         .lte('created_at', cutoffDate.toISOString());
 
       if (!error && deposits) {
-        // Filter for deposit type and approved status (case-insensitive)
+        // Filter for deposit type and approved/completed status (case-insensitive)
+        // Note: deposit approval creates transactions with status 'completed'
         const approvedDeposits = deposits.filter(d =>
           d.type?.toLowerCase() === 'deposit' &&
-          d.status?.toLowerCase() === 'approved'
+          (d.status?.toLowerCase() === 'approved' || d.status?.toLowerCase() === 'completed')
         );
         totalDeposits = approvedDeposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-        console.log('💰 Found', deposits.length, 'transactions in timeframe, ', approvedDeposits.length, 'approved deposits');
+        console.log('💰 Found', deposits.length, 'transactions in timeframe, ', approvedDeposits.length, 'approved/completed deposits');
       }
     }
 
@@ -13853,13 +13854,14 @@ async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
         .eq('user_id', user.id);
 
       if (!error && deposits) {
-        // Filter for deposit type and approved status (case-insensitive)
+        // Filter for deposit type and approved/completed status (case-insensitive)
+        // Note: deposit approval creates transactions with status 'completed'
         const approvedDeposits = deposits.filter(d =>
           d.type?.toLowerCase() === 'deposit' &&
-          d.status?.toLowerCase() === 'approved'
+          (d.status?.toLowerCase() === 'approved' || d.status?.toLowerCase() === 'completed')
         );
         totalDeposits = approvedDeposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-        console.log('💰 Found', approvedDeposits.length, 'approved deposits out of', deposits.length, 'transactions');
+        console.log('💰 Found', approvedDeposits.length, 'approved/completed deposits out of', deposits.length, 'transactions');
       }
     }
 
