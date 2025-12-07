@@ -2456,7 +2456,7 @@ function OptionsPageContent({
                           {timeLeft > 0 ? (
                             <div className="space-y-1">
                               <div className="flex justify-between text-xs">
-                                <span className="text-gray-400">{timeLeft}s</span>
+                                <span className="text-gray-400 notranslate">{timeLeft}s</span>
                                 <span className={`font-medium ${
                                   (trade.direction === 'up' && displayPrice > trade.entryPrice) ||
                                   (trade.direction === 'down' && displayPrice < trade.entryPrice)
@@ -2596,15 +2596,15 @@ function OptionsPageContent({
                         setSelectedAmount(minAmount);
                       }
                     }}
-                    className={`py-1 px-1 rounded text-center transition-colors ${
+                    className={`py-1 px-1 rounded text-center transition-colors notranslate ${
                       selectedDuration === option.duration
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white'
                     }`}
                     disabled={isTrading}
                   >
-                    <div className="text-xs font-medium">{option.duration}</div>
-                    <div className="text-[9px] text-green-400">{option.profit}</div>
+                    <div className="text-xs font-medium notranslate">{option.duration}</div>
+                    <div className="text-[9px] text-green-400 notranslate">{option.profit}</div>
                   </button>
                 ))}
               </div>
@@ -2732,8 +2732,8 @@ function OptionsPageContent({
 
             {countdown > 0 && (
               <div className="text-center py-2">
-                <div className="text-yellow-400 font-bold">
-                  Next trade available in: {countdown}s
+                <div className="text-yellow-400 font-bold notranslate">
+                  Next trade available in: <span className="notranslate">{countdown}s</span>
                 </div>
               </div>
             )}
@@ -2808,12 +2808,12 @@ function OptionsPageContent({
                       return (
                         <div key={trade.id} className="bg-gray-800 rounded p-3 mb-2">
                           <div className="flex justify-between items-center mb-2">
-                            <span className={`font-bold text-sm ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                            <span className={`font-bold text-sm notranslate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                               {trade.direction === 'up' ? 'BUY' : 'SELL'} • {trade.amount} USDT
                             </span>
-                            <span className="text-yellow-400 font-bold text-sm">{timeRemaining}s</span>
+                            <span className="text-yellow-400 font-bold text-sm notranslate">{timeRemaining}s</span>
                           </div>
-                          <div className="flex justify-between text-xs text-gray-300">
+                          <div className="flex justify-between text-xs text-gray-300 notranslate">
                             <span>Entry: {trade.entryPrice.toFixed(2)}</span>
                             <span>Current: {currentPrice.toFixed(2)}</span>
                             <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
@@ -3343,13 +3343,13 @@ function OptionsPageContent({
                     return (
                       <div key={trade.id} className="p-2 bg-gray-700 rounded text-sm">
                         <div className="flex justify-between items-center">
-                          <span className={`font-bold ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+                          <span className={`font-bold notranslate ${trade.direction === 'up' ? 'text-green-400' : 'text-red-400'}`}>
                             {trade.direction === 'up' ? 'BUY' : 'SELL'} {trade.amount} USDT
                           </span>
-                          <span className="text-yellow-400 font-bold">{timeRemaining}s</span>
+                          <span className="text-yellow-400 font-bold notranslate">{timeRemaining}s</span>
                         </div>
                         <div className="flex justify-between items-center mt-1">
-                          <span className="text-gray-400">
+                          <span className="text-gray-400 notranslate">
                             Entry: {trade.entryPrice.toFixed(2)} USDT
                           </span>
                           <span className={`font-bold ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
@@ -3390,15 +3390,15 @@ function OptionsPageContent({
                       setSelectedAmount(minAmount);
                     }
                   }}
-                  className={`p-2 rounded text-center border transition-colors ${
+                  className={`p-2 rounded text-center border transition-colors notranslate ${
                     selectedDuration === option.duration
                       ? 'bg-blue-600 border-blue-500 text-white'
                       : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
                   }`}
                   disabled={isTrading}
                 >
-                  <div className="text-sm font-medium">{option.duration}</div>
-                  <div className="text-xs text-green-400">{option.profit}</div>
+                  <div className="text-sm font-medium notranslate">{option.duration}</div>
+                  <div className="text-xs text-green-400 notranslate">{option.profit}</div>
                 </button>
               ))}
             </div>
@@ -4010,7 +4010,7 @@ function OptionsPageContent({
                       <span className={`font-bold truncate text-center ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
                         {potentialPayout > 0 ? '+' : ''}{potentialPayout.toFixed(2)}
                       </span>
-                      <span className="text-yellow-400 font-bold truncate text-center">{timeRemaining}s</span>
+                      <span className="text-yellow-400 font-bold truncate text-center notranslate">{timeRemaining}s</span>
                       <span className={`font-bold truncate text-center ${isWinning ? 'text-green-400' : 'text-red-400'}`}>
                         {isWinning ? '🟢' : '🔴'}
                       </span>

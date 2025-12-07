@@ -181,7 +181,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
           </div>
 
           <div
-            className="space-y-2"
+            className="space-y-2 notranslate"
             style={{
               fontSize: isMobile ? '14px' : '14px'
             }}
@@ -193,7 +193,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
               }}
             >
               <span className="text-gray-200">Market:</span>
-              <span className="font-bold">{formatSymbol(trade.symbol)}</span>
+              <span className="font-bold notranslate">{formatSymbol(trade.symbol)}</span>
             </div>
             <div
               className="flex justify-between items-center bg-gray-800/40 rounded-lg"
@@ -202,7 +202,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
               }}
             >
               <span className="text-gray-200">Trade:</span>
-              <span className="font-bold">
+              <span className="font-bold notranslate">
                 {trade.direction === 'up' ? 'BUY/UP' : 'SELL/DOWN'}
               </span>
             </div>
@@ -213,7 +213,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
               }}
             >
               <span className="text-gray-200">Amount:</span>
-              <span className="font-bold">{trade.amount.toLocaleString()} USDT</span>
+              <span className="font-bold notranslate">{trade.amount.toLocaleString()} USDT</span>
             </div>
             <div
               className="flex justify-between items-center bg-gray-800/40 rounded-lg"
@@ -222,7 +222,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
               }}
             >
               <span className="text-gray-200">Entry Price:</span>
-              <span className="font-mono">{trade.entryPrice.toFixed(2)}</span>
+              <span className="font-mono notranslate">{trade.entryPrice.toFixed(2)}</span>
             </div>
             <div
               className="flex justify-between items-center bg-gray-800/40 rounded-lg"
@@ -231,7 +231,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
               }}
             >
               <span className="text-gray-200">Close Price:</span>
-              <span className="font-mono">{trade.finalPrice.toFixed(2)}</span>
+              <span className="font-mono notranslate">{trade.finalPrice.toFixed(2)}</span>
             </div>
             <div
               className="flex justify-between items-center bg-gray-800/40 rounded-lg"
@@ -240,7 +240,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
               }}
             >
               <span className="text-gray-200">Duration:</span>
-              <span className="font-bold">{trade.duration || 30} seconds</span>
+              <span className="font-bold notranslate">{trade.duration || 30} seconds</span>
             </div>
             <div
               className="flex justify-between items-center bg-gray-800/40 rounded-lg"
@@ -249,7 +249,7 @@ const UniversalTradeNotification = ({ trade, onClose }: TradeNotificationProps) 
               }}
             >
               <span className="text-gray-200">Profit:</span>
-              <span className={`font-bold ${isWin ? 'text-emerald-300' : 'text-red-300'}`}>
+              <span className={`font-bold notranslate ${isWin ? 'text-emerald-300' : 'text-red-300'}`}>
                 {isWin ? '+' + pnl.toFixed(0) : pnl.toFixed(0)} USDT
               </span>
             </div>
