@@ -13785,19 +13785,24 @@ async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
     }
 
     // Get user's total deposits within timeframe
+    // Use case-insensitive matching for type and status
     let totalDeposits = 0;
     if (supabaseClient) {
       const { data: deposits, error } = await supabaseClient
         .from('transactions')
-        .select('amount')
+        .select('amount, type, status')
         .eq('user_id', user.id)
-        .eq('type', 'deposit')
-        .eq('status', 'approved')
         .gte('created_at', userCreatedAt.toISOString())
         .lte('created_at', cutoffDate.toISOString());
 
       if (!error && deposits) {
-        totalDeposits = deposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+        // Filter for deposit type and approved status (case-insensitive)
+        const approvedDeposits = deposits.filter(d =>
+          d.type?.toLowerCase() === 'deposit' &&
+          d.status?.toLowerCase() === 'approved'
+        );
+        totalDeposits = approvedDeposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+        console.log('💰 Found', deposits.length, 'transactions, ', approvedDeposits.length, 'approved deposits');
       }
     }
 
@@ -13817,18 +13822,22 @@ async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
   if (codeType === 'accumulated_deposit') {
     const requiredDeposit = parseFloat(redeemCode.accumulated_deposit_required || 0);
 
-    // Get user's total approved deposits
+    // Get user's total approved deposits (case-insensitive)
     let totalDeposits = 0;
     if (supabaseClient) {
       const { data: deposits, error } = await supabaseClient
         .from('transactions')
-        .select('amount')
-        .eq('user_id', user.id)
-        .eq('type', 'deposit')
-        .eq('status', 'approved');
+        .select('amount, type, status')
+        .eq('user_id', user.id);
 
       if (!error && deposits) {
-        totalDeposits = deposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+        // Filter for deposit type and approved status (case-insensitive)
+        const approvedDeposits = deposits.filter(d =>
+          d.type?.toLowerCase() === 'deposit' &&
+          d.status?.toLowerCase() === 'approved'
+        );
+        totalDeposits = approvedDeposits.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+        console.log('💰 Found', approvedDeposits.length, 'approved deposits out of', deposits.length, 'transactions');
       }
     }
 
