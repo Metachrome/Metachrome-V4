@@ -13,6 +13,8 @@ export interface User extends BaseUser {
   hasUploadedDocuments?: boolean;
   firstName?: string;
   lastName?: string;
+  phone?: string;
+  address?: string;
   password?: string; // Include password for superadmin visibility (hashed)
 }
 
