@@ -15262,10 +15262,10 @@ app.get('/api/admin/redeem-codes-usage-all', async (req, res) => {
     console.log('📊 Getting all redeem code usage');
 
     if (isSupabaseConfigured && supabase) {
-      // Get all redemption history from Supabase
+      // Get all redemption history from Supabase (without join to avoid FK issues)
       const { data: history, error } = await supabase
         .from('user_redeem_history')
-        .select('*, users(username, email)')
+        .select('*')
         .order('redeemed_at', { ascending: false });
 
       if (error) {
@@ -15276,16 +15276,32 @@ app.get('/api/admin/redeem-codes-usage-all', async (req, res) => {
         });
       }
 
+      console.log('📊 Found', history?.length || 0, 'redemption records');
+
+      // Get all users to map usernames (separate query to avoid FK issues)
+      const { data: allUsers, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, email');
+
+      const userMap = {};
+      if (!usersError && allUsers) {
+        for (const user of allUsers) {
+          userMap[user.id] = user.username || user.email || 'Unknown User';
+        }
+      }
+
       const usage = (history || []).map(h => ({
         id: h.id,
         code: h.code,
-        user: h.users?.username || h.users?.email || 'Unknown User',
+        user: userMap[h.user_id] || 'Unknown User',
         amount: h.bonus_amount,
         date: h.redeemed_at,
         status: h.withdrawal_unlocked ? 'completed' : 'pending_trades',
         tradesCompleted: h.trades_completed,
         tradesRequired: h.trades_required
       }));
+
+      console.log('📊 Returning', usage.length, 'usage records');
 
       res.json({
         success: true,
