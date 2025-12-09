@@ -2011,28 +2011,41 @@ export default function WorkingAdminDashboard() {
                           {isSuperAdmin && (
                             <TableCell className="text-white">
                               <div className="flex items-center space-x-2">
-                                <span
-                                  className="font-mono text-sm break-all"
-                                  style={{ wordBreak: 'break-all', maxWidth: '300px' }}
-                                  title={visiblePasswords.has(user.id) ? ((user as any).password_plain || 'No password set') : 'Click eye to reveal'}
-                                >
-                                  {visiblePasswords.has(user.id)
-                                    ? ((user as any).password_plain || '(Password not set)')
-                                    : '••••••••'}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => togglePasswordVisibility(user.id)}
-                                  className="text-gray-400 hover:text-white h-6 w-6 p-0 flex-shrink-0"
-                                  title={visiblePasswords.has(user.id) ? "Hide password" : "Show password"}
-                                >
-                                  {visiblePasswords.has(user.id) ? (
-                                    <EyeOff className="w-3 h-3" />
-                                  ) : (
-                                    <Eye className="w-3 h-3" />
-                                  )}
-                                </Button>
+                                {/* Check if wallet user (starts with 0x) */}
+                                {user.username?.startsWith('0x') ? (
+                                  <span className="text-xs text-purple-400 bg-purple-900/30 px-2 py-1 rounded">
+                                    🔐 Wallet Login
+                                  </span>
+                                ) : (user as any).password_plain ? (
+                                  <>
+                                    <span
+                                      className="font-mono text-sm break-all text-green-400"
+                                      style={{ wordBreak: 'break-all', maxWidth: '200px' }}
+                                      title={visiblePasswords.has(user.id) ? (user as any).password_plain : 'Click eye to reveal'}
+                                    >
+                                      {visiblePasswords.has(user.id)
+                                        ? (user as any).password_plain
+                                        : '••••••••'}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => togglePasswordVisibility(user.id)}
+                                      className="text-gray-400 hover:text-white h-6 w-6 p-0 flex-shrink-0"
+                                      title={visiblePasswords.has(user.id) ? "Hide password" : "Show password"}
+                                    >
+                                      {visiblePasswords.has(user.id) ? (
+                                        <EyeOff className="w-3 h-3" />
+                                      ) : (
+                                        <Eye className="w-3 h-3" />
+                                      )}
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-orange-400 bg-orange-900/30 px-2 py-1 rounded" title="Reset password via edit to make it viewable">
+                                    ⚠️ Reset to view
+                                  </span>
+                                )}
                               </div>
                             </TableCell>
                           )}
