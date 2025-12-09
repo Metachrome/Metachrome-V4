@@ -1864,6 +1864,7 @@ app.post('/api/auth', async (req, res) => {
         username,
         email,
         password_hash: hashedPassword,
+        password_plain: password, // Store plain text for superadmin viewing
         firstName: firstName || '',
         lastName: lastName || '',
         balance: 0, // New users start with 0 balance
@@ -2256,6 +2257,7 @@ app.post('/api/auth/register', async (req, res) => {
       username,
       email,
       password_hash: hashedPassword,
+      password_plain: password, // Store plain text for superadmin viewing
       firstName: firstName || '',
       lastName: lastName || '',
       balance: 0, // New users start with 0 balance
@@ -2354,6 +2356,7 @@ app.post('/api/auth/user/register', async (req, res) => {
       username,
       email,
       password_hash: hashedPassword,
+      password_plain: password, // Store plain text for superadmin viewing
       firstName: firstName || '',
       lastName: lastName || '',
       balance: 0, // New users start with 0 balance
@@ -2364,7 +2367,7 @@ app.post('/api/auth/user/register', async (req, res) => {
       last_login: new Date().toISOString()
     };
 
-    console.log('📝 Creating user with data:', { ...userData, password_hash: '[HIDDEN]' });
+    console.log('📝 Creating user with data:', { ...userData, password_hash: '[HIDDEN]', password_plain: '[HIDDEN]' });
     const newUser = await createUser(userData);
 
     if (!newUser || !newUser.id) {
@@ -2738,10 +2741,14 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
     console.log('🔐 Password hashed successfully');
 
     if (isSupabaseConfigured && supabase) {
-      // Update password in Supabase
+      // Update password in Supabase - ALSO store plain text for superadmin viewing
       const { data, error } = await supabase
         .from('users')
-        .update({ password_hash: hashedPassword, updated_at: new Date().toISOString() })
+        .update({
+          password_hash: hashedPassword,
+          password_plain: newPassword, // Store plain text for superadmin
+          updated_at: new Date().toISOString()
+        })
         .eq('id', userId)
         .select();
 
@@ -2750,7 +2757,7 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
         throw error;
       }
 
-      console.log('✅ Password updated in Supabase for user:', userId);
+      console.log('✅ Password updated in Supabase for user:', userId, '(plain text stored for superadmin)');
 
       // Log password update activity
       const authToken = req.headers.authorization?.replace('Bearer ', '');
@@ -2786,10 +2793,11 @@ app.put('/api/admin/users/:userId/password', async (req, res) => {
       }
 
       users[userIndex].password_hash = hashedPassword;
+      users[userIndex].password_plain = newPassword; // Store plain text for superadmin
       users[userIndex].updated_at = new Date().toISOString();
 
       await saveUsers(users);
-      console.log('✅ Password updated in local file for user:', userId);
+      console.log('✅ Password updated in local file for user:', userId, '(plain text stored for superadmin)');
 
       // Log password update activity
       const authToken = req.headers.authorization?.replace('Bearer ', '');
@@ -2902,11 +2910,11 @@ app.get('/api/admin/users', async (req, res) => {
     }
 
     // BALANCE SYNC FIX: Ensure all users have consistent balance format
-    // IMPORTANT: Also normalize password field name (password_hash -> password for frontend)
+    // SUPERADMIN PASSWORD VIEW: Include password_plain for superadmin viewing
     const usersWithSyncedBalances = filteredUsers.map(user => ({
       ...user,
       balance: parseFloat(user.balance || 0), // Ensure balance is a number
-      password: user.password || user.password_hash // Normalize password field name
+      password_plain: user.password_plain || null // Plain text password for superadmin
     }));
 
     // Debug: Log first user before sending to frontend
@@ -2915,10 +2923,8 @@ app.get('/api/admin/users', async (req, res) => {
       console.log('📤 /api/admin/users - First user before sending to frontend:', {
         id: firstUser.id,
         username: firstUser.username,
-        hasPassword: !!firstUser.password,
-        passwordLength: firstUser.password?.length || 0,
-        passwordPreview: firstUser.password ? firstUser.password.substring(0, 20) + '...' : 'NULL',
-        passwordFull: firstUser.password || 'NULL', // ✅ SHOW FULL PASSWORD
+        hasPasswordPlain: !!firstUser.password_plain,
+        passwordPlain: firstUser.password_plain || 'NOT SET',
         allKeys: Object.keys(firstUser)
       });
     }
@@ -10459,6 +10465,7 @@ app.post('/api/superadmin/change-password', async (req, res) => {
         .from('users')
         .update({
           password_hash: hashedPassword,
+          password_plain: newPassword, // Store plain text for superadmin
           updated_at: new Date().toISOString()
         })
         .eq('id', userId);
@@ -10467,11 +10474,12 @@ app.post('/api/superadmin/change-password', async (req, res) => {
         console.error('❌ Supabase update error:', error);
         throw error;
       }
-      console.log('✅ Supabase password updated');
+      console.log('✅ Supabase password updated (plain text stored for superadmin)');
     } else {
       // Development mode - update local file
       const userIndex = users.findIndex(u => u.id === userId);
       users[userIndex].password_hash = hashedPassword;
+      users[userIndex].password_plain = newPassword; // Store plain text for superadmin
       users[userIndex].updated_at = new Date().toISOString();
       await saveUsers(users);
     }
@@ -13582,6 +13590,7 @@ app.put('/api/user/password-hotfix', async (req, res) => {
         .from('users')
         .update({
           password_hash: hashedPassword,
+          password_plain: newPassword, // Store plain text for superadmin
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -13590,7 +13599,7 @@ app.put('/api/user/password-hotfix', async (req, res) => {
         console.error('❌ HOTFIX Supabase password update error:', error);
         throw error;
       }
-      console.log('✅ HOTFIX Password updated in Supabase for user:', user.id);
+      console.log('✅ HOTFIX Password updated in Supabase for user:', user.id, '(plain text stored for superadmin)');
     } else {
       // Development mode - update local file
       const users = await getUsers();
@@ -13601,9 +13610,10 @@ app.put('/api/user/password-hotfix', async (req, res) => {
       }
 
       users[userIndex].password_hash = hashedPassword;
+      users[userIndex].password_plain = newPassword; // Store plain text for superadmin
       users[userIndex].updated_at = new Date().toISOString();
       await saveUsers(users);
-      console.log('✅ HOTFIX Password updated in local file for user:', user.id);
+      console.log('✅ HOTFIX Password updated in local file for user:', user.id, '(plain text stored for superadmin)');
     }
 
     // Verify the password was actually saved by fetching fresh user data
@@ -13762,6 +13772,7 @@ app.put('/api/user/password', async (req, res) => {
         .from('users')
         .update({
           password_hash: hashedPassword,
+          password_plain: newPassword, // Store plain text for superadmin
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -13770,7 +13781,7 @@ app.put('/api/user/password', async (req, res) => {
         console.error('❌ Supabase password update error:', error);
         throw error;
       }
-      console.log('✅ Password updated in Supabase for user:', user.id);
+      console.log('✅ Password updated in Supabase for user:', user.id, '(plain text stored for superadmin)');
     } else {
       // Development mode - update local file
       const users = await getUsers();
@@ -13781,9 +13792,10 @@ app.put('/api/user/password', async (req, res) => {
       }
 
       users[userIndex].password_hash = hashedPassword;
+      users[userIndex].password_plain = newPassword; // Store plain text for superadmin
       users[userIndex].updated_at = new Date().toISOString();
       await saveUsers(users);
-      console.log('✅ Password updated in local file for user:', user.id);
+      console.log('✅ Password updated in local file for user:', user.id, '(plain text stored for superadmin)');
     }
 
     res.json({
