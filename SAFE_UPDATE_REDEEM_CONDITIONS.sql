@@ -17,42 +17,42 @@ ADD COLUMN IF NOT EXISTS trades_for_withdrawal INTEGER DEFAULT 0;
 
 -- Step 2: UPDATE existing codes with conditions (PRESERVE current_uses!)
 
--- WELCOME50: Min 500 USDT deposit in 30 days, 5 trades to withdraw
+-- WELCOME50: Min 500 USDT deposit in 30 days, 5 trades to UNLOCK bonus
 UPDATE public.redeem_codes SET
-    description = 'Welcome bonus! Min 500 USDT deposit in 30 days. 5 trades to withdraw.',
+    description = 'Welcome bonus! Min 500 USDT deposit in 30 days. Trade 5x to unlock bonus.',
     code_type = 'deposit_timeframe',
     min_deposit_amount = 500.00,
     min_deposit_timeframe_days = 30,
     trades_for_withdrawal = 5
 WHERE code = 'WELCOME50';
 
--- FIRSTBONUS: 2000 USDT accumulated deposits, 5 trades to withdraw
+-- FIRSTBONUS: 2000 USDT accumulated deposits, 5 trades to UNLOCK bonus
 UPDATE public.redeem_codes SET
-    description = 'First bonus! 2000 USDT accumulated deposits required. 5 trades to withdraw.',
+    description = 'First bonus! 2000 USDT accumulated deposits required. Trade 5x to unlock bonus.',
     code_type = 'accumulated_deposit',
     accumulated_deposit_required = 2000.00,
     trades_for_withdrawal = 5
 WHERE code = 'FIRSTBONUS';
 
--- BONUS500: 3 referrals required, 3 trades to withdraw
+-- BONUS500: 3 referrals required, 3 trades to UNLOCK bonus
 UPDATE public.redeem_codes SET
-    description = 'Referral bonus! Invite 3 friends. 3 trades to withdraw.',
+    description = 'Referral bonus! Invite 3 friends. Trade 3x to unlock bonus.',
     code_type = 'referral',
     referrals_required = 3,
     trades_for_withdrawal = 3
 WHERE code = 'BONUS500';
 
--- LETSGO1000: 10000 USDT accumulated deposits, instant withdrawal
+-- LETSGO1000: 10000 USDT accumulated deposits, INSTANT bonus (no trades required)
 UPDATE public.redeem_codes SET
-    description = 'High value bonus! 10,000 USDT deposits required. Instant withdrawal!',
+    description = 'High value bonus! 10,000 USDT deposits required. Bonus added instantly!',
     code_type = 'accumulated_deposit',
     accumulated_deposit_required = 10000.00,
     trades_for_withdrawal = 0
 WHERE code = 'LETSGO1000';
 
--- CASHBACK200: 3000 USDT trading loss, instant withdrawal
+-- CASHBACK200: 3000 USDT trading loss, INSTANT bonus (no trades required)
 UPDATE public.redeem_codes SET
-    description = 'Cashback! Available after 3000 USDT trading losses. Instant withdrawal!',
+    description = 'Cashback! Available after 3000 USDT trading losses. Bonus added instantly!',
     code_type = 'cashback_loss',
     min_loss_amount = 3000.00,
     trades_for_withdrawal = 0
@@ -100,10 +100,18 @@ FROM public.user_redeem_history GROUP BY code;
 -- =====================================================
 -- SUMMARY (CURRENT_USES PRESERVED):
 -- =====================================================
--- WELCOME50:   50 USDT  | Min 500 USDT deposit in 30 days | 5 trades
--- FIRSTBONUS:  100 USDT | 2000 USDT accumulated deposits  | 5 trades
--- BONUS500:    500 USDT | 3 referrals required            | 3 trades
--- LETSGO1000:  1000 USDT| 10000 USDT accumulated deposits | 0 trades
--- CASHBACK200: 200 USDT | 3000 USDT trading loss          | 0 trades
+-- WELCOME50:   50 USDT  | Min 500 USDT deposit in 30 days | Trade 5x to unlock bonus
+-- FIRSTBONUS:  100 USDT | 2000 USDT accumulated deposits  | Trade 5x to unlock bonus
+-- BONUS500:    500 USDT | 3 referrals required            | Trade 3x to unlock bonus
+-- LETSGO1000:  1000 USDT| 10000 USDT accumulated deposits | INSTANT (bonus added immediately)
+-- CASHBACK200: 200 USDT | 3000 USDT trading loss          | INSTANT (bonus added immediately)
+-- =====================================================
+--
+-- FLOW:
+-- 1. User redeems code → eligibility checked
+-- 2. If trades required > 0: bonus is PENDING (not added to balance yet)
+-- 3. User must complete X trades
+-- 4. After trades completed: bonus is ADDED to balance
+-- 5. If trades required = 0: bonus added INSTANTLY to balance
 -- =====================================================
 

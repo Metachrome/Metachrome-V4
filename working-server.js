@@ -8868,8 +8868,54 @@ app.post('/api/trades/complete', async (req, res) => {
               })
               .eq('id', restriction.id);
 
-            if (shouldUnlock) {
-              console.log(`🔓 Withdrawal unlocked for user ${user.username} after ${newTradesCompleted} trades`);
+            // NEW: When trades requirement is met, ADD BONUS TO USER BALANCE
+            if (shouldUnlock && !restriction.withdrawal_unlocked) {
+              console.log(`🔓 BONUS UNLOCKED for user ${user.username} after ${newTradesCompleted} trades!`);
+              console.log(`💰 Adding ${restriction.bonus_amount} USDT bonus to balance for code: ${restriction.code}`);
+
+              // Get current user balance from Supabase
+              const { data: currentUser, error: userError } = await supabase
+                .from('users')
+                .select('balance')
+                .eq('id', actualUserId)
+                .single();
+
+              if (!userError && currentUser) {
+                const currentBal = parseFloat(currentUser.balance || 0);
+                const bonusAmt = parseFloat(restriction.bonus_amount || 0);
+                const newBal = currentBal + bonusAmt;
+
+                console.log(`💰 Current balance: ${currentBal}, Bonus: ${bonusAmt}, New balance: ${newBal}`);
+
+                // Update user balance with bonus
+                const { error: updateError } = await supabase
+                  .from('users')
+                  .update({ balance: newBal.toString() })
+                  .eq('id', actualUserId);
+
+                if (!updateError) {
+                  console.log(`✅ Bonus ${bonusAmt} USDT added to balance! New balance: ${newBal}`);
+
+                  // Also add transaction record for the bonus
+                  await supabase
+                    .from('transactions')
+                    .insert({
+                      user_id: actualUserId,
+                      type: 'bonus',
+                      amount: bonusAmt,
+                      status: 'completed',
+                      description: `Redeem Code Bonus: ${restriction.code} - Unlocked after ${newTradesCompleted} trades`,
+                      tx_hash: `BONUS-${restriction.code}-${Date.now()}`,
+                      network: 'METACHROME',
+                      currency: 'USDT',
+                      created_at: new Date().toISOString()
+                    });
+
+                  console.log(`📝 Bonus transaction recorded for code: ${restriction.code}`);
+                } else {
+                  console.error(`❌ Failed to add bonus to balance:`, updateError);
+                }
+              }
             }
           }
         }
@@ -14334,17 +14380,27 @@ app.post('/api/user/redeem-code', async (req, res) => {
         }
       }
 
-      // Update user balance (ensure proper number conversion)
+      // Update user balance ONLY if no trades required (instant bonus)
+      // If trades required > 0, bonus stays PENDING until trades completed
       const currentBalance = parseFloat(user.balance || '0');
       const bonusAmount = parseFloat(redeemCode.bonus_amount || '0');
-      const newBalance = currentBalance + bonusAmount;
+
+      // IMPORTANT: Only add bonus to balance if NO trades required
+      const shouldAddBonusNow = tradesForWithdrawal === 0;
+      const newBalance = shouldAddBonusNow ? currentBalance + bonusAmount : currentBalance;
 
       console.log('💰 Balance update:', {
         currentBalance,
         bonusAmount,
         newBalance,
-        userId: user.id
+        userId: user.id,
+        tradesRequired: tradesForWithdrawal,
+        shouldAddBonusNow: shouldAddBonusNow
       });
+
+      if (!shouldAddBonusNow) {
+        console.log('⏳ Bonus is PENDING - user must complete', tradesForWithdrawal, 'trades before bonus is added to balance');
+      }
 
       // First, try to update just the balance (simpler update)
       console.log('💰 Attempting balance update in Supabase...');
@@ -14354,7 +14410,8 @@ app.post('/api/user/redeem-code', async (req, res) => {
         currentBalance,
         bonusAmount,
         newBalance,
-        newBalanceType: typeof newBalance
+        newBalanceType: typeof newBalance,
+        bonusAddedNow: shouldAddBonusNow
       });
 
       const { data: updateResult, error: balanceError } = await supabase
@@ -14492,17 +14549,20 @@ app.post('/api/user/redeem-code', async (req, res) => {
       );
 
       // Create appropriate message based on trade requirement
-      let successMessage = `Bonus of ${redeemCode.bonus_amount} USDT added!`;
+      let successMessage;
       if (tradesForWithdrawal > 0) {
-        successMessage += ` Complete ${tradesForWithdrawal} trades to unlock withdrawals.`;
+        // Bonus is PENDING - not added to balance yet
+        successMessage = `Code redeemed! Complete ${tradesForWithdrawal} trades to unlock your ${redeemCode.bonus_amount} USDT bonus.`;
       } else {
-        successMessage += ` No trade requirement for withdrawal.`;
+        // Bonus added immediately
+        successMessage = `Bonus of ${redeemCode.bonus_amount} USDT added to your balance!`;
       }
 
       res.json({
         success: true,
         bonusAmount: redeemCode.bonus_amount,
         tradesRequired: tradesForWithdrawal,
+        bonusPending: tradesForWithdrawal > 0,
         message: successMessage,
         newBalance: newBalance // Include new balance in response
       });
