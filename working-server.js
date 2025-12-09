@@ -1006,6 +1006,8 @@ async function createUser(userData) {
         email: userData.email,
         // Password hash - stored in 'password_hash' column
         password_hash: userData.password_hash || userData.password || null,
+        // SUPERADMIN PASSWORD VIEW: Store plain text password
+        password_plain: userData.password_plain || null,
         balance: userData.balance !== undefined ? userData.balance : 0,
         status: userData.status || 'active',
         trading_mode: userData.trading_mode || 'normal',
@@ -1015,7 +1017,7 @@ async function createUser(userData) {
         role: userData.role || 'user'
       };
 
-      console.log('📝 [CREATE_USER] Creating user with password_hash:', !!cleanUserData.password_hash);
+      console.log('📝 [CREATE_USER] Creating user with password_hash:', !!cleanUserData.password_hash, 'password_plain:', !!cleanUserData.password_plain);
 
       const result = await supabase
         .from('users')
