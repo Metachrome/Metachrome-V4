@@ -23,7 +23,7 @@ export default function WalletPage() {
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [selectedCrypto, setSelectedCrypto] = useState('USDT-TRC20');
+  const [selectedCrypto, setSelectedCrypto] = useState('USDT-ERC20');
   const [selectedNetwork, setSelectedNetwork] = useState('ERC20');
   const [fundPassword, setFundPassword] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
