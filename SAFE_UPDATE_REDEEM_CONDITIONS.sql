@@ -1,7 +1,8 @@
 -- =====================================================
--- SAFE UPDATE REDEEM CODES CONDITIONS (PRESERVES DATA)
+-- SIMPLE REDEEM CODES - INSTANT BONUS (NO CONDITIONS)
 -- =====================================================
--- This script UPDATES existing redeem_codes WITHOUT deleting
+-- This script removes ALL conditions from redeem codes
+-- All codes now give INSTANT bonus with NO requirements
 -- Preserves current_uses and all existing user redemption data
 -- =====================================================
 
@@ -16,46 +17,65 @@ ADD COLUMN IF NOT EXISTS min_loss_amount DECIMAL(15,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS trades_for_withdrawal INTEGER DEFAULT 2,
 ADD COLUMN IF NOT EXISTS trades_before_withdrawal INTEGER DEFAULT 2;
 
--- Step 2: UPDATE existing codes with conditions (PRESERVE current_uses!)
+-- Step 2: UPDATE all codes to INSTANT bonus with NO conditions (PRESERVE current_uses!)
 
--- WELCOME50: Min 500 USDT deposit in 30 days, 5 trades to UNLOCK bonus
+-- WELCOME50: INSTANT 50 USDT bonus, no conditions
 UPDATE public.redeem_codes SET
-    description = 'Welcome bonus! Min 500 USDT deposit in 30 days. Trade 5x to unlock bonus.',
-    code_type = 'deposit_timeframe',
-    min_deposit_amount = 500.00,
-    min_deposit_timeframe_days = 30,
-    trades_for_withdrawal = 5
+    description = 'Welcome bonus! Get 50 USDT instantly.',
+    code_type = 'standard',
+    min_deposit_amount = 0,
+    min_deposit_timeframe_days = NULL,
+    accumulated_deposit_required = 0,
+    referrals_required = 0,
+    min_loss_amount = 0,
+    trades_for_withdrawal = 0
 WHERE code = 'WELCOME50';
 
--- FIRSTBONUS: 2000 USDT accumulated deposits, 5 trades to UNLOCK bonus
+-- FIRSTBONUS: INSTANT 100 USDT bonus, no conditions
 UPDATE public.redeem_codes SET
-    description = 'First bonus! 2000 USDT accumulated deposits required. Trade 5x to unlock bonus.',
-    code_type = 'accumulated_deposit',
-    accumulated_deposit_required = 2000.00,
-    trades_for_withdrawal = 5
+    description = 'First bonus! Get 100 USDT instantly.',
+    code_type = 'standard',
+    min_deposit_amount = 0,
+    min_deposit_timeframe_days = NULL,
+    accumulated_deposit_required = 0,
+    referrals_required = 0,
+    min_loss_amount = 0,
+    trades_for_withdrawal = 0
 WHERE code = 'FIRSTBONUS';
 
--- BONUS500: 3 referrals required, 3 trades to UNLOCK bonus
+-- BONUS500: INSTANT 500 USDT bonus, no conditions
 UPDATE public.redeem_codes SET
-    description = 'Referral bonus! Invite 3 friends. Trade 3x to unlock bonus.',
-    code_type = 'referral',
-    referrals_required = 3,
-    trades_for_withdrawal = 3
+    description = 'Bonus! Get 500 USDT instantly.',
+    code_type = 'standard',
+    min_deposit_amount = 0,
+    min_deposit_timeframe_days = NULL,
+    accumulated_deposit_required = 0,
+    referrals_required = 0,
+    min_loss_amount = 0,
+    trades_for_withdrawal = 0
 WHERE code = 'BONUS500';
 
--- LETSGO1000: 10000 USDT accumulated deposits, INSTANT bonus (no trades required)
+-- LETSGO1000: INSTANT 1000 USDT bonus, no conditions
 UPDATE public.redeem_codes SET
-    description = 'High value bonus! 10,000 USDT deposits required. Bonus added instantly!',
-    code_type = 'accumulated_deposit',
-    accumulated_deposit_required = 10000.00,
+    description = 'High value bonus! Get 1000 USDT instantly.',
+    code_type = 'standard',
+    min_deposit_amount = 0,
+    min_deposit_timeframe_days = NULL,
+    accumulated_deposit_required = 0,
+    referrals_required = 0,
+    min_loss_amount = 0,
     trades_for_withdrawal = 0
 WHERE code = 'LETSGO1000';
 
--- CASHBACK200: 3000 USDT trading loss, INSTANT bonus (no trades required)
+-- CASHBACK200: INSTANT 200 USDT bonus, no conditions
 UPDATE public.redeem_codes SET
-    description = 'Cashback! Available after 3000 USDT trading losses. Bonus added instantly!',
-    code_type = 'cashback_loss',
-    min_loss_amount = 3000.00,
+    description = 'Cashback bonus! Get 200 USDT instantly.',
+    code_type = 'standard',
+    min_deposit_amount = 0,
+    min_deposit_timeframe_days = NULL,
+    accumulated_deposit_required = 0,
+    referrals_required = 0,
+    min_loss_amount = 0,
     trades_for_withdrawal = 0
 WHERE code = 'CASHBACK200';
 
