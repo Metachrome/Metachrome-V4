@@ -4245,6 +4245,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 3000); // Increased delay to ensure database is ready
 
+  // Debug endpoint to check user trades and withdrawal eligibility
+  app.get("/api/debug/check-withdrawal-eligibility", async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const userTrades = await storage.getUserTrades(user.id, 100);
+      const completedTrades = userTrades.filter(trade => trade.status === 'completed');
+
+      return res.json({
+        userId: user.id,
+        username: user.username || user.email,
+        totalTrades: userTrades.length,
+        completedTrades: completedTrades.length,
+        requiredTrades: 2,
+        canWithdraw: completedTrades.length >= 2,
+        allTrades: userTrades.map(t => ({
+          id: t.id.substring(0, 8),
+          status: t.status,
+          symbol: t.symbol,
+          amount: t.amount,
+          direction: t.direction,
+          profit: t.profit,
+          createdAt: t.createdAt,
+          expiresAt: t.expiresAt,
+          completedAt: t.completedAt
+        }))
+      });
+    } catch (error) {
+      console.error("Error checking withdrawal eligibility:", error);
+      res.status(500).json({ message: "Failed to check eligibility" });
+    }
+  });
+
   // Temporary admin bypass (development only)
   app.post("/api/debug/admin-bypass", async (req, res) => {
     try {
