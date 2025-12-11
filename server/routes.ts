@@ -3862,7 +3862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`✅ Trade requirement met: User ${user.username || user.email} has ${completedTradesCount} completed trades with valid result`);
+      console.log(`✅ Trade requirement met: User ${user.username || user.email} has ${completedTradesCount}/${MINIMUM_TRADES_REQUIRED} completed trades with valid result`);
 
       // Check if user has sufficient balance
       const currentBalance = await storage.getBalance(user.id, currency);
