@@ -6196,7 +6196,7 @@ app.put('/api/user/profile', async (req, res) => {
 
 // ===== HELPER FUNCTION: CHECK MINIMUM TRADE REQUIREMENT =====
 async function checkMinimumTradeRequirement(userId, username) {
-  const MINIMUM_TRADES = 3;
+  const MINIMUM_TRADES = 2; // Changed from 3 to 2 - users need 2 completed trades before withdrawal
 
   try {
     if (!supabase) {
