@@ -1265,6 +1265,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
       const trades = await storage.getUserTrades(userId, limit);
+
+      // Add detailed logging for debugging withdrawal requirement
+      const completedTrades = trades.filter(t => t.status === 'completed');
+      console.log(`📊 GET /api/users/${userId}/trades:`, {
+        totalTrades: trades.length,
+        completedTrades: completedTrades.length,
+        tradeStatuses: trades.map(t => ({
+          id: t.id.substring(0, 8),
+          status: t.status,
+          symbol: t.symbol,
+          createdAt: t.createdAt,
+          completedAt: t.completedAt
+        }))
+      });
+
       res.json(trades);
     } catch (error) {
       console.error("Error fetching trades:", error);
