@@ -8876,54 +8876,75 @@ app.post('/api/trades/complete', async (req, res) => {
               })
               .eq('id', restriction.id);
 
-            // NEW: When trades requirement is met, ADD BONUS TO USER BALANCE
+            // CRITICAL FIX: Add bonus with delay to avoid race condition
+            // This endpoint is called AFTER completeTradeDirectly() which updates balance
+            // We need to wait for that update to complete before adding bonus
             if (shouldUnlock && !restriction.withdrawal_unlocked) {
               console.log(`🔓 BONUS UNLOCKED for user ${user.username} after ${newTradesCompleted} trades!`);
-              console.log(`💰 Adding ${restriction.bonus_amount} USDT bonus to balance for code: ${restriction.code}`);
+              console.log(`💰 Bonus ${restriction.bonus_amount} USDT for code: ${restriction.code}`);
+              console.log(`⚠️ Adding bonus with 2-second delay to avoid race condition with trade profit update`);
 
-              // Get current user balance from Supabase
-              const { data: currentUser, error: userError } = await supabase
-                .from('users')
-                .select('balance')
-                .eq('id', actualUserId)
-                .single();
+              // Add bonus with delay to ensure trade profit update completes first
+              const bonusAmt = parseFloat(restriction.bonus_amount || 0);
+              const restrictionCode = restriction.code;
+              const userId = actualUserId;
 
-              if (!userError && currentUser) {
-                const currentBal = parseFloat(currentUser.balance || 0);
-                const bonusAmt = parseFloat(restriction.bonus_amount || 0);
-                const newBal = currentBal + bonusAmt;
+              setTimeout(async () => {
+                try {
+                  console.log(`⏰ DELAYED BONUS: Adding ${bonusAmt} USDT for code ${restrictionCode}`);
 
-                console.log(`💰 Current balance: ${currentBal}, Bonus: ${bonusAmt}, New balance: ${newBal}`);
+                  // Get current balance FRESH from database (should include trade profit now)
+                  const { data: freshUser, error: freshUserError } = await supabase
+                    .from('users')
+                    .select('balance')
+                    .eq('id', userId)
+                    .single();
 
-                // Update user balance with bonus
-                const { error: updateError } = await supabase
-                  .from('users')
-                  .update({ balance: newBal.toString() })
-                  .eq('id', actualUserId);
+                  if (!freshUserError && freshUser) {
+                    const currentBal = parseFloat(freshUser.balance || 0);
+                    const newBal = currentBal + bonusAmt;
 
-                if (!updateError) {
-                  console.log(`✅ Bonus ${bonusAmt} USDT added to balance! New balance: ${newBal}`);
+                    console.log(`💰 Adding bonus: ${currentBal} + ${bonusAmt} = ${newBal}`);
 
-                  // Also add transaction record for the bonus
-                  await supabase
-                    .from('transactions')
-                    .insert({
-                      user_id: actualUserId,
-                      type: 'bonus',
-                      amount: bonusAmt,
-                      status: 'completed',
-                      description: `Redeem Code Bonus: ${restriction.code} - Unlocked after ${newTradesCompleted} trades`,
-                      tx_hash: `BONUS-${restriction.code}-${Date.now()}`,
-                      network: 'METACHROME',
-                      currency: 'USDT',
-                      created_at: new Date().toISOString()
-                    });
+                    // Update balance with bonus
+                    const { error: bonusUpdateError } = await supabase
+                      .from('users')
+                      .update({ balance: newBal.toString() })
+                      .eq('id', userId);
 
-                  console.log(`📝 Bonus transaction recorded for code: ${restriction.code}`);
-                } else {
-                  console.error(`❌ Failed to add bonus to balance:`, updateError);
+                    if (!bonusUpdateError) {
+                      console.log(`✅ Bonus ${bonusAmt} USDT added to balance! New balance: ${newBal}`);
+
+                      // Create transaction record for the bonus
+                      const { error: txError } = await supabase
+                        .from('transactions')
+                        .insert({
+                          user_id: userId,
+                          type: 'redeem_bonus',
+                          amount: bonusAmt,
+                          status: 'completed',
+                          description: `Redeem Code Bonus: ${restrictionCode} - Unlocked after ${newTradesCompleted} trades`,
+                          tx_hash: `BONUS-${restrictionCode}-${Date.now()}`,
+                          network: 'METACHROME',
+                          symbol: 'USDT',
+                          created_at: new Date().toISOString()
+                        });
+
+                      if (txError) {
+                        console.error(`❌ Failed to create bonus transaction:`, txError);
+                      } else {
+                        console.log(`✅ Bonus transaction recorded for code: ${restrictionCode}`);
+                      }
+                    } else {
+                      console.error(`❌ Failed to add bonus to balance:`, bonusUpdateError);
+                    }
+                  } else {
+                    console.error(`❌ Failed to fetch fresh user balance:`, freshUserError);
+                  }
+                } catch (bonusError) {
+                  console.error(`❌ Error adding delayed bonus:`, bonusError);
                 }
-              }
+              }, 2000); // 2 second delay to ensure trade profit update completes first
             }
           }
         }
