@@ -582,15 +582,21 @@ export default function UserDashboard() {
                     Deposit amount <span className="text-red-400">*</span>
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="Please enter the recharge amount"
                     value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
+                    onChange={(e) => {
+                      // Only allow numbers and decimal point
+                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                      // Prevent multiple decimal points
+                      const parts = value.split('.');
+                      if (parts.length > 2) return;
+                      setDepositAmount(value);
+                    }}
                     className={`w-full bg-gray-800 border rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                       !depositAmount ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    min={cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount || 0}
-                    step="0.01"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Minimum: {cryptoNetworks[selectedCrypto as keyof typeof cryptoNetworks]?.minAmount} {selectedCrypto}
