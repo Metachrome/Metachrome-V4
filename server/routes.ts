@@ -4281,6 +4281,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to manually trigger expired trades completion
+  app.post("/api/debug/complete-expired-trades", async (req, res) => {
+    try {
+      const user = req.session.user;
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      console.log(`🔧 Manual trigger: Completing expired trades for user ${user.id}`);
+
+      const userTrades = await storage.getUserTrades(user.id, 100);
+      const now = new Date();
+      let completedCount = 0;
+      const results = [];
+
+      for (const trade of userTrades) {
+        if (trade.status === 'active' && trade.expiresAt && new Date(trade.expiresAt) <= now) {
+          console.log(`⏰ Manual: Found expired trade ${trade.id}, expired at ${trade.expiresAt}`);
+          try {
+            await tradingService.executeOptionsTrade(trade.id);
+            completedCount++;
+            results.push({ id: trade.id, status: 'completed', expiresAt: trade.expiresAt });
+            console.log(`✅ Manual: Completed expired trade ${trade.id}`);
+          } catch (error) {
+            console.error(`❌ Manual: Failed to complete trade ${trade.id}:`, error);
+            results.push({ id: trade.id, status: 'failed', error: String(error) });
+          }
+        }
+      }
+
+      return res.json({
+        message: `Completed ${completedCount} expired trades`,
+        completedCount,
+        totalChecked: userTrades.length,
+        results
+      });
+    } catch (error) {
+      console.error("Error completing expired trades:", error);
+      res.status(500).json({ message: "Failed to complete expired trades" });
+    }
+  });
+
   // Temporary admin bypass (development only)
   app.post("/api/debug/admin-bypass", async (req, res) => {
     try {
