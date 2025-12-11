@@ -14017,6 +14017,47 @@ async function validateRedeemCodeConditions(user, redeemCode, supabaseClient) {
     return { eligible: true, tradesRequired: redeemCode.trades_for_withdrawal || 0 };
   }
 
+  // BONUS500 & LETSGO1000: single_deposit - Minimum single deposit (all at once, not accumulated)
+  if (codeType === 'single_deposit') {
+    const minSingleDeposit = parseFloat(redeemCode.min_deposit_amount || 0);
+
+    // Get user's largest single deposit
+    let largestDeposit = 0;
+    if (supabaseClient) {
+      const { data: deposits, error } = await supabaseClient
+        .from('transactions')
+        .select('amount, type, status')
+        .eq('user_id', user.id);
+
+      if (!error && deposits) {
+        // Filter for deposit type and approved/completed status
+        const approvedDeposits = deposits.filter(d =>
+          d.type?.toLowerCase() === 'deposit' &&
+          (d.status?.toLowerCase() === 'approved' || d.status?.toLowerCase() === 'completed')
+        );
+
+        // Find the largest single deposit
+        if (approvedDeposits.length > 0) {
+          largestDeposit = Math.max(...approvedDeposits.map(d => parseFloat(d.amount || 0)));
+        }
+
+        console.log('💰 Found', approvedDeposits.length, 'approved deposits');
+        console.log('💰 Largest single deposit:', largestDeposit);
+      }
+    }
+
+    console.log('💰 Largest single deposit:', largestDeposit, 'Required:', minSingleDeposit);
+
+    if (largestDeposit < minSingleDeposit) {
+      return {
+        eligible: false,
+        reason: `You need a single deposit of at least ${minSingleDeposit.toLocaleString()} USDT (all at once, not accumulated). Your largest deposit: ${largestDeposit.toFixed(2)} USDT`
+      };
+    }
+
+    return { eligible: true, tradesRequired: redeemCode.trades_for_withdrawal || 0 };
+  }
+
   // Unknown code type - allow by default
   return { eligible: true };
 }
