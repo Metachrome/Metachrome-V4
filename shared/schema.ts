@@ -88,6 +88,7 @@ export const trades = pgTable("trades", {
   profit: decimal("profit", { precision: 18, scale: 8 }),
   fee: decimal("fee", { precision: 18, scale: 8 }).default('0'),
   status: tradeStatusEnum("status").default('pending'),
+  result: varchar("result", { length: 10 }), // Trade result: 'win', 'lose', 'normal' - for withdrawal eligibility
   duration: integer("duration"), // seconds for options trading
   expiresAt: timestamp("expires_at"),
   completedAt: timestamp("completed_at"),

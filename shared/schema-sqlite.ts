@@ -75,6 +75,7 @@ export const trades = sqliteTable("trades", {
   entryPrice: text("entry_price"),
   exitPrice: text("exit_price"),
   status: text("status", { enum: ['pending', 'active', 'completed', 'cancelled'] }).default('pending'),
+  result: text("result", { enum: ['win', 'lose', 'normal'] }), // Trade result for withdrawal eligibility
   duration: integer("duration"), // in seconds for options
   expiresAt: integer("expires_at", { mode: 'timestamp' }),
   profit: text("profit"),
