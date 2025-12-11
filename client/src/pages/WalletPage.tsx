@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -45,6 +45,14 @@ export default function WalletPage() {
 
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Auto-fill withdrawal address from user profile
+  useEffect(() => {
+    if (user?.address) {
+      setWithdrawAddress(user.address);
+      console.log('🔒 Withdrawal address auto-filled from profile:', user.address);
+    }
+  }, [user?.address]);
 
   // Fetch user trade history to check minimum trades requirement
   const { data: tradeHistory = [] } = useQuery({
@@ -1238,13 +1246,13 @@ export default function WalletPage() {
                             id="withdrawAddress"
                             name="withdrawAddress"
                             type="text"
-                            placeholder={`Enter USDT-${selectedNetwork} address`}
+                            placeholder={withdrawAddress ? withdrawAddress : `Set withdrawal address in Profile first`}
                             value={withdrawAddress}
-                            onChange={(e) => setWithdrawAddress(e.target.value)}
-                            className="mt-2 bg-gray-700 border-gray-600 text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                            disabled={true}
+                            className="mt-2 bg-gray-700 border-gray-600 text-white opacity-75 cursor-not-allowed"
                           />
                           <div className="text-xs text-gray-400 mt-1">
-                            Double-check the address. Transactions cannot be reversed.
+                            🔒 Withdrawal address is locked and auto-filled from your Profile. To change it, update your profile settings.
                           </div>
                         </div>
 

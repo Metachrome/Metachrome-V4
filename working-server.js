@@ -4704,7 +4704,8 @@ app.get('/api/admin/pending-requests', async (req, res) => {
     return {
       ...withdrawal,
       user_balance: user ? user.balance : '0',
-      username: user ? user.username : (withdrawal.username || 'Unknown User')
+      username: user ? user.username : (withdrawal.username || 'Unknown User'),
+      wallet_address: withdrawal.address || (user ? user.address : null) || 'Not set'
     };
   });
 
