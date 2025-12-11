@@ -362,7 +362,8 @@ class DatabaseStorage implements IStorage {
       entryPrice: trade.entryPrice ? trade.entryPrice.toString() : undefined,
       exitPrice: trade.exitPrice ? trade.exitPrice.toString() : undefined,
       profit: trade.profit ? trade.profit.toString() : undefined,
-      fee: trade.fee ? trade.fee.toString() : undefined
+      fee: trade.fee ? trade.fee.toString() : undefined,
+      result: trade.result || undefined, // Explicitly include result field for withdrawal eligibility check
     }));
   }
 

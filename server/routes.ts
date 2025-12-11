@@ -3837,12 +3837,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // ✅ CHECK MINIMUM TRADE REQUIREMENT (2 completed trades with valid result)
       const userTrades = await storage.getUserTrades(user.id, 100);
+
+      console.log(`🔍 DEBUG - Raw trades for ${user.username || user.email}:`, JSON.stringify(userTrades, null, 2));
+
       // Filter for completed trades with valid result (win/lose/normal)
-      const completedTrades = userTrades.filter(trade =>
-        trade.status === 'completed' &&
-        trade.result &&
-        ['win', 'lose', 'normal'].includes(trade.result.toLowerCase())
-      );
+      const completedTrades = userTrades.filter(trade => {
+        const isCompleted = trade.status === 'completed';
+        const hasResult = !!trade.result;
+        const isValidResult = trade.result && ['win', 'lose', 'normal'].includes(trade.result.toLowerCase());
+
+        console.log(`  Trade ${trade.id}: status=${trade.status}, result=${trade.result}, isCompleted=${isCompleted}, hasResult=${hasResult}, isValidResult=${isValidResult}`);
+
+        return isCompleted && hasResult && isValidResult;
+      });
 
       const completedTradesCount = completedTrades.length;
       const MINIMUM_TRADES_REQUIRED = 2;

@@ -6,14 +6,15 @@
 -- =====================================================
 
 -- Step 1: Add new columns (if not exist)
-ALTER TABLE public.redeem_codes 
+ALTER TABLE public.redeem_codes
 ADD COLUMN IF NOT EXISTS code_type VARCHAR(50) DEFAULT 'standard',
 ADD COLUMN IF NOT EXISTS min_deposit_amount DECIMAL(15,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS min_deposit_timeframe_days INTEGER DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS accumulated_deposit_required DECIMAL(15,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS referrals_required INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS min_loss_amount DECIMAL(15,2) DEFAULT 0,
-ADD COLUMN IF NOT EXISTS trades_for_withdrawal INTEGER DEFAULT 0;
+ADD COLUMN IF NOT EXISTS trades_for_withdrawal INTEGER DEFAULT 2,
+ADD COLUMN IF NOT EXISTS trades_before_withdrawal INTEGER DEFAULT 2;
 
 -- Step 2: UPDATE existing codes with conditions (PRESERVE current_uses!)
 
