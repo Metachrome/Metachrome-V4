@@ -218,9 +218,10 @@ class TradingService {
         calculation: `${tradeAmount} * (${profitPercentage} / 100) = ${profitAmount}`
       });
 
-      // Update trade
+      // Update trade with result field
       await storage.updateTrade(tradeId, {
         status: 'completed',
+        result: isWin ? 'win' : 'lose',  // CRITICAL: Add result field for frontend
         exitPrice,
         profit: profit.toString(),
         completedAt: new Date(),
