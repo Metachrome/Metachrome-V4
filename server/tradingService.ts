@@ -125,7 +125,7 @@ class TradingService {
     this.activeTrades.set(tradeId, timeout);
   }
 
-  // Execute an options trade
+  // Execute an options trade (public method for auto-completion)
   async executeOptionsTrade(tradeId: string): Promise<void> {
     try {
       const trade = await storage.getTrade(tradeId);

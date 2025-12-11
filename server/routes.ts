@@ -4166,7 +4166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if demo data exists
       const users = await storage.getAllUsers();
       const hasRichDemoData = users.length >= 5; // We expect at least 5 users from demo data
-      
+
       if (!hasRichDemoData) {
         console.log('📊 Demo data not found or incomplete, creating fresh demo data...');
         await seedOptionsSettings();
@@ -4183,8 +4183,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('⚠️ Error setting up chat tables (may already exist):', error);
       }
 
+      // ✅ AUTO-COMPLETE EXPIRED TRADES ON SERVER START
+      try {
+        console.log('🔍 Checking for expired trades that need completion...');
+        const allTrades = await storage.getAllTrades();
+        const now = new Date();
+        let completedCount = 0;
+
+        for (const trade of allTrades) {
+          // Check if trade is active but expired
+          if (trade.status === 'active' && trade.expiresAt && new Date(trade.expiresAt) <= now) {
+            console.log(`⏰ Found expired trade: ${trade.id}, expired at ${trade.expiresAt}`);
+            try {
+              await tradingService.executeOptionsTrade(trade.id);
+              completedCount++;
+              console.log(`✅ Auto-completed expired trade: ${trade.id}`);
+            } catch (error) {
+              console.error(`❌ Failed to auto-complete trade ${trade.id}:`, error);
+            }
+          }
+        }
+
+        if (completedCount > 0) {
+          console.log(`✅ Auto-completed ${completedCount} expired trades on server start`);
+        } else {
+          console.log('✅ No expired trades found');
+        }
+      } catch (error) {
+        console.error('❌ Error checking for expired trades:', error);
+      }
+
       // Start real-time price updates
       priceService.startPriceUpdates();
+
+      // ✅ START PERIODIC CHECK FOR EXPIRED TRADES (every 10 seconds)
+      setInterval(async () => {
+        try {
+          const allTrades = await storage.getAllTrades();
+          const now = new Date();
+
+          for (const trade of allTrades) {
+            if (trade.status === 'active' && trade.expiresAt && new Date(trade.expiresAt) <= now) {
+              console.log(`⏰ Periodic check: Found expired trade ${trade.id}`);
+              try {
+                await tradingService.executeOptionsTrade(trade.id);
+                console.log(`✅ Periodic check: Completed expired trade ${trade.id}`);
+              } catch (error) {
+                console.error(`❌ Periodic check: Failed to complete trade ${trade.id}:`, error);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error in periodic expired trades check:', error);
+        }
+      }, 10000); // Check every 10 seconds
+
     } catch (error) {
       console.error('❌ Error checking/seeding demo data:', error);
       // Still start price updates even if seeding fails
