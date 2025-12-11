@@ -71,9 +71,9 @@ export default function WalletPage() {
     },
   });
 
-  // Calculate completed trades count
+  // Calculate completed trades count (only trades with status 'completed')
   const completedTradesCount = tradeHistory.filter((trade: any) =>
-    trade.status === 'completed' || trade.result === 'win' || trade.result === 'lose'
+    trade.status === 'completed'
   ).length;
 
   // Fetch withdrawal history - REAL DATA

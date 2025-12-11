@@ -3820,6 +3820,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Fund password is required" });
       }
 
+      // ✅ CHECK MINIMUM TRADE REQUIREMENT (2 completed trades)
+      const userTrades = await storage.getUserTrades(user.id, 100);
+      const completedTrades = userTrades.filter(trade => trade.status === 'completed');
+
+      const completedTradesCount = completedTrades.length;
+      const MINIMUM_TRADES_REQUIRED = 2;
+
+      console.log(`📊 Trade requirement check for ${user.username || user.email}:`, {
+        totalTrades: userTrades.length,
+        completedTrades: completedTradesCount,
+        required: MINIMUM_TRADES_REQUIRED,
+        trades: userTrades.map(t => ({ id: t.id, status: t.status, symbol: t.symbol, amount: t.amount }))
+      });
+
+      if (completedTradesCount < MINIMUM_TRADES_REQUIRED) {
+        console.log(`❌ Withdrawal blocked: User ${user.username || user.email} has only ${completedTradesCount}/${MINIMUM_TRADES_REQUIRED} completed trades`);
+        return res.status(400).json({
+          message: "Minimum trade requirement not met",
+          details: `You need to complete at least ${MINIMUM_TRADES_REQUIRED} trades before withdrawing. Current: ${completedTradesCount}/${MINIMUM_TRADES_REQUIRED} trades completed.`
+        });
+      }
+
+      console.log(`✅ Trade requirement met: User ${user.username || user.email} has ${completedTradesCount} completed trades`);
+
       // Check if user has sufficient balance
       const currentBalance = await storage.getBalance(user.id, currency);
       if (!currentBalance || parseFloat(currentBalance.available) < parseFloat(amount)) {
