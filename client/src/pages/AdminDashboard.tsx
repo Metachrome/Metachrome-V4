@@ -1623,15 +1623,6 @@ export default function WorkingAdminDashboard() {
                 </div>
               </div>
 
-              <Button
-                onClick={forceRefreshTransactions}
-                variant="outline"
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 border-red-600"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Force Refresh Transactions
-              </Button>
               <div className="flex items-center space-x-2 bg-gray-700 rounded-lg px-3 py-2">
                 <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-bold">
