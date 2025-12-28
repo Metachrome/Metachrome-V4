@@ -8060,24 +8060,32 @@ app.post('/api/trades', async (req, res) => {
 
     const userBalance = parseFloat(user.balance || '0');
 
-    // CRITICAL FIX: At trade START, deduct the FULL TRADE AMOUNT from balance
-    // This is locked until trade completes
-    // On WIN: Return amount + profit
-    // On LOSE: Amount stays deducted
-    const deductionAmount = tradeAmount; // Deduct full trade amount
+    // CORRECT LOGIC: At trade START, deduct the PROFIT % from balance (not full amount!)
+    // Calculate profit percentage based on duration
+    let profitRate = 0.10; // Default 10%
+    if (duration === 30) profitRate = 0.10;
+    else if (duration === 60) profitRate = 0.15;
+    else if (duration === 90) profitRate = 0.20;
+    else if (duration === 120) profitRate = 0.25;
+    else if (duration === 180) profitRate = 0.30;
+    else if (duration === 240) profitRate = 0.50;
+    else if (duration === 300) profitRate = 0.75;
+    else if (duration === 600) profitRate = 1.00;
 
-    // Check if user has enough balance for the trade
+    const deductionAmount = tradeAmount * profitRate; // Deduct profit % only!
+
+    // Check if user has enough balance for the deduction
     if (userBalance < deductionAmount) {
       return res.status(400).json({
         success: false,
-        message: `Insufficient balance. Need at least ${deductionAmount} USDT`
+        message: `Insufficient balance. Need at least ${deductionAmount} USDT (${profitRate * 100}% of ${tradeAmount})`
       });
     }
 
-    // Deduct the full trade amount from balance at trade start
+    // Deduct the profit percentage from balance at trade start
     const newBalance = userBalance - deductionAmount;
 
-    console.log(`💰 TRADE START: Deducting full trade amount ${deductionAmount} USDT from balance`);
+    console.log(`💰 BINARY TRADE START: Deducting ${profitRate * 100}% (${deductionAmount} USDT) from balance`);
     console.log(`💰 Balance: ${userBalance} → ${newBalance}`);
 
     // Update balance in Supabase
@@ -8400,24 +8408,32 @@ app.post('/api/trades/options', async (req, res) => {
 
     const userBalance = parseFloat(user.balance || '0');
 
-    // CRITICAL FIX: At trade START, deduct the FULL TRADE AMOUNT from balance
-    // This is locked until trade completes
-    // On WIN: Return amount + profit
-    // On LOSE: Amount stays deducted
-    const deductionAmount = tradeAmount; // Deduct full trade amount
+    // CORRECT LOGIC: At trade START, deduct the PROFIT % from balance (not full amount!)
+    // Calculate profit percentage based on duration
+    let profitRate = 0.10; // Default 10%
+    if (duration === 30) profitRate = 0.10;
+    else if (duration === 60) profitRate = 0.15;
+    else if (duration === 90) profitRate = 0.20;
+    else if (duration === 120) profitRate = 0.25;
+    else if (duration === 180) profitRate = 0.30;
+    else if (duration === 240) profitRate = 0.50;
+    else if (duration === 300) profitRate = 0.75;
+    else if (duration === 600) profitRate = 1.00;
 
-    // Check if user has enough balance for the trade
+    const deductionAmount = tradeAmount * profitRate; // Deduct profit % only!
+
+    // Check if user has enough balance for the deduction
     if (userBalance < deductionAmount) {
       return res.status(400).json({
         success: false,
-        message: `Insufficient balance. Need at least ${deductionAmount} USDT`
+        message: `Insufficient balance. Need at least ${deductionAmount} USDT (${profitRate * 100}% of ${tradeAmount})`
       });
     }
 
-    // Deduct the full trade amount from balance at trade start
+    // Deduct the profit percentage from balance at trade start
     const newBalance = userBalance - deductionAmount;
 
-    console.log(`💰 OPTIONS TRADE START: Deducting full trade amount ${deductionAmount} USDT from balance`);
+    console.log(`💰 OPTIONS TRADE START: Deducting ${profitRate * 100}% (${deductionAmount} USDT) from balance`);
     console.log(`💰 Balance: ${userBalance} → ${newBalance}`);
 
     // Update balance in Supabase
