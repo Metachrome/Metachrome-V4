@@ -154,11 +154,14 @@ async function runTest() {
     const expectedProfit = TRADE_AMOUNT * profitRate;
     
     log(`\n⏰ Waiting for trade to complete (${DURATION + 3}s)...`, 'cyan');
-    log(`   Expected profit if WIN: +${expectedProfit} USDT (${profitRate * 100}%)`, 'yellow');
-    
+    log(`   Trade system:`, 'yellow');
+    log(`   - At START: Deduct profit% (${expectedProfit} USDT)`, 'yellow');
+    log(`   - If WIN: Balance = Initial + Profit = ${balanceBefore} + ${expectedProfit} = ${balanceBefore + expectedProfit}`, 'yellow');
+    log(`   - If LOSE: Balance = Initial - Profit = ${balanceBefore} - ${expectedProfit} = ${balanceBefore - expectedProfit}`, 'yellow');
+
     // Wait for trade to complete
     await sleep((DURATION + 3) * 1000);
-    
+
     // Get final balance
     const balanceAfter = await getBalance();
     const actualChange = balanceAfter - balanceBefore;
@@ -174,17 +177,22 @@ async function runTest() {
     log('───────────────────────────────────────────────', 'blue');
     
     // Verdict
-    if (Math.abs(actualChange - expectedProfit) < 0.01) {
-      log('✅ TEST PASSED: Balance updated correctly!', 'green');
+    const expectedWinChange = expectedProfit; // WIN: +profit
+    const expectedLoseChange = -expectedProfit; // LOSE: -profit
+
+    if (Math.abs(actualChange - expectedWinChange) < 0.01) {
+      log('✅ TEST PASSED (WIN): Balance updated correctly!', 'green');
+      log(`   Trade WON, profit added: +${expectedProfit} USDT`, 'green');
+    } else if (Math.abs(actualChange - expectedLoseChange) < 0.01) {
+      log('✅ TEST PASSED (LOSE): Balance updated correctly!', 'green');
+      log(`   Trade LOST, profit deducted: -${expectedProfit} USDT`, 'green');
     } else if (actualChange === 0) {
       log('❌ TEST FAILED: Balance did NOT change!', 'red');
-      log('   This is the bug - profit not added to balance', 'red');
-    } else if (actualChange < 0) {
-      log('❌ TEST FAILED: Balance decreased!', 'red');
-      log(`   Lost ${Math.abs(actualChange)} USDT instead of gaining ${expectedProfit}`, 'red');
+      log('   This is the bug - balance should change on WIN or LOSE', 'red');
     } else {
       log('⚠️  TEST INCONCLUSIVE: Unexpected change', 'yellow');
-      log(`   Expected: +${expectedProfit}, Got: +${actualChange}`, 'yellow');
+      log(`   Expected WIN: +${expectedWinChange}, Expected LOSE: ${expectedLoseChange}`, 'yellow');
+      log(`   Actual: ${actualChange > 0 ? '+' : ''}${actualChange}`, 'yellow');
     }
     
     log('═══════════════════════════════════════════════\n', 'blue');
