@@ -7204,53 +7204,59 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
     let newBalance = 0;
     let baseBalance = 0;
 
-    // NEW LOGIC: Calculate final balance based on initial balance (before deduction)
+    // CRITICAL FIX: Now that we deduct FULL AMOUNT at trade start, balance calculation is simpler
+    // Trade Start: Balance = Initial - Amount (amount is locked)
+    // Trade Win: Balance = Current + Amount + Profit (unlock amount + add profit)
+    // Trade Lose: Balance = Current (amount stays deducted/lost)
+
     if (initialBalance !== null && initialBalance > 0) {
       // Use initialBalance from trade record (preferred method)
       baseBalance = initialBalance;
       console.log(`✅ Using initial_balance from trade record: ${baseBalance}`);
 
       if (finalWon) {
-        // WIN: Final balance = Initial balance + profit
-        // Example: Initial 1398.25 → After deduction 1258.45 → After win 1398.25 + 139.80 = 1538.05
-        // User gets back their amount + profit
-        newBalance = baseBalance + profitPercentageAmount;
-        profitAmount = profitPercentageAmount; // For notification display: +139.80
-        console.log(`✅ WIN: Initial balance ${baseBalance} + profit ${profitPercentageAmount} = ${newBalance}`);
-        console.log(`✅ Current balance: ${currentBalance} → New balance: ${newBalance}`);
+        // WIN: Return locked amount + add profit
+        // Example: Initial 1398.25 → After deduction 1258.45 → After win 1258.45 + 139.80 + 13.98 = 1412.23
+        newBalance = currentBalance + amount + profitPercentageAmount;
+        profitAmount = profitPercentageAmount; // For notification display: +13.98
+        console.log(`✅ WIN: Current ${currentBalance} + amount ${amount} + profit ${profitPercentageAmount} = ${newBalance}`);
+        console.log(`✅ Initial balance: ${baseBalance} → New balance: ${newBalance} (net change: +${profitPercentageAmount})`);
       } else {
-        // LOSE: Final balance = Initial balance - amount
-        // Example: Initial 1398.25 → After deduction 1258.45 → After lose stays 1258.45 (initial - amount)
-        // User loses their trade amount
-        newBalance = baseBalance - amount;
+        // LOSE: Amount stays deducted (already removed at trade start)
+        // Example: Initial 1398.25 → After deduction 1258.45 → After lose stays 1258.45
+        newBalance = currentBalance; // No change, amount already deducted
         profitAmount = -amount; // For notification display: -139.80
-        console.log(`❌ LOSE: Initial balance ${baseBalance} - amount ${amount} = ${newBalance}`);
-        console.log(`❌ Current balance: ${currentBalance} → New balance: ${newBalance}`);
+        console.log(`❌ LOSE: Balance stays ${currentBalance} (amount ${amount} already deducted at trade start)`);
+        console.log(`❌ Initial balance: ${baseBalance} → New balance: ${newBalance} (net change: -${amount})`);
       }
     } else {
       // FALLBACK: If initial_balance not available (field doesn't exist in DB yet)
-      // Calculate initial balance by adding back the deduction
       baseBalance = currentBalance + amount;
       console.warn(`⚠️ initial_balance not available, calculating from current balance`);
       console.warn(`⚠️ Calculated initial balance: ${currentBalance} + ${amount} = ${baseBalance}`);
 
       if (finalWon) {
-        // WIN: Final balance = Current balance + amount + profit
-        // Return the locked amount + add profit
+        // WIN: Return locked amount + add profit
         newBalance = currentBalance + amount + profitPercentageAmount;
         profitAmount = profitPercentageAmount;
         console.log(`✅ WIN (FALLBACK): Current ${currentBalance} + amount ${amount} + profit ${profitPercentageAmount} = ${newBalance}`);
       } else {
-        // LOSE: Final balance = Current balance (amount already deducted)
-        // Amount stays locked/lost
+        // LOSE: Amount stays deducted
         newBalance = currentBalance;
         profitAmount = -amount;
-        console.log(`❌ LOSE (FALLBACK): Current balance stays ${currentBalance} (amount ${amount} already deducted)`);
+        console.log(`❌ LOSE (FALLBACK): Balance stays ${currentBalance} (amount ${amount} already deducted)`);
       }
     }
 
     console.log(`🔍 DEBUG: profitRate=${profitRate}, amount=${amount}, profitPercentageAmount=${profitPercentageAmount}, profitAmount=${profitAmount}, duration=${duration}`);
     console.log(`💰 Balance update: ${user.username} ${currentBalance} → ${newBalance} (change: ${newBalance - currentBalance})`);
+    console.log(`🚨🚨🚨 CRITICAL BALANCE UPDATE ABOUT TO HAPPEN:`);
+    console.log(`🚨 User: ${user.username} (${userId})`);
+    console.log(`🚨 Trade ID: ${tradeId}`);
+    console.log(`🚨 Result: ${finalWon ? 'WIN' : 'LOSE'}`);
+    console.log(`🚨 Old Balance: ${currentBalance}`);
+    console.log(`🚨 New Balance: ${newBalance}`);
+    console.log(`🚨 Change: ${newBalance - currentBalance}`);
 
     // CRITICAL FIX: Update balance in Supabase FIRST (primary source of truth)
     if (supabase) {
@@ -7269,7 +7275,7 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           console.error('❌ Failed to update balance in Supabase:', balanceUpdateError);
           return { success: false, message: 'Failed to update balance in database' };
         } else {
-          console.log(`✅ Balance updated in Supabase: ${newBalance}`);
+          console.log(`✅✅✅ Balance updated in Supabase: ${newBalance}`);
           console.log(`✅ Update response:`, updateData);
 
           // CRITICAL: Verify the update by fetching the user again
@@ -7282,9 +7288,13 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
           if (verifyError) {
             console.error('❌ Failed to verify balance update:', verifyError);
           } else {
-            console.log(`✅ VERIFIED: Balance in database is now: ${verifyUser.balance}`);
+            console.log(`✅✅✅ VERIFIED: Balance in database is now: ${verifyUser.balance}`);
+            console.log(`✅✅✅ USER: ${user.username}, TRADE: ${tradeId}, RESULT: ${finalWon ? 'WIN' : 'LOSE'}`);
+            console.log(`✅✅✅ BALANCE CHANGE: ${currentBalance} → ${verifyUser.balance} (${parseFloat(verifyUser.balance) - currentBalance})`);
             if (parseFloat(verifyUser.balance) !== newBalance) {
-              console.error(`❌ CRITICAL: Balance mismatch! Expected ${newBalance}, got ${verifyUser.balance}`);
+              console.error(`❌❌❌ CRITICAL: Balance mismatch! Expected ${newBalance}, got ${verifyUser.balance}`);
+            } else {
+              console.log(`✅✅✅ BALANCE UPDATE SUCCESSFUL AND VERIFIED!`);
             }
           }
         }
@@ -8049,32 +8059,24 @@ app.post('/api/trades', async (req, res) => {
 
     const userBalance = parseFloat(user.balance || '0');
 
-    // NEW LOGIC: At trade START, deduct the loss percentage from balance
-    // Calculate loss percentage based on duration
-    let lossPercentage = 0.10; // Default 10%
-    if (duration === 30) lossPercentage = 0.10;
-    else if (duration === 60) lossPercentage = 0.15;
-    else if (duration === 90) lossPercentage = 0.20;
-    else if (duration === 120) lossPercentage = 0.25;
-    else if (duration === 180) lossPercentage = 0.30;
-    else if (duration === 240) lossPercentage = 0.50;
-    else if (duration === 300) lossPercentage = 0.75;
-    else if (duration === 600) lossPercentage = 1.00;
+    // CRITICAL FIX: At trade START, deduct the FULL TRADE AMOUNT from balance
+    // This is locked until trade completes
+    // On WIN: Return amount + profit
+    // On LOSE: Amount stays deducted
+    const deductionAmount = tradeAmount; // Deduct full trade amount
 
-    const deductionAmount = tradeAmount * lossPercentage; // e.g., 20,000 * 0.15 = 3,000
-
-    // Check if user has enough balance for the deduction
+    // Check if user has enough balance for the trade
     if (userBalance < deductionAmount) {
       return res.status(400).json({
         success: false,
-        message: `Insufficient balance. Need at least ${deductionAmount} USDT (${lossPercentage * 100}% of ${tradeAmount})`
+        message: `Insufficient balance. Need at least ${deductionAmount} USDT`
       });
     }
 
-    // Deduct the loss percentage from balance at trade start
+    // Deduct the full trade amount from balance at trade start
     const newBalance = userBalance - deductionAmount;
 
-    console.log(`💰 TRADE START: Deducting ${lossPercentage * 100}% (${deductionAmount} USDT) from balance`);
+    console.log(`💰 TRADE START: Deducting full trade amount ${deductionAmount} USDT from balance`);
     console.log(`💰 Balance: ${userBalance} → ${newBalance}`);
 
     // Update balance in Supabase
@@ -8397,32 +8399,24 @@ app.post('/api/trades/options', async (req, res) => {
 
     const userBalance = parseFloat(user.balance || '0');
 
-    // NEW LOGIC: At trade START, deduct the loss percentage from balance
-    // Calculate loss percentage based on duration
-    let lossPercentage = 0.10; // Default 10%
-    if (duration === 30) lossPercentage = 0.10;
-    else if (duration === 60) lossPercentage = 0.15;
-    else if (duration === 90) lossPercentage = 0.20;
-    else if (duration === 120) lossPercentage = 0.25;
-    else if (duration === 180) lossPercentage = 0.30;
-    else if (duration === 240) lossPercentage = 0.50;
-    else if (duration === 300) lossPercentage = 0.75;
-    else if (duration === 600) lossPercentage = 1.00;
+    // CRITICAL FIX: At trade START, deduct the FULL TRADE AMOUNT from balance
+    // This is locked until trade completes
+    // On WIN: Return amount + profit
+    // On LOSE: Amount stays deducted
+    const deductionAmount = tradeAmount; // Deduct full trade amount
 
-    const deductionAmount = tradeAmount * lossPercentage; // e.g., 20,000 * 0.15 = 3,000
-
-    // Check if user has enough balance for the deduction
+    // Check if user has enough balance for the trade
     if (userBalance < deductionAmount) {
       return res.status(400).json({
         success: false,
-        message: `Insufficient balance. Need at least ${deductionAmount} USDT (${lossPercentage * 100}% of ${tradeAmount})`
+        message: `Insufficient balance. Need at least ${deductionAmount} USDT`
       });
     }
 
-    // Deduct the loss percentage from balance at trade start
+    // Deduct the full trade amount from balance at trade start
     const newBalance = userBalance - deductionAmount;
 
-    console.log(`💰 OPTIONS TRADE START: Deducting ${lossPercentage * 100}% (${deductionAmount} USDT) from balance`);
+    console.log(`💰 OPTIONS TRADE START: Deducting full trade amount ${deductionAmount} USDT from balance`);
     console.log(`💰 Balance: ${userBalance} → ${newBalance}`);
 
     // Update balance in Supabase
