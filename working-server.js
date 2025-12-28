@@ -8058,6 +8058,24 @@ app.post('/api/trades', async (req, res) => {
       });
     }
 
+    // CRITICAL: Check active trades limit (maximum 3 concurrent trades)
+    const activeTrades = await getTrades();
+    const userActiveTrades = activeTrades.filter(t =>
+      (t.user_id === finalUserId || t.userId === finalUserId) &&
+      (t.status === 'active' || t.status === 'pending')
+    );
+
+    const MAX_ACTIVE_TRADES = 3;
+    if (userActiveTrades.length >= MAX_ACTIVE_TRADES) {
+      console.log(`❌ User ${user.username} has ${userActiveTrades.length} active trades (max: ${MAX_ACTIVE_TRADES})`);
+      return res.status(400).json({
+        success: false,
+        message: `Maximum ${MAX_ACTIVE_TRADES} active trades allowed. Please wait for current trades to complete.`
+      });
+    }
+
+    console.log(`✅ Active trades check passed: ${userActiveTrades.length}/${MAX_ACTIVE_TRADES}`);
+
     const userBalance = parseFloat(user.balance || '0');
 
     // CORRECT LOGIC: At trade START, deduct the PROFIT % from balance (not full amount!)
@@ -8405,6 +8423,24 @@ app.post('/api/trades/options', async (req, res) => {
     }
 
     console.log(`✅ User found: ${user.username} (ID: ${user.id}, Balance: ${user.balance})`);
+
+    // CRITICAL: Check active trades limit (maximum 3 concurrent trades)
+    const activeTrades = await getTrades();
+    const userActiveTrades = activeTrades.filter(t =>
+      (t.user_id === finalUserId || t.userId === finalUserId) &&
+      (t.status === 'active' || t.status === 'pending')
+    );
+
+    const MAX_ACTIVE_TRADES = 3;
+    if (userActiveTrades.length >= MAX_ACTIVE_TRADES) {
+      console.log(`❌ User ${user.username} has ${userActiveTrades.length} active trades (max: ${MAX_ACTIVE_TRADES})`);
+      return res.status(400).json({
+        success: false,
+        message: `Maximum ${MAX_ACTIVE_TRADES} active trades allowed. Please wait for current trades to complete.`
+      });
+    }
+
+    console.log(`✅ Active trades check passed: ${userActiveTrades.length}/${MAX_ACTIVE_TRADES}`);
 
     const userBalance = parseFloat(user.balance || '0');
 
