@@ -3,7 +3,24 @@
  * Usage: node test-trade-simple.js <username> <password>
  */
 
-const fetch = require('node-fetch');
+// Support both Node.js with native fetch and older versions with node-fetch
+let fetch;
+try {
+  // Try native fetch first (Node.js 18+)
+  fetch = globalThis.fetch;
+  if (!fetch) {
+    // Fallback to node-fetch for older Node.js versions
+    fetch = require('node-fetch');
+  }
+} catch (e) {
+  // If node-fetch not installed, try using native fetch
+  fetch = globalThis.fetch;
+  if (!fetch) {
+    console.error('❌ Error: fetch is not available. Please upgrade to Node.js 18+ or install node-fetch:');
+    console.error('   npm install node-fetch');
+    process.exit(1);
+  }
+}
 
 // Configuration
 const BASE_URL = process.env.TEST_URL || 'https://metachrome-v4-production.up.railway.app';

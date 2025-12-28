@@ -3,7 +3,21 @@
  * This simulates a complete trade flow and verifies balance changes
  */
 
-const fetch = require('node-fetch');
+// Support both Node.js with native fetch and older versions with node-fetch
+let fetch;
+try {
+  fetch = globalThis.fetch;
+  if (!fetch) {
+    fetch = require('node-fetch');
+  }
+} catch (e) {
+  fetch = globalThis.fetch;
+  if (!fetch) {
+    console.error('❌ Error: fetch is not available. Please upgrade to Node.js 18+ or install node-fetch:');
+    console.error('   npm install node-fetch');
+    process.exit(1);
+  }
+}
 
 // Configuration
 const BASE_URL = process.env.TEST_URL || 'http://localhost:3000';
