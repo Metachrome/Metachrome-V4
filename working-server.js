@@ -7212,36 +7212,40 @@ async function completeTradeDirectly(tradeId, userId, won, amount, payout, direc
 
       if (finalWon) {
         // WIN: Final balance = Initial balance + profit
-        // Example: Initial 50,000 → After deduction 47,000 → After win 53,000 (initial + profit)
+        // Example: Initial 1398.25 → After deduction 1258.45 → After win 1398.25 + 139.80 = 1538.05
+        // User gets back their amount + profit
         newBalance = baseBalance + profitPercentageAmount;
-        profitAmount = profitPercentageAmount; // For notification display: +3,000
+        profitAmount = profitPercentageAmount; // For notification display: +139.80
         console.log(`✅ WIN: Initial balance ${baseBalance} + profit ${profitPercentageAmount} = ${newBalance}`);
         console.log(`✅ Current balance: ${currentBalance} → New balance: ${newBalance}`);
       } else {
-        // LOSE: Final balance = Initial balance - loss
-        // Example: Initial 50,000 → After deduction 47,000 → After lose 47,000 (initial - loss)
-        newBalance = baseBalance - profitPercentageAmount;
-        profitAmount = -profitPercentageAmount; // For notification display: -3,000
-        console.log(`❌ LOSE: Initial balance ${baseBalance} - loss ${profitPercentageAmount} = ${newBalance}`);
+        // LOSE: Final balance = Initial balance - amount
+        // Example: Initial 1398.25 → After deduction 1258.45 → After lose stays 1258.45 (initial - amount)
+        // User loses their trade amount
+        newBalance = baseBalance - amount;
+        profitAmount = -amount; // For notification display: -139.80
+        console.log(`❌ LOSE: Initial balance ${baseBalance} - amount ${amount} = ${newBalance}`);
         console.log(`❌ Current balance: ${currentBalance} → New balance: ${newBalance}`);
       }
     } else {
       // FALLBACK: If initial_balance not available (field doesn't exist in DB yet)
       // Calculate initial balance by adding back the deduction
-      baseBalance = currentBalance + profitPercentageAmount;
+      baseBalance = currentBalance + amount;
       console.warn(`⚠️ initial_balance not available, calculating from current balance`);
-      console.warn(`⚠️ Calculated initial balance: ${currentBalance} + ${profitPercentageAmount} = ${baseBalance}`);
+      console.warn(`⚠️ Calculated initial balance: ${currentBalance} + ${amount} = ${baseBalance}`);
 
       if (finalWon) {
-        // WIN: Final balance = Calculated initial balance + profit
-        newBalance = baseBalance + profitPercentageAmount;
+        // WIN: Final balance = Current balance + amount + profit
+        // Return the locked amount + add profit
+        newBalance = currentBalance + amount + profitPercentageAmount;
         profitAmount = profitPercentageAmount;
-        console.log(`✅ WIN (FALLBACK): Calculated initial ${baseBalance} + profit ${profitPercentageAmount} = ${newBalance}`);
+        console.log(`✅ WIN (FALLBACK): Current ${currentBalance} + amount ${amount} + profit ${profitPercentageAmount} = ${newBalance}`);
       } else {
-        // LOSE: Final balance = Calculated initial balance - loss
-        newBalance = baseBalance - profitPercentageAmount;
-        profitAmount = -profitPercentageAmount;
-        console.log(`❌ LOSE (FALLBACK): Calculated initial ${baseBalance} - loss ${profitPercentageAmount} = ${newBalance}`);
+        // LOSE: Final balance = Current balance (amount already deducted)
+        // Amount stays locked/lost
+        newBalance = currentBalance;
+        profitAmount = -amount;
+        console.log(`❌ LOSE (FALLBACK): Current balance stays ${currentBalance} (amount ${amount} already deducted)`);
       }
     }
 
