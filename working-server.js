@@ -26,6 +26,42 @@ console.log(`🚀 SERVER STARTING - VERSION: ${SERVER_VERSION}`);
 // In-memory user sessions cache
 const userSessions = {};
 
+// In-memory trade creation locks to prevent race conditions
+const tradeLocks = new Map(); // userId -> timestamp of last trade creation
+
+// Helper function to check and acquire trade lock
+function acquireTradeLock(userId) {
+  const now = Date.now();
+  const lastLock = tradeLocks.get(userId);
+
+  // If there's a recent lock (within 2 seconds), reject
+  if (lastLock && (now - lastLock) < 2000) {
+    const waitTime = Math.ceil((2000 - (now - lastLock)) / 1000);
+    return {
+      success: false,
+      message: `Please wait ${waitTime} second(s) before creating another trade.`
+    };
+  }
+
+  // Acquire lock
+  tradeLocks.set(userId, now);
+
+  // Auto-release lock after 5 seconds (safety measure)
+  setTimeout(() => {
+    const currentLock = tradeLocks.get(userId);
+    if (currentLock === now) {
+      tradeLocks.delete(userId);
+    }
+  }, 5000);
+
+  return { success: true };
+}
+
+// Helper function to release trade lock
+function releaseTradeLock(userId) {
+  tradeLocks.delete(userId);
+}
+
 // Helper function to get current price from Binance
 async function getCurrentPrice(symbol) {
   try {
@@ -8058,6 +8094,18 @@ app.post('/api/trades', async (req, res) => {
       });
     }
 
+    // CRITICAL: Acquire trade lock to prevent race conditions (spam clicking)
+    const lockResult = acquireTradeLock(finalUserId);
+    if (!lockResult.success) {
+      console.log(`🔒 Trade creation locked for user ${user.username}: ${lockResult.message}`);
+      return res.status(429).json({
+        success: false,
+        message: lockResult.message
+      });
+    }
+
+    console.log(`🔓 Trade lock acquired for user ${user.username}`);
+
     // CRITICAL: Check active trades limit (maximum 3 concurrent trades)
     const allTrades = await getTrades();
     const userActiveTrades = allTrades.filter(t => {
@@ -8075,6 +8123,7 @@ app.post('/api/trades', async (req, res) => {
 
     if (userActiveTrades.length >= MAX_ACTIVE_TRADES) {
       console.log(`❌ TRADE REJECTED: User ${user.username} has ${userActiveTrades.length} active trades (max: ${MAX_ACTIVE_TRADES})`);
+      releaseTradeLock(finalUserId); // Release lock before returning
       return res.status(400).json({
         success: false,
         message: `Maximum ${MAX_ACTIVE_TRADES} active trades allowed. Please wait for current trades to complete.`
@@ -8431,6 +8480,18 @@ app.post('/api/trades/options', async (req, res) => {
 
     console.log(`✅ User found: ${user.username} (ID: ${user.id}, Balance: ${user.balance})`);
 
+    // CRITICAL: Acquire trade lock to prevent race conditions (spam clicking)
+    const lockResult = acquireTradeLock(finalUserId);
+    if (!lockResult.success) {
+      console.log(`🔒 Trade creation locked for user ${user.username}: ${lockResult.message}`);
+      return res.status(429).json({
+        success: false,
+        message: lockResult.message
+      });
+    }
+
+    console.log(`🔓 Trade lock acquired for user ${user.username}`);
+
     // CRITICAL: Check active trades limit (maximum 3 concurrent trades)
     const allTrades = await getTrades();
     const userActiveTrades = allTrades.filter(t => {
@@ -8448,6 +8509,7 @@ app.post('/api/trades/options', async (req, res) => {
 
     if (userActiveTrades.length >= MAX_ACTIVE_TRADES) {
       console.log(`❌ TRADE REJECTED: User ${user.username} has ${userActiveTrades.length} active trades (max: ${MAX_ACTIVE_TRADES})`);
+      releaseTradeLock(finalUserId); // Release lock before returning
       return res.status(400).json({
         success: false,
         message: `Maximum ${MAX_ACTIVE_TRADES} active trades allowed. Please wait for current trades to complete.`
