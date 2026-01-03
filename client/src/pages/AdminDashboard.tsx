@@ -2438,41 +2438,10 @@ export default function WorkingAdminDashboard() {
           <TabsContent value="transactions" className="space-y-6">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-white">Financial Transactions</CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Monitor all financial transactions
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={async () => {
-                      if (!confirm('Fix all pending trade transactions? This will mark them as completed.')) return;
-
-                      try {
-                        const response = await fetch('/api/admin/fix-pending-trade-transactions', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' }
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok) {
-                          alert(`✅ Fixed ${data.summary.updated} pending trade transactions`);
-                          await loadData();
-                        } else {
-                          alert(`❌ Error: ${data.message}`);
-                        }
-                      } catch (error) {
-                        console.error('Error fixing pending transactions:', error);
-                        alert('❌ Failed to fix pending transactions');
-                      }
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Fix Pending Trade Transactions
-                  </Button>
-                </div>
+                <CardTitle className="text-white">Financial Transactions</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Monitor all financial transactions
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {/* Debug Info Panel */}
