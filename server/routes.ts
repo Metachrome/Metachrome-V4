@@ -3704,7 +3704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fix expired pending trades (ADMIN ONLY)
   app.post("/api/admin/fix-expired-trades", requireSessionAdmin, async (req, res) => {
     try {
-      console.log('🔄 Fixing expired pending trades...');
+      console.log('🔄 [FIX-EXPIRED] Starting fix for expired trades...');
 
       // Get all trades
       const allTrades = await storage.getAllTrades();
@@ -3717,7 +3717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new Date(trade.expiresAt) <= now
       );
 
-      console.log(`📊 Found ${expiredTrades.length} expired trades that need completion`);
+      console.log(`📊 [FIX-EXPIRED] Found ${expiredTrades.length} expired trades`);
 
       if (expiredTrades.length === 0) {
         return res.json({
@@ -3734,19 +3734,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let errors = 0;
       const errorDetails: any[] = [];
 
+      // Process trades one by one with delay to avoid overwhelming the system
       for (const trade of expiredTrades) {
         try {
-          console.log(`⏰ Completing expired trade: ${trade.id}`);
+          console.log(`⏰ [FIX-EXPIRED] Processing trade ${trade.id}, expired at ${trade.expiresAt}`);
           await tradingService.executeOptionsTrade(trade.id);
-          completed++;
-          console.log(`✅ Completed trade ${trade.id}`);
+
+          // Verify trade was actually completed
+          const updatedTrade = await storage.getTrade(trade.id);
+          if (updatedTrade?.status === 'completed') {
+            completed++;
+            console.log(`✅ [FIX-EXPIRED] Successfully completed trade ${trade.id}`);
+          } else {
+            errors++;
+            const msg = `Trade status is ${updatedTrade?.status}, expected 'completed'`;
+            console.error(`❌ [FIX-EXPIRED] ${msg}`);
+            errorDetails.push({ tradeId: trade.id, error: msg });
+          }
+
+          // Small delay between trades
+          await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error: any) {
           errors++;
           const errorMsg = error.message || String(error);
-          console.error(`❌ Failed to complete trade ${trade.id}:`, errorMsg);
+          console.error(`❌ [FIX-EXPIRED] Failed to complete trade ${trade.id}:`, errorMsg);
           errorDetails.push({
             tradeId: trade.id,
-            error: errorMsg
+            error: errorMsg,
+            stack: error.stack?.split('\n').slice(0, 3).join('\n')
           });
         }
       }
@@ -3755,20 +3770,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalExpired: expiredTrades.length,
         completed,
         errors,
-        errorDetails: errorDetails.slice(0, 5)
+        errorDetails: errorDetails.slice(0, 10) // Show more errors for debugging
       };
 
-      console.log('✅ Fix completed:', summary);
+      console.log('✅ [FIX-EXPIRED] Fix completed:', summary);
 
       res.json({
-        message: "Expired trades completed",
+        message: errors > 0
+          ? `Completed ${completed}/${expiredTrades.length} trades (${errors} errors)`
+          : "All expired trades completed successfully",
         summary
       });
     } catch (error: any) {
-      console.error("❌ Error fixing expired trades:", error);
+      console.error("❌ [FIX-EXPIRED] Critical error:", error);
       res.status(500).json({
         message: "Failed to fix expired trades",
-        error: error.message
+        error: error.message,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n')
       });
     }
   });

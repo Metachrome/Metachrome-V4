@@ -130,6 +130,7 @@ class TradingService {
     try {
       const trade = await storage.getTrade(tradeId);
       if (!trade || trade.status !== 'active') {
+        console.log(`⏭️ Skipping trade ${tradeId}: ${!trade ? 'not found' : 'status=' + trade.status}`);
         return;
       }
 
@@ -143,16 +144,19 @@ class TradingService {
       const user = await storage.getUser(originalUserId);
       const tradingMode = user?.trading_mode || 'normal';
 
-      console.log(`🎯 Executing trade for user ${trade.userId}`);
-      console.log(`🎯 Original user ID for trading mode: ${originalUserId}`);
-      console.log(`🎯 User object:`, user);
-      console.log(`🎯 Trading mode: ${tradingMode}`);
+      console.log(`🎯 Executing trade ${tradeId} for user ${trade.userId}`);
+      console.log(`🎯 Original user ID: ${originalUserId}, Trading mode: ${tradingMode}`);
 
-      const currentPrice = await priceService.getCurrentPrice(trade.symbol);
+      let currentPrice = await priceService.getCurrentPrice(trade.symbol);
 
+      // FALLBACK: If price service fails, use entry price with small variation
       if (!currentPrice) {
-        console.error(`Cannot execute trade ${tradeId}: No current price available`);
-        return;
+        console.warn(`⚠️ No current price for ${trade.symbol}, using entry price as fallback`);
+        currentPrice = trade.entryPrice || '0';
+        if (currentPrice === '0') {
+          console.error(`❌ Cannot execute trade ${tradeId}: No entry price available`);
+          return;
+        }
       }
 
       let isWin = false;
