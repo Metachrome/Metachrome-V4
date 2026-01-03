@@ -127,10 +127,15 @@ class TradingService {
 
   // Execute an options trade (public method for auto-completion)
   async executeOptionsTrade(tradeId: string): Promise<void> {
+    const shortId = tradeId.slice(0, 8);
     try {
       const trade = await storage.getTrade(tradeId);
-      if (!trade || trade.status !== 'active') {
-        console.log(`⏭️ Skipping trade ${tradeId}: ${!trade ? 'not found' : 'status=' + trade.status}`);
+      if (!trade) {
+        console.log(`⏭️ [${shortId}] Trade not found`);
+        return;
+      }
+      if (trade.status !== 'active') {
+        console.log(`⏭️ [${shortId}] Status=${trade.status}, skipping`);
         return;
       }
 
@@ -151,12 +156,14 @@ class TradingService {
 
       // FALLBACK: If price service fails, use entry price with small variation
       if (!currentPrice) {
-        console.warn(`⚠️ No current price for ${trade.symbol}, using entry price as fallback`);
+        console.warn(`⚠️ [${shortId}] No price for ${trade.symbol}, using entry price`);
         currentPrice = trade.entryPrice || '0';
         if (currentPrice === '0') {
-          console.error(`❌ Cannot execute trade ${tradeId}: No entry price available`);
+          console.error(`❌ [${shortId}] No entry price available`);
           return;
         }
+      } else {
+        console.log(`💰 [${shortId}] ${trade.symbol} price: ${currentPrice}`);
       }
 
       let isWin = false;
@@ -212,40 +219,54 @@ class TradingService {
       const profit = isWin ? profitAmount : -profitAmount;
 
       // Update trade with result field
-      await storage.updateTrade(tradeId, {
-        status: 'completed',
-        result: isWin ? 'win' : 'lose',  // CRITICAL: Add result field for frontend
-        exitPrice,
-        profit: profit.toString(),
-        completedAt: new Date(),
-      });
+      try {
+        await storage.updateTrade(tradeId, {
+          status: 'completed',
+          result: isWin ? 'win' : 'lose',  // CRITICAL: Add result field for frontend
+          exitPrice,
+          profit: profit.toString(),
+          completedAt: new Date(),
+        });
+        console.log(`✅ [${shortId}] Updated to ${isWin ? 'WIN' : 'LOSS'}, profit: ${profit.toFixed(2)}`);
+      } catch (updateError) {
+        console.error(`❌ [${shortId}] Failed to update trade:`, updateError);
+        throw updateError;
+      }
 
       // Update user balance - unlock the locked amount and add/subtract profit
       const userBalance = await storage.getBalance(trade.userId, 'USDT');
-      if (userBalance) {
-        const currentAvailable = parseFloat(userBalance.available || '0');
-        const currentLocked = parseFloat(userBalance.locked || '0');
+      if (!userBalance) {
+        console.error(`❌ [${shortId}] No balance found for user ${trade.userId.slice(0,8)}`);
+        return;
+      }
 
-        // Reduced logging to prevent rate limiting
-        let newAvailable: number;
-        let newLocked: number;
+      const currentAvailable = parseFloat(userBalance.available || '0');
+      const currentLocked = parseFloat(userBalance.locked || '0');
 
-        if (isWin) {
-          // WIN: Unlock tradeAmount from locked back to available, then add ONLY profit
-          newAvailable = currentAvailable + tradeAmount + profitAmount;
-          newLocked = currentLocked - tradeAmount;
-        } else {
-          // LOSE: Unlock tradeAmount from locked, but deduct loss from available
-          newAvailable = currentAvailable + tradeAmount - profitAmount;
-          newLocked = currentLocked - tradeAmount;
-        }
+      let newAvailable: number;
+      let newLocked: number;
 
+      if (isWin) {
+        // WIN: Unlock tradeAmount from locked back to available, then add ONLY profit
+        newAvailable = currentAvailable + tradeAmount + profitAmount;
+        newLocked = currentLocked - tradeAmount;
+      } else {
+        // LOSE: Unlock tradeAmount from locked, but deduct loss from available
+        newAvailable = currentAvailable + tradeAmount - profitAmount;
+        newLocked = currentLocked - tradeAmount;
+      }
+
+      try {
         await storage.updateBalance(
           trade.userId,
           'USDT',
           Math.max(0, newAvailable).toString(),
           Math.max(0, newLocked).toString()
         );
+        console.log(`💵 [${shortId}] Balance: ${currentAvailable.toFixed(2)} → ${newAvailable.toFixed(2)}`);
+      } catch (balanceError) {
+        console.error(`❌ [${shortId}] Failed to update balance:`, balanceError);
+        throw balanceError;
       }
 
       // Create transaction record for trade result
@@ -265,8 +286,11 @@ class TradingService {
       } catch (txError) {
         console.error(`❌ Failed to create transaction for trade ${tradeId.slice(0,8)}:`, txError);
       }
-    } catch (error) {
-      console.error(`Error executing trade ${tradeId}:`, error);
+    } catch (error: any) {
+      const shortId = tradeId.slice(0, 8);
+      console.error(`❌ [${shortId}] Execute failed:`, error.message || error);
+      console.error(`❌ [${shortId}] Stack:`, error.stack?.split('\n').slice(0, 3).join('\n'));
+      throw error; // Re-throw to let caller handle it
     }
   }
 
