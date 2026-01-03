@@ -1,4 +1,5 @@
-// Build v2.1 - Removed Fix Pending Trade Transactions button
+// Build v2.2 - FIX DEPLOYED 2026-01-03T01:15:00Z - Removed Fix Pending Trade Transactions button from Transactions tab
+// IMPORTANT: The button should ONLY exist in the Trades tab as "Fix Expired Trades"
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
