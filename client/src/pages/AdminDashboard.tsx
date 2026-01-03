@@ -1,5 +1,7 @@
-// Build v2.2 - FIX DEPLOYED 2026-01-03T01:15:00Z - Removed Fix Pending Trade Transactions button from Transactions tab
-// IMPORTANT: The button should ONLY exist in the Trades tab as "Fix Expired Trades"
+// Build v3.0 - 2026-01-03T02:05:00Z
+// REMOVED: Fix Pending Trade Transactions button from Transactions tab
+// REMOVED: Debug Info panel from Transactions tab
+// KEPT: Fix Expired Trades button in Trades tab only
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -2436,7 +2438,7 @@ export default function WorkingAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Transactions Tab */}
+          {/* Transactions Tab - NO BUTTON HERE - Build v3.0 2026-01-03 */}
           <TabsContent value="transactions" className="space-y-6">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
@@ -2446,37 +2448,6 @@ export default function WorkingAdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Debug Info Panel */}
-                <div className="bg-gray-800 border border-yellow-500 rounded-lg p-4 mb-4">
-                  <h4 className="text-yellow-400 font-semibold mb-2">🐛 Debug Info</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-sm text-gray-300 space-y-1">
-                      <div className="font-semibold text-yellow-400 mb-1">Transactions</div>
-                      <div>React State Count: <span className="text-white font-mono">{transactions.length}</span></div>
-                      <div>First 3 IDs: <span className="text-white font-mono text-xs">
-                        {transactions.slice(0, 3).map(t => t.id.slice(0, 8)).join(', ')}
-                      </span></div>
-                      <div>Last Updated: <span className="text-white font-mono">{new Date().toLocaleTimeString()}</span></div>
-                      <div>Pending Trade Txns: <span className="text-white font-mono">
-                        {transactions.filter(t => (t.type === 'trade_win' || t.type === 'trade_loss') && t.status === 'pending').length}
-                      </span></div>
-                    </div>
-                    <div className="text-sm text-gray-300 space-y-1">
-                      <div className="font-semibold text-yellow-400 mb-1">Trades</div>
-                      <div>Total Trades: <span className="text-white font-mono">{trades.length}</span></div>
-                      <div>Active Trades: <span className="text-white font-mono">
-                        {trades.filter(t => t.status === 'active').length}
-                      </span></div>
-                      <div>Expired Pending: <span className="text-red-400 font-mono font-bold">
-                        {trades.filter(t => t.status === 'active' && t.expires_at && new Date(t.expires_at) <= new Date()).length}
-                      </span></div>
-                      <div className="text-xs text-gray-400 italic">
-                        ⚠️ Expired trades should be completed
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="border border-gray-700 rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
