@@ -4368,27 +4368,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start real-time price updates
       priceService.startPriceUpdates();
 
-      // ✅ START PERIODIC CHECK FOR EXPIRED TRADES (every 10 seconds)
+      // ✅ START PERIODIC CHECK FOR EXPIRED TRADES (every 5 seconds - more aggressive)
       setInterval(async () => {
         try {
           const allTrades = await storage.getAllTrades();
           const now = new Date();
+          let expiredCount = 0;
 
           for (const trade of allTrades) {
             if (trade.status === 'active' && trade.expiresAt && new Date(trade.expiresAt) <= now) {
-              console.log(`⏰ Periodic check: Found expired trade ${trade.id}`);
+              expiredCount++;
+              console.log(`⏰ [PERIODIC] Found expired trade ${trade.id}, expires: ${trade.expiresAt}`);
               try {
                 await tradingService.executeOptionsTrade(trade.id);
-                console.log(`✅ Periodic check: Completed expired trade ${trade.id}`);
-              } catch (error) {
-                console.error(`❌ Periodic check: Failed to complete trade ${trade.id}:`, error);
+                console.log(`✅ [PERIODIC] Completed expired trade ${trade.id}`);
+              } catch (error: any) {
+                console.error(`❌ [PERIODIC] Failed to complete trade ${trade.id}:`, error.message || error);
               }
             }
           }
+
+          // Only log if there were expired trades
+          if (expiredCount > 0) {
+            console.log(`📊 [PERIODIC] Processed ${expiredCount} expired trades`);
+          }
         } catch (error) {
-          console.error('❌ Error in periodic expired trades check:', error);
+          console.error('❌ [PERIODIC] Error in expired trades check:', error);
         }
-      }, 10000); // Check every 10 seconds
+      }, 5000); // Check every 5 seconds for faster resolution
 
     } catch (error) {
       console.error('❌ Error checking/seeding demo data:', error);
