@@ -144,8 +144,8 @@ class TradingService {
       const user = await storage.getUser(originalUserId);
       const tradingMode = user?.trading_mode || 'normal';
 
-      console.log(`🎯 Executing trade ${tradeId} for user ${trade.userId}`);
-      console.log(`🎯 Original user ID: ${originalUserId}, Trading mode: ${tradingMode}`);
+      // Reduced logging to prevent rate limiting
+      // console.log(`🎯 Executing trade ${tradeId} for user ${trade.userId}`);
 
       let currentPrice = await priceService.getCurrentPrice(trade.symbol);
 
@@ -205,22 +205,11 @@ class TradingService {
       const setting = optionsSettings.find(s => s.duration === trade.duration);
       const profitPercentage = setting ? parseFloat(setting.profitPercentage) : 10;
 
-      console.log(`🚨🚨🚨 [TRADING SERVICE] PROFIT CALCULATION:`, {
-        tradeAmount,
-        duration: trade.duration,
-        profitPercentage,
-        setting: setting ? { duration: setting.duration, profitPercentage: setting.profitPercentage } : 'NOT FOUND',
-        isWin
-      });
+      // Reduced logging to prevent rate limiting
+      // console.log(`[TRADING] Profit calc: ${tradeAmount} * ${profitPercentage}% = ${profitAmount}`);
 
       const profitAmount = tradeAmount * (profitPercentage / 100);
       const profit = isWin ? profitAmount : -profitAmount;
-
-      console.log(`🚨🚨🚨 [TRADING SERVICE] CALCULATED PROFIT:`, {
-        profitAmount,
-        profit,
-        calculation: `${tradeAmount} * (${profitPercentage} / 100) = ${profitAmount}`
-      });
 
       // Update trade with result field
       await storage.updateTrade(tradeId, {
@@ -237,58 +226,19 @@ class TradingService {
         const currentAvailable = parseFloat(userBalance.available || '0');
         const currentLocked = parseFloat(userBalance.locked || '0');
 
-        console.log(`🚨🚨🚨 [TRADING SERVICE] BEFORE Balance update:`, {
-          currentAvailable,
-          currentLocked,
-          total: currentAvailable + currentLocked,
-          tradeAmount,
-          profitAmount,
-          profit,
-          isWin
-        });
-
+        // Reduced logging to prevent rate limiting
         let newAvailable: number;
         let newLocked: number;
 
         if (isWin) {
           // WIN: Unlock tradeAmount from locked back to available, then add ONLY profit
-          // Step 1: Unlock the trade amount (return from locked to available)
-          // Step 2: Add profit to available
-          // Formula: available + tradeAmount (unlock) + profitAmount (profit ONLY)
           newAvailable = currentAvailable + tradeAmount + profitAmount;
           newLocked = currentLocked - tradeAmount;
-
-          console.log(`🚨🚨🚨 [TRADING SERVICE] WIN Calculation:`, {
-            step1_unlock: `${currentAvailable} (current) + ${tradeAmount} (unlock) = ${currentAvailable + tradeAmount}`,
-            step2_profit: `${currentAvailable + tradeAmount} + ${profitAmount} (profit) = ${newAvailable}`,
-            finalFormula: `${currentAvailable} + ${tradeAmount} + ${profitAmount} = ${newAvailable}`,
-            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked}`,
-            netChange: `+${profitAmount} (profit only)`
-          });
         } else {
           // LOSE: Unlock tradeAmount from locked, but deduct loss from available
-          // Step 1: Unlock the trade amount (return from locked to available)
-          // Step 2: Deduct loss from available
-          // Formula: available + tradeAmount (unlock) - profitAmount (loss)
           newAvailable = currentAvailable + tradeAmount - profitAmount;
           newLocked = currentLocked - tradeAmount;
-
-          console.log(`🚨🚨🚨 [TRADING SERVICE] LOSE Calculation:`, {
-            step1_unlock: `${currentAvailable} (current) + ${tradeAmount} (unlock) = ${currentAvailable + tradeAmount}`,
-            step2_loss: `${currentAvailable + tradeAmount} - ${profitAmount} (loss) = ${newAvailable}`,
-            finalFormula: `${currentAvailable} + ${tradeAmount} - ${profitAmount} = ${newAvailable}`,
-            lockedFormula: `${currentLocked} - ${tradeAmount} = ${newLocked}`,
-            netChange: `-${profitAmount} (loss only)`
-          });
         }
-
-        console.log(`🚨🚨🚨 [TRADING SERVICE] AFTER Balance update:`, {
-          newAvailable,
-          newLocked,
-          total: newAvailable + newLocked,
-          totalChange: (newAvailable + newLocked) - (currentAvailable + currentLocked),
-          expectedChange: isWin ? `+${profitAmount}` : `-${profitAmount}`
-        });
 
         await storage.updateBalance(
           trade.userId,
@@ -303,15 +253,6 @@ class TradingService {
         const transactionType = isWin ? 'trade_win' : 'trade_loss';
         const transactionAmount = profit.toFixed(8); // Ensure 8 decimal places
 
-        console.log(`📝 Creating transaction for trade ${tradeId}:`, {
-          userId: trade.userId,
-          type: transactionType,
-          amount: transactionAmount,
-          profit: profit,
-          isWin: isWin,
-          symbol: trade.symbol
-        });
-
         await storage.createTransaction({
           userId: trade.userId,
           type: transactionType as any,
@@ -321,13 +262,9 @@ class TradingService {
           description: `${isWin ? 'Win' : 'Loss'} on ${trade.symbol} trade`,
           referenceId: tradeId
         });
-
-        console.log(`✅ Transaction created successfully for trade ${tradeId}`);
       } catch (txError) {
-        console.error(`❌ Failed to create transaction for trade ${tradeId}:`, txError);
+        console.error(`❌ Failed to create transaction for trade ${tradeId.slice(0,8)}:`, txError);
       }
-
-      console.log(`Trade ${tradeId} executed: ${isWin ? 'WIN' : 'LOSS'}, Profit: $${profit.toFixed(2)}`);
     } catch (error) {
       console.error(`Error executing trade ${tradeId}:`, error);
     }

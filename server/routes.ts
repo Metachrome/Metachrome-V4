@@ -4386,34 +4386,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start real-time price updates
       priceService.startPriceUpdates();
 
-      // ✅ START PERIODIC CHECK FOR EXPIRED TRADES (every 5 seconds - more aggressive)
+      // ✅ START PERIODIC CHECK FOR EXPIRED TRADES (every 5 seconds - reduced logging)
       setInterval(async () => {
         try {
           const allTrades = await storage.getAllTrades();
           const now = new Date();
           let expiredCount = 0;
+          let completedCount = 0;
+          let errorCount = 0;
 
           for (const trade of allTrades) {
             if (trade.status === 'active' && trade.expiresAt && new Date(trade.expiresAt) <= now) {
               expiredCount++;
-              console.log(`⏰ [PERIODIC] Found expired trade ${trade.id}, expires: ${trade.expiresAt}`);
               try {
                 await tradingService.executeOptionsTrade(trade.id);
-                console.log(`✅ [PERIODIC] Completed expired trade ${trade.id}`);
+                completedCount++;
               } catch (error: any) {
-                console.error(`❌ [PERIODIC] Failed to complete trade ${trade.id}:`, error.message || error);
+                errorCount++;
+                // Only log errors, not every trade
+                console.error(`❌ [PERIODIC] Failed trade ${trade.id.slice(0,8)}:`, error.message);
               }
             }
           }
 
-          // Only log if there were expired trades
+          // Only log summary if there were expired trades
           if (expiredCount > 0) {
-            console.log(`📊 [PERIODIC] Processed ${expiredCount} expired trades`);
+            console.log(`📊 [PERIODIC] ${completedCount}/${expiredCount} trades completed${errorCount > 0 ? `, ${errorCount} errors` : ''}`);
           }
         } catch (error) {
-          console.error('❌ [PERIODIC] Error in expired trades check:', error);
+          console.error('❌ [PERIODIC] Check error:', error);
         }
-      }, 5000); // Check every 5 seconds for faster resolution
+      }, 5000); // Check every 5 seconds
 
     } catch (error) {
       console.error('❌ Error checking/seeding demo data:', error);
