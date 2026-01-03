@@ -1,0 +1,282 @@
+import React from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { TrendingUp, Search, Filter, Eye, Settings, DollarSign, Target, Activity, BarChart3, ArrowUp, ArrowDown, CheckCircle, XCircle } from 'lucide-react';
+export default function EnhancedTradingDashboard(_a) {
+    var trades = _a.trades, tradingSettings = _a.tradingSettings, searchTerm = _a.searchTerm, statusFilter = _a.statusFilter, onSearchChange = _a.onSearchChange, onStatusFilterChange = _a.onStatusFilterChange, onTradeView = _a.onTradeView, onTradingSettingsUpdate = _a.onTradingSettingsUpdate, onManualTradeControl = _a.onManualTradeControl, isSuperAdmin = _a.isSuperAdmin, _b = _a.isLoading, isLoading = _b === void 0 ? false : _b;
+    var getResultBadge = function (result) {
+        if (!result)
+            return <Badge variant="outline">Unknown</Badge>;
+        var variants = {
+            win: 'bg-green-600',
+            lose: 'bg-red-600',
+            pending: 'bg-yellow-600'
+        };
+        return (<Badge className={"".concat(variants[result], " text-white")}>
+        {result.toUpperCase()}
+      </Badge>);
+    };
+    var getDirectionIcon = function (direction) {
+        return direction === 'up' ? (<ArrowUp className="w-4 h-4 text-green-500"/>) : (<ArrowDown className="w-4 h-4 text-red-500"/>);
+    };
+    var getTimeRemaining = function (expiresAt) {
+        var now = new Date().getTime();
+        var expiry = new Date(expiresAt).getTime();
+        var remaining = Math.max(0, expiry - now);
+        if (remaining === 0)
+            return 'Expired';
+        var seconds = Math.floor(remaining / 1000);
+        var minutes = Math.floor(seconds / 60);
+        if (minutes > 0) {
+            return "".concat(minutes, "m ").concat(seconds % 60, "s");
+        }
+        return "".concat(seconds, "s");
+    };
+    var activeTrades = trades.filter(function (t) { return t.result === 'pending'; });
+    var completedTrades = trades.filter(function (t) { return t.result !== 'pending'; });
+    var winningTrades = completedTrades.filter(function (t) { return t.result === 'win'; });
+    var totalVolume = trades.reduce(function (sum, t) { return sum + parseFloat(String(t.amount || 0)); }, 0);
+    var totalProfit = completedTrades.reduce(function (sum, t) { return sum + parseFloat(String(t.profit || 0)); }, 0);
+    return (<div className="space-y-6">
+      {/* Trading Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-700 border-blue-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Active Trades</p>
+                <p className="text-3xl font-bold text-white">{activeTrades.length}</p>
+              </div>
+              <Activity className="w-8 h-8 text-blue-200"/>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-600 to-green-700 border-green-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">Win Rate</p>
+                <p className="text-3xl font-bold text-white">
+                  {completedTrades.length > 0 ?
+            ((winningTrades.length / completedTrades.length) * 100).toFixed(1) : 0}%
+                </p>
+              </div>
+              <Target className="w-8 h-8 text-green-200"/>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-600 to-purple-700 border-purple-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm">Total Volume</p>
+                <p className="text-3xl font-bold text-white">{totalVolume.toLocaleString()} USDT</p>
+              </div>
+              <BarChart3 className="w-8 h-8 text-purple-200"/>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-600 to-orange-700 border-orange-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm">Total P&L</p>
+                <p className={"text-3xl font-bold ".concat(totalProfit >= 0 ? 'text-white' : 'text-red-200')}>
+                  {totalProfit.toLocaleString()} USDT
+                </p>
+              </div>
+              <DollarSign className="w-8 h-8 text-orange-200"/>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Trading Settings */}
+      {isSuperAdmin && (<Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center space-x-2">
+              <Settings className="w-5 h-5"/>
+              <span>Trading Settings</span>
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Configure duration-based trading parameters
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {tradingSettings.map(function (setting) { return (<div key={setting.id} className="bg-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-white font-medium">{setting.duration} Second Trading</h3>
+                    <Badge variant={setting.enabled ? 'default' : 'secondary'}>
+                      {setting.enabled ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Min Amount:</span>
+                      <span className="text-white">{setting.min_amount} USDT</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Max Amount:</span>
+                      <span className="text-white">{setting.max_amount ? "".concat(setting.max_amount, " USDT") : 'Unlimited'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Profit %:</span>
+                      <span className="text-white">{setting.profit_percentage}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Risk Multiplier:</span>
+                      <span className="text-white">{setting.risk_multiplier || 1}x</span>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="w-full mt-4" onClick={function () { return onTradingSettingsUpdate(setting); }}>
+                    Configure
+                  </Button>
+                </div>); })}
+            </div>
+          </CardContent>
+        </Card>)}
+
+      {/* Active Trades Monitor */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-white flex items-center space-x-2">
+                <TrendingUp className="w-5 h-5"/>
+                <span>Live Trading Monitor</span>
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Real-time active trades and manual controls
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-gray-400">Live</span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Search and Filter */}
+          <div className="flex items-center space-x-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4"/>
+              <Input placeholder="Search trades by symbol or user..." value={searchTerm} onChange={function (e) { return onSearchChange(e.target.value); }} className="pl-10 bg-gray-700 border-gray-600 text-white"/>
+            </div>
+            <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+              <SelectTrigger className="w-48 bg-gray-700 border-gray-600">
+                <Filter className="w-4 h-4 mr-2"/>
+                <SelectValue placeholder="Filter by status"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Trades</SelectItem>
+                <SelectItem value="pending">Active</SelectItem>
+                <SelectItem value="win">Won</SelectItem>
+                <SelectItem value="lose">Lost</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Trades Table */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-700">
+                  <TableHead className="text-gray-300">Trade</TableHead>
+                  <TableHead className="text-gray-300">User</TableHead>
+                  <TableHead className="text-gray-300">Symbol</TableHead>
+                  <TableHead className="text-gray-300">Direction</TableHead>
+                  <TableHead className="text-gray-300">Amount</TableHead>
+                  <TableHead className="text-gray-300">Entry Price</TableHead>
+                  <TableHead className="text-gray-300">Duration</TableHead>
+                  <TableHead className="text-gray-300">Status</TableHead>
+                  <TableHead className="text-gray-300">P&L</TableHead>
+                  <TableHead className="text-gray-300">Control</TableHead>
+                  <TableHead className="text-gray-300">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {trades.slice(0, 20).map(function (trade) {
+            var _a, _b;
+            return (<TableRow key={trade.id} className="border-gray-700 hover:bg-gray-700/50">
+                    <TableCell>
+                      <div className="text-white font-mono text-sm">
+                        {trade.id.slice(0, 8)}...
+                      </div>
+                      <div className="text-gray-400 text-xs">
+                        {new Date(trade.created_at).toLocaleTimeString()}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-white">{((_a = trade.users) === null || _a === void 0 ? void 0 : _a.username) || 'Unknown'}</div>
+                      <div className="text-gray-400 text-sm">{trade.deviceType}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-white font-medium">{trade.symbol}</div>
+                      <div className="text-gray-400 text-sm">{trade.type}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        {getDirectionIcon(trade.direction)}
+                        <span className="text-white">{trade.direction === 'up' ? 'BUY' : 'SELL'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-white">{trade.amount} USDT</div>
+                      {trade.leverage && (<div className="text-gray-400 text-sm">{trade.leverage}x leverage</div>)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-white font-mono">{trade.entry_price} USDT</div>
+                      {trade.exit_price && (<div className="text-gray-400 text-sm font-mono">{trade.exit_price} USDT</div>)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-white">{trade.duration}s</div>
+                      {trade.result === 'pending' && (<div className="text-yellow-400 text-sm">
+                          {getTimeRemaining(trade.expires_at)}
+                        </div>)}
+                    </TableCell>
+                    <TableCell>{getResultBadge(trade.result)}</TableCell>
+                    <TableCell>
+                      <div className={"text-sm font-medium ".concat(parseFloat(String(trade.profit || 0)) >= 0 ? 'text-green-400' : 'text-red-400')}>
+                        {parseFloat(String(trade.profit || 0)).toFixed(2)} USDT
+                      </div>
+                      {trade.pnlPercentage && (<div className="text-gray-400 text-xs">
+                          {trade.pnlPercentage.toFixed(2)}%
+                        </div>)}
+                    </TableCell>
+                    <TableCell>
+                      {trade.adminControlled ? (<Badge className="bg-purple-600 text-white">
+                          {(_b = trade.controlType) === null || _b === void 0 ? void 0 : _b.toUpperCase()}
+                        </Badge>) : (<Badge variant="outline">Auto</Badge>)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Button variant="ghost" size="sm" onClick={function () { return onTradeView(trade); }} className="text-gray-400 hover:text-white">
+                          <Eye className="w-4 h-4"/>
+                        </Button>
+                        {isSuperAdmin && trade.result === 'pending' && (<>
+                            <Button variant="ghost" size="sm" onClick={function () { return onManualTradeControl(trade.id, 'win'); }} className="text-green-400 hover:text-green-300">
+                              <CheckCircle className="w-4 h-4"/>
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={function () { return onManualTradeControl(trade.id, 'lose'); }} className="text-red-400 hover:text-red-300">
+                              <XCircle className="w-4 h-4"/>
+                            </Button>
+                          </>)}
+                      </div>
+                    </TableCell>
+                  </TableRow>);
+        })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>);
+}

@@ -1,0 +1,227 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "../../hooks/useAuth";
+var navItems = [
+    {
+        path: "/",
+        label: "Home",
+        normalIcon: "/Homeiconbar-normal.png?v=5",
+        activeIcon: "/iconbar_Home-active.png?v=5"
+    },
+    {
+        path: "/market",
+        label: "Market",
+        normalIcon: "/iconbar_Market-normal.png?v=5",
+        activeIcon: "/iconbar_Market-active.png?v=5"
+    },
+    {
+        path: "/trade",
+        label: "Trade",
+        normalIcon: "/iconbar_Trade-normal.png?v=5",
+        activeIcon: "/iconbar_Trade-active.png?v=5"
+    },
+    {
+        path: "/wallet",
+        label: "Wallet",
+        normalIcon: "/iconbar_Wallet-normal.png?v=5",
+        activeIcon: "/iconbar_Wallet-active.png?v=5"
+    },
+    {
+        path: "/support",
+        label: "Support",
+        normalIcon: "/iconbar_Support-normal.png?v=5",
+        activeIcon: "/iconbar_Support-active.png?v=5"
+    }
+];
+// Fallback emoji icons if images fail to load
+var getEmojiIcon = function (path) {
+    switch (path) {
+        case "/": return "🏠";
+        case "/market": return "📈";
+        case "/trade": return "💱";
+        case "/wallet": return "💰";
+        case "/support": return "❓";
+        default: return "📱";
+    }
+};
+export function MobileBottomNav() {
+    var _a = useLocation(), location = _a[0], setLocation = _a[1];
+    var _b = useState(false), showTradeMenu = _b[0], setShowTradeMenu = _b[1];
+    var _c = useState(false), isVisible = _c[0], setIsVisible = _c[1];
+    var _d = useState(null), hoveredItem = _d[0], setHoveredItem = _d[1];
+    var _e = useAuth(), user = _e.user, isAuthenticated = _e.isAuthenticated;
+    // Lock body scroll when trade menu is open
+    useEffect(function () {
+        if (showTradeMenu) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+        }
+        else {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+        // Cleanup on unmount
+        return function () {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        };
+    }, [showTradeMenu]);
+    // Check if we should show the navigation based on screen size
+    useEffect(function () {
+        var checkScreenSize = function () {
+            if (typeof window !== 'undefined') {
+                var width = window.innerWidth;
+                setIsVisible(width < 1024); // Show on screens smaller than 1024px
+            }
+        };
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        return function () { return window.removeEventListener('resize', checkScreenSize); };
+    }, []);
+    // Don't render if not visible
+    if (!isVisible) {
+        return null;
+    }
+    var isActive = function (path) {
+        if (path === "/") {
+            return location === "/";
+        }
+        return location.startsWith(path);
+    };
+    var handleNavClick = function (path) {
+        if (path === "/trade") {
+            setShowTradeMenu(!showTradeMenu);
+        }
+        else {
+            setShowTradeMenu(false);
+            // Scroll to top when navigating to a new page
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setLocation(path);
+        }
+    };
+    var handleTradeOptionClick = function (tradePath) {
+        setShowTradeMenu(false);
+        // Scroll to top when navigating to a new page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setLocation(tradePath);
+    };
+    return (<>
+      {/* Trade Menu Overlay */}
+      {showTradeMenu && (<div className="fixed inset-0 z-[9998] bg-black/70 backdrop-blur-sm overflow-hidden" onClick={function () { return setShowTradeMenu(false); }} style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                zIndex: 9998
+            }}>
+          <div className="fixed bottom-20 left-0 right-0 bg-[#1A1B3A] border-t border-gray-700/50" onClick={function (e) { return e.stopPropagation(); }}>
+            <div className="py-4 px-4">
+              <div className="space-y-3">
+                {/* SPOT Trading Option - Mobile Bottom Nav */}
+                <button onClick={function () { return handleTradeOptionClick("/trade/spot"); }} className="w-full relative p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 rounded-lg cursor-pointer transition-all duration-300 transform hover:scale-105">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 text-left">
+                      <h3 className="text-base font-bold text-black mb-1">SPOT</h3>
+                      <p className="text-xs text-black/80 leading-tight">
+                        Buy and sell crypto instantly at<br />
+                        real-time market prices.
+                      </p>
+                    </div>
+                    <div className="ml-3 flex-shrink-0">
+                      <img src="/asset/trade-spot_icon.png" alt="Spot Trading" className="w-10 h-10 object-contain"/>
+                    </div>
+                  </div>
+                </button>
+
+                {/* OPTION Trading Option - Mobile Bottom Nav */}
+                <button onClick={function () { return handleTradeOptionClick("/trade/options"); }} className="w-full relative p-3 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 rounded-lg cursor-pointer transition-all duration-300 transform hover:scale-105">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 text-left">
+                      <h3 className="text-base font-bold text-black mb-1">OPTION</h3>
+                      <p className="text-xs text-black/80 leading-tight">
+                        Maximize gains by predicting<br />
+                        market moves in seconds.
+                      </p>
+                    </div>
+                    <div className="ml-3 flex-shrink-0">
+                      <img src="/asset/trade-option_icon.png" alt="Options Trading" className="w-10 h-10 object-contain"/>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>)}
+
+      {/* Bottom Navigation - ALWAYS VISIBLE */}
+      <div className="mobile-bottom-nav" style={{
+            position: 'fixed',
+            bottom: '0px',
+            left: '0px',
+            right: '0px',
+            zIndex: 99999,
+            backgroundColor: '#1A1B3A',
+            borderTop: '2px solid #4F46E5',
+            height: '80px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            padding: '0 8px', // Reduced padding for smaller screens
+            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)',
+            maxWidth: '100vw', // Ensure it doesn't exceed viewport width
+            overflow: 'hidden' // Prevent any overflow
+        }}>
+        {navItems.map(function (item) {
+            var active = isActive(item.path);
+            var isHovered = hoveredItem === item.path;
+            var shouldShowActive = active || isHovered;
+            return (<button key={item.path} onClick={function () { return handleNavClick(item.path); }} onMouseEnter={function () { return setHoveredItem(item.path); }} onMouseLeave={function () { return setHoveredItem(null); }} onTouchStart={function () { return setHoveredItem(item.path); }} onTouchEnd={function () { return setHoveredItem(null); }} style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '6px 4px',
+                    flex: '1',
+                    maxWidth: '20%',
+                    minWidth: '0',
+                    backgroundColor: active ? 'rgba(79, 70, 229, 0.2)' : isHovered ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+                    gap: '4px'
+                }}>
+              <div className="nav-icon" style={{
+                    width: '52.416px', // 58.24px * 0.9 = 52.416px (10% decrease)
+                    height: '52.416px', // 58.24px * 0.9 = 52.416px (10% decrease)
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                <img src={shouldShowActive ? item.activeIcon : item.normalIcon} alt={"".concat(item.label, " icon")} style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    transition: 'all 0.2s ease'
+                }} onError={function (e) {
+                    // Fallback to emoji if image fails to load
+                    var target = e.currentTarget;
+                    target.style.display = 'none';
+                    var parent = target.parentElement;
+                    if (parent) {
+                        parent.innerHTML = getEmojiIcon(item.path);
+                        parent.style.fontSize = '39.312px'; // 43.68px * 0.9 = 39.312px
+                    }
+                }}/>
+              </div>
+            </button>);
+        })}
+      </div>
+    </>);
+}

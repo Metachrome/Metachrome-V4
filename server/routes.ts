@@ -3701,6 +3701,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fix expired pending trades (ADMIN ONLY)
+  app.post("/api/admin/fix-expired-trades", requireSessionAdmin, async (req, res) => {
+    try {
+      console.log('🔄 Fixing expired pending trades...');
+
+      // Get all trades
+      const allTrades = await storage.getAllTrades();
+      const now = new Date();
+
+      // Find trades that are expired but not completed
+      const expiredTrades = allTrades.filter(trade =>
+        trade.status === 'active' &&
+        trade.expiresAt &&
+        new Date(trade.expiresAt) <= now
+      );
+
+      console.log(`📊 Found ${expiredTrades.length} expired trades that need completion`);
+
+      if (expiredTrades.length === 0) {
+        return res.json({
+          message: "No expired trades found",
+          summary: {
+            totalExpired: 0,
+            completed: 0,
+            errors: 0
+          }
+        });
+      }
+
+      let completed = 0;
+      let errors = 0;
+      const errorDetails: any[] = [];
+
+      for (const trade of expiredTrades) {
+        try {
+          console.log(`⏰ Completing expired trade: ${trade.id}`);
+          await tradingService.executeOptionsTrade(trade.id);
+          completed++;
+          console.log(`✅ Completed trade ${trade.id}`);
+        } catch (error: any) {
+          errors++;
+          const errorMsg = error.message || String(error);
+          console.error(`❌ Failed to complete trade ${trade.id}:`, errorMsg);
+          errorDetails.push({
+            tradeId: trade.id,
+            error: errorMsg
+          });
+        }
+      }
+
+      const summary = {
+        totalExpired: expiredTrades.length,
+        completed,
+        errors,
+        errorDetails: errorDetails.slice(0, 5)
+      };
+
+      console.log('✅ Fix completed:', summary);
+
+      res.json({
+        message: "Expired trades completed",
+        summary
+      });
+    } catch (error: any) {
+      console.error("❌ Error fixing expired trades:", error);
+      res.status(500).json({
+        message: "Failed to fix expired trades",
+        error: error.message
+      });
+    }
+  });
+
+  // Fix pending trade transactions (ADMIN ONLY)
+  app.post("/api/admin/fix-pending-trade-transactions", requireSessionAdmin, async (req, res) => {
+    try {
+      console.log('🔄 Fixing pending trade transactions...');
+
+      // Get all pending trade transactions
+      const allTransactions = await storage.getAllTransactions();
+      const pendingTradeTransactions = allTransactions.filter(tx =>
+        (tx.type === 'trade_win' || tx.type === 'trade_loss') &&
+        tx.status === 'pending'
+      );
+
+      console.log(`📊 Found ${pendingTradeTransactions.length} pending trade transactions`);
+
+      if (pendingTradeTransactions.length === 0) {
+        return res.json({
+          message: "No pending trade transactions found",
+          summary: {
+            totalPending: 0,
+            updated: 0
+          }
+        });
+      }
+
+      let updated = 0;
+      let errors = 0;
+      const errorDetails: any[] = [];
+
+      for (const tx of pendingTradeTransactions) {
+        try {
+          await storage.updateTransaction(tx.id, {
+            status: 'completed'
+          });
+          updated++;
+          console.log(`✅ Updated transaction ${tx.id} to completed`);
+        } catch (error: any) {
+          errors++;
+          const errorMsg = error.message || String(error);
+          console.error(`❌ Failed to update transaction ${tx.id}:`, errorMsg);
+          errorDetails.push({
+            transactionId: tx.id,
+            error: errorMsg
+          });
+        }
+      }
+
+      const summary = {
+        totalPending: pendingTradeTransactions.length,
+        updated,
+        errors,
+        errorDetails: errorDetails.slice(0, 5)
+      };
+
+      console.log('✅ Fix completed:', summary);
+
+      res.json({
+        message: "Pending trade transactions fixed",
+        summary
+      });
+    } catch (error: any) {
+      console.error("❌ Error fixing pending trade transactions:", error);
+      res.status(500).json({
+        message: "Failed to fix pending trade transactions",
+        error: error.message
+      });
+    }
+  });
+
   // Backfill missing transactions from completed trades (ADMIN ONLY)
   app.post("/api/admin/backfill-transactions", requireSessionAdmin, async (req, res) => {
     try {

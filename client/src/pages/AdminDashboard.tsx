@@ -2290,9 +2290,37 @@ export default function WorkingAdminDashboard() {
                       Real-time trading activity with manual controls
                     </CardDescription>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-gray-400">Live</span>
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      onClick={async () => {
+                        if (!confirm('Fix all expired trades that are still pending?')) return;
+                        try {
+                          const response = await fetch('/api/admin/fix-expired-trades', {
+                            method: 'POST',
+                            credentials: 'include'
+                          });
+                          const data = await response.json();
+                          if (response.ok) {
+                            alert(`✅ Fixed ${data.summary.completed} expired trades`);
+                            fetchTrades();
+                          } else {
+                            alert(`❌ Error: ${data.message}`);
+                          }
+                        } catch (error) {
+                          alert('❌ Failed to fix expired trades');
+                          console.error(error);
+                        }
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-500"
+                    >
+                      Fix Expired Trades
+                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-gray-400">Live</span>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -2410,21 +2438,71 @@ export default function WorkingAdminDashboard() {
           <TabsContent value="transactions" className="space-y-6">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-white">Financial Transactions</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Monitor all financial transactions
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-white">Financial Transactions</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Monitor all financial transactions
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      if (!confirm('Fix all pending trade transactions? This will mark them as completed.')) return;
+
+                      try {
+                        const response = await fetch('/api/admin/fix-pending-trade-transactions', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' }
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                          alert(`✅ Fixed ${data.summary.updated} pending trade transactions`);
+                          await loadData();
+                        } else {
+                          alert(`❌ Error: ${data.message}`);
+                        }
+                      } catch (error) {
+                        console.error('Error fixing pending transactions:', error);
+                        alert('❌ Failed to fix pending transactions');
+                      }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Fix Pending Trade Transactions
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {/* Debug Info Panel */}
                 <div className="bg-gray-800 border border-yellow-500 rounded-lg p-4 mb-4">
                   <h4 className="text-yellow-400 font-semibold mb-2">🐛 Debug Info</h4>
-                  <div className="text-sm text-gray-300 space-y-1">
-                    <div>React State Count: <span className="text-white font-mono">{transactions.length}</span></div>
-                    <div>First 3 IDs: <span className="text-white font-mono text-xs">
-                      {transactions.slice(0, 3).map(t => t.id.slice(0, 8)).join(', ')}
-                    </span></div>
-                    <div>Last Updated: <span className="text-white font-mono">{new Date().toLocaleTimeString()}</span></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-sm text-gray-300 space-y-1">
+                      <div className="font-semibold text-yellow-400 mb-1">Transactions</div>
+                      <div>React State Count: <span className="text-white font-mono">{transactions.length}</span></div>
+                      <div>First 3 IDs: <span className="text-white font-mono text-xs">
+                        {transactions.slice(0, 3).map(t => t.id.slice(0, 8)).join(', ')}
+                      </span></div>
+                      <div>Last Updated: <span className="text-white font-mono">{new Date().toLocaleTimeString()}</span></div>
+                      <div>Pending Trade Txns: <span className="text-white font-mono">
+                        {transactions.filter(t => (t.type === 'trade_win' || t.type === 'trade_loss') && t.status === 'pending').length}
+                      </span></div>
+                    </div>
+                    <div className="text-sm text-gray-300 space-y-1">
+                      <div className="font-semibold text-yellow-400 mb-1">Trades</div>
+                      <div>Total Trades: <span className="text-white font-mono">{trades.length}</span></div>
+                      <div>Active Trades: <span className="text-white font-mono">
+                        {trades.filter(t => t.status === 'active').length}
+                      </span></div>
+                      <div>Expired Pending: <span className="text-red-400 font-mono font-bold">
+                        {trades.filter(t => t.status === 'active' && t.expires_at && new Date(t.expires_at) <= new Date()).length}
+                      </span></div>
+                      <div className="text-xs text-gray-400 italic">
+                        ⚠️ Expired trades should be completed
+                      </div>
+                    </div>
                   </div>
                 </div>
 
