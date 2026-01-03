@@ -1,6 +1,8 @@
-// Build v3.0 - 2026-01-03T02:05:00Z
+// Build v4.0 FINAL - 2026-01-03T02:30:00Z
+// CRITICAL FIX: Removed .jsx compiled file that was causing Railway to use old code
 // REMOVED: Fix Pending Trade Transactions button from Transactions tab
 // REMOVED: Debug Info panel from Transactions tab
+// ADDED: Version marker "v4.0 ✓" in header to verify correct build is deployed
 // KEPT: Fix Expired Trades button in Trades tab only
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
@@ -2438,14 +2440,20 @@ export default function WorkingAdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Transactions Tab - NO BUTTON HERE - Build v3.0 2026-01-03 */}
+          {/* Transactions Tab - Build v4.0 FINAL - 2026-01-03T02:30:00Z */}
           <TabsContent value="transactions" className="space-y-6">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-white">Financial Transactions</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Monitor all financial transactions
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-white">Financial Transactions</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Monitor all financial transactions
+                    </CardDescription>
+                  </div>
+                  {/* BUILD v4.0 - NO BUTTON - If you see a button here, Railway is using old cache */}
+                  <div className="text-xs text-green-400 font-mono">v4.0 ✓</div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="border border-gray-700 rounded-lg overflow-hidden">
